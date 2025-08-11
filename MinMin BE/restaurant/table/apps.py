@@ -1,0 +1,9 @@
+from django.apps import AppConfig
+
+
+class TableConfig(AppConfig):
+    default_auto_field = "django.db.models.BigAutoField"
+    name = "restaurant.table"
+
+    def ready(self):
+        import restaurant.table.signals

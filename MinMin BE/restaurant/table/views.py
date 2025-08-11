@@ -1,0 +1,46 @@
+from django.core.exceptions import ValidationError
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework import viewsets, status
+from rest_framework.pagination import PageNumberPagination
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from django.shortcuts import get_object_or_404
+from accounts.permissions import HasCustomAPIKey, IsAdminOrRestaurant
+from .models import Table
+from .serializers import TableSerializer
+from .tableFilter import TableFilter
+
+
+class TableViewPagination(PageNumberPagination):
+    page_size = 10
+
+
+class TableView(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated, HasCustomAPIKey, IsAdminOrRestaurant]
+    serializer_class = TableSerializer
+    pagination_class = TableViewPagination
+    filter_backends = [DjangoFilterBackend]
+    filterset_class = TableFilter
+    queryset = Table.objects.select_related('branch').all()
+
+    def get_queryset(self):
+        """Retrieve tables filtered by user type with optimized queries."""
+        user = self.request.user
+
+        fields_to_fetch = ['id', 'branch', 'is_fast_table', 'is_delivery_table', 'is_inside_table','qr_code']
+
+        if user.user_type in {'admin', 'restaurant'}:
+            return Table.objects.filter(branch__tenant__admin=user).select_related('branch','qr_code').only(*fields_to_fetch)
+        
+        return Table.objects.filter(branch=user.branch).select_related('branch','qr_code').only(*fields_to_fetch)
+
+    def destroy(self, request, *args, **kwargs):
+        """Handles deletion of a table with validation error handling."""
+        instance = get_object_or_404(Table, pk=kwargs.get("pk"))
+        try:
+            instance.delete()
+            return Response({"message": "Table deleted successfully"}, status=status.HTTP_204_NO_CONTENT)
+        except ValidationError as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
