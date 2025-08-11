@@ -26,9 +26,10 @@ MinMin is a full-stack platform for restaurant ordering and management. The back
    pip install -r requirements.txt
    ```
 3. Provide required environment variables such as `SECRET_KEY`, database credentials (`DB_NAME`, `DB_USER`, `DB_PASSWORD`, `DB_HOST`, `DB_PORT`) and any email/OAuth keys referenced in `alpha/settings.py`.
-4. Apply migrations and start the development server:
+4. Apply migrations, initialize an admin user, and start the development server:
    ```bash
    python manage.py migrate
+   python init_admin_user.py
    python manage.py runserver
    ```
 5. Optional services:
