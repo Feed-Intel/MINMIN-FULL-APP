@@ -13,7 +13,7 @@ __pycache__/
 **/node_modules/
 
 # Environment files
-.env
+
 autoenv
 
 # OS artifacts
