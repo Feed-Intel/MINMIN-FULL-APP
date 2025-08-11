@@ -100,7 +100,10 @@ FRONTEND_BASE_URL = config('FRONTEND_BASE_URL', default='http://localhost:3000')
 
 # settings.py
 STATIC_URL = '/static/'
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')  # Collect static files here
+# Project-level static dir (alongside manage.py)
+STATICFILES_DIRS = [BASE_DIR / "static"]
+#Only for Prod
+# STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')  # Collect static files here
 
 
 MEDIA_URL = '/media/'

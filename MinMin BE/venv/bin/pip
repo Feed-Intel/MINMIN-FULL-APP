@@ -1,4 +1,6 @@
-#!/home/ubuntu/Alpha/venv/bin/python3
+#!/bin/sh
+'''exec' "/Users/hailemichaelseleshi/Documents/Feed-Intel-Dev/MinMin Full App/MinMin BE/venv/bin/python3" "$0" "$@"
+' '''
 # -*- coding: utf-8 -*-
 import re
 import sys
