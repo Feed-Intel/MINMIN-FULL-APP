@@ -12,36 +12,57 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 import os
 from pathlib import Path
 from decouple import config
-import boto3
 import sys
 from celery.schedules import crontab
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-def get_ssm_parameter(name, with_decryption=True):
-    ssm = boto3.client('ssm', region_name='us-east-1')
-    return ssm.get_parameter(Name=name, WithDecryption=with_decryption)['Parameter']['Value']
+def get_ssm_parameter(name, default=None, with_decryption=True):
+    try:
+        import boto3
+        from botocore.exceptions import (
+            BotoCoreError,
+            ClientError,
+            NoCredentialsError,
+        )
+
+        ssm = boto3.client('ssm', region_name='us-east-1')
+        return ssm.get_parameter(Name=name, WithDecryption=with_decryption)[
+            'Parameter'
+        ][
+            'Value'
+        ]
+    except (ImportError, BotoCoreError, ClientError, NoCredentialsError, Exception):
+        return default
 
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = get_ssm_parameter('/alpha/SECRET_KEY') or config('SECRET_KEY')
+SECRET_KEY = get_ssm_parameter('/alpha/SECRET_KEY', config('SECRET_KEY', default='changeme'))
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = config('DEBUG', default=False, cast=bool)
 
-CSRF_TRUSTED_ORIGINS = [
-    "https://alpha.feed-intel.com",
-    "https://restaurant.feed-intel.com",
-    "http://localhost:8081"
-]
+CSRF_TRUSTED_ORIGINS = config(
+    'CSRF_TRUSTED_ORIGINS',
+    default='https://alpha.feed-intel.com,https://restaurant.feed-intel.com,http://localhost:8081',
+    cast=lambda v: [s.strip() for s in v.split(',')],
+)
 
-ALLOWED_HOSTS = ['*','34.230.37.121','localhost',"alpha.feed-intel.com","restaurant.feed-intel.com"]
+ALLOWED_HOSTS = config(
+    'ALLOWED_HOSTS',
+    default='localhost',
+    cast=lambda v: [s.strip() for s in v.split(',')],
+)
 
-CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOWED_ORIGINS = config(
+    'CORS_ALLOWED_ORIGINS',
+    default='http://localhost:8081',
+    cast=lambda v: [s.strip() for s in v.split(',')],
+)
 
 CORS_ALLOW_METHODS = [
     "GET",
@@ -75,7 +96,7 @@ sys.path.insert(1, os.path.join(BASE_DIR, "customer"))
 # settings.py
 
 LOGIN_REDIRECT_URL = '/admin/'  # Redirect to the admin dashboard
-FRONTEND_BASE_URL = "http://localhost:3000"
+FRONTEND_BASE_URL = config('FRONTEND_BASE_URL', default='http://localhost:3000')
 
 # settings.py
 STATIC_URL = '/static/'
@@ -198,13 +219,6 @@ TEMPLATES = [
         },
     },
 ]
-
-CHANNEL_LAYERS = {
-    'default': {
-        'BACKEND': 'channels.layers.InMemoryChannelLayer',
-    },
-}
-
 ASGI_APPLICATION = 'alpha.asgi.application'
 
 CHANNEL_LAYERS = {
@@ -237,16 +251,26 @@ SWAGGER_SETTINGS = {
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.contrib.gis.db.backends.postgis',
-        'NAME': get_ssm_parameter('/alpha/DB_NAME') or config('DB_NAME'),
-        'USER': get_ssm_parameter('/alpha/DB_USER') or config('DB_USER'),
-        'PASSWORD':get_ssm_parameter('/alpha/DB_PASSWORD')or config('DB_PASSWORD'),
-        'HOST': get_ssm_parameter('/alpha/DB_HOST') or config('DB_HOST'),
-        'PORT': get_ssm_parameter('/alpha/DB_PORT') or config('DB_PORT'),
+db_name = get_ssm_parameter('/alpha/DB_NAME', config('DB_NAME', default=None))
+
+if db_name:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.contrib.gis.db.backends.postgis',
+            'NAME': db_name,
+            'USER': get_ssm_parameter('/alpha/DB_USER', config('DB_USER', default='')),
+            'PASSWORD': get_ssm_parameter('/alpha/DB_PASSWORD', config('DB_PASSWORD', default='')),
+            'HOST': get_ssm_parameter('/alpha/DB_HOST', config('DB_HOST', default='')),
+            'PORT': get_ssm_parameter('/alpha/DB_PORT', config('DB_PORT', default='')),
+        }
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
 
 
 # Password validation
@@ -279,18 +303,10 @@ USE_I18N = True
 
 USE_TZ = True
 
-
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/5.1/howto/static-files/
-
-STATIC_URL = 'static/'
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-AUTH_USER_MODEL = 'accounts.User'
 
 SOCIAL_AUTH_GOOGLE_OAUTH2_SCOPE = [
     'openid',         # To retrieve the user's unique ID
@@ -319,13 +335,25 @@ SOCIALACCOUNT_AUTO_SIGNUP = True
 SOCIALACCOUNT_QUERY_EMAIL = True
 
 
-SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = '897496635501-nlc0r1ijbfadqo9osj49kf3br73cl8gp.apps.googleusercontent.com'
-SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = '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'
+SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = get_ssm_parameter(
+    '/alpha/SOCIAL_AUTH_GOOGLE_OAUTH2_KEY',
+    config('SOCIAL_AUTH_GOOGLE_OAUTH2_KEY', default=''),
+)
+SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = get_ssm_parameter(
+    '/alpha/SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET',
+    config('SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET', default=''),
+)
 
-SOCIAL_AUTH_FACEBOOK_KEY = '596378576057611'
-SOCIAL_AUTH_FACEBOOK_SECRET = 'cdab87d7e2a19967312cf5f38ba681f0'
+SOCIAL_AUTH_FACEBOOK_KEY = get_ssm_parameter(
+    '/alpha/SOCIAL_AUTH_FACEBOOK_KEY',
+    config('SOCIAL_AUTH_FACEBOOK_KEY', default=''),
+)
+SOCIAL_AUTH_FACEBOOK_SECRET = get_ssm_parameter(
+    '/alpha/SOCIAL_AUTH_FACEBOOK_SECRET',
+    config('SOCIAL_AUTH_FACEBOOK_SECRET', default=''),
+)
 
-PUSH_KEY = 'ExponentPushToken[4PvtZtLxAhe5adHAiAZDSb]'
+PUSH_KEY = get_ssm_parameter('/alpha/PUSH_KEY', config('PUSH_KEY', default=''))
 
 
 REST_USE_JWT = True
@@ -353,7 +381,7 @@ SOCIAL_AUTH_PIPELINE = (
     'social_core.pipeline.social_auth.social_user',          
     'social_core.pipeline.user.get_username',               
     'social_core.pipeline.user.create_user',                
-    'your_app.pipelines.save_user_profile',                 
+    'accounts.pipelines.save_user_profile',
     'social_core.pipeline.social_auth.associate_user',      
     'social_core.pipeline.social_auth.load_extra_data',     
     'social_core.pipeline.user.user_details',               
@@ -363,23 +391,23 @@ SOCIAL_AUTH_PIPELINE = (
 # EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 EMAIL_BACKEND = 'accounts.backends.email_backend.EmailBackend'
 
-EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_HOST = config('EMAIL_HOST', default='smtp.gmail.com')
 # settings.py
-CELERY_BROKER_URL = 'redis://localhost:6379/0'
-CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
+CELERY_BROKER_URL = config('CELERY_BROKER_URL', default='redis://localhost:6379/0')
+CELERY_RESULT_BACKEND = config('CELERY_RESULT_BACKEND', default='redis://localhost:6379/0')
 CELERY_TIMEZONE = 'UTC'
 CELERY_TASK_TRACK_STARTED = True
 CELERY_TASK_TIME_LIMIT = 30 * 60
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_USE_SSL = False
-EMAIL_HOST_USER = get_ssm_parameter('/alpha/EMAIL_HOST_USER') or config('EMAIL_HOST_USER')
-EMAIL_HOST_PASSWORD = get_ssm_parameter('/alpha/EMAIL_HOST_PASSWORD') or config('EMAIL_HOST_PASSWORD')
+EMAIL_HOST_USER = get_ssm_parameter('/alpha/EMAIL_HOST_USER', config('EMAIL_HOST_USER', default=''))
+EMAIL_HOST_PASSWORD = get_ssm_parameter('/alpha/EMAIL_HOST_PASSWORD', config('EMAIL_HOST_PASSWORD', default=''))
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
-GOOGLE_CLIENT_ID = get_ssm_parameter('/alpha/GOOGLE_CLIENT_ID') or config('GOOGLE_CLIENT_ID')
-GOOGLE_AUTH_URL = get_ssm_parameter('/alpha/GOOGLE_AUTH_URL') or config('GOOGLE_AUTH_URL')
-GOOGLE_CLIENT_SECRET = get_ssm_parameter('/alpha/GOOGLE_CLIENT_SECRET') or config('GOOGLE_CLIENT_SECRET')
-REDIRECT_URL = 'http://localhost:8081'
+GOOGLE_CLIENT_ID = get_ssm_parameter('/alpha/GOOGLE_CLIENT_ID', config('GOOGLE_CLIENT_ID', default=''))
+GOOGLE_AUTH_URL = get_ssm_parameter('/alpha/GOOGLE_AUTH_URL', config('GOOGLE_AUTH_URL', default=''))
+GOOGLE_CLIENT_SECRET = get_ssm_parameter('/alpha/GOOGLE_CLIENT_SECRET', config('GOOGLE_CLIENT_SECRET', default=''))
+REDIRECT_URL = config('REDIRECT_URL', default='http://localhost:8081')
 MAX_FAILED_ATTEMPTS = 5
 LOCKOUT_DURATION = 15
 

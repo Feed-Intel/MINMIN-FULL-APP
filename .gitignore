@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.pyc
+
+# Virtual environments
+**/venv/
+
+# Runtime files
+**/media/
+**/staticfiles/
+
+# Node modules
+**/node_modules/
+
+# Environment files
+.env
+autoenv
+
+# OS artifacts
+.DS_Store
