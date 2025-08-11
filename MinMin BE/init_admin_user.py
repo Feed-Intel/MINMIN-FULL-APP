@@ -8,8 +8,8 @@ from django.contrib.auth import get_user_model
 
 User = get_user_model()
 
-admin_email = os.environ.get('DJANGO_SUPERUSER_EMAIL', 'admin@example.com')
-admin_password = os.environ.get('DJANGO_SUPERUSER_PASSWORD', 'adminpass')
+admin_email = os.environ.get('DJANGO_SUPERUSER_EMAIL', 'info@feed-intel.com')
+admin_password = os.environ.get('DJANGO_SUPERUSER_PASSWORD', 'secret')
 admin_name = os.environ.get('DJANGO_SUPERUSER_NAME', 'Admin')
 
 if not User.objects.filter(email=admin_email).exists():
