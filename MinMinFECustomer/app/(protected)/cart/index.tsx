@@ -267,6 +267,12 @@ export default function CartScreen() {
                 fontWeight: "bold",
               }}
               theme={{ colors: { primary: "#9AC26B" } }}
+              accessibilityLabel={
+                isProcessing
+                  ? i18n.t("checking_discount_button")
+                  : `${i18n.t("checkout_button")} ${subtotal.toFixed(2)} ${i18n.t("currency_unit")}`
+              }
+              accessibilityHint={i18n.t("proceed_to_payment_button")}
             >
               {isProcessing
                 ? i18n.t("checking_discount_button")
