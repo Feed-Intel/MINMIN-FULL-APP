@@ -53,7 +53,7 @@ const PaymentWebView = () => {
           src={
             (process.env.EXPO_PUBLIC_CHAPA_CHECKOUT_URL! + paymentID) as string
           }
-          style={{ flex: 1, width: "100%", height: "100%", borderWidth: 0 }}
+            style={{ flex: 1, border: 0 }}
           onLoad={() => setLoading(false)}
         />
       ) : (

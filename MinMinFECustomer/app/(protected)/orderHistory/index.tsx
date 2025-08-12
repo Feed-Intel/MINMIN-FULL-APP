@@ -728,14 +728,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     flexDirection: "row",
   },
-  webTabsContainer: {
-    flexDirection: "column",
-    width: 200,
-    paddingRight: 16,
-    borderRightWidth: 1,
-    borderRightColor: "#E0E0E0",
-    height: "100%",
-  },
+    webTabsContainer: {
+      flexDirection: "column",
+      width: 200,
+      paddingRight: 16,
+      borderRightWidth: 1,
+      borderRightColor: "#E0E0E0",
+      flex: 1,
+    },
   tabItem: {
     paddingHorizontal: 16,
     paddingVertical: 12,
