@@ -252,11 +252,9 @@ const styles = StyleSheet.create({
     flex: 1,
     // Set a fallback background color consistent with the image's orange hue
     backgroundColor: "#F7A700",
-    height: "100%",
   },
   safeArea: {
     flex: 1,
-    height: "100%",
     position: "relative",
     alignItems: "center", // Center content horizontally within SafeAreaView
   },
@@ -265,13 +263,7 @@ const styles = StyleSheet.create({
     top: 50, // Adjusted to position the logo higher
   },
   backgroundImage: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    width: "100%",
-    height: "100%",
+    ...StyleSheet.absoluteFillObject,
     resizeMode: "cover", // Ensures the background image covers the whole area
   },
   inputIcon: {
@@ -322,7 +314,6 @@ const styles = StyleSheet.create({
   },
   textInput: {
     flex: 1, // Allows TextInput to take available space
-    height: "100%", // Makes TextInput fill the height of its container
     color: "#333", // Default text color within the input
     fontWeight: "400",
     letterSpacing: -0.09,
