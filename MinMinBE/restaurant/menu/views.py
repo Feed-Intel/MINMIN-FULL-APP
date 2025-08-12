@@ -1,21 +1,21 @@
-from rest_framework import viewsets, status
+from rest_framework import status
 from django.core.exceptions import ValidationError
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.parsers import MultiPartParser, FormParser
 from django.db.models import Q
-from django.core.cache import cache 
 from rest_framework.pagination import PageNumberPagination
 from .models import Menu
 from .menuFilter import MenuFilter
 from .serializers import MenuSerializer
 from accounts.permissions import HasCustomAPIKey
+from core.cache import CachedModelViewSet
 
 class MenuViewPagination(PageNumberPagination):
     page_size = 10
 
-class MenuView(viewsets.ModelViewSet):
+class MenuView(CachedModelViewSet):
     permission_classes = [IsAuthenticated,HasCustomAPIKey]
     queryset = Menu.objects.all()
     serializer_class = MenuSerializer

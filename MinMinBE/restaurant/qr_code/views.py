@@ -1,4 +1,3 @@
-from rest_framework.viewsets import ModelViewSet
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
@@ -9,19 +8,19 @@ from django.db.models import Q
 
 from alpha import settings
 from .models import QRCode
-from django.core.cache import cache 
 from rest_framework.pagination import PageNumberPagination
 from restaurant.table.models import Table
 from .serializers import QRCodeSerializer
 from .utils import generate_qr_code
 from accounts.permissions import HasCustomAPIKey, IsAdminOrRestaurant
+from core.cache import CachedModelViewSet
 
 import os
 import re
 class QRCodeViewPagination(PageNumberPagination):
     page_size = 10
 
-class QRCodeViewSet(ModelViewSet):
+class QRCodeViewSet(CachedModelViewSet):
     """
     A ViewSet for viewing and editing QR code instances.
     """

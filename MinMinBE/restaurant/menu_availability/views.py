@@ -1,5 +1,5 @@
 import json
-from rest_framework import viewsets, status
+from rest_framework import status
 from rest_framework.response import Response
 from django.db.models import Q, Prefetch, Avg, Count # Import Avg, Count for potential future use
 from .models import MenuAvailability # Assuming your models are in the current app
@@ -22,6 +22,7 @@ from customer.feedback.models import Feedback # Assuming Feedback model is in 'c
 from django.core.cache import cache 
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_page
+from core.cache import CachedModelViewSet
 
 # Define cache timeouts
 CACHE_TIMEOUT_LIST_QS_SECONDS = 60 * 5 # 5 minutes for main queryset
@@ -41,7 +42,7 @@ class MenuAvailabilityViewPagination(PageNumberPagination):
             'results': data
         })
 
-class MenuAvailabilityView(viewsets.ModelViewSet):
+class MenuAvailabilityView(CachedModelViewSet):
     permission_classes = [IsAuthenticated, HasCustomAPIKey]
     queryset = MenuAvailability.objects.all()
     serializer_class = MenuAvailabilitySerializer

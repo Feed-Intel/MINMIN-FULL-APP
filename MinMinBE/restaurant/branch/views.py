@@ -1,8 +1,7 @@
-from rest_framework import viewsets,status
+from rest_framework import status
 from django.core.exceptions import ValidationError
 from accounts.permissions import HasCustomAPIKey
 from django_filters.rest_framework import DjangoFilterBackend
-from django.core.cache import cache
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from .models import Branch
@@ -16,11 +15,12 @@ from rest_framework.decorators import action
 from restaurant.table.models import Table
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
+from core.cache import CachedModelViewSet
 
 class BranchPagination(PageNumberPagination):
     page_size = 10
 
-class BranchView(viewsets.ModelViewSet):
+class BranchView(CachedModelViewSet):
     permission_classes = [IsAuthenticated,HasCustomAPIKey]
     queryset = Branch.objects.all()
     serializer_class = BranchSerializer
