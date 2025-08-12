@@ -181,12 +181,6 @@ export default function CartScreen() {
                         <Text variant="titleMedium" style={styles.dishName}>
                           {dish.name}
                         </Text>
-                        <Text
-                          variant="bodySmall"
-                          style={styles.dishDescription}
-                        >
-                          {dish.description}
-                        </Text>
                         <View style={styles.priceContainer}>
                           <View style={styles.quantityContainer}>
                             <IconButton
@@ -270,9 +264,8 @@ export default function CartScreen() {
                   theme={{ colors: { primary: "#9AC26B" } }}
                 >
                   {isProcessing
-                    ? i18n.t("checking_discount_button") // Replaced hardcoded string
-                    : i18n.t("checkout_button")}{" "}
-                  {/* Replaced hardcoded string */}
+                    ? i18n.t("checking_discount_button")
+                    : `${i18n.t("checkout_button")} • ${subtotal.toFixed(2)} ${i18n.t("currency_unit")}`}
                 </Button>
                 </View>
               </ScrollView>
@@ -368,10 +361,6 @@ const styles = StyleSheet.create({
   dishName: {
     color: "#333",
     fontWeight: "bold",
-    marginBottom: 4,
-  },
-  dishDescription: {
-    color: "#666",
     marginBottom: 4,
   },
   dishPrice: {

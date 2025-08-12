@@ -359,6 +359,8 @@ export default function CheckoutScreen() {
                   </List.Subheader>
                 </View>
               </View>
+            </ScrollView>
+            <View style={styles.fixedBottom}>
               <View style={styles.paymentCard}>
                 <Card.Title
                   title={i18n.t("payment_method_title")} // Replaced hardcoded string
@@ -502,11 +504,11 @@ export default function CheckoutScreen() {
                   }}
                   theme={{ colors: { primary: "#9AC26B" } }}
                 >
-                  {i18n.t("place_order_button")}{" "}
+                  {i18n.t("place_order_button")}
                   {/* Replaced hardcoded string */}
                 </Button>
               )}
-            </ScrollView>
+            </View>
           </KeyboardAvoidingView>
         </Animated.View>
 
@@ -685,7 +687,13 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: Platform.OS === "web" ? 5 : 3,
-    paddingBottom: Platform.OS === "ios" ? 120 : 60, // Extra space for iOS safe area
+    paddingBottom: 20,
+  },
+  fixedBottom: {
+    borderTopWidth: 1,
+    borderTopColor: "#eee",
+    padding: 16,
+    backgroundColor: "#FDFDFC",
   },
   card: {
     marginBottom: 16,
