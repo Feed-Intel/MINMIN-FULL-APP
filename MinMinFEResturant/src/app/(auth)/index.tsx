@@ -94,7 +94,7 @@ const LoginScreen = () => {
             variant="headlineLarge"
             style={[styles.title, { color: "#3A3A3A" }]}
           >
-            Welcome to Alpha Restaurant
+            Welcome to MinMin Restaurant
           </Text>
           <Paragraph style={styles.subtitle}>
             Log in to manage your restaurant account
