@@ -5,6 +5,4 @@ declare module "*.svg" {
   export default content;
 }
 
-declare module "expo-audio" {
-  export const Audio: any;
-}
+

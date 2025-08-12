@@ -465,12 +465,11 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginRight: 16,
   },
-  detailsContainer: {
-    flex: 1,
-    justifyContent: "space-between",
-    height: "100%",
-    paddingVertical: 4,
-  },
+    detailsContainer: {
+      flex: 1,
+      justifyContent: "space-between",
+      paddingVertical: 4,
+    },
   name: {
     fontSize: 18,
     fontWeight: "bold",
@@ -556,12 +555,12 @@ const styles = StyleSheet.create({
     borderBottomColor: "#eee",
     backgroundColor: "#FFFCF5",
   },
-  modalImage: {
-    width: 120,
-    height: "auto",
-    borderRadius: 12,
-    marginRight: 16,
-  },
+    modalImage: {
+      width: 120,
+      height: 120,
+      borderRadius: 12,
+      marginRight: 16,
+    },
   modalHeaderDetails: {
     flex: 1,
   },
@@ -645,11 +644,10 @@ const styles = StyleSheet.create({
     padding: 5,
     marginBottom: 12,
   },
-  relatedItemText: {
-    flex: 1,
-    justifyContent: "space-between",
-    height: "100%",
-  },
+    relatedItemText: {
+      flex: 1,
+      justifyContent: "space-between",
+    },
   relatedItemName: {
     fontSize: 16,
     fontWeight: "500",
