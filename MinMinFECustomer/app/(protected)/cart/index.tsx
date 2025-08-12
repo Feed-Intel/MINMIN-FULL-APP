@@ -220,10 +220,9 @@ export default function CartScreen() {
                     </View>
                   </View>
                 ))}
-              </ScrollView>
 
-              <View style={styles.summaryContainer}>
-                <View style={styles.summaryCard}>
+                <View style={styles.summaryContainer}>
+                  <View style={styles.summaryCard}>
                   <View style={styles.summaryRow}>
                     <Text style={styles.summaryLabel}>
                       {i18n.t("subtotal_label")}{" "}
@@ -275,7 +274,8 @@ export default function CartScreen() {
                     : i18n.t("checkout_button")}{" "}
                   {/* Replaced hardcoded string */}
                 </Button>
-              </View>
+                </View>
+              </ScrollView>
             </View>
           )}
         </Animated.View>
@@ -330,17 +330,7 @@ const styles = StyleSheet.create({
     color: "#666",
   },
   scrollContainer: {
-    ...Platform.select({
-      web: {
-        flex: 1,
-      },
-      android: {
-        flex: 0.75,
-      },
-      ios: {
-        flex: 0.75,
-      },
-    }),
+    flex: 1,
   },
   scrollView: {
     flex: 1,
@@ -348,7 +338,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: Platform.OS === "web" ? 10 : 6,
-    paddingBottom: 120,
+    paddingBottom: 16,
   },
   card: {
     marginBottom: 6,
@@ -419,23 +409,11 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   summaryContainer: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
     backgroundColor: "#fff",
     padding: 16,
     borderTopWidth: 1,
     borderTopColor: "#eee",
-    ...Platform.select({
-      web: {
-        position: "relative",
-        marginTop: 16,
-      },
-      ios: {
-        bottom: 20,
-      },
-    }),
+    marginTop: 16,
   },
   summaryCard: {
     backgroundColor: "#ffffff",
