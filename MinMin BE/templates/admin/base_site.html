@@ -3,6 +3,8 @@
 
 {% block title %}{{ site_title|default:_('Django site admin') }}{% endblock %}
 
+{% block bodyclass %}{{ block.super }} custom-admin{% endblock %}
+
 {% block extrastyle %}
   {{ block.super }}
   <link rel="stylesheet" type="text/css" href="{% static 'css/custom_admin.css' %}">
