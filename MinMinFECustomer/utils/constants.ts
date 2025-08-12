@@ -37,7 +37,15 @@ export const FACEBOOK_REDIRECT_URI = `${process.env.EXPO_PUBLIC_BASE_URL}/api/au
 export const FACEBOOK_AUTH_URL = "https://www.facebook.com/v11.0/dialog/oauth";
 
 // Environment Constants
-export const BASE_URL = process.env.EXPO_PUBLIC_BASE_URL;
+// Ensure BASE_URL always has a valid HTTP/HTTPS scheme so that
+// authentication sessions opened in the iOS web browser do not crash
+// with "unsupported scheme" errors.
+const rawBaseUrl = process.env.EXPO_PUBLIC_BASE_URL || "";
+export const BASE_URL = rawBaseUrl.startsWith("http://") || rawBaseUrl.startsWith("https://")
+  ? rawBaseUrl
+  : rawBaseUrl
+  ? `https://${rawBaseUrl}`
+  : "";
 export const APP_SCHEME = process.env.EXPO_PUBLIC_SCHEME;
 export const JWT_SECRET = process.env.JWT_SECRET!;
 
