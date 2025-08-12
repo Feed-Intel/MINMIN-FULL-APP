@@ -287,7 +287,7 @@ export default function CartScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: "#FDFDFC",
   },
   safeArea: {
     flex: 1,
@@ -306,7 +306,7 @@ const styles = StyleSheet.create({
     borderRadius: 25,
   },
   appbar: {
-    backgroundColor: "#ffffff",
+    backgroundColor: "#FDFDFC",
   },
   appbarTitle: {
     fontWeight: "700",
@@ -338,7 +338,7 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: "#FDFDFC",
   },
   scrollContent: {
     padding: Platform.OS === "web" ? 10 : 6,
@@ -346,8 +346,8 @@ const styles = StyleSheet.create({
   },
   card: {
     marginBottom: 6,
-    backgroundColor: "#ffffff",
-    // borderRadius: 12,
+    backgroundColor: "#FDFDFC",
+    borderRadius: 12,
     ...Platform.select({
       web: {
         // boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
@@ -409,13 +409,13 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   fixedBottomContainer: {
-    backgroundColor: "#fff",
+    backgroundColor: "#FDFDFC",
     padding: 16,
     borderTopWidth: 1,
     borderTopColor: "#eee",
   },
   summaryCard: {
-    backgroundColor: "#ffffff",
+    backgroundColor: "#FDFDFC",
     borderRadius: 12,
     ...Platform.select({
       web: {
@@ -454,10 +454,12 @@ const styles = StyleSheet.create({
   },
   checkoutButton: {
     marginTop: 16,
-    borderRadius: 25,
-    width: 350,
-      
-    
+    borderRadius: 30,
+    width: 353,
+    height: 50,
+    alignSelf: "center",
+    alignContent: "center",
+    justifyContent: "center",
     ...Platform.select({
       web: {
         maxWidth: 353,
