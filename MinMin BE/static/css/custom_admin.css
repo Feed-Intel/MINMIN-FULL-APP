@@ -7,6 +7,40 @@
   --text-dark: #40392B;
 }
 
+/* Layout styling for the entire admin site */
+body.custom-admin {
+  background-color: #F5F7F2;
+  color: var(--text-dark);
+  font-family: Arial, sans-serif;
+}
+
+#nav-sidebar {
+  background: #ffffff;
+  border-right: 1px solid #e0e0e0;
+}
+
+#nav-sidebar .current-app .app-name {
+  color: var(--primary-color);
+}
+
+.module {
+  background: #ffffff;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  padding: 10px;
+}
+
+.breadcrumbs {
+  background: #ffffff;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+table thead th {
+  background: var(--primary-color);
+  color: #ffffff;
+}
+
 /* Global admin overrides */
 #header {
   background-color: var(--primary-color);
