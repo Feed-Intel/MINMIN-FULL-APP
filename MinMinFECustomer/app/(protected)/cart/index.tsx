@@ -22,6 +22,7 @@ import { useCheckDiscount } from "@/services/mutation/discountMutation";
 import { ThemedView } from "@/components/ThemedView";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { i18n } from "@/app/_layout";
+import { useBottomTabOverflow } from "@/components/ui/TabBarBackground";
 
 export default function CartScreen() {
   const headerAnimation = useRef(new Animated.Value(0)).current;
@@ -33,6 +34,7 @@ export default function CartScreen() {
     (state: RootState) => state.cart.restaurantId
   );
   const dispatch = useDispatch();
+  const bottom = useBottomTabOverflow();
 
   const newQuantities = cartItems.reduce((acc: any, item: any) => {
     acc[item.id] = item.quantity;
@@ -219,7 +221,7 @@ export default function CartScreen() {
           )}
         </Animated.View>
         {cartItems.length > 0 && (
-          <View style={styles.fixedBottomContainer}>
+          <View style={[styles.fixedBottomContainer, { paddingBottom: bottom }]}>
             <View style={styles.summaryCard}>
               <View style={styles.summaryRow}>
                 <Text style={styles.summaryLabel}>
