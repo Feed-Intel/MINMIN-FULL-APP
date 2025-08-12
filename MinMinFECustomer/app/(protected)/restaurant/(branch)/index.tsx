@@ -27,7 +27,7 @@ import {
   useGetRelatedMenus,
   useSearchMenuAvailabilities,
 } from "@/services/mutation/menuMutation";
-import { Audio } from "expo-av";
+import * as Haptics from "expo-haptics";
 import { useCreateAWaiterCall } from "@/services/mutation/branchMutation";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { DishRow } from "@/components/restaurant/Dish";
@@ -81,7 +81,6 @@ const useResponsive = () => {
 
 const BellComponent = ({ tableId }: any) => {
   const callWaiter = useCreateAWaiterCall();
-  const [sound, setSound] = useState<Audio.Sound>();
   const [isBellDisabled, setIsBellDisabled] = useState(false);
   const pulseAnim = useRef(new Animated.Value(0)).current;
 
@@ -118,11 +117,9 @@ const BellComponent = ({ tableId }: any) => {
     setIsBellDisabled(true);
     try {
       callWaiter.mutate({ table_id: tableId });
-      const { sound } = await Audio.Sound.createAsync(
-        require("@/assets/sounds/bell.mp3")
+      await Haptics.notificationAsync(
+        Haptics.NotificationFeedbackType.Success
       );
-      setSound(sound);
-      await sound.playAsync();
       Alert.alert(
         i18n.t("waiter_called_alert_title"),
         i18n.t("waiter_called_alert_message")
@@ -137,12 +134,6 @@ const BellComponent = ({ tableId }: any) => {
 
     setTimeout(() => setIsBellDisabled(false), 30000);
   }
-
-  useEffect(() => {
-    return () => {
-      if (sound) sound.unloadAsync();
-    };
-  }, [sound]);
 
   return (
     <View style={styles.bellContainer}>

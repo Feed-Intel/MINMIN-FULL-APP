@@ -40,12 +40,13 @@ export const FACEBOOK_AUTH_URL = "https://www.facebook.com/v11.0/dialog/oauth";
 // Ensure BASE_URL always has a valid HTTP/HTTPS scheme so that
 // authentication sessions opened in the iOS web browser do not crash
 // with "unsupported scheme" errors.
-const rawBaseUrl = process.env.EXPO_PUBLIC_BASE_URL || "https://customer.feed-intel.com";
-export const BASE_URL = rawBaseUrl.startsWith("http://") || rawBaseUrl.startsWith("https://")
+const rawBaseUrl =
+  process.env.EXPO_PUBLIC_BASE_URL || "https://customer.feed-intel.com";
+export const BASE_URL = rawBaseUrl.startsWith("https://")
   ? rawBaseUrl
-  : rawBaseUrl
-  ? `https://${rawBaseUrl}`
-  : "";
+  : rawBaseUrl.startsWith("http://")
+  ? rawBaseUrl.replace("http://", "https://")
+  : `https://${rawBaseUrl}`;
 export const APP_SCHEME = process.env.EXPO_PUBLIC_SCHEME;
 export const JWT_SECRET = process.env.JWT_SECRET!;
 
