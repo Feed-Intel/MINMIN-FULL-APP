@@ -1,11 +1,7 @@
-{% extends "admin/base_site.html" %} {% load static i18n %} {% block title %}
-Alpha Admin Login {% endblock %} {% block extrahead %}
-<link
-  rel="stylesheet"
-  type="text/css"
-  href="{% static 'css/custom_admin.css' %}"
-/>
-{% endblock %} {% block content %}
+{% extends "admin/base_site.html" %}
+{% load static i18n %}
+{% block title %}Alpha Admin Login {% endblock %}
+{% block content %}
 <div class="custom-login-container">
   <div class="login-header">
     <img src="{% static 'images/logo.png' %}" alt="Logo" class="logo" />
