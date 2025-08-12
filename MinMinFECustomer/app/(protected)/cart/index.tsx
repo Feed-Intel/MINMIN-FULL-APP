@@ -301,6 +301,10 @@ const styles = StyleSheet.create({
       },
     }),
   },
+  modalButton: {
+    marginTop: 16,
+    borderRadius: 25,
+  },
   appbar: {
     backgroundColor: "#ffffff",
   },
@@ -451,12 +455,9 @@ const styles = StyleSheet.create({
   checkoutButton: {
     marginTop: 16,
     borderRadius: 25,
-    width: 353,
-    height: 40,
-    paddingVertical: 5,
-    alignSelf: "center",
-    alignContent: "center",
-    justifyContent: "center",
+    width: 350,
+      
+    
     ...Platform.select({
       web: {
         maxWidth: 353,
@@ -466,6 +467,6 @@ const styles = StyleSheet.create({
     }),
   },
   buttonContent: {
-    paddingVertical: 8,
+    paddingVertical: 5,
   },
 });
