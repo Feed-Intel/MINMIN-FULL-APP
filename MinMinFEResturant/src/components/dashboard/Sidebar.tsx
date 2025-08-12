@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { View, StyleSheet, TouchableOpacity, ScrollView } from "react-native";
 import { Text, Icon } from "react-native-paper"; // Using Icon from react-native-paper
 import { router, usePathname } from "expo-router"; // Assuming expo-router is configured, added usePathname
+import { useResponsive } from "@/hooks/useResponsive";
 
 // Define the structure for a menu link
 interface Link {
@@ -68,8 +69,15 @@ const Sidebar: React.FC = () => {
     }
   }, [currentPathname]); // Re-run when the pathname changes
 
+  const { isTablet } = useResponsive();
+
   return (
-    <View style={sidebarStyles.sidebar}>
+    <View
+      style={[
+        sidebarStyles.sidebar,
+        isTablet ? sidebarStyles.sidebarTablet : sidebarStyles.sidebarMobile,
+      ]}
+    >
       {/* Menu Items */}
       <ScrollView style={sidebarStyles.menu}>
         {links.map((item: Link) => (
@@ -107,7 +115,6 @@ const Sidebar: React.FC = () => {
 // Styles for the Sidebar
 const sidebarStyles = StyleSheet.create({
   sidebar: {
-    width: 250, // Fixed width for sidebar as per image
     backgroundColor: "#EFF4EB",
     paddingVertical: 20,
     paddingHorizontal: 15,
@@ -118,6 +125,12 @@ const sidebarStyles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 5, // For Android shadow
+  },
+  sidebarMobile: {
+    width: 220,
+  },
+  sidebarTablet: {
+    width: 320,
   },
   logo: {
     fontSize: 24,
