@@ -214,64 +214,64 @@ export default function CartScreen() {
                     </View>
                   </View>
                 ))}
-
-                <View style={styles.summaryContainer}>
-                  <View style={styles.summaryCard}>
-                  <View style={styles.summaryRow}>
-                    <Text style={styles.summaryLabel}>
-                      {i18n.t("subtotal_label")}{" "}
-                      {/* Replaced hardcoded string */}
-                    </Text>
-                    <Text style={styles.summaryValue}>
-                      {subtotal.toFixed(2)} {i18n.t("currency_unit")}{" "}
-                      {/* Replaced hardcoded string */}
-                    </Text>
-                  </View>
-                  <View style={styles.summaryRow}>
-                    <Text style={styles.summaryLabel}>
-                      {i18n.t("discount_label")}{" "}
-                      {/* Replaced hardcoded string */}
-                    </Text>
-                    <Text style={styles.discountValue}>
-                      - {discount.toFixed(2)} {i18n.t("currency_unit")}{" "}
-                      {/* Replaced hardcoded string */}
-                    </Text>
-                  </View>
-                  <View style={styles.summaryRow}>
-                    <Text variant="titleMedium" style={styles.totalLabel}>
-                      {i18n.t("total_label")} {/* Replaced hardcoded string */}
-                    </Text>
-                    <Text variant="titleMedium" style={styles.totalValue}>
-                      {Math.max(subtotal - discount, 0).toFixed(2)}{" "}
-                      {i18n.t("currency_unit")}{" "}
-                      {/* Replaced hardcoded string */}
-                    </Text>
-                  </View>
-                </View>
-
-                <Button
-                  mode="contained"
-                  loading={isProcessing}
-                  disabled={cartItems.length === 0 || isProcessing}
-                  onPress={handleCheckout}
-                  style={styles.checkoutButton}
-                  contentStyle={styles.buttonContent}
-                  labelStyle={{
-                    fontSize: 17,
-                    color: "#22281B",
-                    fontWeight: "bold",
-                  }}
-                  theme={{ colors: { primary: "#9AC26B" } }}
-                >
-                  {isProcessing
-                    ? i18n.t("checking_discount_button")
-                    : `${i18n.t("checkout_button")} • ${subtotal.toFixed(2)} ${i18n.t("currency_unit")}`}
-                </Button>
-                </View>
               </ScrollView>
             </View>
           )}
         </Animated.View>
+        {cartItems.length > 0 && (
+          <View style={styles.fixedBottomContainer}>
+            <View style={styles.summaryCard}>
+              <View style={styles.summaryRow}>
+                <Text style={styles.summaryLabel}>
+                  {i18n.t("subtotal_label")}{" "}
+                  {/* Replaced hardcoded string */}
+                </Text>
+                <Text style={styles.summaryValue}>
+                  {subtotal.toFixed(2)} {i18n.t("currency_unit")}{" "}
+                  {/* Replaced hardcoded string */}
+                </Text>
+              </View>
+              <View style={styles.summaryRow}>
+                <Text style={styles.summaryLabel}>
+                  {i18n.t("discount_label")}{" "}
+                  {/* Replaced hardcoded string */}
+                </Text>
+                <Text style={styles.discountValue}>
+                  - {discount.toFixed(2)} {i18n.t("currency_unit")}{" "}
+                  {/* Replaced hardcoded string */}
+                </Text>
+              </View>
+              <View style={styles.summaryRow}>
+                <Text variant="titleMedium" style={styles.totalLabel}>
+                  {i18n.t("total_label")} {/* Replaced hardcoded string */}
+                </Text>
+                <Text variant="titleMedium" style={styles.totalValue}>
+                  {Math.max(subtotal - discount, 0).toFixed(2)}{" "}
+                  {i18n.t("currency_unit")}{" "}
+                  {/* Replaced hardcoded string */}
+                </Text>
+              </View>
+            </View>
+            <Button
+              mode="contained"
+              loading={isProcessing}
+              disabled={cartItems.length === 0 || isProcessing}
+              onPress={handleCheckout}
+              style={styles.checkoutButton}
+              contentStyle={styles.buttonContent}
+              labelStyle={{
+                fontSize: 17,
+                color: "#22281B",
+                fontWeight: "bold",
+              }}
+              theme={{ colors: { primary: "#9AC26B" } }}
+            >
+              {isProcessing
+                ? i18n.t("checking_discount_button")
+                : `${i18n.t("checkout_button")} • ${subtotal.toFixed(2)} ${i18n.t("currency_unit")}`}
+            </Button>
+          </View>
+        )}
       </SafeAreaView>
     </ThemedView>
   );
@@ -397,12 +397,11 @@ const styles = StyleSheet.create({
     minWidth: 24, // Reduced width
     textAlign: "center",
   },
-  summaryContainer: {
+  fixedBottomContainer: {
     backgroundColor: "#fff",
     padding: 16,
     borderTopWidth: 1,
     borderTopColor: "#eee",
-    marginTop: 16,
   },
   summaryCard: {
     backgroundColor: "#ffffff",
