@@ -27,7 +27,7 @@ import {
   useGetRelatedMenus,
   useSearchMenuAvailabilities,
 } from "@/services/mutation/menuMutation";
-import { Audio } from "expo-audio";
+import { Audio } from "expo-av";
 import { useCreateAWaiterCall } from "@/services/mutation/branchMutation";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { DishRow } from "@/components/restaurant/Dish";
