@@ -73,6 +73,9 @@ export default function CartScreen() {
     0
   );
   const [isProcessing, setIsProcessing] = useState(false);
+  const checkoutButtonText = isProcessing
+    ? i18n.t("checking_discount_button")
+    : `${i18n.t("checkout_button")} • ${subtotal.toFixed(2)} ${i18n.t("currency_unit")}`;
   // const checkDiscount = useCheckDiscount();
 
   useEffect(() => {
@@ -267,16 +270,12 @@ export default function CartScreen() {
                 fontWeight: "bold",
               }}
               theme={{ colors: { primary: "#9AC26B" } }}
-              accessibilityLabel={
-                isProcessing
-                  ? i18n.t("checking_discount_button")
-                  : `${i18n.t("checkout_button")} ${subtotal.toFixed(2)} ${i18n.t("currency_unit")}`
-              }
+              accessible
+              accessibilityRole="button"
+              accessibilityLabel={checkoutButtonText}
               accessibilityHint={i18n.t("proceed_to_payment_button")}
             >
-              {isProcessing
-                ? i18n.t("checking_discount_button")
-                : `${i18n.t("checkout_button")} • ${subtotal.toFixed(2)} ${i18n.t("currency_unit")}`}
+              {checkoutButtonText}
             </Button>
           </View>
         )}
