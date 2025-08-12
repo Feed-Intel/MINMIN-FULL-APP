@@ -167,7 +167,6 @@ export default function ProtectedLayout() {
       <Tabs.Screen name="orderConfirmation/index" options={{ href: null }} />
       <Tabs.Screen name="orderTracking/index" options={{ href: null }} />
       <Tabs.Screen name="rating/index" options={{ href: null }} />
-      <Tabs.Screen name="restaurant/index" options={{ href: null }} />
       <Tabs.Screen name="restaurant/(branch)/index" options={{ href: null }} />
       <Tabs.Screen name="restaurant-profile/index" options={{ href: null }} />
       <Tabs.Screen
