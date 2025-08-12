@@ -1,6 +1,4 @@
-from rest_framework import viewsets
 from rest_framework.permissions import IsAuthenticated
-from django.core.cache import cache 
 from rest_framework.pagination import PageNumberPagination
 from django_filters.rest_framework import DjangoFilterBackend
 from accounts.permissions import HasCustomAPIKey
@@ -8,11 +6,12 @@ from django.db.models import Q
 from .models import RelatedMenuItem
 from .serializers import RelatedMenuItemSerializer
 from .relatedMenuItemFilter import RelatedMenuItemFilter
+from core.cache import CachedModelViewSet
 
 class RelatedMenuItemPagination(PageNumberPagination):
     page_size = 10
 
-class RelatedMenuItemView(viewsets.ModelViewSet):
+class RelatedMenuItemView(CachedModelViewSet):
     permission_classes = [IsAuthenticated,HasCustomAPIKey]
     queryset = RelatedMenuItem.objects.all()
     serializer_class = RelatedMenuItemSerializer

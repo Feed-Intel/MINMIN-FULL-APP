@@ -1,14 +1,13 @@
 from django.db.models import Avg
-from rest_framework import viewsets
+from rest_framework import viewsets, status
 from django.core.exceptions import ValidationError
 from accounts.permissions import HasCustomAPIKey
 from rest_framework.permissions import IsAuthenticated
-from django.core.cache import cache 
+from django.core.cache import cache
 from rest_framework.response import Response
 import rest_framework.status as Status
 from django.utils import timezone
 from django.db.models import Q, Sum, Count, Avg, Prefetch
-from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.exceptions import PermissionDenied
@@ -31,10 +30,11 @@ from django.db.models.functions import ExtractHour, ExtractWeek, ExtractMonth
 from django.db.models import ExpressionWrapper, F, IntegerField
 from .serializers import DashboardSerializer
 from django.db.models.functions import TruncDate
+from core.cache import CachedModelViewSet
 class TenantPagination(PageNumberPagination):
     page_size = 10
 
-class TenantView(viewsets.ModelViewSet):
+class TenantView(CachedModelViewSet):
     permission_classes = [IsAuthenticated,HasCustomAPIKey]
     queryset = Tenant.objects.all()
     serializer_class = TenantSerializer
@@ -82,6 +82,11 @@ class TenantView(viewsets.ModelViewSet):
     def get_dashboard(self, request):
         user = request.user
         tenant = user.tenants
+
+        cache_key = f"tenant_dashboard:{user.id}"
+        cached_data = cache.get(cache_key)
+        if cached_data:
+            return Response(cached_data, status=status.HTTP_200_OK)
         
         # Base query filters
         order_filter = Q(tenant=tenant)
@@ -148,6 +153,8 @@ class TenantView(viewsets.ModelViewSet):
                 status__in=['delivered', 'cancelled', 'payment_complete']
             ).count()
         }
+
+        cache.set(cache_key, response_data, 300)
 
         return Response(response_data, status=status.HTTP_200_OK)
     

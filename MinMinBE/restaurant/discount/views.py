@@ -1,4 +1,4 @@
-from rest_framework import viewsets, filters
+from rest_framework import filters
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.response import Response
 from django.core.exceptions import ValidationError
@@ -15,11 +15,12 @@ from accounts.permissions import HasCustomAPIKey,IsAdminOrRestaurant
 from .services import get_big_discount_items
 from restaurant.menu_availability.serializers import MenuAvailabilitySerializer
 from restaurant.tenant.models import Tenant
+from core.cache import CachedModelViewSet
 
 class DiscountPagination(PageNumberPagination):
     page_size = 10
 
-class DiscountViewSet(viewsets.ModelViewSet):
+class DiscountViewSet(CachedModelViewSet):
     permission_classes = [IsAuthenticated,HasCustomAPIKey]
     queryset = Discount.objects.all()
     serializer_class = DiscountSerializer
@@ -100,7 +101,7 @@ class DiscountViewSet(viewsets.ModelViewSet):
 class DiscountRulePagination(PageNumberPagination):
     page_size = 10
 
-class DiscountRuleViewSet(viewsets.ModelViewSet):
+class DiscountRuleViewSet(CachedModelViewSet):
     permission_classes = [IsAuthenticated,HasCustomAPIKey,IsAdminOrRestaurant]
     queryset = DiscountRule.objects.all()
     serializer_class = DiscountRuleSerializer
@@ -131,7 +132,7 @@ class DiscountRuleViewSet(viewsets.ModelViewSet):
 
 class DiscountApplicationPagination(PageNumberPagination):
     page_size = 10
-class DiscountApplicationViewSet(viewsets.ModelViewSet):
+class DiscountApplicationViewSet(CachedModelViewSet):
     permission_classes = [IsAuthenticated,HasCustomAPIKey,IsAdminOrRestaurant]
     queryset = DiscountApplication.objects.all()
     serializer_class = DiscountApplicationSerializer
@@ -153,7 +154,7 @@ class DiscountApplicationViewSet(viewsets.ModelViewSet):
 
 class CouponPagination(PageNumberPagination):
     page_size = 10
-class CouponViewSet(viewsets.ModelViewSet):
+class CouponViewSet(CachedModelViewSet):
     permission_classes = [IsAuthenticated,HasCustomAPIKey,IsAdminOrRestaurant]
     queryset = Coupon.objects.all()
     serializer_class = CouponSerializer

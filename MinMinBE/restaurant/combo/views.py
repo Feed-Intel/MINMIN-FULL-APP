@@ -1,18 +1,17 @@
-from rest_framework import viewsets
 from django_filters.rest_framework import DjangoFilterBackend
-from django.core.cache import cache 
 from rest_framework.pagination import PageNumberPagination
 from .models import Combo, ComboItem
 from .serializers import ComboSerializer, ComboItemSerializer
 from accounts.permissions import HasCustomAPIKey
 from rest_framework.permissions import IsAuthenticated
 from .comboFilter import ComboFilter,ComboItemFilter
+from core.cache import CachedModelViewSet
 
 class ComboPagination(PageNumberPagination):
     page_size = 10
 
 
-class ComboView(viewsets.ModelViewSet):
+class ComboView(CachedModelViewSet):
     permission_classes = [IsAuthenticated,HasCustomAPIKey]
     queryset = Combo.objects.all()
     serializer_class = ComboSerializer
@@ -33,7 +32,7 @@ class ComboItemPagination(PageNumberPagination):
     page_size = 10
 
 
-class ComboItemView(viewsets.ModelViewSet):
+class ComboItemView(CachedModelViewSet):
     permission_classes = [IsAuthenticated,HasCustomAPIKey]
     queryset = ComboItem.objects.all()
     serializer_class = ComboItemSerializer
