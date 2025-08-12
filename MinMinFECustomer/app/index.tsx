@@ -82,7 +82,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#ffffff", // Or your desired background color
   },
   splashImage: {
+    flex: 1,
     width: "100%",
-    height: "100%",
   },
 });

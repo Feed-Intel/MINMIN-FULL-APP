@@ -275,13 +275,7 @@ const styles = StyleSheet.create({
     top: 20, // Adjusted to position the logo higher
   },
   backgroundImage: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    width: "100%",
-    height: "100%",
+    ...StyleSheet.absoluteFillObject,
     resizeMode: "cover", // Ensures the background image covers the whole area
   },
   minMinLogo: {
@@ -332,7 +326,6 @@ const styles = StyleSheet.create({
   },
   textInput: {
     flex: 1,
-    height: "100%", // Take full height of parent container
     backgroundColor: "transparent", // Transparent background for TextInput
     fontSize: 16,
     color: "#333", // Darker text color for input values

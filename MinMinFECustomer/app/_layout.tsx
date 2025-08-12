@@ -2,7 +2,7 @@ import { AuthProvider } from "@/context/auth";
 import ReduxStoreProvider from "@/lib/reduxStore/ReduxStoreProvider";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useFonts } from "expo-font";
-import { Slot, Stack } from "expo-router";
+import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
@@ -92,7 +92,6 @@ export default function RootLayout() {
         <ReduxStoreProvider>
           <AuthProvider>
             <Stack screenOptions={{ headerShown: false }}>
-              <Slot />
               <Stack.Screen name="+not-found" />
             </Stack>
           </AuthProvider>
