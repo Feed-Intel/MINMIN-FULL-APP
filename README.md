@@ -38,6 +38,28 @@ MinMin is a full-stack platform for restaurant ordering and management. The back
    celery -A alpha beat -l info
    ```
 
+### Generate stress-test data
+
+The backend includes a management command for populating the database with a
+large volume of realistic restaurant data.  This is useful for QA or load
+testing.
+
+Run the command from the backend directory and adjust the numbers to suit your
+needs:
+
+```bash
+python manage.py seed_restaurant_data --restaurants 50 --customers 1000 --orders 20
+```
+
+By default the command creates sample images and thousands of related records
+for restaurants, branches, tables, menus, customers and orders.  Use higher
+numbers to perform heavy stress tests.
+
+The seeding process also provisions convenient QA logins:
+
+- **Admin:** `admin@example.com` / `password`
+- **Demo customer:** `customer@example.com` / `password`
+
 ## Customer app
 1. Install dependencies:
    ```bash
