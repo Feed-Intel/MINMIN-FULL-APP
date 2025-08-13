@@ -22,6 +22,11 @@ export TIMEOUT="20"
 # Delay between requests (seconds)
 export SLEEP_BETWEEN="0.05"
 
+# Sample credentials for POST requests (login, register, etc.)
+export TEST_EMAIL="user@example.com"
+export TEST_PASSWORD="Passw0rd!"
+export TEST_REFRESH="dummy-refresh"
+
 # Run the script
 echo "Running endpoint profiler against $BASE_URL..."
 python hit_urls.py

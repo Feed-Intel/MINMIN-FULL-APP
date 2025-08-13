@@ -14,10 +14,39 @@ SAMPLE_PARAMS = {
     # "api/v1/users/<int:id>/": "api/v1/users/1/",
 }
 
-SKIP_PREFIXES = (
-    "__debug__/", "silk/", "static/", "media/",
-    "admin/", "accounts/", "api/auth/",
-)
+# Only exercise API endpoints
+INCLUDE_PREFIXES = ("api/v1/", "api/auth/", "api/")
+
+# Sample request payloads and per-endpoint overrides.  These allow the
+# profiler to hit POST/PUT endpoints with a basic JSON body or custom
+# headers.  Paths should match the realised URL that will be requested.
+SAMPLE_REQUESTS: dict[str, dict] = {
+    "api/auth/register/": {
+        "method": "post",
+        "json": {
+            "email": os.getenv("TEST_EMAIL", "user@example.com"),
+            "password": os.getenv("TEST_PASSWORD", "Passw0rd!"),
+            "user_type": "customer",
+            "full_name": "Test User",
+            "phone": "1234567890",
+        },
+        "headers": {"Content-Type": "application/json"},
+    },
+    "api/auth/login/": {
+        "method": "post",
+        "json": {
+            "email": os.getenv("TEST_EMAIL", "user@example.com"),
+            "password": os.getenv("TEST_PASSWORD", "Passw0rd!"),
+        },
+        "headers": {"Content-Type": "application/json"},
+    },
+    "api/auth/logout/": {"method": "post", "headers": {"Content-Type": "application/json"}},
+    "api/auth/token/refresh/": {
+        "method": "post",
+        "json": {"refresh": os.getenv("TEST_REFRESH", "dummy-refresh")},
+        "headers": {"Content-Type": "application/json"},
+    },
+}
 
 def clean_pattern(p: str) -> str:
     p = p.strip()
@@ -34,7 +63,7 @@ def has_params(p: str) -> bool:
     return False
 
 def should_skip(p: str) -> bool:
-    return any(p.startswith(pref) for pref in SKIP_PREFIXES)
+    return not p.startswith(INCLUDE_PREFIXES)
 
 def realize_param_path(p: str) -> str | None:
     if p in SAMPLE_PARAMS:
@@ -88,8 +117,15 @@ def main():
             p_real = p
 
         url = urljoin(BASE, p_real)
+        spec = SAMPLE_REQUESTS.get(p_real if p_real.endswith("/") else p_real + "/", {})
+        method = spec.get("method", "get").lower()
+        kwargs = {"timeout": TIMEOUT, "allow_redirects": False}
+        if "json" in spec:
+            kwargs["json"] = spec["json"]
+        if "headers" in spec:
+            kwargs["headers"] = spec["headers"]
         try:
-            r = s.get(url, timeout=TIMEOUT, allow_redirects=False)
+            r = s.request(method, url, **kwargs)
             elapsed_ms = int(r.elapsed.total_seconds() * 1000)
             status = r.status_code
             ok += 1 if 200 <= status < 400 else 0
