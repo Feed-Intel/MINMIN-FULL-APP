@@ -22,6 +22,7 @@ from rest_framework import permissions
 from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
 from django.views.generic import TemplateView
+from importlib import util
 
 schema_view = get_schema_view(
     openapi.Info(
@@ -34,7 +35,6 @@ schema_view = get_schema_view(
 )
 
 urlpatterns = [
-    path("silk/", include("silk.urls", namespace="silk")),
     path('admin/', admin.site.urls),
     path('accounts/', include('django.contrib.auth.urls')),
     path('api/auth/', include('accounts.urls')),
@@ -62,3 +62,6 @@ urlpatterns = [
     path('terms/', TemplateView.as_view(template_name="terms_and_condition.html"), name='terms'),
     path('privacy/', TemplateView.as_view(template_name="privacy_policy.html"), name='privacy'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+
+if util.find_spec("silk") is not None:
+    urlpatterns = [path("silk/", include("silk.urls", namespace="silk"))] + urlpatterns

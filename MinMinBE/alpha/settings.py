@@ -164,13 +164,28 @@ INSTALLED_APPS = [
     'customer.payment',
     'restaurant',
     'customer',
-    'silk',
-    'django_extensions',
 ]
+
+# Optionally enable Django Silk if it's installed.
+try:
+    import silk  # type: ignore # noqa: F401
+
+    INSTALLED_APPS += ["silk"]
+    MIDDLEWARE.insert(0, "silk.middleware.SilkyMiddleware")
+except Exception:
+    # Silk is an optional dependency used for profiling; ignore if missing.
+    pass
+
+# Optionally enable django-extensions if installed.
+try:
+    import django_extensions  # type: ignore # noqa: F401
+
+    INSTALLED_APPS += ["django_extensions"]
+except Exception:
+    pass
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-     'silk.middleware.SilkyMiddleware', 
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'corsheaders.middleware.CorsMiddleware',
@@ -181,7 +196,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'allauth.account.middleware.AccountMiddleware',  # Added middleware for allauth
     'accounts.middleware.LogEventsMiddleware',
-     
+
 ]
 
 AUTHENTICATION_BACKENDS = [
@@ -261,7 +276,17 @@ SWAGGER_SETTINGS = {
 
 db_name = get_ssm_parameter('/alpha/DB_NAME', config('DB_NAME', default=None))
 
+use_postgis = False
 if db_name:
+    try:
+        # Ensure the GeoDjango prerequisites are installed before using PostGIS.
+        import django.contrib.gis.gdal  # type: ignore  # noqa: F401
+
+        use_postgis = True
+    except Exception:
+        use_postgis = False
+
+if use_postgis:
     DATABASES = {
         'default': {
             'ENGINE': 'django.contrib.gis.db.backends.postgis',
