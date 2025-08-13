@@ -146,6 +146,7 @@ INSTALLED_APPS = [
     'loyalty',
     'feed',
     'pushNotification',
+    'core',
     'restaurant.menu',
     'restaurant.branch',
     'restaurant.tenant',
