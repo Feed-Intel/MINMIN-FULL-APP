@@ -1,15 +1,11 @@
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.db import models
-from django.contrib.gis.db import models as gis_models
 from restaurant.branch.models import Branch
 from django.utils.timezone import now
 from alpha.settings import MEDIA_ROOT
 import uuid
 import os
-from PIL import Image
-import io
 import logging
-from django.core.files.uploadedfile import InMemoryUploadedFile
 
 logger = logging.getLogger(__name__)
 
@@ -90,57 +86,24 @@ class User(AbstractBaseUser, PermissionsMixin):
     REQUIRED_FIELDS = ['full_name']  # Additional fields required for user creation
 
     def save(self, *args, **kwargs):
-        """
-        Override save method to process images before saving
-        """
-        # Check if image is new or changed
-        if self.image and not getattr(self.image, '_committed', True):
-            try:
-                # Open image using Pillow
-                with Image.open(self.image) as img:
-                    # Convert to RGB mode if needed (removes alpha channel)
-                    if img.mode != 'RGB':
-                        img = img.convert('RGB')
-                    
-                    # Create in-memory bytes buffer
-                    output = io.BytesIO()
-                    
-                    # Save as optimized WEBP with quality control
-                    img.save(
-                        output, 
-                        format='WEBP',
-                        quality=70,          # Quality setting (0-100)
-                        method=6,            # Best compression
-                        lossless=False       # Lossy compression for smaller size
-                    )
-                    output.seek(0)
-                    
-                    # Generate new filename with webp extension
-                    base, ext = os.path.splitext(self.image.name)
-                    filename = base + '.webp'
-                    
-                    # Replace original file with compressed version
-                    self.image = InMemoryUploadedFile(
-                        output,
-                        'ImageField',
-                        filename,
-                        'image/webp',
-                        output.getbuffer().nbytes,
-                        None
-                    )
-            except Exception as e:
-                logger.error(f"Error processing image for user {self.email}: {str(e)}")
-                # If processing fails, keep the original image
-        
+        """Override save to offload image compression to Celery."""
+        image_changed = self.image and not getattr(self.image, '_committed', True)
+
         # For new users, save first to generate UUID
         if not self.id:
             super().save(*args, **kwargs)
-            
-            # After initial save, process image if needed
             if self.image:
                 self.image.name = user_image_path(self, self.image.name)
                 super().save(update_fields=['image'])
         else:
             super().save(*args, **kwargs)
+
+        if image_changed:
+            try:
+                from core.tasks import compress_image_task
+                compress_image_task.delay('accounts.User', str(self.pk), 'image')
+            except Exception as e:
+                logger.error(f"Error dispatching compression task for user {self.email}: {str(e)}")
+
     def __str__(self):
         return f"{self.email} ({self.user_type})"  # String representation of the user

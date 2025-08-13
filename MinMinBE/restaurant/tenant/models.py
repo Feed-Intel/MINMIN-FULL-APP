@@ -3,10 +3,7 @@ from django.core.exceptions import ValidationError
 from alpha.settings import MEDIA_ROOT
 import uuid
 import os
-from PIL import Image
-import io
 import logging
-from django.core.files.uploadedfile import InMemoryUploadedFile
 
 logger = logging.getLogger(__name__)
 
@@ -48,46 +45,14 @@ class Tenant(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def save(self, *args, **kwargs):
-        # Process image only if it's newly uploaded/changed
-        if self.image and not getattr(self.image, '_committed', True):
-            try:
-                # Open image using Pillow
-                with Image.open(self.image) as img:
-                    # Convert to RGB mode if needed (removes alpha channel)
-                    if img.mode != 'RGB':
-                        img = img.convert('RGB')
-                    
-                    # Create in-memory bytes buffer
-                    output = io.BytesIO()
-                    
-                    # Save as optimized WEBP with quality control
-                    img.save(
-                        output, 
-                        format='WEBP',
-                        quality=70,          # Quality setting (0-100)
-                        method=6,            # Best compression
-                        lossless=False       # Lossy compression for smaller size
-                    )
-                    output.seek(0)
-                    
-                    # Generate new filename with webp extension
-                    base, ext = os.path.splitext(self.image.name)
-                    filename = base + '.webp'
-                    
-                    # Replace original file with compressed version
-                    self.image = InMemoryUploadedFile(
-                        output,
-                        'ImageField',
-                        filename,
-                        'image/webp',
-                        output.getbuffer().nbytes,
-                        None
-                    )
-            except Exception as e:
-                logger.error(f"Error processing image for {self.restaurant_name}: {str(e)}")
-                # If processing fails, keep the original image
-        
+        image_changed = self.image and not getattr(self.image, '_committed', True)
         super().save(*args, **kwargs)
+        if image_changed:
+            try:
+                from core.tasks import compress_image_task
+                compress_image_task.delay('tenant.Tenant', str(self.pk), 'image')
+            except Exception as e:
+                logger.error(f"Error dispatching compression task for {self.restaurant_name}: {str(e)}")
 
     def delete(self, using = None, keep_parents =False):
         if (self.tenant_carts.exists() or 
