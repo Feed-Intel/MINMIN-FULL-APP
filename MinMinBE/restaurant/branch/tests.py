@@ -1,7 +1,6 @@
 from django.test import TestCase
 from rest_framework.test import APIClient
 from rest_framework_api_key.models import APIKey
-from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework import status
 from accounts.models import User
 from restaurant.branch.models import Branch
@@ -31,14 +30,22 @@ class BranchViewTest(TestCase):
 
         self.client = APIClient()
     
-    def authenticate(self, user):
-        refresh = RefreshToken.for_user(user)
+    def authenticate(self, user, password="password"):
         _, key = APIKey.objects.create_key(name="Test API Key")
-        self.prefix,_,__ = key.partition(".")
-        self.key = self.prefix+'.'+key  # Full key (prefix.key)
-        self.client.credentials(HTTP_X_API_KEY=self.key, HTTP_AUTHORIZATION=f'Bearer {refresh.access_token}')
-
-        # Create branches
+        prefix, _, _ = key.partition(".")
+        api_key = f"{prefix}.{key}"
+        self.client.credentials(HTTP_X_API_KEY=api_key)
+        response = self.client.post(
+            "/api/auth/login/",
+            {"email": user.email, "password": password},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        access_token = response.data["access_token"]
+        self.client.credentials(
+            HTTP_X_API_KEY=api_key,
+            HTTP_AUTHORIZATION=f"Bearer {access_token}",
+        )
 
     def test_admin_can_access_all_branches(self):
         """Test that admin users can access all branches."""
