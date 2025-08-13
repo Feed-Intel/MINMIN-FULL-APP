@@ -5,7 +5,7 @@ MinMin is a full-stack platform for restaurant ordering and management. The back
 ## Repository structure
 - **MinMin BE** – Django backend for accounts, restaurant management, ordering, loyalty, feeds and notifications.
 - **MinMin FE Customer** – Expo app for customers to browse menus, manage carts and place orders.
-- **MinMin FE Resturant** – Expo app for restaurant staff to manage menus, orders and analytics.
+- **MinMin FE Restaurant** – Expo app for restaurant staff to manage menus, orders and analytics.
 
 ## Prerequisites
 - Python 3
@@ -74,7 +74,7 @@ The seeding process also provisions convenient QA logins:
 ## Restaurant app
 1. Install dependencies:
    ```bash
-   cd "MinMin FE Resturant"
+   cd "MinMin FE Restaurant"
    npm install
    ```
 2. Start the app:

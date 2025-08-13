@@ -1,16 +1,17 @@
 {
   "expo": {
-    "name": "alpha-mobile",
-    "slug": "alpha-mobile",
+    "name": "MinMin Restaurant",
+    "slug": "minminrestaurant",
     "version": "1.0.0",
     "orientation": "default",
     "icon": "./src/assets/images/icon.png",
-    "scheme": "myapp",
+    "scheme": "minminrestaurant",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "jsEngine": "hermes",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.feedintel.minminrestaurant"
     },
     "android": {
       "adaptiveIcon": {
@@ -20,7 +21,7 @@
       "permissions": [
         "android.permission.RECORD_AUDIO"
       ],
-      "package": "com.davidhailu0.alphamobile"
+      "package": "com.feedintel.minminrestaurant"
     },
     "web": {
       "bundler": "metro",

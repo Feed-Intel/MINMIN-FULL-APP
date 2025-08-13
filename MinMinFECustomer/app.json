@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "Min Min",
-    "slug": "Alpha_Customer",
+    "name": "MinMin Customer",
+    "slug": "minmincustomer",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "alphacustomer",
+    "scheme": "minmincustomer",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "jsEngine": "hermes",
@@ -28,7 +28,7 @@
         ],
         "UNUserNotificationCenter": true
       },
-      "bundleIdentifier": "com.feedintel.Alpha-Customer"
+      "bundleIdentifier": "com.feedintel.minmincustomer"
     },
     "android": {
       "adaptiveIcon": {
@@ -36,7 +36,7 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.feedintel.Alpha_Customer",
+      "package": "com.feedintel.minmincustomer",
       "permissions": [
         "ACCESS_FINE_LOCATION",
         "ACCESS_COARSE_LOCATION",
