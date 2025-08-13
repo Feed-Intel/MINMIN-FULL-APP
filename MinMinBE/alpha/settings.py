@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 import os
+import json
 from pathlib import Path
 from decouple import config
 import sys
@@ -37,14 +38,35 @@ def get_ssm_parameter(name, default=None, with_decryption=True):
         return default
 
 
+def get_secret(name, default=None):
+    """Retrieve a secret value from AWS Secrets Manager."""
+    try:
+        import boto3
+        from botocore.exceptions import (
+            BotoCoreError,
+            ClientError,
+            NoCredentialsError,
+        )
+
+        client = boto3.client('secretsmanager', region_name=os.getenv('AWS_REGION', 'us-east-1'))
+        response = client.get_secret_value(SecretId=name)
+        return response.get('SecretString', default)
+    except (ImportError, BotoCoreError, ClientError, NoCredentialsError, Exception):
+        return default
+
+
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = get_ssm_parameter('/alpha/SECRET_KEY', config('SECRET_KEY', default='changeme'))
+# Secrets are stored in AWS Secrets Manager
+SECRET_KEY = get_secret('minmin/stg/django', config('SECRET_KEY', default='changeme'))
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config('DEBUG', default=False, cast=bool)
+
+# Non-secret configuration values retrieved from SSM Parameter Store
+ENV = get_ssm_parameter('minmin/stg/ENV', config('ENV', default='development'))
 
 CSRF_TRUSTED_ORIGINS = config(
     'CSRF_TRUSTED_ORIGINS',
@@ -52,10 +74,25 @@ CSRF_TRUSTED_ORIGINS = config(
     cast=lambda v: [s.strip() for s in v.split(',')],
 )
 
-ALLOWED_HOSTS = config(
-    'ALLOWED_HOSTS',
-    default='localhost',
-    cast=lambda v: [s.strip() for s in v.split(',')],
+ALLOWED_HOSTS = get_ssm_parameter(
+    'minmin/stg/ALLOWED_HOSTS',
+    config('ALLOWED_HOSTS', default='localhost'),
+)
+ALLOWED_HOSTS = [s.strip() for s in ALLOWED_HOSTS.split(',')] if ALLOWED_HOSTS else []
+
+REDIS_URL = get_ssm_parameter(
+    'minmin/stg/REDIS_URL',
+    config('REDIS_URL', default='redis://127.0.0.1:6379/1'),
+)
+
+S3_BUCKET_UPLOADS = get_ssm_parameter(
+    'minmin/stg/S3_BUCKET_UPLOADS',
+    config('S3_BUCKET_UPLOADS', default=''),
+)
+
+SETTINGS_MODULE = get_ssm_parameter(
+    'minmin/stg/SETTINGS',
+    config('SETTINGS', default='alpha.settings'),
 )
 
 CORS_ALLOWED_ORIGINS = config(
@@ -274,14 +311,28 @@ SWAGGER_SETTINGS = {
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
-db_name = get_ssm_parameter('/alpha/DB_NAME', config('DB_NAME', default=None))
+db_secret = get_secret('minmin/stg/db')
+if db_secret:
+    try:
+        db_conf = json.loads(db_secret)
+    except json.JSONDecodeError:
+        db_conf = {}
+    db_name = db_conf.get('dbname')
+    db_user = db_conf.get('username', '')
+    db_password = db_conf.get('password', '')
+    db_host = db_conf.get('host', '')
+    db_port = db_conf.get('port', '')
+else:
+    db_name = config('DB_NAME', default=None)
+    db_user = config('DB_USER', default='')
+    db_password = config('DB_PASSWORD', default='')
+    db_host = config('DB_HOST', default='')
+    db_port = config('DB_PORT', default='')
 
 use_postgis = False
 if db_name:
     try:
-        # Ensure the GeoDjango prerequisites are installed before using PostGIS.
         import django.contrib.gis.gdal  # type: ignore  # noqa: F401
-
         use_postgis = True
     except Exception:
         use_postgis = False
@@ -291,10 +342,21 @@ if use_postgis:
         'default': {
             'ENGINE': 'django.contrib.gis.db.backends.postgis',
             'NAME': db_name,
-            'USER': get_ssm_parameter('/alpha/DB_USER', config('DB_USER', default='')),
-            'PASSWORD': get_ssm_parameter('/alpha/DB_PASSWORD', config('DB_PASSWORD', default='')),
-            'HOST': get_ssm_parameter('/alpha/DB_HOST', config('DB_HOST', default='')),
-            'PORT': get_ssm_parameter('/alpha/DB_PORT', config('DB_PORT', default='')),
+            'USER': db_user,
+            'PASSWORD': db_password,
+            'HOST': db_host,
+            'PORT': db_port,
+        }
+    }
+elif db_name:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': db_name,
+            'USER': db_user,
+            'PASSWORD': db_password,
+            'HOST': db_host,
+            'PORT': db_port,
         }
     }
 else:
@@ -308,7 +370,7 @@ else:
 CACHES = {
     'default': {
         'BACKEND': 'django.core.cache.backends.redis.RedisCache',
-        'LOCATION': 'redis://127.0.0.1:6379/1',
+        'LOCATION': REDIS_URL,
     }
 }
 
