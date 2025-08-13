@@ -25,7 +25,7 @@ MinMin is a full-stack platform for restaurant ordering and management. The back
    source venv/bin/activate
    pip install -r requirements.txt
    ```
-3. Provide required environment variables such as `SECRET_KEY`, database credentials (`DB_NAME`, `DB_USER`, `DB_PASSWORD`, `DB_HOST`, `DB_PORT`) and any email/OAuth keys referenced in `alpha/settings.py`.
+3. Provide required environment variables such as `SECRET_KEY`, database credentials (`DB_NAME`, `DB_USER`, `DB_PASSWORD`, `DB_HOST`, `DB_PORT`) and any email/OAuth keys referenced in `alpha/settings.py`. In staging, these values are automatically loaded from AWS Secrets Manager and SSM Parameter Store (paths under `minmin/stg/*`), so a local `.env` file is only necessary for development.
 4. Apply migrations, initialize an admin user, and start the development server:
    ```bash
    python manage.py migrate
