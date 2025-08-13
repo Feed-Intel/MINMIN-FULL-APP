@@ -1,0 +1,462 @@
+[
+  {
+    "url": "http://127.0.0.1:8000/api/v1/^menu/",
+    "status": 404,
+    "elapsed_ms": 33
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/v1/",
+    "status": 401,
+    "elapsed_ms": 19
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/v1/1",
+    "status": 404,
+    "elapsed_ms": 27
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/v1/^branch/",
+    "status": 404,
+    "elapsed_ms": 27
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/v1/^branch/all-with-distance/",
+    "status": 404,
+    "elapsed_ms": 32
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/v1/^branch/call_waiter/",
+    "status": 404,
+    "elapsed_ms": 28
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/v1/^branch/nearby/",
+    "status": 404,
+    "elapsed_ms": 30
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/v1/",
+    "status": 401,
+    "elapsed_ms": 21
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/v1/1",
+    "status": 404,
+    "elapsed_ms": 42
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/v1/^tenant/",
+    "status": 404,
+    "elapsed_ms": 23
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/v1/^tenant/dashboard/",
+    "status": 404,
+    "elapsed_ms": 25
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/v1/^tenant/price-stats/",
+    "status": 404,
+    "elapsed_ms": 29
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/v1/^dashboard/stats/",
+    "status": 404,
+    "elapsed_ms": 33
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/v1/^dashboard/top-items/",
+    "status": 404,
+    "elapsed_ms": 29
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/v1/",
+    "status": 401,
+    "elapsed_ms": 19
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/v1/1",
+    "status": 404,
+    "elapsed_ms": 38
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/v1/^table/",
+    "status": 404,
+    "elapsed_ms": 40
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/v1/",
+    "status": 401,
+    "elapsed_ms": 21
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/v1/1",
+    "status": 404,
+    "elapsed_ms": 44
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/v1/^combo/",
+    "status": 404,
+    "elapsed_ms": 39
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/v1/^combo-item/",
+    "status": 404,
+    "elapsed_ms": 42
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/v1/",
+    "status": 401,
+    "elapsed_ms": 24
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/v1/1",
+    "status": 404,
+    "elapsed_ms": 25
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/v1/^related-menu/",
+    "status": 404,
+    "elapsed_ms": 30
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/v1/",
+    "status": 401,
+    "elapsed_ms": 19
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/v1/1",
+    "status": 404,
+    "elapsed_ms": 43
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/v1/^menu-availability/",
+    "status": 404,
+    "elapsed_ms": 36
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/v1/^menu-availability/available_categories/",
+    "status": 404,
+    "elapsed_ms": 39
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/v1/^menu-availability/best_dishes_of_week/",
+    "status": 404,
+    "elapsed_ms": 37
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/v1/^menu-availability/recommended_items/",
+    "status": 404,
+    "elapsed_ms": 41
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/v1/",
+    "status": 401,
+    "elapsed_ms": 22
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/v1/1",
+    "status": 404,
+    "elapsed_ms": 49
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/v1/^qr-code/",
+    "status": 404,
+    "elapsed_ms": 39
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/v1/",
+    "status": 401,
+    "elapsed_ms": 16
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/v1/1",
+    "status": 404,
+    "elapsed_ms": 29
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/v1/^order/",
+    "status": 404,
+    "elapsed_ms": 33
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/v1/^order/check-discount/",
+    "status": 404,
+    "elapsed_ms": 37
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/v1/",
+    "status": 401,
+    "elapsed_ms": 15
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/v1/1",
+    "status": 404,
+    "elapsed_ms": 28
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/v1/^feedback/",
+    "status": 404,
+    "elapsed_ms": 24
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/v1/",
+    "status": 401,
+    "elapsed_ms": 17
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/v1/1",
+    "status": 404,
+    "elapsed_ms": 31
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/v1/^cart/",
+    "status": 404,
+    "elapsed_ms": 40
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/v1/^cart-item/",
+    "status": 404,
+    "elapsed_ms": 40
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/v1/",
+    "status": 401,
+    "elapsed_ms": 22
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/v1/1",
+    "status": 404,
+    "elapsed_ms": 45
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/v1/^discount/",
+    "status": 404,
+    "elapsed_ms": 29
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/v1/^discount/apply-discount/",
+    "status": 404,
+    "elapsed_ms": 34
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/v1/^discount/big_discount_items/",
+    "status": 404,
+    "elapsed_ms": 40
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/v1/^discount-rule/",
+    "status": 404,
+    "elapsed_ms": 37
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/v1/^discount-application/",
+    "status": 404,
+    "elapsed_ms": 38
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/v1/^coupon/",
+    "status": 404,
+    "elapsed_ms": 41
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/v1/",
+    "status": 401,
+    "elapsed_ms": 22
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/v1/1",
+    "status": 404,
+    "elapsed_ms": 44
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/v1/^address/",
+    "status": 404,
+    "elapsed_ms": 25
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/v1/",
+    "status": 401,
+    "elapsed_ms": 19
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/v1/1",
+    "status": 404,
+    "elapsed_ms": 39
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/v1/^payment/",
+    "status": 404,
+    "elapsed_ms": 28
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/v1/^payment/process/",
+    "status": 404,
+    "elapsed_ms": 30
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/v1/^payment-check/",
+    "status": 404,
+    "elapsed_ms": 35
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/v1/",
+    "status": 401,
+    "elapsed_ms": 20
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/v1/1",
+    "status": 404,
+    "elapsed_ms": 43
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/v1/^feedback/",
+    "status": 404,
+    "elapsed_ms": 39
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/v1/",
+    "status": 401,
+    "elapsed_ms": 22
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/v1/1",
+    "status": 404,
+    "elapsed_ms": 44
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/v1/^notification/",
+    "status": 404,
+    "elapsed_ms": 41
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/v1/",
+    "status": 401,
+    "elapsed_ms": 22
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/v1/1",
+    "status": 404,
+    "elapsed_ms": 47
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/v1/^discount/",
+    "status": 404,
+    "elapsed_ms": 41
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/v1/^discount/apply-discount/",
+    "status": 404,
+    "elapsed_ms": 25
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/v1/^discount/big_discount_items/",
+    "status": 404,
+    "elapsed_ms": 28
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/v1/^discount-rule/",
+    "status": 404,
+    "elapsed_ms": 31
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/v1/^discount-application/",
+    "status": 404,
+    "elapsed_ms": 38
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/v1/^coupon/",
+    "status": 404,
+    "elapsed_ms": 34
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/v1/",
+    "status": 401,
+    "elapsed_ms": 22
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/v1/1",
+    "status": 404,
+    "elapsed_ms": 44
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/v1/^customer-loyalty/",
+    "status": 404,
+    "elapsed_ms": 43
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/v1/^restaurant-loyalty-settings/",
+    "status": 404,
+    "elapsed_ms": 39
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/v1/^loyalty-conversion-rate/",
+    "status": 404,
+    "elapsed_ms": 38
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/v1/^loyalty-transaction/",
+    "status": 404,
+    "elapsed_ms": 27
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/v1/",
+    "status": 401,
+    "elapsed_ms": 16
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/v1/1",
+    "status": 404,
+    "elapsed_ms": 30
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/v1/^posts/",
+    "status": 404,
+    "elapsed_ms": 32
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/v1/^comments/",
+    "status": 404,
+    "elapsed_ms": 40
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/v1/^tags/",
+    "status": 404,
+    "elapsed_ms": 39
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/v1/^user/bookmarks/",
+    "status": 404,
+    "elapsed_ms": 40
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/v1/",
+    "status": 401,
+    "elapsed_ms": 20
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/v1/1",
+    "status": 404,
+    "elapsed_ms": 44
+  },
+  {
+    "url": "http://127.0.0.1:8000/docs/",
+    "status": 401,
+    "elapsed_ms": 27
+  },
+  {
+    "url": "http://127.0.0.1:8000/redoc/",
+    "status": 401,
+    "elapsed_ms": 25
+  },
+  {
+    "url": "http://127.0.0.1:8000/terms/",
+    "status": 200,
+    "elapsed_ms": 27
+  },
+  {
+    "url": "http://127.0.0.1:8000/privacy/",
+    "status": 200,
+    "elapsed_ms": 24
+  }
+]

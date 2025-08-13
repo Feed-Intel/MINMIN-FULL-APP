@@ -163,10 +163,13 @@ INSTALLED_APPS = [
     'customer.payment',
     'restaurant',
     'customer',
+    'silk',
+    'django_extensions',
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+     'silk.middleware.SilkyMiddleware', 
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'corsheaders.middleware.CorsMiddleware',
@@ -177,6 +180,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'allauth.account.middleware.AccountMiddleware',  # Added middleware for allauth
     'accounts.middleware.LogEventsMiddleware',
+     
 ]
 
 AUTHENTICATION_BACKENDS = [

@@ -1,0 +1,2802 @@
+[
+  {
+    "pattern": "silk/",
+    "name": "summary",
+    "lookup_str": "silk.views.summary.SummaryView"
+  },
+  {
+    "pattern": "silk/requests/",
+    "name": "requests",
+    "lookup_str": "silk.views.requests.RequestsView"
+  },
+  {
+    "pattern": "silk/request/<uuid:request_id>/",
+    "name": "request_detail",
+    "lookup_str": "silk.views.request_detail.RequestView"
+  },
+  {
+    "pattern": "silk/request/<uuid:request_id>/sql/",
+    "name": "request_sql",
+    "lookup_str": "silk.views.sql.SQLView"
+  },
+  {
+    "pattern": "silk/request/<uuid:request_id>/sql/<int:sql_id>/",
+    "name": "request_sql_detail",
+    "lookup_str": "silk.views.sql_detail.SQLDetailView"
+  },
+  {
+    "pattern": "silk/request/<uuid:request_id>/raw/",
+    "name": "raw",
+    "lookup_str": "silk.views.raw.Raw"
+  },
+  {
+    "pattern": "silk/request/<uuid:request_id>/pyprofile/",
+    "name": "request_profile_download",
+    "lookup_str": "silk.views.profile_download.ProfileDownloadView"
+  },
+  {
+    "pattern": "silk/request/<uuid:request_id>/json/",
+    "name": "request_profile_dot",
+    "lookup_str": "silk.views.profile_dot.ProfileDotView"
+  },
+  {
+    "pattern": "silk/request/<uuid:request_id>/profiling/",
+    "name": "request_profiling",
+    "lookup_str": "silk.views.profiling.ProfilingView"
+  },
+  {
+    "pattern": "silk/request/<uuid:request_id>/profile/<int:profile_id>/",
+    "name": "request_profile_detail",
+    "lookup_str": "silk.views.profile_detail.ProfilingDetailView"
+  },
+  {
+    "pattern": "silk/request/<uuid:request_id>/profile/<int:profile_id>/sql/",
+    "name": "request_and_profile_sql",
+    "lookup_str": "silk.views.sql.SQLView"
+  },
+  {
+    "pattern": "silk/request/<uuid:request_id>/profile/<int:profile_id>/sql/<int:sql_id>/",
+    "name": "request_and_profile_sql_detail",
+    "lookup_str": "silk.views.sql_detail.SQLDetailView"
+  },
+  {
+    "pattern": "silk/profile/<int:profile_id>/",
+    "name": "profile_detail",
+    "lookup_str": "silk.views.profile_detail.ProfilingDetailView"
+  },
+  {
+    "pattern": "silk/profile/<int:profile_id>/sql/",
+    "name": "profile_sql",
+    "lookup_str": "silk.views.sql.SQLView"
+  },
+  {
+    "pattern": "silk/profile/<int:profile_id>/sql/<int:sql_id>/",
+    "name": "profile_sql_detail",
+    "lookup_str": "silk.views.sql_detail.SQLDetailView"
+  },
+  {
+    "pattern": "silk/profiling/",
+    "name": "profiling",
+    "lookup_str": "silk.views.profiling.ProfilingView"
+  },
+  {
+    "pattern": "silk/cleardb/",
+    "name": "cleardb",
+    "lookup_str": "silk.views.clear_db.ClearDBView"
+  },
+  {
+    "pattern": "silk/request/<uuid:request_id>/cprofile/",
+    "name": "cprofile",
+    "lookup_str": "silk.views.cprofile.CProfileView"
+  },
+  {
+    "pattern": "admin/",
+    "name": "index",
+    "lookup_str": "django.contrib.admin.sites.AdminSite.index"
+  },
+  {
+    "pattern": "admin/login/",
+    "name": "login",
+    "lookup_str": "django.contrib.admin.sites.AdminSite.login"
+  },
+  {
+    "pattern": "admin/logout/",
+    "name": "logout",
+    "lookup_str": "django.contrib.admin.sites.AdminSite.logout"
+  },
+  {
+    "pattern": "admin/password_change/",
+    "name": "password_change",
+    "lookup_str": "django.contrib.admin.sites.AdminSite.password_change"
+  },
+  {
+    "pattern": "admin/password_change/done/",
+    "name": "password_change_done",
+    "lookup_str": "django.contrib.admin.sites.AdminSite.password_change_done"
+  },
+  {
+    "pattern": "admin/autocomplete/",
+    "name": "autocomplete",
+    "lookup_str": "django.contrib.admin.sites.AdminSite.autocomplete_view"
+  },
+  {
+    "pattern": "admin/jsi18n/",
+    "name": "jsi18n",
+    "lookup_str": "django.contrib.admin.sites.AdminSite.i18n_javascript"
+  },
+  {
+    "pattern": "admin/r/<int:content_type_id>/<path:object_id>/",
+    "name": "view_on_site",
+    "lookup_str": "django.contrib.contenttypes.views.shortcut"
+  },
+  {
+    "pattern": "admin/sites/site/",
+    "name": "sites_site_changelist",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.changelist_view"
+  },
+  {
+    "pattern": "admin/sites/site/add/",
+    "name": "sites_site_add",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.add_view"
+  },
+  {
+    "pattern": "admin/sites/site/<path:object_id>/history/",
+    "name": "sites_site_history",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.history_view"
+  },
+  {
+    "pattern": "admin/sites/site/<path:object_id>/delete/",
+    "name": "sites_site_delete",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.delete_view"
+  },
+  {
+    "pattern": "admin/sites/site/<path:object_id>/change/",
+    "name": "sites_site_change",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.change_view"
+  },
+  {
+    "pattern": "admin/sites/site/<path:object_id>/",
+    "name": null,
+    "lookup_str": "django.views.generic.base.RedirectView"
+  },
+  {
+    "pattern": "admin/auth/group/",
+    "name": "auth_group_changelist",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.changelist_view"
+  },
+  {
+    "pattern": "admin/auth/group/add/",
+    "name": "auth_group_add",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.add_view"
+  },
+  {
+    "pattern": "admin/auth/group/<path:object_id>/history/",
+    "name": "auth_group_history",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.history_view"
+  },
+  {
+    "pattern": "admin/auth/group/<path:object_id>/delete/",
+    "name": "auth_group_delete",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.delete_view"
+  },
+  {
+    "pattern": "admin/auth/group/<path:object_id>/change/",
+    "name": "auth_group_change",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.change_view"
+  },
+  {
+    "pattern": "admin/auth/group/<path:object_id>/",
+    "name": null,
+    "lookup_str": "django.views.generic.base.RedirectView"
+  },
+  {
+    "pattern": "admin/authtoken/tokenproxy/",
+    "name": "authtoken_tokenproxy_changelist",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.changelist_view"
+  },
+  {
+    "pattern": "admin/authtoken/tokenproxy/add/",
+    "name": "authtoken_tokenproxy_add",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.add_view"
+  },
+  {
+    "pattern": "admin/authtoken/tokenproxy/<path:object_id>/history/",
+    "name": "authtoken_tokenproxy_history",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.history_view"
+  },
+  {
+    "pattern": "admin/authtoken/tokenproxy/<path:object_id>/delete/",
+    "name": "authtoken_tokenproxy_delete",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.delete_view"
+  },
+  {
+    "pattern": "admin/authtoken/tokenproxy/<path:object_id>/change/",
+    "name": "authtoken_tokenproxy_change",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.change_view"
+  },
+  {
+    "pattern": "admin/authtoken/tokenproxy/<path:object_id>/",
+    "name": null,
+    "lookup_str": "django.views.generic.base.RedirectView"
+  },
+  {
+    "pattern": "admin/token_blacklist/outstandingtoken/",
+    "name": "token_blacklist_outstandingtoken_changelist",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.changelist_view"
+  },
+  {
+    "pattern": "admin/token_blacklist/outstandingtoken/add/",
+    "name": "token_blacklist_outstandingtoken_add",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.add_view"
+  },
+  {
+    "pattern": "admin/token_blacklist/outstandingtoken/<path:object_id>/history/",
+    "name": "token_blacklist_outstandingtoken_history",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.history_view"
+  },
+  {
+    "pattern": "admin/token_blacklist/outstandingtoken/<path:object_id>/delete/",
+    "name": "token_blacklist_outstandingtoken_delete",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.delete_view"
+  },
+  {
+    "pattern": "admin/token_blacklist/outstandingtoken/<path:object_id>/change/",
+    "name": "token_blacklist_outstandingtoken_change",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.change_view"
+  },
+  {
+    "pattern": "admin/token_blacklist/outstandingtoken/<path:object_id>/",
+    "name": null,
+    "lookup_str": "django.views.generic.base.RedirectView"
+  },
+  {
+    "pattern": "admin/token_blacklist/blacklistedtoken/",
+    "name": "token_blacklist_blacklistedtoken_changelist",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.changelist_view"
+  },
+  {
+    "pattern": "admin/token_blacklist/blacklistedtoken/add/",
+    "name": "token_blacklist_blacklistedtoken_add",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.add_view"
+  },
+  {
+    "pattern": "admin/token_blacklist/blacklistedtoken/<path:object_id>/history/",
+    "name": "token_blacklist_blacklistedtoken_history",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.history_view"
+  },
+  {
+    "pattern": "admin/token_blacklist/blacklistedtoken/<path:object_id>/delete/",
+    "name": "token_blacklist_blacklistedtoken_delete",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.delete_view"
+  },
+  {
+    "pattern": "admin/token_blacklist/blacklistedtoken/<path:object_id>/change/",
+    "name": "token_blacklist_blacklistedtoken_change",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.change_view"
+  },
+  {
+    "pattern": "admin/token_blacklist/blacklistedtoken/<path:object_id>/",
+    "name": null,
+    "lookup_str": "django.views.generic.base.RedirectView"
+  },
+  {
+    "pattern": "admin/rest_framework_api_key/apikey/",
+    "name": "rest_framework_api_key_apikey_changelist",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.changelist_view"
+  },
+  {
+    "pattern": "admin/rest_framework_api_key/apikey/add/",
+    "name": "rest_framework_api_key_apikey_add",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.add_view"
+  },
+  {
+    "pattern": "admin/rest_framework_api_key/apikey/<path:object_id>/history/",
+    "name": "rest_framework_api_key_apikey_history",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.history_view"
+  },
+  {
+    "pattern": "admin/rest_framework_api_key/apikey/<path:object_id>/delete/",
+    "name": "rest_framework_api_key_apikey_delete",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.delete_view"
+  },
+  {
+    "pattern": "admin/rest_framework_api_key/apikey/<path:object_id>/change/",
+    "name": "rest_framework_api_key_apikey_change",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.change_view"
+  },
+  {
+    "pattern": "admin/rest_framework_api_key/apikey/<path:object_id>/",
+    "name": null,
+    "lookup_str": "django.views.generic.base.RedirectView"
+  },
+  {
+    "pattern": "admin/social_django/usersocialauth/",
+    "name": "social_django_usersocialauth_changelist",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.changelist_view"
+  },
+  {
+    "pattern": "admin/social_django/usersocialauth/add/",
+    "name": "social_django_usersocialauth_add",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.add_view"
+  },
+  {
+    "pattern": "admin/social_django/usersocialauth/<path:object_id>/history/",
+    "name": "social_django_usersocialauth_history",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.history_view"
+  },
+  {
+    "pattern": "admin/social_django/usersocialauth/<path:object_id>/delete/",
+    "name": "social_django_usersocialauth_delete",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.delete_view"
+  },
+  {
+    "pattern": "admin/social_django/usersocialauth/<path:object_id>/change/",
+    "name": "social_django_usersocialauth_change",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.change_view"
+  },
+  {
+    "pattern": "admin/social_django/usersocialauth/<path:object_id>/",
+    "name": null,
+    "lookup_str": "django.views.generic.base.RedirectView"
+  },
+  {
+    "pattern": "admin/social_django/nonce/",
+    "name": "social_django_nonce_changelist",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.changelist_view"
+  },
+  {
+    "pattern": "admin/social_django/nonce/add/",
+    "name": "social_django_nonce_add",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.add_view"
+  },
+  {
+    "pattern": "admin/social_django/nonce/<path:object_id>/history/",
+    "name": "social_django_nonce_history",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.history_view"
+  },
+  {
+    "pattern": "admin/social_django/nonce/<path:object_id>/delete/",
+    "name": "social_django_nonce_delete",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.delete_view"
+  },
+  {
+    "pattern": "admin/social_django/nonce/<path:object_id>/change/",
+    "name": "social_django_nonce_change",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.change_view"
+  },
+  {
+    "pattern": "admin/social_django/nonce/<path:object_id>/",
+    "name": null,
+    "lookup_str": "django.views.generic.base.RedirectView"
+  },
+  {
+    "pattern": "admin/social_django/association/",
+    "name": "social_django_association_changelist",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.changelist_view"
+  },
+  {
+    "pattern": "admin/social_django/association/add/",
+    "name": "social_django_association_add",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.add_view"
+  },
+  {
+    "pattern": "admin/social_django/association/<path:object_id>/history/",
+    "name": "social_django_association_history",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.history_view"
+  },
+  {
+    "pattern": "admin/social_django/association/<path:object_id>/delete/",
+    "name": "social_django_association_delete",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.delete_view"
+  },
+  {
+    "pattern": "admin/social_django/association/<path:object_id>/change/",
+    "name": "social_django_association_change",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.change_view"
+  },
+  {
+    "pattern": "admin/social_django/association/<path:object_id>/",
+    "name": null,
+    "lookup_str": "django.views.generic.base.RedirectView"
+  },
+  {
+    "pattern": "admin/account/emailaddress/",
+    "name": "account_emailaddress_changelist",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.changelist_view"
+  },
+  {
+    "pattern": "admin/account/emailaddress/add/",
+    "name": "account_emailaddress_add",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.add_view"
+  },
+  {
+    "pattern": "admin/account/emailaddress/<path:object_id>/history/",
+    "name": "account_emailaddress_history",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.history_view"
+  },
+  {
+    "pattern": "admin/account/emailaddress/<path:object_id>/delete/",
+    "name": "account_emailaddress_delete",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.delete_view"
+  },
+  {
+    "pattern": "admin/account/emailaddress/<path:object_id>/change/",
+    "name": "account_emailaddress_change",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.change_view"
+  },
+  {
+    "pattern": "admin/account/emailaddress/<path:object_id>/",
+    "name": null,
+    "lookup_str": "django.views.generic.base.RedirectView"
+  },
+  {
+    "pattern": "admin/socialaccount/socialapp/",
+    "name": "socialaccount_socialapp_changelist",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.changelist_view"
+  },
+  {
+    "pattern": "admin/socialaccount/socialapp/add/",
+    "name": "socialaccount_socialapp_add",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.add_view"
+  },
+  {
+    "pattern": "admin/socialaccount/socialapp/<path:object_id>/history/",
+    "name": "socialaccount_socialapp_history",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.history_view"
+  },
+  {
+    "pattern": "admin/socialaccount/socialapp/<path:object_id>/delete/",
+    "name": "socialaccount_socialapp_delete",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.delete_view"
+  },
+  {
+    "pattern": "admin/socialaccount/socialapp/<path:object_id>/change/",
+    "name": "socialaccount_socialapp_change",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.change_view"
+  },
+  {
+    "pattern": "admin/socialaccount/socialapp/<path:object_id>/",
+    "name": null,
+    "lookup_str": "django.views.generic.base.RedirectView"
+  },
+  {
+    "pattern": "admin/socialaccount/socialtoken/",
+    "name": "socialaccount_socialtoken_changelist",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.changelist_view"
+  },
+  {
+    "pattern": "admin/socialaccount/socialtoken/add/",
+    "name": "socialaccount_socialtoken_add",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.add_view"
+  },
+  {
+    "pattern": "admin/socialaccount/socialtoken/<path:object_id>/history/",
+    "name": "socialaccount_socialtoken_history",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.history_view"
+  },
+  {
+    "pattern": "admin/socialaccount/socialtoken/<path:object_id>/delete/",
+    "name": "socialaccount_socialtoken_delete",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.delete_view"
+  },
+  {
+    "pattern": "admin/socialaccount/socialtoken/<path:object_id>/change/",
+    "name": "socialaccount_socialtoken_change",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.change_view"
+  },
+  {
+    "pattern": "admin/socialaccount/socialtoken/<path:object_id>/",
+    "name": null,
+    "lookup_str": "django.views.generic.base.RedirectView"
+  },
+  {
+    "pattern": "admin/socialaccount/socialaccount/",
+    "name": "socialaccount_socialaccount_changelist",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.changelist_view"
+  },
+  {
+    "pattern": "admin/socialaccount/socialaccount/add/",
+    "name": "socialaccount_socialaccount_add",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.add_view"
+  },
+  {
+    "pattern": "admin/socialaccount/socialaccount/<path:object_id>/history/",
+    "name": "socialaccount_socialaccount_history",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.history_view"
+  },
+  {
+    "pattern": "admin/socialaccount/socialaccount/<path:object_id>/delete/",
+    "name": "socialaccount_socialaccount_delete",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.delete_view"
+  },
+  {
+    "pattern": "admin/socialaccount/socialaccount/<path:object_id>/change/",
+    "name": "socialaccount_socialaccount_change",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.change_view"
+  },
+  {
+    "pattern": "admin/socialaccount/socialaccount/<path:object_id>/",
+    "name": null,
+    "lookup_str": "django.views.generic.base.RedirectView"
+  },
+  {
+    "pattern": "admin/accounts/user/<id>/password/",
+    "name": "auth_user_password_change",
+    "lookup_str": "django.contrib.auth.admin.UserAdmin.user_change_password"
+  },
+  {
+    "pattern": "admin/accounts/user/",
+    "name": "accounts_user_changelist",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.changelist_view"
+  },
+  {
+    "pattern": "admin/accounts/user/add/",
+    "name": "accounts_user_add",
+    "lookup_str": "django.contrib.auth.admin.UserAdmin.add_view"
+  },
+  {
+    "pattern": "admin/accounts/user/<path:object_id>/history/",
+    "name": "accounts_user_history",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.history_view"
+  },
+  {
+    "pattern": "admin/accounts/user/<path:object_id>/delete/",
+    "name": "accounts_user_delete",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.delete_view"
+  },
+  {
+    "pattern": "admin/accounts/user/<path:object_id>/change/",
+    "name": "accounts_user_change",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.change_view"
+  },
+  {
+    "pattern": "admin/accounts/user/<path:object_id>/",
+    "name": null,
+    "lookup_str": "django.views.generic.base.RedirectView"
+  },
+  {
+    "pattern": "admin/django_celery_beat/periodictask/",
+    "name": "django_celery_beat_periodictask_changelist",
+    "lookup_str": "django_celery_beat.admin.PeriodicTaskAdmin.changelist_view"
+  },
+  {
+    "pattern": "admin/django_celery_beat/periodictask/add/",
+    "name": "django_celery_beat_periodictask_add",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.add_view"
+  },
+  {
+    "pattern": "admin/django_celery_beat/periodictask/<path:object_id>/history/",
+    "name": "django_celery_beat_periodictask_history",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.history_view"
+  },
+  {
+    "pattern": "admin/django_celery_beat/periodictask/<path:object_id>/delete/",
+    "name": "django_celery_beat_periodictask_delete",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.delete_view"
+  },
+  {
+    "pattern": "admin/django_celery_beat/periodictask/<path:object_id>/change/",
+    "name": "django_celery_beat_periodictask_change",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.change_view"
+  },
+  {
+    "pattern": "admin/django_celery_beat/periodictask/<path:object_id>/",
+    "name": null,
+    "lookup_str": "django.views.generic.base.RedirectView"
+  },
+  {
+    "pattern": "admin/django_celery_beat/clockedschedule/",
+    "name": "django_celery_beat_clockedschedule_changelist",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.changelist_view"
+  },
+  {
+    "pattern": "admin/django_celery_beat/clockedschedule/add/",
+    "name": "django_celery_beat_clockedschedule_add",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.add_view"
+  },
+  {
+    "pattern": "admin/django_celery_beat/clockedschedule/<path:object_id>/history/",
+    "name": "django_celery_beat_clockedschedule_history",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.history_view"
+  },
+  {
+    "pattern": "admin/django_celery_beat/clockedschedule/<path:object_id>/delete/",
+    "name": "django_celery_beat_clockedschedule_delete",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.delete_view"
+  },
+  {
+    "pattern": "admin/django_celery_beat/clockedschedule/<path:object_id>/change/",
+    "name": "django_celery_beat_clockedschedule_change",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.change_view"
+  },
+  {
+    "pattern": "admin/django_celery_beat/clockedschedule/<path:object_id>/",
+    "name": null,
+    "lookup_str": "django.views.generic.base.RedirectView"
+  },
+  {
+    "pattern": "admin/django_celery_beat/crontabschedule/",
+    "name": "django_celery_beat_crontabschedule_changelist",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.changelist_view"
+  },
+  {
+    "pattern": "admin/django_celery_beat/crontabschedule/add/",
+    "name": "django_celery_beat_crontabschedule_add",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.add_view"
+  },
+  {
+    "pattern": "admin/django_celery_beat/crontabschedule/<path:object_id>/history/",
+    "name": "django_celery_beat_crontabschedule_history",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.history_view"
+  },
+  {
+    "pattern": "admin/django_celery_beat/crontabschedule/<path:object_id>/delete/",
+    "name": "django_celery_beat_crontabschedule_delete",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.delete_view"
+  },
+  {
+    "pattern": "admin/django_celery_beat/crontabschedule/<path:object_id>/change/",
+    "name": "django_celery_beat_crontabschedule_change",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.change_view"
+  },
+  {
+    "pattern": "admin/django_celery_beat/crontabschedule/<path:object_id>/",
+    "name": null,
+    "lookup_str": "django.views.generic.base.RedirectView"
+  },
+  {
+    "pattern": "admin/django_celery_beat/solarschedule/",
+    "name": "django_celery_beat_solarschedule_changelist",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.changelist_view"
+  },
+  {
+    "pattern": "admin/django_celery_beat/solarschedule/add/",
+    "name": "django_celery_beat_solarschedule_add",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.add_view"
+  },
+  {
+    "pattern": "admin/django_celery_beat/solarschedule/<path:object_id>/history/",
+    "name": "django_celery_beat_solarschedule_history",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.history_view"
+  },
+  {
+    "pattern": "admin/django_celery_beat/solarschedule/<path:object_id>/delete/",
+    "name": "django_celery_beat_solarschedule_delete",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.delete_view"
+  },
+  {
+    "pattern": "admin/django_celery_beat/solarschedule/<path:object_id>/change/",
+    "name": "django_celery_beat_solarschedule_change",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.change_view"
+  },
+  {
+    "pattern": "admin/django_celery_beat/solarschedule/<path:object_id>/",
+    "name": null,
+    "lookup_str": "django.views.generic.base.RedirectView"
+  },
+  {
+    "pattern": "admin/django_celery_beat/intervalschedule/",
+    "name": "django_celery_beat_intervalschedule_changelist",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.changelist_view"
+  },
+  {
+    "pattern": "admin/django_celery_beat/intervalschedule/add/",
+    "name": "django_celery_beat_intervalschedule_add",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.add_view"
+  },
+  {
+    "pattern": "admin/django_celery_beat/intervalschedule/<path:object_id>/history/",
+    "name": "django_celery_beat_intervalschedule_history",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.history_view"
+  },
+  {
+    "pattern": "admin/django_celery_beat/intervalschedule/<path:object_id>/delete/",
+    "name": "django_celery_beat_intervalschedule_delete",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.delete_view"
+  },
+  {
+    "pattern": "admin/django_celery_beat/intervalschedule/<path:object_id>/change/",
+    "name": "django_celery_beat_intervalschedule_change",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.change_view"
+  },
+  {
+    "pattern": "admin/django_celery_beat/intervalschedule/<path:object_id>/",
+    "name": null,
+    "lookup_str": "django.views.generic.base.RedirectView"
+  },
+  {
+    "pattern": "admin/loyalty/globalloyaltysettings/",
+    "name": "loyalty_globalloyaltysettings_changelist",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.changelist_view"
+  },
+  {
+    "pattern": "admin/loyalty/globalloyaltysettings/add/",
+    "name": "loyalty_globalloyaltysettings_add",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.add_view"
+  },
+  {
+    "pattern": "admin/loyalty/globalloyaltysettings/<path:object_id>/history/",
+    "name": "loyalty_globalloyaltysettings_history",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.history_view"
+  },
+  {
+    "pattern": "admin/loyalty/globalloyaltysettings/<path:object_id>/delete/",
+    "name": "loyalty_globalloyaltysettings_delete",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.delete_view"
+  },
+  {
+    "pattern": "admin/loyalty/globalloyaltysettings/<path:object_id>/change/",
+    "name": "loyalty_globalloyaltysettings_change",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.change_view"
+  },
+  {
+    "pattern": "admin/loyalty/globalloyaltysettings/<path:object_id>/",
+    "name": null,
+    "lookup_str": "django.views.generic.base.RedirectView"
+  },
+  {
+    "pattern": "admin/loyalty/restaurantloyaltysettings/",
+    "name": "loyalty_restaurantloyaltysettings_changelist",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.changelist_view"
+  },
+  {
+    "pattern": "admin/loyalty/restaurantloyaltysettings/add/",
+    "name": "loyalty_restaurantloyaltysettings_add",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.add_view"
+  },
+  {
+    "pattern": "admin/loyalty/restaurantloyaltysettings/<path:object_id>/history/",
+    "name": "loyalty_restaurantloyaltysettings_history",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.history_view"
+  },
+  {
+    "pattern": "admin/loyalty/restaurantloyaltysettings/<path:object_id>/delete/",
+    "name": "loyalty_restaurantloyaltysettings_delete",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.delete_view"
+  },
+  {
+    "pattern": "admin/loyalty/restaurantloyaltysettings/<path:object_id>/change/",
+    "name": "loyalty_restaurantloyaltysettings_change",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.change_view"
+  },
+  {
+    "pattern": "admin/loyalty/restaurantloyaltysettings/<path:object_id>/",
+    "name": null,
+    "lookup_str": "django.views.generic.base.RedirectView"
+  },
+  {
+    "pattern": "admin/feed/post/",
+    "name": "feed_post_changelist",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.changelist_view"
+  },
+  {
+    "pattern": "admin/feed/post/add/",
+    "name": "feed_post_add",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.add_view"
+  },
+  {
+    "pattern": "admin/feed/post/<path:object_id>/history/",
+    "name": "feed_post_history",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.history_view"
+  },
+  {
+    "pattern": "admin/feed/post/<path:object_id>/delete/",
+    "name": "feed_post_delete",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.delete_view"
+  },
+  {
+    "pattern": "admin/feed/post/<path:object_id>/change/",
+    "name": "feed_post_change",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.change_view"
+  },
+  {
+    "pattern": "admin/feed/post/<path:object_id>/",
+    "name": null,
+    "lookup_str": "django.views.generic.base.RedirectView"
+  },
+  {
+    "pattern": "admin/feed/comment/",
+    "name": "feed_comment_changelist",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.changelist_view"
+  },
+  {
+    "pattern": "admin/feed/comment/add/",
+    "name": "feed_comment_add",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.add_view"
+  },
+  {
+    "pattern": "admin/feed/comment/<path:object_id>/history/",
+    "name": "feed_comment_history",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.history_view"
+  },
+  {
+    "pattern": "admin/feed/comment/<path:object_id>/delete/",
+    "name": "feed_comment_delete",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.delete_view"
+  },
+  {
+    "pattern": "admin/feed/comment/<path:object_id>/change/",
+    "name": "feed_comment_change",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.change_view"
+  },
+  {
+    "pattern": "admin/feed/comment/<path:object_id>/",
+    "name": null,
+    "lookup_str": "django.views.generic.base.RedirectView"
+  },
+  {
+    "pattern": "admin/feed/tag/",
+    "name": "feed_tag_changelist",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.changelist_view"
+  },
+  {
+    "pattern": "admin/feed/tag/add/",
+    "name": "feed_tag_add",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.add_view"
+  },
+  {
+    "pattern": "admin/feed/tag/<path:object_id>/history/",
+    "name": "feed_tag_history",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.history_view"
+  },
+  {
+    "pattern": "admin/feed/tag/<path:object_id>/delete/",
+    "name": "feed_tag_delete",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.delete_view"
+  },
+  {
+    "pattern": "admin/feed/tag/<path:object_id>/change/",
+    "name": "feed_tag_change",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.change_view"
+  },
+  {
+    "pattern": "admin/feed/tag/<path:object_id>/",
+    "name": null,
+    "lookup_str": "django.views.generic.base.RedirectView"
+  },
+  {
+    "pattern": "admin/pushNotification/pushnotification/",
+    "name": "pushNotification_pushnotification_changelist",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.changelist_view"
+  },
+  {
+    "pattern": "admin/pushNotification/pushnotification/add/",
+    "name": "pushNotification_pushnotification_add",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.add_view"
+  },
+  {
+    "pattern": "admin/pushNotification/pushnotification/<path:object_id>/history/",
+    "name": "pushNotification_pushnotification_history",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.history_view"
+  },
+  {
+    "pattern": "admin/pushNotification/pushnotification/<path:object_id>/delete/",
+    "name": "pushNotification_pushnotification_delete",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.delete_view"
+  },
+  {
+    "pattern": "admin/pushNotification/pushnotification/<path:object_id>/change/",
+    "name": "pushNotification_pushnotification_change",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.change_view"
+  },
+  {
+    "pattern": "admin/pushNotification/pushnotification/<path:object_id>/",
+    "name": null,
+    "lookup_str": "django.views.generic.base.RedirectView"
+  },
+  {
+    "pattern": "admin/menu/menu/",
+    "name": "menu_menu_changelist",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.changelist_view"
+  },
+  {
+    "pattern": "admin/menu/menu/add/",
+    "name": "menu_menu_add",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.add_view"
+  },
+  {
+    "pattern": "admin/menu/menu/<path:object_id>/history/",
+    "name": "menu_menu_history",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.history_view"
+  },
+  {
+    "pattern": "admin/menu/menu/<path:object_id>/delete/",
+    "name": "menu_menu_delete",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.delete_view"
+  },
+  {
+    "pattern": "admin/menu/menu/<path:object_id>/change/",
+    "name": "menu_menu_change",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.change_view"
+  },
+  {
+    "pattern": "admin/menu/menu/<path:object_id>/",
+    "name": null,
+    "lookup_str": "django.views.generic.base.RedirectView"
+  },
+  {
+    "pattern": "admin/branch/branch/",
+    "name": "branch_branch_changelist",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.changelist_view"
+  },
+  {
+    "pattern": "admin/branch/branch/add/",
+    "name": "branch_branch_add",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.add_view"
+  },
+  {
+    "pattern": "admin/branch/branch/<path:object_id>/history/",
+    "name": "branch_branch_history",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.history_view"
+  },
+  {
+    "pattern": "admin/branch/branch/<path:object_id>/delete/",
+    "name": "branch_branch_delete",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.delete_view"
+  },
+  {
+    "pattern": "admin/branch/branch/<path:object_id>/change/",
+    "name": "branch_branch_change",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.change_view"
+  },
+  {
+    "pattern": "admin/branch/branch/<path:object_id>/",
+    "name": null,
+    "lookup_str": "django.views.generic.base.RedirectView"
+  },
+  {
+    "pattern": "admin/tenant/tenant/",
+    "name": "tenant_tenant_changelist",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.changelist_view"
+  },
+  {
+    "pattern": "admin/tenant/tenant/add/",
+    "name": "tenant_tenant_add",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.add_view"
+  },
+  {
+    "pattern": "admin/tenant/tenant/<path:object_id>/history/",
+    "name": "tenant_tenant_history",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.history_view"
+  },
+  {
+    "pattern": "admin/tenant/tenant/<path:object_id>/delete/",
+    "name": "tenant_tenant_delete",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.delete_view"
+  },
+  {
+    "pattern": "admin/tenant/tenant/<path:object_id>/change/",
+    "name": "tenant_tenant_change",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.change_view"
+  },
+  {
+    "pattern": "admin/tenant/tenant/<path:object_id>/",
+    "name": null,
+    "lookup_str": "django.views.generic.base.RedirectView"
+  },
+  {
+    "pattern": "admin/table/table/",
+    "name": "table_table_changelist",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.changelist_view"
+  },
+  {
+    "pattern": "admin/table/table/add/",
+    "name": "table_table_add",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.add_view"
+  },
+  {
+    "pattern": "admin/table/table/<path:object_id>/history/",
+    "name": "table_table_history",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.history_view"
+  },
+  {
+    "pattern": "admin/table/table/<path:object_id>/delete/",
+    "name": "table_table_delete",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.delete_view"
+  },
+  {
+    "pattern": "admin/table/table/<path:object_id>/change/",
+    "name": "table_table_change",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.change_view"
+  },
+  {
+    "pattern": "admin/table/table/<path:object_id>/",
+    "name": null,
+    "lookup_str": "django.views.generic.base.RedirectView"
+  },
+  {
+    "pattern": "admin/qr_code/qrcode/",
+    "name": "qr_code_qrcode_changelist",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.changelist_view"
+  },
+  {
+    "pattern": "admin/qr_code/qrcode/add/",
+    "name": "qr_code_qrcode_add",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.add_view"
+  },
+  {
+    "pattern": "admin/qr_code/qrcode/<path:object_id>/history/",
+    "name": "qr_code_qrcode_history",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.history_view"
+  },
+  {
+    "pattern": "admin/qr_code/qrcode/<path:object_id>/delete/",
+    "name": "qr_code_qrcode_delete",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.delete_view"
+  },
+  {
+    "pattern": "admin/qr_code/qrcode/<path:object_id>/change/",
+    "name": "qr_code_qrcode_change",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.change_view"
+  },
+  {
+    "pattern": "admin/qr_code/qrcode/<path:object_id>/",
+    "name": null,
+    "lookup_str": "django.views.generic.base.RedirectView"
+  },
+  {
+    "pattern": "admin/menu_availability/menuavailability/",
+    "name": "menu_availability_menuavailability_changelist",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.changelist_view"
+  },
+  {
+    "pattern": "admin/menu_availability/menuavailability/add/",
+    "name": "menu_availability_menuavailability_add",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.add_view"
+  },
+  {
+    "pattern": "admin/menu_availability/menuavailability/<path:object_id>/history/",
+    "name": "menu_availability_menuavailability_history",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.history_view"
+  },
+  {
+    "pattern": "admin/menu_availability/menuavailability/<path:object_id>/delete/",
+    "name": "menu_availability_menuavailability_delete",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.delete_view"
+  },
+  {
+    "pattern": "admin/menu_availability/menuavailability/<path:object_id>/change/",
+    "name": "menu_availability_menuavailability_change",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.change_view"
+  },
+  {
+    "pattern": "admin/menu_availability/menuavailability/<path:object_id>/",
+    "name": null,
+    "lookup_str": "django.views.generic.base.RedirectView"
+  },
+  {
+    "pattern": "admin/combo/combo/",
+    "name": "combo_combo_changelist",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.changelist_view"
+  },
+  {
+    "pattern": "admin/combo/combo/add/",
+    "name": "combo_combo_add",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.add_view"
+  },
+  {
+    "pattern": "admin/combo/combo/<path:object_id>/history/",
+    "name": "combo_combo_history",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.history_view"
+  },
+  {
+    "pattern": "admin/combo/combo/<path:object_id>/delete/",
+    "name": "combo_combo_delete",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.delete_view"
+  },
+  {
+    "pattern": "admin/combo/combo/<path:object_id>/change/",
+    "name": "combo_combo_change",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.change_view"
+  },
+  {
+    "pattern": "admin/combo/combo/<path:object_id>/",
+    "name": null,
+    "lookup_str": "django.views.generic.base.RedirectView"
+  },
+  {
+    "pattern": "admin/related_menu/relatedmenuitem/",
+    "name": "related_menu_relatedmenuitem_changelist",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.changelist_view"
+  },
+  {
+    "pattern": "admin/related_menu/relatedmenuitem/add/",
+    "name": "related_menu_relatedmenuitem_add",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.add_view"
+  },
+  {
+    "pattern": "admin/related_menu/relatedmenuitem/<path:object_id>/history/",
+    "name": "related_menu_relatedmenuitem_history",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.history_view"
+  },
+  {
+    "pattern": "admin/related_menu/relatedmenuitem/<path:object_id>/delete/",
+    "name": "related_menu_relatedmenuitem_delete",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.delete_view"
+  },
+  {
+    "pattern": "admin/related_menu/relatedmenuitem/<path:object_id>/change/",
+    "name": "related_menu_relatedmenuitem_change",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.change_view"
+  },
+  {
+    "pattern": "admin/related_menu/relatedmenuitem/<path:object_id>/",
+    "name": null,
+    "lookup_str": "django.views.generic.base.RedirectView"
+  },
+  {
+    "pattern": "admin/discount/discount/",
+    "name": "discount_discount_changelist",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.changelist_view"
+  },
+  {
+    "pattern": "admin/discount/discount/add/",
+    "name": "discount_discount_add",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.add_view"
+  },
+  {
+    "pattern": "admin/discount/discount/<path:object_id>/history/",
+    "name": "discount_discount_history",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.history_view"
+  },
+  {
+    "pattern": "admin/discount/discount/<path:object_id>/delete/",
+    "name": "discount_discount_delete",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.delete_view"
+  },
+  {
+    "pattern": "admin/discount/discount/<path:object_id>/change/",
+    "name": "discount_discount_change",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.change_view"
+  },
+  {
+    "pattern": "admin/discount/discount/<path:object_id>/",
+    "name": null,
+    "lookup_str": "django.views.generic.base.RedirectView"
+  },
+  {
+    "pattern": "admin/order/order/",
+    "name": "order_order_changelist",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.changelist_view"
+  },
+  {
+    "pattern": "admin/order/order/add/",
+    "name": "order_order_add",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.add_view"
+  },
+  {
+    "pattern": "admin/order/order/<path:object_id>/history/",
+    "name": "order_order_history",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.history_view"
+  },
+  {
+    "pattern": "admin/order/order/<path:object_id>/delete/",
+    "name": "order_order_delete",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.delete_view"
+  },
+  {
+    "pattern": "admin/order/order/<path:object_id>/change/",
+    "name": "order_order_change",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.change_view"
+  },
+  {
+    "pattern": "admin/order/order/<path:object_id>/",
+    "name": null,
+    "lookup_str": "django.views.generic.base.RedirectView"
+  },
+  {
+    "pattern": "admin/feedback/feedback/",
+    "name": "feedback_feedback_changelist",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.changelist_view"
+  },
+  {
+    "pattern": "admin/feedback/feedback/add/",
+    "name": "feedback_feedback_add",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.add_view"
+  },
+  {
+    "pattern": "admin/feedback/feedback/<path:object_id>/history/",
+    "name": "feedback_feedback_history",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.history_view"
+  },
+  {
+    "pattern": "admin/feedback/feedback/<path:object_id>/delete/",
+    "name": "feedback_feedback_delete",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.delete_view"
+  },
+  {
+    "pattern": "admin/feedback/feedback/<path:object_id>/change/",
+    "name": "feedback_feedback_change",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.change_view"
+  },
+  {
+    "pattern": "admin/feedback/feedback/<path:object_id>/",
+    "name": null,
+    "lookup_str": "django.views.generic.base.RedirectView"
+  },
+  {
+    "pattern": "admin/notification/notification/",
+    "name": "notification_notification_changelist",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.changelist_view"
+  },
+  {
+    "pattern": "admin/notification/notification/add/",
+    "name": "notification_notification_add",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.add_view"
+  },
+  {
+    "pattern": "admin/notification/notification/<path:object_id>/history/",
+    "name": "notification_notification_history",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.history_view"
+  },
+  {
+    "pattern": "admin/notification/notification/<path:object_id>/delete/",
+    "name": "notification_notification_delete",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.delete_view"
+  },
+  {
+    "pattern": "admin/notification/notification/<path:object_id>/change/",
+    "name": "notification_notification_change",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.change_view"
+  },
+  {
+    "pattern": "admin/notification/notification/<path:object_id>/",
+    "name": null,
+    "lookup_str": "django.views.generic.base.RedirectView"
+  },
+  {
+    "pattern": "admin/address/address/",
+    "name": "address_address_changelist",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.changelist_view"
+  },
+  {
+    "pattern": "admin/address/address/add/",
+    "name": "address_address_add",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.add_view"
+  },
+  {
+    "pattern": "admin/address/address/<path:object_id>/history/",
+    "name": "address_address_history",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.history_view"
+  },
+  {
+    "pattern": "admin/address/address/<path:object_id>/delete/",
+    "name": "address_address_delete",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.delete_view"
+  },
+  {
+    "pattern": "admin/address/address/<path:object_id>/change/",
+    "name": "address_address_change",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.change_view"
+  },
+  {
+    "pattern": "admin/address/address/<path:object_id>/",
+    "name": null,
+    "lookup_str": "django.views.generic.base.RedirectView"
+  },
+  {
+    "pattern": "admin/payment/payment/",
+    "name": "payment_payment_changelist",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.changelist_view"
+  },
+  {
+    "pattern": "admin/payment/payment/add/",
+    "name": "payment_payment_add",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.add_view"
+  },
+  {
+    "pattern": "admin/payment/payment/<path:object_id>/history/",
+    "name": "payment_payment_history",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.history_view"
+  },
+  {
+    "pattern": "admin/payment/payment/<path:object_id>/delete/",
+    "name": "payment_payment_delete",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.delete_view"
+  },
+  {
+    "pattern": "admin/payment/payment/<path:object_id>/change/",
+    "name": "payment_payment_change",
+    "lookup_str": "django.contrib.admin.options.ModelAdmin.change_view"
+  },
+  {
+    "pattern": "admin/payment/payment/<path:object_id>/",
+    "name": null,
+    "lookup_str": "django.views.generic.base.RedirectView"
+  },
+  {
+    "pattern": "admin/^(?P<app_label>sites|auth|authtoken|token_blacklist|rest_framework_api_key|social_django|account|socialaccount|accounts|django_celery_beat|loyalty|feed|pushNotification|menu|branch|tenant|table|qr_code|menu_availability|combo|related_menu|discount|order|feedback|notification|address|payment)/$",
+    "name": "app_list",
+    "lookup_str": "django.contrib.admin.sites.AdminSite.app_index"
+  },
+  {
+    "pattern": "admin/(?P<url>.*)$",
+    "name": null,
+    "lookup_str": "django.contrib.admin.sites.AdminSite.catch_all_view"
+  },
+  {
+    "pattern": "accounts/login/",
+    "name": "login",
+    "lookup_str": "django.contrib.auth.views.LoginView"
+  },
+  {
+    "pattern": "accounts/logout/",
+    "name": "logout",
+    "lookup_str": "django.contrib.auth.views.LogoutView"
+  },
+  {
+    "pattern": "accounts/password_change/",
+    "name": "password_change",
+    "lookup_str": "django.contrib.auth.views.PasswordChangeView"
+  },
+  {
+    "pattern": "accounts/password_change/done/",
+    "name": "password_change_done",
+    "lookup_str": "django.contrib.auth.views.PasswordChangeDoneView"
+  },
+  {
+    "pattern": "accounts/password_reset/",
+    "name": "password_reset",
+    "lookup_str": "django.contrib.auth.views.PasswordResetView"
+  },
+  {
+    "pattern": "accounts/password_reset/done/",
+    "name": "password_reset_done",
+    "lookup_str": "django.contrib.auth.views.PasswordResetDoneView"
+  },
+  {
+    "pattern": "accounts/reset/<uidb64>/<token>/",
+    "name": "password_reset_confirm",
+    "lookup_str": "django.contrib.auth.views.PasswordResetConfirmView"
+  },
+  {
+    "pattern": "accounts/reset/done/",
+    "name": "password_reset_complete",
+    "lookup_str": "django.contrib.auth.views.PasswordResetCompleteView"
+  },
+  {
+    "pattern": "api/auth/register/",
+    "name": "register",
+    "lookup_str": "accounts.views.RegisterView"
+  },
+  {
+    "pattern": "api/auth/login/",
+    "name": "login",
+    "lookup_str": "accounts.views.LoginView"
+  },
+  {
+    "pattern": "api/auth/logout/",
+    "name": "logout",
+    "lookup_str": "accounts.views.LogoutView"
+  },
+  {
+    "pattern": "api/auth/token/refresh/",
+    "name": "token_refresh",
+    "lookup_str": "rest_framework_simplejwt.views.TokenRefreshView"
+  },
+  {
+    "pattern": "api/auth/user/<uuid:pk>/",
+    "name": "all-users",
+    "lookup_str": "accounts.views.AllUsersView"
+  },
+  {
+    "pattern": "api/auth/users/",
+    "name": "admin-users",
+    "lookup_str": "accounts.views.AdminOnlyView"
+  },
+  {
+    "pattern": "api/auth/branchAdmins/",
+    "name": "branch-admins",
+    "lookup_str": "accounts.views.AdminOrRestaurantOnlyView"
+  },
+  {
+    "pattern": "api/auth/social/google/",
+    "name": null,
+    "lookup_str": "accounts.views.GoogleLoginView"
+  },
+  {
+    "pattern": "api/auth/social/facebook/",
+    "name": null,
+    "lookup_str": "accounts.views.FacebookLoginView"
+  },
+  {
+    "pattern": "api/auth/verify-otp/",
+    "name": "verify-otp",
+    "lookup_str": "accounts.views.VerifyOTPView"
+  },
+  {
+    "pattern": "api/auth/check-otp/",
+    "name": "check-otp",
+    "lookup_str": "accounts.views.CheckOTPView"
+  },
+  {
+    "pattern": "api/auth/password-reset/request/",
+    "name": "password-reset-request",
+    "lookup_str": "accounts.views.RequestPasswordResetView"
+  },
+  {
+    "pattern": "api/auth/password-reset/verify/",
+    "name": "password-reset-verify",
+    "lookup_str": "accounts.views.ResetPasswordWithOTPView"
+  },
+  {
+    "pattern": "api/auth/social/login/",
+    "name": "account_login",
+    "lookup_str": "allauth.account.views.LoginView"
+  },
+  {
+    "pattern": "api/auth/social/logout/",
+    "name": "account_logout",
+    "lookup_str": "allauth.account.views.LogoutView"
+  },
+  {
+    "pattern": "api/auth/social/inactive/",
+    "name": "account_inactive",
+    "lookup_str": "allauth.account.views.AccountInactiveView"
+  },
+  {
+    "pattern": "api/auth/social/signup/",
+    "name": "account_signup",
+    "lookup_str": "allauth.account.views.SignupView"
+  },
+  {
+    "pattern": "api/auth/social/reauthenticate/",
+    "name": "account_reauthenticate",
+    "lookup_str": "allauth.account.views.ReauthenticateView"
+  },
+  {
+    "pattern": "api/auth/social/email/",
+    "name": "account_email",
+    "lookup_str": "allauth.account.views.EmailView"
+  },
+  {
+    "pattern": "api/auth/social/confirm-email/",
+    "name": "account_email_verification_sent",
+    "lookup_str": "allauth.account.views.email_verification_sent"
+  },
+  {
+    "pattern": "api/auth/social/^confirm-email/(?P<key>[-:\\w]+)/$",
+    "name": "account_confirm_email",
+    "lookup_str": "allauth.account.views.ConfirmEmailView"
+  },
+  {
+    "pattern": "api/auth/social/password/change/",
+    "name": "account_change_password",
+    "lookup_str": "allauth.account.views.PasswordChangeView"
+  },
+  {
+    "pattern": "api/auth/social/password/set/",
+    "name": "account_set_password",
+    "lookup_str": "allauth.account.views.PasswordSetView"
+  },
+  {
+    "pattern": "api/auth/social/password/reset/",
+    "name": "account_reset_password",
+    "lookup_str": "allauth.account.views.PasswordResetView"
+  },
+  {
+    "pattern": "api/auth/social/password/reset/done/",
+    "name": "account_reset_password_done",
+    "lookup_str": "allauth.account.views.PasswordResetDoneView"
+  },
+  {
+    "pattern": "api/auth/social/^password/reset/key/(?P<uidb36>[0-9A-Za-z]+)-(?P<key>.+)/$",
+    "name": "account_reset_password_from_key",
+    "lookup_str": "allauth.account.views.PasswordResetFromKeyView"
+  },
+  {
+    "pattern": "api/auth/social/password/reset/key/done/",
+    "name": "account_reset_password_from_key_done",
+    "lookup_str": "allauth.account.views.PasswordResetFromKeyDoneView"
+  },
+  {
+    "pattern": "api/auth/social/login/code/confirm/",
+    "name": "account_confirm_login_code",
+    "lookup_str": "allauth.account.views.ConfirmLoginCodeView"
+  },
+  {
+    "pattern": "api/auth/social/3rdparty/login/cancelled/",
+    "name": "socialaccount_login_cancelled",
+    "lookup_str": "allauth.socialaccount.views.LoginCancelledView"
+  },
+  {
+    "pattern": "api/auth/social/3rdparty/login/error/",
+    "name": "socialaccount_login_error",
+    "lookup_str": "allauth.socialaccount.views.LoginErrorView"
+  },
+  {
+    "pattern": "api/auth/social/3rdparty/signup/",
+    "name": "socialaccount_signup",
+    "lookup_str": "allauth.socialaccount.views.SignupView"
+  },
+  {
+    "pattern": "api/auth/social/3rdparty/",
+    "name": "socialaccount_connections",
+    "lookup_str": "allauth.socialaccount.views.ConnectionsView"
+  },
+  {
+    "pattern": "api/auth/social/social/login/cancelled/",
+    "name": null,
+    "lookup_str": "django.views.generic.base.RedirectView"
+  },
+  {
+    "pattern": "api/auth/social/social/login/error/",
+    "name": null,
+    "lookup_str": "django.views.generic.base.RedirectView"
+  },
+  {
+    "pattern": "api/auth/social/social/signup/",
+    "name": null,
+    "lookup_str": "django.views.generic.base.RedirectView"
+  },
+  {
+    "pattern": "api/auth/social/social/connections/",
+    "name": null,
+    "lookup_str": "django.views.generic.base.RedirectView"
+  },
+  {
+    "pattern": "api/auth/social/google/login/",
+    "name": "google_login",
+    "lookup_str": "allauth.socialaccount.providers.oauth2.views.OAuth2View.adapter_view.<locals>.view"
+  },
+  {
+    "pattern": "api/auth/social/google/login/callback/",
+    "name": "google_callback",
+    "lookup_str": "allauth.socialaccount.providers.oauth2.views.OAuth2View.adapter_view.<locals>.view"
+  },
+  {
+    "pattern": "api/auth/social/google/login/token/",
+    "name": "google_login_by_token",
+    "lookup_str": "allauth.socialaccount.providers.google.views.LoginByTokenView"
+  },
+  {
+    "pattern": "api/auth/social/facebook/login/",
+    "name": "facebook_login",
+    "lookup_str": "allauth.socialaccount.providers.oauth2.views.OAuth2View.adapter_view.<locals>.view"
+  },
+  {
+    "pattern": "api/auth/social/facebook/login/callback/",
+    "name": "facebook_callback",
+    "lookup_str": "allauth.socialaccount.providers.oauth2.views.OAuth2View.adapter_view.<locals>.view"
+  },
+  {
+    "pattern": "api/auth/social/facebook/login/token/",
+    "name": "facebook_login_by_token",
+    "lookup_str": "allauth.socialaccount.providers.facebook.views.LoginByTokenView"
+  },
+  {
+    "pattern": "api/v1/^menu/$",
+    "name": "menu-list",
+    "lookup_str": "restaurant.menu.views.MenuView"
+  },
+  {
+    "pattern": "api/v1/^menu\\.(?P<format>[a-z0-9]+)/?$",
+    "name": "menu-list",
+    "lookup_str": "restaurant.menu.views.MenuView"
+  },
+  {
+    "pattern": "api/v1/^menu/(?P<pk>[^/.]+)/$",
+    "name": "menu-detail",
+    "lookup_str": "restaurant.menu.views.MenuView"
+  },
+  {
+    "pattern": "api/v1/^menu/(?P<pk>[^/.]+)\\.(?P<format>[a-z0-9]+)/?$",
+    "name": "menu-detail",
+    "lookup_str": "restaurant.menu.views.MenuView"
+  },
+  {
+    "pattern": "api/v1/",
+    "name": "api-root",
+    "lookup_str": "rest_framework.routers.APIRootView"
+  },
+  {
+    "pattern": "api/v1/<drf_format_suffix:format>",
+    "name": "api-root",
+    "lookup_str": "rest_framework.routers.APIRootView"
+  },
+  {
+    "pattern": "api/v1/^branch/$",
+    "name": "branches-list",
+    "lookup_str": "restaurant.branch.views.BranchView"
+  },
+  {
+    "pattern": "api/v1/^branch\\.(?P<format>[a-z0-9]+)/?$",
+    "name": "branches-list",
+    "lookup_str": "restaurant.branch.views.BranchView"
+  },
+  {
+    "pattern": "api/v1/^branch/all-with-distance/$",
+    "name": "branches-all-branches-with-distance",
+    "lookup_str": "restaurant.branch.views.BranchView"
+  },
+  {
+    "pattern": "api/v1/^branch/all-with-distance\\.(?P<format>[a-z0-9]+)/?$",
+    "name": "branches-all-branches-with-distance",
+    "lookup_str": "restaurant.branch.views.BranchView"
+  },
+  {
+    "pattern": "api/v1/^branch/call_waiter/$",
+    "name": "branches-call-waiter",
+    "lookup_str": "restaurant.branch.views.BranchView"
+  },
+  {
+    "pattern": "api/v1/^branch/call_waiter\\.(?P<format>[a-z0-9]+)/?$",
+    "name": "branches-call-waiter",
+    "lookup_str": "restaurant.branch.views.BranchView"
+  },
+  {
+    "pattern": "api/v1/^branch/nearby/$",
+    "name": "branches-nearby-branches",
+    "lookup_str": "restaurant.branch.views.BranchView"
+  },
+  {
+    "pattern": "api/v1/^branch/nearby\\.(?P<format>[a-z0-9]+)/?$",
+    "name": "branches-nearby-branches",
+    "lookup_str": "restaurant.branch.views.BranchView"
+  },
+  {
+    "pattern": "api/v1/^branch/(?P<pk>[^/.]+)/$",
+    "name": "branches-detail",
+    "lookup_str": "restaurant.branch.views.BranchView"
+  },
+  {
+    "pattern": "api/v1/^branch/(?P<pk>[^/.]+)\\.(?P<format>[a-z0-9]+)/?$",
+    "name": "branches-detail",
+    "lookup_str": "restaurant.branch.views.BranchView"
+  },
+  {
+    "pattern": "api/v1/",
+    "name": "api-root",
+    "lookup_str": "rest_framework.routers.APIRootView"
+  },
+  {
+    "pattern": "api/v1/<drf_format_suffix:format>",
+    "name": "api-root",
+    "lookup_str": "rest_framework.routers.APIRootView"
+  },
+  {
+    "pattern": "api/v1/^tenant/$",
+    "name": "tenant-list",
+    "lookup_str": "restaurant.tenant.views.TenantView"
+  },
+  {
+    "pattern": "api/v1/^tenant\\.(?P<format>[a-z0-9]+)/?$",
+    "name": "tenant-list",
+    "lookup_str": "restaurant.tenant.views.TenantView"
+  },
+  {
+    "pattern": "api/v1/^tenant/dashboard/$",
+    "name": "tenant-get-dashboard",
+    "lookup_str": "restaurant.tenant.views.TenantView"
+  },
+  {
+    "pattern": "api/v1/^tenant/dashboard\\.(?P<format>[a-z0-9]+)/?$",
+    "name": "tenant-get-dashboard",
+    "lookup_str": "restaurant.tenant.views.TenantView"
+  },
+  {
+    "pattern": "api/v1/^tenant/price-stats/$",
+    "name": "tenant-get-price-stats",
+    "lookup_str": "restaurant.tenant.views.TenantView"
+  },
+  {
+    "pattern": "api/v1/^tenant/price-stats\\.(?P<format>[a-z0-9]+)/?$",
+    "name": "tenant-get-price-stats",
+    "lookup_str": "restaurant.tenant.views.TenantView"
+  },
+  {
+    "pattern": "api/v1/^tenant/(?P<pk>[^/.]+)/$",
+    "name": "tenant-detail",
+    "lookup_str": "restaurant.tenant.views.TenantView"
+  },
+  {
+    "pattern": "api/v1/^tenant/(?P<pk>[^/.]+)\\.(?P<format>[a-z0-9]+)/?$",
+    "name": "tenant-detail",
+    "lookup_str": "restaurant.tenant.views.TenantView"
+  },
+  {
+    "pattern": "api/v1/^dashboard/stats/$",
+    "name": "dashboard-get-dashboard-stats",
+    "lookup_str": "restaurant.tenant.views.DashboardViewSet"
+  },
+  {
+    "pattern": "api/v1/^dashboard/stats\\.(?P<format>[a-z0-9]+)/?$",
+    "name": "dashboard-get-dashboard-stats",
+    "lookup_str": "restaurant.tenant.views.DashboardViewSet"
+  },
+  {
+    "pattern": "api/v1/^dashboard/top-items/$",
+    "name": "dashboard-get-top-menu-items",
+    "lookup_str": "restaurant.tenant.views.DashboardViewSet"
+  },
+  {
+    "pattern": "api/v1/^dashboard/top-items\\.(?P<format>[a-z0-9]+)/?$",
+    "name": "dashboard-get-top-menu-items",
+    "lookup_str": "restaurant.tenant.views.DashboardViewSet"
+  },
+  {
+    "pattern": "api/v1/",
+    "name": "api-root",
+    "lookup_str": "rest_framework.routers.APIRootView"
+  },
+  {
+    "pattern": "api/v1/<drf_format_suffix:format>",
+    "name": "api-root",
+    "lookup_str": "rest_framework.routers.APIRootView"
+  },
+  {
+    "pattern": "api/v1/^table/$",
+    "name": "table-list",
+    "lookup_str": "restaurant.table.views.TableView"
+  },
+  {
+    "pattern": "api/v1/^table\\.(?P<format>[a-z0-9]+)/?$",
+    "name": "table-list",
+    "lookup_str": "restaurant.table.views.TableView"
+  },
+  {
+    "pattern": "api/v1/^table/(?P<pk>[^/.]+)/$",
+    "name": "table-detail",
+    "lookup_str": "restaurant.table.views.TableView"
+  },
+  {
+    "pattern": "api/v1/^table/(?P<pk>[^/.]+)\\.(?P<format>[a-z0-9]+)/?$",
+    "name": "table-detail",
+    "lookup_str": "restaurant.table.views.TableView"
+  },
+  {
+    "pattern": "api/v1/",
+    "name": "api-root",
+    "lookup_str": "rest_framework.routers.APIRootView"
+  },
+  {
+    "pattern": "api/v1/<drf_format_suffix:format>",
+    "name": "api-root",
+    "lookup_str": "rest_framework.routers.APIRootView"
+  },
+  {
+    "pattern": "api/v1/^combo/$",
+    "name": "combos-list",
+    "lookup_str": "restaurant.combo.views.ComboView"
+  },
+  {
+    "pattern": "api/v1/^combo\\.(?P<format>[a-z0-9]+)/?$",
+    "name": "combos-list",
+    "lookup_str": "restaurant.combo.views.ComboView"
+  },
+  {
+    "pattern": "api/v1/^combo/(?P<pk>[^/.]+)/$",
+    "name": "combos-detail",
+    "lookup_str": "restaurant.combo.views.ComboView"
+  },
+  {
+    "pattern": "api/v1/^combo/(?P<pk>[^/.]+)\\.(?P<format>[a-z0-9]+)/?$",
+    "name": "combos-detail",
+    "lookup_str": "restaurant.combo.views.ComboView"
+  },
+  {
+    "pattern": "api/v1/^combo-item/$",
+    "name": "combo-items-list",
+    "lookup_str": "restaurant.combo.views.ComboItemView"
+  },
+  {
+    "pattern": "api/v1/^combo-item\\.(?P<format>[a-z0-9]+)/?$",
+    "name": "combo-items-list",
+    "lookup_str": "restaurant.combo.views.ComboItemView"
+  },
+  {
+    "pattern": "api/v1/^combo-item/(?P<pk>[^/.]+)/$",
+    "name": "combo-items-detail",
+    "lookup_str": "restaurant.combo.views.ComboItemView"
+  },
+  {
+    "pattern": "api/v1/^combo-item/(?P<pk>[^/.]+)\\.(?P<format>[a-z0-9]+)/?$",
+    "name": "combo-items-detail",
+    "lookup_str": "restaurant.combo.views.ComboItemView"
+  },
+  {
+    "pattern": "api/v1/",
+    "name": "api-root",
+    "lookup_str": "rest_framework.routers.APIRootView"
+  },
+  {
+    "pattern": "api/v1/<drf_format_suffix:format>",
+    "name": "api-root",
+    "lookup_str": "rest_framework.routers.APIRootView"
+  },
+  {
+    "pattern": "api/v1/^related-menu/$",
+    "name": "relatedmenuitem-list",
+    "lookup_str": "restaurant.related_menu.views.RelatedMenuItemView"
+  },
+  {
+    "pattern": "api/v1/^related-menu\\.(?P<format>[a-z0-9]+)/?$",
+    "name": "relatedmenuitem-list",
+    "lookup_str": "restaurant.related_menu.views.RelatedMenuItemView"
+  },
+  {
+    "pattern": "api/v1/^related-menu/(?P<pk>[^/.]+)/$",
+    "name": "relatedmenuitem-detail",
+    "lookup_str": "restaurant.related_menu.views.RelatedMenuItemView"
+  },
+  {
+    "pattern": "api/v1/^related-menu/(?P<pk>[^/.]+)\\.(?P<format>[a-z0-9]+)/?$",
+    "name": "relatedmenuitem-detail",
+    "lookup_str": "restaurant.related_menu.views.RelatedMenuItemView"
+  },
+  {
+    "pattern": "api/v1/",
+    "name": "api-root",
+    "lookup_str": "rest_framework.routers.APIRootView"
+  },
+  {
+    "pattern": "api/v1/<drf_format_suffix:format>",
+    "name": "api-root",
+    "lookup_str": "rest_framework.routers.APIRootView"
+  },
+  {
+    "pattern": "api/v1/^menu-availability/$",
+    "name": "menuavailability-list",
+    "lookup_str": "restaurant.menu_availability.views.MenuAvailabilityView"
+  },
+  {
+    "pattern": "api/v1/^menu-availability\\.(?P<format>[a-z0-9]+)/?$",
+    "name": "menuavailability-list",
+    "lookup_str": "restaurant.menu_availability.views.MenuAvailabilityView"
+  },
+  {
+    "pattern": "api/v1/^menu-availability/available_categories/$",
+    "name": "menuavailability-available-categories",
+    "lookup_str": "restaurant.menu_availability.views.MenuAvailabilityView"
+  },
+  {
+    "pattern": "api/v1/^menu-availability/available_categories\\.(?P<format>[a-z0-9]+)/?$",
+    "name": "menuavailability-available-categories",
+    "lookup_str": "restaurant.menu_availability.views.MenuAvailabilityView"
+  },
+  {
+    "pattern": "api/v1/^menu-availability/best_dishes_of_week/$",
+    "name": "menuavailability-best-dishes-of-week",
+    "lookup_str": "restaurant.menu_availability.views.MenuAvailabilityView"
+  },
+  {
+    "pattern": "api/v1/^menu-availability/best_dishes_of_week\\.(?P<format>[a-z0-9]+)/?$",
+    "name": "menuavailability-best-dishes-of-week",
+    "lookup_str": "restaurant.menu_availability.views.MenuAvailabilityView"
+  },
+  {
+    "pattern": "api/v1/^menu-availability/recommended_items/$",
+    "name": "menuavailability-recommended-items",
+    "lookup_str": "restaurant.menu_availability.views.MenuAvailabilityView"
+  },
+  {
+    "pattern": "api/v1/^menu-availability/recommended_items\\.(?P<format>[a-z0-9]+)/?$",
+    "name": "menuavailability-recommended-items",
+    "lookup_str": "restaurant.menu_availability.views.MenuAvailabilityView"
+  },
+  {
+    "pattern": "api/v1/^menu-availability/(?P<pk>[^/.]+)/$",
+    "name": "menuavailability-detail",
+    "lookup_str": "restaurant.menu_availability.views.MenuAvailabilityView"
+  },
+  {
+    "pattern": "api/v1/^menu-availability/(?P<pk>[^/.]+)\\.(?P<format>[a-z0-9]+)/?$",
+    "name": "menuavailability-detail",
+    "lookup_str": "restaurant.menu_availability.views.MenuAvailabilityView"
+  },
+  {
+    "pattern": "api/v1/",
+    "name": "api-root",
+    "lookup_str": "rest_framework.routers.APIRootView"
+  },
+  {
+    "pattern": "api/v1/<drf_format_suffix:format>",
+    "name": "api-root",
+    "lookup_str": "rest_framework.routers.APIRootView"
+  },
+  {
+    "pattern": "api/v1/^qr-code/$",
+    "name": "qrcode-list",
+    "lookup_str": "restaurant.qr_code.views.QRCodeViewSet"
+  },
+  {
+    "pattern": "api/v1/^qr-code\\.(?P<format>[a-z0-9]+)/?$",
+    "name": "qrcode-list",
+    "lookup_str": "restaurant.qr_code.views.QRCodeViewSet"
+  },
+  {
+    "pattern": "api/v1/^qr-code/(?P<pk>[^/.]+)/$",
+    "name": "qrcode-detail",
+    "lookup_str": "restaurant.qr_code.views.QRCodeViewSet"
+  },
+  {
+    "pattern": "api/v1/^qr-code/(?P<pk>[^/.]+)\\.(?P<format>[a-z0-9]+)/?$",
+    "name": "qrcode-detail",
+    "lookup_str": "restaurant.qr_code.views.QRCodeViewSet"
+  },
+  {
+    "pattern": "api/v1/",
+    "name": "api-root",
+    "lookup_str": "rest_framework.routers.APIRootView"
+  },
+  {
+    "pattern": "api/v1/<drf_format_suffix:format>",
+    "name": "api-root",
+    "lookup_str": "rest_framework.routers.APIRootView"
+  },
+  {
+    "pattern": "api/v1/^order/$",
+    "name": "orders-list",
+    "lookup_str": "customer.order.views.OrderView"
+  },
+  {
+    "pattern": "api/v1/^order\\.(?P<format>[a-z0-9]+)/?$",
+    "name": "orders-list",
+    "lookup_str": "customer.order.views.OrderView"
+  },
+  {
+    "pattern": "api/v1/^order/check-discount/$",
+    "name": "orders-check-discount",
+    "lookup_str": "customer.order.views.OrderView"
+  },
+  {
+    "pattern": "api/v1/^order/check-discount\\.(?P<format>[a-z0-9]+)/?$",
+    "name": "orders-check-discount",
+    "lookup_str": "customer.order.views.OrderView"
+  },
+  {
+    "pattern": "api/v1/^order/(?P<pk>[^/.]+)/$",
+    "name": "orders-detail",
+    "lookup_str": "customer.order.views.OrderView"
+  },
+  {
+    "pattern": "api/v1/^order/(?P<pk>[^/.]+)\\.(?P<format>[a-z0-9]+)/?$",
+    "name": "orders-detail",
+    "lookup_str": "customer.order.views.OrderView"
+  },
+  {
+    "pattern": "api/v1/",
+    "name": "api-root",
+    "lookup_str": "rest_framework.routers.APIRootView"
+  },
+  {
+    "pattern": "api/v1/<drf_format_suffix:format>",
+    "name": "api-root",
+    "lookup_str": "rest_framework.routers.APIRootView"
+  },
+  {
+    "pattern": "api/v1/^feedback/$",
+    "name": "feedback-list",
+    "lookup_str": "customer.feedback.views.FeedbackViewSet"
+  },
+  {
+    "pattern": "api/v1/^feedback\\.(?P<format>[a-z0-9]+)/?$",
+    "name": "feedback-list",
+    "lookup_str": "customer.feedback.views.FeedbackViewSet"
+  },
+  {
+    "pattern": "api/v1/^feedback/(?P<pk>[^/.]+)/$",
+    "name": "feedback-detail",
+    "lookup_str": "customer.feedback.views.FeedbackViewSet"
+  },
+  {
+    "pattern": "api/v1/^feedback/(?P<pk>[^/.]+)\\.(?P<format>[a-z0-9]+)/?$",
+    "name": "feedback-detail",
+    "lookup_str": "customer.feedback.views.FeedbackViewSet"
+  },
+  {
+    "pattern": "api/v1/",
+    "name": "api-root",
+    "lookup_str": "rest_framework.routers.APIRootView"
+  },
+  {
+    "pattern": "api/v1/<drf_format_suffix:format>",
+    "name": "api-root",
+    "lookup_str": "rest_framework.routers.APIRootView"
+  },
+  {
+    "pattern": "api/v1/^cart/$",
+    "name": "cart-list",
+    "lookup_str": "customer.cart.views.CartView"
+  },
+  {
+    "pattern": "api/v1/^cart\\.(?P<format>[a-z0-9]+)/?$",
+    "name": "cart-list",
+    "lookup_str": "customer.cart.views.CartView"
+  },
+  {
+    "pattern": "api/v1/^cart/(?P<pk>[^/.]+)/$",
+    "name": "cart-detail",
+    "lookup_str": "customer.cart.views.CartView"
+  },
+  {
+    "pattern": "api/v1/^cart/(?P<pk>[^/.]+)\\.(?P<format>[a-z0-9]+)/?$",
+    "name": "cart-detail",
+    "lookup_str": "customer.cart.views.CartView"
+  },
+  {
+    "pattern": "api/v1/^cart-item/$",
+    "name": "cartitem-list",
+    "lookup_str": "customer.cart.views.CartItemView"
+  },
+  {
+    "pattern": "api/v1/^cart-item\\.(?P<format>[a-z0-9]+)/?$",
+    "name": "cartitem-list",
+    "lookup_str": "customer.cart.views.CartItemView"
+  },
+  {
+    "pattern": "api/v1/^cart-item/(?P<pk>[^/.]+)/$",
+    "name": "cartitem-detail",
+    "lookup_str": "customer.cart.views.CartItemView"
+  },
+  {
+    "pattern": "api/v1/^cart-item/(?P<pk>[^/.]+)\\.(?P<format>[a-z0-9]+)/?$",
+    "name": "cartitem-detail",
+    "lookup_str": "customer.cart.views.CartItemView"
+  },
+  {
+    "pattern": "api/v1/",
+    "name": "api-root",
+    "lookup_str": "rest_framework.routers.APIRootView"
+  },
+  {
+    "pattern": "api/v1/<drf_format_suffix:format>",
+    "name": "api-root",
+    "lookup_str": "rest_framework.routers.APIRootView"
+  },
+  {
+    "pattern": "api/v1/^discount/$",
+    "name": "discount-list",
+    "lookup_str": "restaurant.discount.views.DiscountViewSet"
+  },
+  {
+    "pattern": "api/v1/^discount\\.(?P<format>[a-z0-9]+)/?$",
+    "name": "discount-list",
+    "lookup_str": "restaurant.discount.views.DiscountViewSet"
+  },
+  {
+    "pattern": "api/v1/^discount/apply-discount/$",
+    "name": "discount-apply-discounts-to-order",
+    "lookup_str": "restaurant.discount.views.DiscountViewSet"
+  },
+  {
+    "pattern": "api/v1/^discount/apply-discount\\.(?P<format>[a-z0-9]+)/?$",
+    "name": "discount-apply-discounts-to-order",
+    "lookup_str": "restaurant.discount.views.DiscountViewSet"
+  },
+  {
+    "pattern": "api/v1/^discount/big_discount_items/$",
+    "name": "discount-big-discount-items",
+    "lookup_str": "restaurant.discount.views.DiscountViewSet"
+  },
+  {
+    "pattern": "api/v1/^discount/big_discount_items\\.(?P<format>[a-z0-9]+)/?$",
+    "name": "discount-big-discount-items",
+    "lookup_str": "restaurant.discount.views.DiscountViewSet"
+  },
+  {
+    "pattern": "api/v1/^discount/(?P<pk>[^/.]+)/$",
+    "name": "discount-detail",
+    "lookup_str": "restaurant.discount.views.DiscountViewSet"
+  },
+  {
+    "pattern": "api/v1/^discount/(?P<pk>[^/.]+)\\.(?P<format>[a-z0-9]+)/?$",
+    "name": "discount-detail",
+    "lookup_str": "restaurant.discount.views.DiscountViewSet"
+  },
+  {
+    "pattern": "api/v1/^discount/(?P<pk>[^/.]+)/discount_rules/$",
+    "name": "discount-discount-rules",
+    "lookup_str": "restaurant.discount.views.DiscountViewSet"
+  },
+  {
+    "pattern": "api/v1/^discount/(?P<pk>[^/.]+)/discount_rules\\.(?P<format>[a-z0-9]+)/?$",
+    "name": "discount-discount-rules",
+    "lookup_str": "restaurant.discount.views.DiscountViewSet"
+  },
+  {
+    "pattern": "api/v1/^discount-rule/$",
+    "name": "discountrule-list",
+    "lookup_str": "restaurant.discount.views.DiscountRuleViewSet"
+  },
+  {
+    "pattern": "api/v1/^discount-rule\\.(?P<format>[a-z0-9]+)/?$",
+    "name": "discountrule-list",
+    "lookup_str": "restaurant.discount.views.DiscountRuleViewSet"
+  },
+  {
+    "pattern": "api/v1/^discount-rule/(?P<pk>[^/.]+)/$",
+    "name": "discountrule-detail",
+    "lookup_str": "restaurant.discount.views.DiscountRuleViewSet"
+  },
+  {
+    "pattern": "api/v1/^discount-rule/(?P<pk>[^/.]+)\\.(?P<format>[a-z0-9]+)/?$",
+    "name": "discountrule-detail",
+    "lookup_str": "restaurant.discount.views.DiscountRuleViewSet"
+  },
+  {
+    "pattern": "api/v1/^discount-rule/(?P<pk>[^/.]+)/discount_applications/$",
+    "name": "discountrule-discount-applications",
+    "lookup_str": "restaurant.discount.views.DiscountRuleViewSet"
+  },
+  {
+    "pattern": "api/v1/^discount-rule/(?P<pk>[^/.]+)/discount_applications\\.(?P<format>[a-z0-9]+)/?$",
+    "name": "discountrule-discount-applications",
+    "lookup_str": "restaurant.discount.views.DiscountRuleViewSet"
+  },
+  {
+    "pattern": "api/v1/^discount-application/$",
+    "name": "discountapplication-list",
+    "lookup_str": "restaurant.discount.views.DiscountApplicationViewSet"
+  },
+  {
+    "pattern": "api/v1/^discount-application\\.(?P<format>[a-z0-9]+)/?$",
+    "name": "discountapplication-list",
+    "lookup_str": "restaurant.discount.views.DiscountApplicationViewSet"
+  },
+  {
+    "pattern": "api/v1/^discount-application/(?P<pk>[^/.]+)/$",
+    "name": "discountapplication-detail",
+    "lookup_str": "restaurant.discount.views.DiscountApplicationViewSet"
+  },
+  {
+    "pattern": "api/v1/^discount-application/(?P<pk>[^/.]+)\\.(?P<format>[a-z0-9]+)/?$",
+    "name": "discountapplication-detail",
+    "lookup_str": "restaurant.discount.views.DiscountApplicationViewSet"
+  },
+  {
+    "pattern": "api/v1/^coupon/$",
+    "name": "coupon-list",
+    "lookup_str": "restaurant.discount.views.CouponViewSet"
+  },
+  {
+    "pattern": "api/v1/^coupon\\.(?P<format>[a-z0-9]+)/?$",
+    "name": "coupon-list",
+    "lookup_str": "restaurant.discount.views.CouponViewSet"
+  },
+  {
+    "pattern": "api/v1/^coupon/(?P<pk>[^/.]+)/$",
+    "name": "coupon-detail",
+    "lookup_str": "restaurant.discount.views.CouponViewSet"
+  },
+  {
+    "pattern": "api/v1/^coupon/(?P<pk>[^/.]+)\\.(?P<format>[a-z0-9]+)/?$",
+    "name": "coupon-detail",
+    "lookup_str": "restaurant.discount.views.CouponViewSet"
+  },
+  {
+    "pattern": "api/v1/",
+    "name": "api-root",
+    "lookup_str": "rest_framework.routers.APIRootView"
+  },
+  {
+    "pattern": "api/v1/<drf_format_suffix:format>",
+    "name": "api-root",
+    "lookup_str": "rest_framework.routers.APIRootView"
+  },
+  {
+    "pattern": "api/v1/^address/$",
+    "name": "address-list",
+    "lookup_str": "customer.address.views.AddressViewSet"
+  },
+  {
+    "pattern": "api/v1/^address\\.(?P<format>[a-z0-9]+)/?$",
+    "name": "address-list",
+    "lookup_str": "customer.address.views.AddressViewSet"
+  },
+  {
+    "pattern": "api/v1/^address/(?P<pk>[^/.]+)/$",
+    "name": "address-detail",
+    "lookup_str": "customer.address.views.AddressViewSet"
+  },
+  {
+    "pattern": "api/v1/^address/(?P<pk>[^/.]+)\\.(?P<format>[a-z0-9]+)/?$",
+    "name": "address-detail",
+    "lookup_str": "customer.address.views.AddressViewSet"
+  },
+  {
+    "pattern": "api/v1/",
+    "name": "api-root",
+    "lookup_str": "rest_framework.routers.APIRootView"
+  },
+  {
+    "pattern": "api/v1/<drf_format_suffix:format>",
+    "name": "api-root",
+    "lookup_str": "rest_framework.routers.APIRootView"
+  },
+  {
+    "pattern": "api/v1/^payment/$",
+    "name": "payments-list",
+    "lookup_str": "customer.payment.views.PaymentView"
+  },
+  {
+    "pattern": "api/v1/^payment\\.(?P<format>[a-z0-9]+)/?$",
+    "name": "payments-list",
+    "lookup_str": "customer.payment.views.PaymentView"
+  },
+  {
+    "pattern": "api/v1/^payment/process/$",
+    "name": "payments-process-payment",
+    "lookup_str": "customer.payment.views.PaymentView"
+  },
+  {
+    "pattern": "api/v1/^payment/process\\.(?P<format>[a-z0-9]+)/?$",
+    "name": "payments-process-payment",
+    "lookup_str": "customer.payment.views.PaymentView"
+  },
+  {
+    "pattern": "api/v1/^payment/(?P<pk>[^/.]+)/$",
+    "name": "payments-detail",
+    "lookup_str": "customer.payment.views.PaymentView"
+  },
+  {
+    "pattern": "api/v1/^payment/(?P<pk>[^/.]+)\\.(?P<format>[a-z0-9]+)/?$",
+    "name": "payments-detail",
+    "lookup_str": "customer.payment.views.PaymentView"
+  },
+  {
+    "pattern": "api/v1/^payment-check/$",
+    "name": "payment-list",
+    "lookup_str": "customer.payment.views.PaymentCheckView"
+  },
+  {
+    "pattern": "api/v1/^payment-check\\.(?P<format>[a-z0-9]+)/?$",
+    "name": "payment-list",
+    "lookup_str": "customer.payment.views.PaymentCheckView"
+  },
+  {
+    "pattern": "api/v1/^payment-check/(?P<pk>[^/.]+)/$",
+    "name": "payment-detail",
+    "lookup_str": "customer.payment.views.PaymentCheckView"
+  },
+  {
+    "pattern": "api/v1/^payment-check/(?P<pk>[^/.]+)\\.(?P<format>[a-z0-9]+)/?$",
+    "name": "payment-detail",
+    "lookup_str": "customer.payment.views.PaymentCheckView"
+  },
+  {
+    "pattern": "api/v1/^payment-check/(?P<pk>[^/.]+)/verify/$",
+    "name": "payment-verify-payment",
+    "lookup_str": "customer.payment.views.PaymentCheckView"
+  },
+  {
+    "pattern": "api/v1/^payment-check/(?P<pk>[^/.]+)/verify\\.(?P<format>[a-z0-9]+)/?$",
+    "name": "payment-verify-payment",
+    "lookup_str": "customer.payment.views.PaymentCheckView"
+  },
+  {
+    "pattern": "api/v1/",
+    "name": "api-root",
+    "lookup_str": "rest_framework.routers.APIRootView"
+  },
+  {
+    "pattern": "api/v1/<drf_format_suffix:format>",
+    "name": "api-root",
+    "lookup_str": "rest_framework.routers.APIRootView"
+  },
+  {
+    "pattern": "api/v1/^feedback/$",
+    "name": "feedback-list",
+    "lookup_str": "customer.feedback.views.FeedbackViewSet"
+  },
+  {
+    "pattern": "api/v1/^feedback\\.(?P<format>[a-z0-9]+)/?$",
+    "name": "feedback-list",
+    "lookup_str": "customer.feedback.views.FeedbackViewSet"
+  },
+  {
+    "pattern": "api/v1/^feedback/(?P<pk>[^/.]+)/$",
+    "name": "feedback-detail",
+    "lookup_str": "customer.feedback.views.FeedbackViewSet"
+  },
+  {
+    "pattern": "api/v1/^feedback/(?P<pk>[^/.]+)\\.(?P<format>[a-z0-9]+)/?$",
+    "name": "feedback-detail",
+    "lookup_str": "customer.feedback.views.FeedbackViewSet"
+  },
+  {
+    "pattern": "api/v1/",
+    "name": "api-root",
+    "lookup_str": "rest_framework.routers.APIRootView"
+  },
+  {
+    "pattern": "api/v1/<drf_format_suffix:format>",
+    "name": "api-root",
+    "lookup_str": "rest_framework.routers.APIRootView"
+  },
+  {
+    "pattern": "api/v1/^notification/$",
+    "name": "notification-list",
+    "lookup_str": "customer.notification.views.NotificationViewSet"
+  },
+  {
+    "pattern": "api/v1/^notification\\.(?P<format>[a-z0-9]+)/?$",
+    "name": "notification-list",
+    "lookup_str": "customer.notification.views.NotificationViewSet"
+  },
+  {
+    "pattern": "api/v1/^notification/(?P<pk>[^/.]+)/$",
+    "name": "notification-detail",
+    "lookup_str": "customer.notification.views.NotificationViewSet"
+  },
+  {
+    "pattern": "api/v1/^notification/(?P<pk>[^/.]+)\\.(?P<format>[a-z0-9]+)/?$",
+    "name": "notification-detail",
+    "lookup_str": "customer.notification.views.NotificationViewSet"
+  },
+  {
+    "pattern": "api/v1/^notification/(?P<pk>[^/.]+)/read/$",
+    "name": "notification-mark-as-read",
+    "lookup_str": "customer.notification.views.NotificationViewSet"
+  },
+  {
+    "pattern": "api/v1/^notification/(?P<pk>[^/.]+)/read\\.(?P<format>[a-z0-9]+)/?$",
+    "name": "notification-mark-as-read",
+    "lookup_str": "customer.notification.views.NotificationViewSet"
+  },
+  {
+    "pattern": "api/v1/",
+    "name": "api-root",
+    "lookup_str": "rest_framework.routers.APIRootView"
+  },
+  {
+    "pattern": "api/v1/<drf_format_suffix:format>",
+    "name": "api-root",
+    "lookup_str": "rest_framework.routers.APIRootView"
+  },
+  {
+    "pattern": "api/v1/^discount/$",
+    "name": "discount-list",
+    "lookup_str": "restaurant.discount.views.DiscountViewSet"
+  },
+  {
+    "pattern": "api/v1/^discount\\.(?P<format>[a-z0-9]+)/?$",
+    "name": "discount-list",
+    "lookup_str": "restaurant.discount.views.DiscountViewSet"
+  },
+  {
+    "pattern": "api/v1/^discount/apply-discount/$",
+    "name": "discount-apply-discounts-to-order",
+    "lookup_str": "restaurant.discount.views.DiscountViewSet"
+  },
+  {
+    "pattern": "api/v1/^discount/apply-discount\\.(?P<format>[a-z0-9]+)/?$",
+    "name": "discount-apply-discounts-to-order",
+    "lookup_str": "restaurant.discount.views.DiscountViewSet"
+  },
+  {
+    "pattern": "api/v1/^discount/big_discount_items/$",
+    "name": "discount-big-discount-items",
+    "lookup_str": "restaurant.discount.views.DiscountViewSet"
+  },
+  {
+    "pattern": "api/v1/^discount/big_discount_items\\.(?P<format>[a-z0-9]+)/?$",
+    "name": "discount-big-discount-items",
+    "lookup_str": "restaurant.discount.views.DiscountViewSet"
+  },
+  {
+    "pattern": "api/v1/^discount/(?P<pk>[^/.]+)/$",
+    "name": "discount-detail",
+    "lookup_str": "restaurant.discount.views.DiscountViewSet"
+  },
+  {
+    "pattern": "api/v1/^discount/(?P<pk>[^/.]+)\\.(?P<format>[a-z0-9]+)/?$",
+    "name": "discount-detail",
+    "lookup_str": "restaurant.discount.views.DiscountViewSet"
+  },
+  {
+    "pattern": "api/v1/^discount/(?P<pk>[^/.]+)/discount_rules/$",
+    "name": "discount-discount-rules",
+    "lookup_str": "restaurant.discount.views.DiscountViewSet"
+  },
+  {
+    "pattern": "api/v1/^discount/(?P<pk>[^/.]+)/discount_rules\\.(?P<format>[a-z0-9]+)/?$",
+    "name": "discount-discount-rules",
+    "lookup_str": "restaurant.discount.views.DiscountViewSet"
+  },
+  {
+    "pattern": "api/v1/^discount-rule/$",
+    "name": "discountrule-list",
+    "lookup_str": "restaurant.discount.views.DiscountRuleViewSet"
+  },
+  {
+    "pattern": "api/v1/^discount-rule\\.(?P<format>[a-z0-9]+)/?$",
+    "name": "discountrule-list",
+    "lookup_str": "restaurant.discount.views.DiscountRuleViewSet"
+  },
+  {
+    "pattern": "api/v1/^discount-rule/(?P<pk>[^/.]+)/$",
+    "name": "discountrule-detail",
+    "lookup_str": "restaurant.discount.views.DiscountRuleViewSet"
+  },
+  {
+    "pattern": "api/v1/^discount-rule/(?P<pk>[^/.]+)\\.(?P<format>[a-z0-9]+)/?$",
+    "name": "discountrule-detail",
+    "lookup_str": "restaurant.discount.views.DiscountRuleViewSet"
+  },
+  {
+    "pattern": "api/v1/^discount-rule/(?P<pk>[^/.]+)/discount_applications/$",
+    "name": "discountrule-discount-applications",
+    "lookup_str": "restaurant.discount.views.DiscountRuleViewSet"
+  },
+  {
+    "pattern": "api/v1/^discount-rule/(?P<pk>[^/.]+)/discount_applications\\.(?P<format>[a-z0-9]+)/?$",
+    "name": "discountrule-discount-applications",
+    "lookup_str": "restaurant.discount.views.DiscountRuleViewSet"
+  },
+  {
+    "pattern": "api/v1/^discount-application/$",
+    "name": "discountapplication-list",
+    "lookup_str": "restaurant.discount.views.DiscountApplicationViewSet"
+  },
+  {
+    "pattern": "api/v1/^discount-application\\.(?P<format>[a-z0-9]+)/?$",
+    "name": "discountapplication-list",
+    "lookup_str": "restaurant.discount.views.DiscountApplicationViewSet"
+  },
+  {
+    "pattern": "api/v1/^discount-application/(?P<pk>[^/.]+)/$",
+    "name": "discountapplication-detail",
+    "lookup_str": "restaurant.discount.views.DiscountApplicationViewSet"
+  },
+  {
+    "pattern": "api/v1/^discount-application/(?P<pk>[^/.]+)\\.(?P<format>[a-z0-9]+)/?$",
+    "name": "discountapplication-detail",
+    "lookup_str": "restaurant.discount.views.DiscountApplicationViewSet"
+  },
+  {
+    "pattern": "api/v1/^coupon/$",
+    "name": "coupon-list",
+    "lookup_str": "restaurant.discount.views.CouponViewSet"
+  },
+  {
+    "pattern": "api/v1/^coupon\\.(?P<format>[a-z0-9]+)/?$",
+    "name": "coupon-list",
+    "lookup_str": "restaurant.discount.views.CouponViewSet"
+  },
+  {
+    "pattern": "api/v1/^coupon/(?P<pk>[^/.]+)/$",
+    "name": "coupon-detail",
+    "lookup_str": "restaurant.discount.views.CouponViewSet"
+  },
+  {
+    "pattern": "api/v1/^coupon/(?P<pk>[^/.]+)\\.(?P<format>[a-z0-9]+)/?$",
+    "name": "coupon-detail",
+    "lookup_str": "restaurant.discount.views.CouponViewSet"
+  },
+  {
+    "pattern": "api/v1/",
+    "name": "api-root",
+    "lookup_str": "rest_framework.routers.APIRootView"
+  },
+  {
+    "pattern": "api/v1/<drf_format_suffix:format>",
+    "name": "api-root",
+    "lookup_str": "rest_framework.routers.APIRootView"
+  },
+  {
+    "pattern": "api/v1/^customer-loyalty/$",
+    "name": "customer_loyalty-list",
+    "lookup_str": "loyalty.views.CustomerLoyaltyViewSet"
+  },
+  {
+    "pattern": "api/v1/^customer-loyalty\\.(?P<format>[a-z0-9]+)/?$",
+    "name": "customer_loyalty-list",
+    "lookup_str": "loyalty.views.CustomerLoyaltyViewSet"
+  },
+  {
+    "pattern": "api/v1/^customer-loyalty/(?P<pk>[^/.]+)/$",
+    "name": "customer_loyalty-detail",
+    "lookup_str": "loyalty.views.CustomerLoyaltyViewSet"
+  },
+  {
+    "pattern": "api/v1/^customer-loyalty/(?P<pk>[^/.]+)\\.(?P<format>[a-z0-9]+)/?$",
+    "name": "customer_loyalty-detail",
+    "lookup_str": "loyalty.views.CustomerLoyaltyViewSet"
+  },
+  {
+    "pattern": "api/v1/^restaurant-loyalty-settings/$",
+    "name": "restaurant_loyalty_settings-list",
+    "lookup_str": "loyalty.views.RestaurantLoyaltySettingsViewSet"
+  },
+  {
+    "pattern": "api/v1/^restaurant-loyalty-settings\\.(?P<format>[a-z0-9]+)/?$",
+    "name": "restaurant_loyalty_settings-list",
+    "lookup_str": "loyalty.views.RestaurantLoyaltySettingsViewSet"
+  },
+  {
+    "pattern": "api/v1/^restaurant-loyalty-settings/(?P<pk>[^/.]+)/$",
+    "name": "restaurant_loyalty_settings-detail",
+    "lookup_str": "loyalty.views.RestaurantLoyaltySettingsViewSet"
+  },
+  {
+    "pattern": "api/v1/^restaurant-loyalty-settings/(?P<pk>[^/.]+)\\.(?P<format>[a-z0-9]+)/?$",
+    "name": "restaurant_loyalty_settings-detail",
+    "lookup_str": "loyalty.views.RestaurantLoyaltySettingsViewSet"
+  },
+  {
+    "pattern": "api/v1/^loyalty-conversion-rate/$",
+    "name": "loyalty_conversion_rate-list",
+    "lookup_str": "loyalty.views.LoyaltyConversionRateViewSet"
+  },
+  {
+    "pattern": "api/v1/^loyalty-conversion-rate\\.(?P<format>[a-z0-9]+)/?$",
+    "name": "loyalty_conversion_rate-list",
+    "lookup_str": "loyalty.views.LoyaltyConversionRateViewSet"
+  },
+  {
+    "pattern": "api/v1/^loyalty-conversion-rate/(?P<pk>[^/.]+)/$",
+    "name": "loyalty_conversion_rate-detail",
+    "lookup_str": "loyalty.views.LoyaltyConversionRateViewSet"
+  },
+  {
+    "pattern": "api/v1/^loyalty-conversion-rate/(?P<pk>[^/.]+)\\.(?P<format>[a-z0-9]+)/?$",
+    "name": "loyalty_conversion_rate-detail",
+    "lookup_str": "loyalty.views.LoyaltyConversionRateViewSet"
+  },
+  {
+    "pattern": "api/v1/^loyalty-transaction/$",
+    "name": "loyalty_transaction-list",
+    "lookup_str": "loyalty.views.LoyaltyTransactionViewSet"
+  },
+  {
+    "pattern": "api/v1/^loyalty-transaction\\.(?P<format>[a-z0-9]+)/?$",
+    "name": "loyalty_transaction-list",
+    "lookup_str": "loyalty.views.LoyaltyTransactionViewSet"
+  },
+  {
+    "pattern": "api/v1/^loyalty-transaction/(?P<pk>[^/.]+)/$",
+    "name": "loyalty_transaction-detail",
+    "lookup_str": "loyalty.views.LoyaltyTransactionViewSet"
+  },
+  {
+    "pattern": "api/v1/^loyalty-transaction/(?P<pk>[^/.]+)\\.(?P<format>[a-z0-9]+)/?$",
+    "name": "loyalty_transaction-detail",
+    "lookup_str": "loyalty.views.LoyaltyTransactionViewSet"
+  },
+  {
+    "pattern": "api/v1/",
+    "name": "api-root",
+    "lookup_str": "rest_framework.routers.APIRootView"
+  },
+  {
+    "pattern": "api/v1/<drf_format_suffix:format>",
+    "name": "api-root",
+    "lookup_str": "rest_framework.routers.APIRootView"
+  },
+  {
+    "pattern": "api/v1/^posts/$",
+    "name": "posts-list",
+    "lookup_str": "feed.views.PostViewSet"
+  },
+  {
+    "pattern": "api/v1/^posts\\.(?P<format>[a-z0-9]+)/?$",
+    "name": "posts-list",
+    "lookup_str": "feed.views.PostViewSet"
+  },
+  {
+    "pattern": "api/v1/^posts/(?P<pk>[^/.]+)/$",
+    "name": "posts-detail",
+    "lookup_str": "feed.views.PostViewSet"
+  },
+  {
+    "pattern": "api/v1/^posts/(?P<pk>[^/.]+)\\.(?P<format>[a-z0-9]+)/?$",
+    "name": "posts-detail",
+    "lookup_str": "feed.views.PostViewSet"
+  },
+  {
+    "pattern": "api/v1/^posts/(?P<pk>[^/.]+)/bookmark/$",
+    "name": "posts-bookmark",
+    "lookup_str": "feed.views.PostViewSet"
+  },
+  {
+    "pattern": "api/v1/^posts/(?P<pk>[^/.]+)/bookmark\\.(?P<format>[a-z0-9]+)/?$",
+    "name": "posts-bookmark",
+    "lookup_str": "feed.views.PostViewSet"
+  },
+  {
+    "pattern": "api/v1/^posts/(?P<pk>[^/.]+)/like/$",
+    "name": "posts-like",
+    "lookup_str": "feed.views.PostViewSet"
+  },
+  {
+    "pattern": "api/v1/^posts/(?P<pk>[^/.]+)/like\\.(?P<format>[a-z0-9]+)/?$",
+    "name": "posts-like",
+    "lookup_str": "feed.views.PostViewSet"
+  },
+  {
+    "pattern": "api/v1/^posts/(?P<pk>[^/.]+)/stats/$",
+    "name": "posts-post-stats",
+    "lookup_str": "feed.views.PostViewSet"
+  },
+  {
+    "pattern": "api/v1/^posts/(?P<pk>[^/.]+)/stats\\.(?P<format>[a-z0-9]+)/?$",
+    "name": "posts-post-stats",
+    "lookup_str": "feed.views.PostViewSet"
+  },
+  {
+    "pattern": "api/v1/^posts/(?P<pk>[^/.]+)/share/$",
+    "name": "posts-share",
+    "lookup_str": "feed.views.PostViewSet"
+  },
+  {
+    "pattern": "api/v1/^posts/(?P<pk>[^/.]+)/share\\.(?P<format>[a-z0-9]+)/?$",
+    "name": "posts-share",
+    "lookup_str": "feed.views.PostViewSet"
+  },
+  {
+    "pattern": "api/v1/^comments/$",
+    "name": "comments-list",
+    "lookup_str": "feed.views.CommentViewSet"
+  },
+  {
+    "pattern": "api/v1/^comments\\.(?P<format>[a-z0-9]+)/?$",
+    "name": "comments-list",
+    "lookup_str": "feed.views.CommentViewSet"
+  },
+  {
+    "pattern": "api/v1/^comments/(?P<pk>[^/.]+)/$",
+    "name": "comments-detail",
+    "lookup_str": "feed.views.CommentViewSet"
+  },
+  {
+    "pattern": "api/v1/^comments/(?P<pk>[^/.]+)\\.(?P<format>[a-z0-9]+)/?$",
+    "name": "comments-detail",
+    "lookup_str": "feed.views.CommentViewSet"
+  },
+  {
+    "pattern": "api/v1/^tags/$",
+    "name": "tags-list",
+    "lookup_str": "feed.views.TagViewSet"
+  },
+  {
+    "pattern": "api/v1/^tags\\.(?P<format>[a-z0-9]+)/?$",
+    "name": "tags-list",
+    "lookup_str": "feed.views.TagViewSet"
+  },
+  {
+    "pattern": "api/v1/^tags/(?P<pk>[^/.]+)/$",
+    "name": "tags-detail",
+    "lookup_str": "feed.views.TagViewSet"
+  },
+  {
+    "pattern": "api/v1/^tags/(?P<pk>[^/.]+)\\.(?P<format>[a-z0-9]+)/?$",
+    "name": "tags-detail",
+    "lookup_str": "feed.views.TagViewSet"
+  },
+  {
+    "pattern": "api/v1/^user/bookmarks/$",
+    "name": "user-bookmarks-list",
+    "lookup_str": "feed.views.UserBookmarksViewSet"
+  },
+  {
+    "pattern": "api/v1/^user/bookmarks\\.(?P<format>[a-z0-9]+)/?$",
+    "name": "user-bookmarks-list",
+    "lookup_str": "feed.views.UserBookmarksViewSet"
+  },
+  {
+    "pattern": "api/v1/^user/bookmarks/(?P<pk>[^/.]+)/$",
+    "name": "user-bookmarks-detail",
+    "lookup_str": "feed.views.UserBookmarksViewSet"
+  },
+  {
+    "pattern": "api/v1/^user/bookmarks/(?P<pk>[^/.]+)\\.(?P<format>[a-z0-9]+)/?$",
+    "name": "user-bookmarks-detail",
+    "lookup_str": "feed.views.UserBookmarksViewSet"
+  },
+  {
+    "pattern": "api/v1/^posts/(?P<post_pk>[^/.]+)/shares/$",
+    "name": "post-shares-list",
+    "lookup_str": "feed.views.ShareViewSet"
+  },
+  {
+    "pattern": "api/v1/^posts/(?P<post_pk>[^/.]+)/shares\\.(?P<format>[a-z0-9]+)/?$",
+    "name": "post-shares-list",
+    "lookup_str": "feed.views.ShareViewSet"
+  },
+  {
+    "pattern": "api/v1/^posts/(?P<post_pk>[^/.]+)/shares/(?P<pk>[^/.]+)/$",
+    "name": "post-shares-detail",
+    "lookup_str": "feed.views.ShareViewSet"
+  },
+  {
+    "pattern": "api/v1/^posts/(?P<post_pk>[^/.]+)/shares/(?P<pk>[^/.]+)\\.(?P<format>[a-z0-9]+)/?$",
+    "name": "post-shares-detail",
+    "lookup_str": "feed.views.ShareViewSet"
+  },
+  {
+    "pattern": "api/v1/^posts/(?P<post_pk>[^/.]+)/stats//$",
+    "name": "post-stats-list",
+    "lookup_str": "feed.views.PostViewSet"
+  },
+  {
+    "pattern": "api/v1/^posts/(?P<post_pk>[^/.]+)/stats\\.(?P<format>[a-z0-9]+)/?$",
+    "name": "post-stats-list",
+    "lookup_str": "feed.views.PostViewSet"
+  },
+  {
+    "pattern": "api/v1/^posts/(?P<post_pk>[^/.]+)/stats//(?P<pk>[^/.]+)/$",
+    "name": "post-stats-detail",
+    "lookup_str": "feed.views.PostViewSet"
+  },
+  {
+    "pattern": "api/v1/^posts/(?P<post_pk>[^/.]+)/stats//(?P<pk>[^/.]+)\\.(?P<format>[a-z0-9]+)/?$",
+    "name": "post-stats-detail",
+    "lookup_str": "feed.views.PostViewSet"
+  },
+  {
+    "pattern": "api/v1/^posts/(?P<post_pk>[^/.]+)/stats//(?P<pk>[^/.]+)/bookmark/$",
+    "name": "post-stats-bookmark",
+    "lookup_str": "feed.views.PostViewSet"
+  },
+  {
+    "pattern": "api/v1/^posts/(?P<post_pk>[^/.]+)/stats//(?P<pk>[^/.]+)/bookmark\\.(?P<format>[a-z0-9]+)/?$",
+    "name": "post-stats-bookmark",
+    "lookup_str": "feed.views.PostViewSet"
+  },
+  {
+    "pattern": "api/v1/^posts/(?P<post_pk>[^/.]+)/stats//(?P<pk>[^/.]+)/like/$",
+    "name": "post-stats-like",
+    "lookup_str": "feed.views.PostViewSet"
+  },
+  {
+    "pattern": "api/v1/^posts/(?P<post_pk>[^/.]+)/stats//(?P<pk>[^/.]+)/like\\.(?P<format>[a-z0-9]+)/?$",
+    "name": "post-stats-like",
+    "lookup_str": "feed.views.PostViewSet"
+  },
+  {
+    "pattern": "api/v1/^posts/(?P<post_pk>[^/.]+)/stats//(?P<pk>[^/.]+)/stats/$",
+    "name": "post-stats-post-stats",
+    "lookup_str": "feed.views.PostViewSet"
+  },
+  {
+    "pattern": "api/v1/^posts/(?P<post_pk>[^/.]+)/stats//(?P<pk>[^/.]+)/stats\\.(?P<format>[a-z0-9]+)/?$",
+    "name": "post-stats-post-stats",
+    "lookup_str": "feed.views.PostViewSet"
+  },
+  {
+    "pattern": "api/v1/^posts/(?P<post_pk>[^/.]+)/stats//(?P<pk>[^/.]+)/share/$",
+    "name": "post-stats-share",
+    "lookup_str": "feed.views.PostViewSet"
+  },
+  {
+    "pattern": "api/v1/^posts/(?P<post_pk>[^/.]+)/stats//(?P<pk>[^/.]+)/share\\.(?P<format>[a-z0-9]+)/?$",
+    "name": "post-stats-share",
+    "lookup_str": "feed.views.PostViewSet"
+  },
+  {
+    "pattern": "api/v1/",
+    "name": "api-root",
+    "lookup_str": "rest_framework.routers.APIRootView"
+  },
+  {
+    "pattern": "api/v1/<drf_format_suffix:format>",
+    "name": "api-root",
+    "lookup_str": "rest_framework.routers.APIRootView"
+  },
+  {
+    "pattern": "docs/",
+    "name": "schema-swagger-ui",
+    "lookup_str": "drf_yasg.views.get_schema_view.<locals>.SchemaView"
+  },
+  {
+    "pattern": "redoc/",
+    "name": "schema-redoc",
+    "lookup_str": "drf_yasg.views.get_schema_view.<locals>.SchemaView"
+  },
+  {
+    "pattern": "terms/",
+    "name": "terms",
+    "lookup_str": "django.views.generic.base.TemplateView"
+  },
+  {
+    "pattern": "privacy/",
+    "name": "privacy",
+    "lookup_str": "django.views.generic.base.TemplateView"
+  },
+  {
+    "pattern": "^media/(?P<path>.*)$",
+    "name": null,
+    "lookup_str": "django.views.static.serve"
+  }
+]
