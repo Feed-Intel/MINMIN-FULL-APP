@@ -2,7 +2,7 @@ name: deploy-staging-backend
 
 on:
   push:
-    branches: [develop]
+    branches: [main]
     paths:
       - 'MinMinBE/**'
       - '.github/workflows/deploy-be.yml'
