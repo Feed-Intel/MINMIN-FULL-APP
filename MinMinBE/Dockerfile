@@ -5,11 +5,11 @@ FROM python:3.12-slim
 WORKDIR /app
 
 # Install Python dependencies
-COPY MinMinBE/requirements.txt ./requirements.txt
+COPY requirements.txt ./requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy backend source code
-COPY MinMinBE/ ./
+COPY . ./
 
 # Expose Django port
 EXPOSE 8000
