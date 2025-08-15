@@ -1,0 +1,38 @@
+name: Deploy Backend
+
+on:
+  push:
+    branches: [staging, main]
+    paths:
+      - 'MinMinBE/**'
+      - '.github/workflows/deploy-be.yml'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+
+      - name: Install dependencies
+        run: |
+          cd MinMinBE
+          pip install -r requirements.txt
+
+      - name: Run tests
+        run: |
+          cd MinMinBE
+          python manage.py test
+
+      - name: Deploy
+        run: |
+          if [ "${GITHUB_REF}" = "refs/heads/main" ]; then
+            echo "Deploying backend to production"
+          else
+            echo "Deploying backend to staging"
+          fi
