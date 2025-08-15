@@ -1,0 +1,39 @@
+{
+  "family": "minmin-stg-backend",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["EC2"],
+  "executionRoleArn": "arn:aws:iam::<acct>:role/minmin-stg-ecs-execution",
+  "taskRoleArn": "arn:aws:iam::<acct>:role/minmin-stg-ecs-task",
+  "cpu": "1024",
+  "memory": "2048",
+  "containerDefinitions": [
+    {
+      "name": "backend",
+      "image": "<ECR_URI>:staging",
+      "portMappings": [{ "containerPort": 8000, "protocol": "tcp" }],
+      "essential": true,
+      "command": [
+        "gunicorn", "config.wsgi:application",
+        "-b", "0.0.0.0:8000",
+        "--workers", "2"
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/minmin-stg-backend",
+          "awslogs-region": "eu-west-3",
+          "awslogs-stream-prefix": "ecs"
+        }
+      },
+      "secrets": [
+        { "name": "DJANGO_SECRET_KEY", "valueFrom": "arn:aws:secretsmanager:eu-west-3:<acct>:secret:minmin/stg/django" },
+        { "name": "DATABASE_URL", "valueFrom": "arn:aws:secretsmanager:eu-west-3:<acct>:secret:minmin/stg/db" }
+      ],
+      "environment": [
+        { "name": "DJANGO_SETTINGS_MODULE", "value": "config.settings.staging" },
+        { "name": "ALLOWED_HOSTS", "value": "api.staging.example.com" },
+        { "name": "S3_BUCKET_UPLOADS", "value": "minmin-stg-uploads" }
+      ]
+    }
+  ]
+}

@@ -1,8 +1,8 @@
-name: Deploy Restaurant Frontend
+name: deploy-staging-ferestaurant
 
 on:
   push:
-    branches: [staging, main]
+    branches: [develop]
     paths:
       - 'MinMinFERestaurant/**'
       - '.github/workflows/deploy-ferestaurant.yml'
@@ -10,29 +10,22 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
+    permissions:
+      id-token: write
+      contents: read
     steps:
-      - uses: actions/checkout@v3
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
-          node-version: 18
-
-      - name: Install dependencies
-        run: |
-          cd MinMinFERestaurant
-          npm ci
-
-      - name: Run tests
-        run: |
-          cd MinMinFERestaurant
-          npm test --if-present
-
-      - name: Deploy
-        run: |
-          if [ "${GITHUB_REF}" = "refs/heads/main" ]; then
-            echo "Deploying restaurant frontend to production"
-          else
-            echo "Deploying restaurant frontend to staging"
-          fi
+          node-version: '20'
+      - run: npm ci
+        working-directory: MinMinFERestaurant
+      - run: npm run build
+        working-directory: MinMinFERestaurant
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          aws-region: eu-west-3
+      - run: aws s3 sync dist/ "s3://${{ secrets.S3_FRONTEND_BUCKET }}/" --delete
+        working-directory: MinMinFERestaurant
+      - run: aws cloudfront create-invalidation --distribution-id ${{ secrets.CF_DIST_ID }} --paths "/*"
