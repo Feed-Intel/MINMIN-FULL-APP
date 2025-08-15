@@ -44,5 +44,7 @@ USER appuser
 
 EXPOSE 8000
 
+
 # Gunicorn defaults; adjust workers/threads based on CPU
-CMD ["gunicorn", "alpha.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "2", "--threads", "4", "--timeout", "60"]
+CMD ["gunicorn", "minmin.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "2", "--threads", "4", "--timeout", "60"]
+
