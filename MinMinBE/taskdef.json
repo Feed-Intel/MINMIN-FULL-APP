@@ -2,14 +2,14 @@
   "family": "minmin-stg-backend",
   "networkMode": "awsvpc",
   "requiresCompatibilities": ["EC2"],
-  "executionRoleArn": "arn:aws:iam::<acct>:role/minmin-stg-ecs-execution",
-  "taskRoleArn": "arn:aws:iam::<acct>:role/minmin-stg-ecs-task",
+  "executionRoleArn": "arn:aws:iam::307946670404:role/github-oidc-deploy-role",
+  "taskRoleArn": "arn:aws:iam::307946670404:role/github-oidc-deploy-role",
   "cpu": "1024",
   "memory": "2048",
   "containerDefinitions": [
     {
       "name": "backend",
-      "image": "<ECR_URI>:staging",
+      "image": "307946670404.dkr.ecr.eu-west-3.amazonaws.com/minmin-stg/backend:staging",
       "portMappings": [{ "containerPort": 8000, "protocol": "tcp" }],
       "essential": true,
       "command": [
