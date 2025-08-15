@@ -1,0 +1,38 @@
+name: Deploy Restaurant Frontend
+
+on:
+  push:
+    branches: [staging, main]
+    paths:
+      - 'MinMinFERestaurant/**'
+      - '.github/workflows/deploy-ferestaurant.yml'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Install dependencies
+        run: |
+          cd MinMinFERestaurant
+          npm ci
+
+      - name: Run tests
+        run: |
+          cd MinMinFERestaurant
+          npm test --if-present
+
+      - name: Deploy
+        run: |
+          if [ "${GITHUB_REF}" = "refs/heads/main" ]; then
+            echo "Deploying restaurant frontend to production"
+          else
+            echo "Deploying restaurant frontend to staging"
+          fi
