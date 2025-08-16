@@ -31,12 +31,16 @@ jobs:
           docker build -t $IMAGE_URI backend
           docker push $IMAGE_URI
           echo "IMAGE_URI=$IMAGE_URI" >> $GITHUB_ENV
-      - name: Determine EB environment
+      - name: Determine EB settings
         run: |
           if [[ "${GITHUB_REF##*/}" == "main" ]]; then
             echo "EB_ENV=${{ secrets.EB_ENV_MAIN }}" >> $GITHUB_ENV
+            echo "EB_APP=${{ secrets.EB_APP_MAIN }}" >> $GITHUB_ENV
+            echo "EB_BUCKET=${{ secrets.EB_BUCKET_MAIN }}" >> $GITHUB_ENV
           else
             echo "EB_ENV=${{ secrets.EB_ENV_DEVELOP }}" >> $GITHUB_ENV
+            echo "EB_APP=${{ secrets.EB_APP_DEVELOP }}" >> $GITHUB_ENV
+            echo "EB_BUCKET=${{ secrets.EB_BUCKET_DEVELOP }}" >> $GITHUB_ENV
           fi
       - name: Render Dockerrun
         run: |
@@ -54,16 +58,15 @@ jobs:
           EOD
       - name: Ensure EB S3 bucket exists
         run: |
-          BUCKET=${{ secrets.EB_APP }}
-          aws s3api head-bucket --bucket "$BUCKET" 2>/dev/null || \
-            aws s3api create-bucket --bucket "$BUCKET" --region ${{ secrets.AWS_REGION }} --create-bucket-configuration LocationConstraint=${{ secrets.AWS_REGION }}
+          aws s3api head-bucket --bucket "$EB_BUCKET" 2>/dev/null || \
+            aws s3api create-bucket --bucket "$EB_BUCKET" --region ${{ secrets.AWS_REGION }} --create-bucket-configuration LocationConstraint=${{ secrets.AWS_REGION }}
       - name: Bundle and deploy
         run: |
           ZIP=backend-${GITHUB_SHA}.zip
           zip -r $ZIP Dockerrun.aws.json
-          aws s3 cp $ZIP s3://${{ secrets.EB_APP }}/$ZIP
-          aws elasticbeanstalk create-application-version --application-name ${{ secrets.EB_APP }} --version-label ${GITHUB_SHA} --source-bundle S3Bucket=${{ secrets.EB_APP }},S3Key=$ZIP
-          aws elasticbeanstalk update-environment --application-name ${{ secrets.EB_APP }} --environment-name $EB_ENV --version-label ${GITHUB_SHA}
+          aws s3 cp $ZIP s3://$EB_BUCKET/$ZIP
+          aws elasticbeanstalk create-application-version --application-name $EB_APP --version-label ${GITHUB_SHA} --source-bundle S3Bucket=$EB_BUCKET,S3Key=$ZIP
+          aws elasticbeanstalk update-environment --application-name $EB_APP --environment-name $EB_ENV --version-label ${GITHUB_SHA}
       - name: Post-deploy health check
         run: |
           curl -f https://${EB_ENV}.elasticbeanstalk.${{ secrets.AWS_REGION }}.amazonaws.com/healthz
