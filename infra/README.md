@@ -27,6 +27,15 @@ Instances assume an IAM role with permissions to read parameters:
 
 Attach the role to the environment's instance profile.
 
+#### GitHub Actions
+
+The deployment workflow in `.github/workflows/deploy-backend-eb.yml` assumes a
+separate IAM role. That role must be able to create a new Elastic Beanstalk
+application version and update the target environment. Attach a policy such as
+[`github-actions-eb-policy.json`](github-actions-eb-policy.json) that permits
+`elasticbeanstalk:CreateApplicationVersion` and
+`elasticbeanstalk:UpdateEnvironment` on the relevant resources.
+
 ### Deployment
 
 GitHub Actions builds the Docker image, uploads an application version and updates the environment. After deployment, `/healthz` is checked for success.
