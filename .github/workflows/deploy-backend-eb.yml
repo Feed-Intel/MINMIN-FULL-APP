@@ -52,6 +52,11 @@ jobs:
             ]
           }
           EOD
+      - name: Ensure EB S3 bucket exists
+        run: |
+          BUCKET=${{ secrets.EB_APP }}
+          aws s3api head-bucket --bucket "$BUCKET" 2>/dev/null || \
+            aws s3api create-bucket --bucket "$BUCKET" --region ${{ secrets.AWS_REGION }} --create-bucket-configuration LocationConstraint=${{ secrets.AWS_REGION }}
       - name: Bundle and deploy
         run: |
           ZIP=backend-${GITHUB_SHA}.zip
