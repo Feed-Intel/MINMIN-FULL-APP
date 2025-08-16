@@ -5,6 +5,7 @@ GitHub repository secrets required:
 - `AWS_ROLE_TO_ASSUME`
 - `AWS_REGION`
 - `ECR_BACKEND`
+- `ECR repository name` – `minmin-backend` (must exist or be created)
 - `EB_APP`
 - `EB_ENV_MAIN`
 - `EB_ENV_DEVELOP`
