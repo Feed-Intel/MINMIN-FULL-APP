@@ -58,8 +58,12 @@ jobs:
           EOD
       - name: Ensure EB S3 bucket exists
         run: |
-          aws s3api head-bucket --bucket "$EB_BUCKET" 2>/dev/null || \
-            aws s3api create-bucket --bucket "$EB_BUCKET" --region ${{ secrets.AWS_REGION }} --create-bucket-configuration LocationConstraint=${{ secrets.AWS_REGION }}
+          VERSION_LABEL="${GITHUB_SHA}-${GITHUB_RUN_NUMBER}-${GITHUB_RUN_ATTEMPT}"
+          ZIP=backend-$VERSION_LABEL.zip
+          zip -r $ZIP Dockerrun.aws.json
+          aws s3 cp $ZIP s3://$EB_BUCKET/$ZIP
+          aws elasticbeanstalk create-application-version --application-name $EB_APP --version-label $VERSION_LABEL --source-bundle S3Bucket=$EB_BUCKET,S3Key=$ZIP || echo "Application version already exists"
+          aws elasticbeanstalk update-environment --environment-name $EB_ENV --version-label $VERSION_LABEL
       - name: Bundle and deploy
         run: |
           if [ -z "$EB_APP" ]; then
