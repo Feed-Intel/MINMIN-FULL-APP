@@ -1,0 +1,60 @@
+name: Deploy Backend to Elastic Beanstalk
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'backend/**'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ secrets.AWS_REGION }}
+      - name: Login to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v2
+      - name: Build and push image
+        run: |
+          IMAGE_URI=${{ secrets.ECR_BACKEND }}:${GITHUB_SHA}
+          docker build -t $IMAGE_URI backend
+          docker push $IMAGE_URI
+          echo "IMAGE_URI=$IMAGE_URI" >> $GITHUB_ENV
+      - name: Determine EB environment
+        run: |
+          if [[ "${GITHUB_REF##*/}" == "main" ]]; then
+            echo "EB_ENV=${{ secrets.EB_ENV_MAIN }}" >> $GITHUB_ENV
+          else
+            echo "EB_ENV=${{ secrets.EB_ENV_DEVELOP }}" >> $GITHUB_ENV
+          fi
+      - name: Render Dockerrun
+        run: |
+          cat > Dockerrun.aws.json <<EOD
+          {
+            "AWSEBDockerrunVersion": "1",
+            "Image": {
+              "Name": "$IMAGE_URI",
+              "Update": "true"
+            },
+            "Ports": [
+              {"ContainerPort": 8000}
+            ]
+          }
+          EOD
+      - name: Bundle and deploy
+        run: |
+          ZIP=backend-${GITHUB_SHA}.zip
+          zip -r $ZIP Dockerrun.aws.json
+          aws s3 cp $ZIP s3://${{ secrets.EB_APP }}/$ZIP
+          aws elasticbeanstalk create-application-version --application-name ${{ secrets.EB_APP }} --version-label ${GITHUB_SHA} --source-bundle S3Bucket=${{ secrets.EB_APP }},S3Key=$ZIP
+          aws elasticbeanstalk update-environment --application-name ${{ secrets.EB_APP }} --environment-name $EB_ENV --version-label ${GITHUB_SHA}
+      - name: Post-deploy health check
+        run: |
+          curl -f https://${EB_ENV}.elasticbeanstalk.${{ secrets.AWS_REGION }}.amazonaws.com/healthz

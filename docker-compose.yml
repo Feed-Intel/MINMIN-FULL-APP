@@ -1,0 +1,25 @@
+version: '3.9'
+
+services:
+  api:
+    build: ./backend
+    env_file:
+      - backend/env.example
+    ports:
+      - '8000:8000'
+    depends_on:
+      - db
+      - redis
+  db:
+    image: postgis/postgis
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - '5432:5432'
+  redis:
+    image: redis:alpine
+    ports:
+      - '6379:6379'
+
+volumes:
+  pgdata:

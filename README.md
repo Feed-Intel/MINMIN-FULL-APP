@@ -1,89 +1,48 @@
-# MinMin Full App
+# MinMin Monorepo
 
-MinMin is a full-stack platform for restaurant ordering and management. The backend is a Django project and exposes APIs for accounts, restaurant menus, orders, loyalty programs and push notifications. Two Expo/React Native mobile apps serve customers and restaurant staff.
+This repository contains the MinMin backend API and two frontend applications.
 
-## Repository structure
-- **MinMin BE** – Django backend for accounts, restaurant management, ordering, loyalty, feeds and notifications.
-- **MinMin FE Customer** – Expo app for customers to browse menus, manage carts and place orders.
-- **MinMin FE Restaurant** – Expo app for restaurant staff to manage menus, orders and analytics.
+## Local development
 
-## Prerequisites
-- Python 3
-- Node.js and npm
-- PostgreSQL with PostGIS
-- Redis (for Channels and Celery)
-- Expo CLI / Expo Go or Android/iOS emulators for mobile testing
-
-## Backend setup
-1. Change into the backend folder:
+1. Copy `backend/env.example` to `backend/.env` and adjust values as needed.
+2. Start the stack:
    ```bash
-   cd "MinMin BE"
+   make dev:up
    ```
-2. Create and activate a virtual environment and install dependencies:
-   ```bash
-   python -m venv venv
-   source venv/bin/activate
-   pip install -r requirements.txt
-   ```
-3. Provide required environment variables such as `SECRET_KEY`, database credentials (`DB_NAME`, `DB_USER`, `DB_PASSWORD`, `DB_HOST`, `DB_PORT`) and any email/OAuth keys referenced in `alpha/settings.py`. In staging, these values are automatically loaded from AWS Secrets Manager and SSM Parameter Store (paths under `minmin/stg/*`), so a local `.env` file is only necessary for development.
-4. Apply migrations, initialize an admin user, and start the development server:
-   ```bash
-   python manage.py migrate
-   python init_admin_user.py
-   python manage.py runserver
-   ```
-5. Optional services:
-   ```bash
-   celery -A alpha worker -l info
-   celery -A alpha beat -l info
-   ```
+3. The API will be available at <http://localhost:8000>.
 
-### Generate stress-test data
+## Deployment
 
-The backend includes a management command for populating the database with a
-large volume of realistic restaurant data.  This is useful for QA or load
-testing.
+### Backend – Elastic Beanstalk
 
-Run the command from the backend directory and adjust the numbers to suit your
-needs:
+Pushing to `develop` or `main` triggers `.github/workflows/deploy-backend-eb.yml` which:
 
-```bash
-python manage.py seed_restaurant_data --restaurants 50 --customers 1000 --orders 20
-```
+1. Builds and pushes a Docker image to ECR.
+2. Creates a new Elastic Beanstalk application version referencing the image.
+3. Updates the target environment (`${EB_ENV_DEVELOP}` or `${EB_ENV_MAIN}`).
+4. Performs a `/healthz` check.
 
-By default the command creates sample images and thousands of related records
-for restaurants, branches, tables, menus, customers and orders.  Use higher
-numbers to perform heavy stress tests.
+### Frontend – AWS Amplify
 
-The seeding process also provisions convenient QA logins:
+Each frontend has its own Amplify Hosting app. Commits under `apps/restaurant-fe/` or `apps/customer-fe/` trigger builds via the Amplify API.
 
-- **Admin:** `admin@example.com` / `password`
-- **Demo customer:** `customer@example.com` / `password`
+## Rollbacks
 
-## Customer app
-1. Install dependencies:
-   ```bash
-   cd "MinMin FE Customer"
-   npm install
-   ```
-2. Start the app:
-   ```bash
-   npx expo start
-   ```
+To rollback the backend, deploy a previous application version from the Elastic Beanstalk console or rerun the workflow with an older commit SHA.
 
-## Restaurant app
-1. Install dependencies:
-   ```bash
-   cd "MinMin FE Restaurant"
-   npm install
-   ```
-2. Start the app:
-   ```bash
-   npx expo start
-   ```
+Amplify retains build history per branch; redeploy a prior build from the Amplify console if needed.
 
-## Features
-- Restaurants manage branches, menus, combos, discounts and tables while customers place orders, give feedback and make payments.
-- The backend uses Django, Django REST Framework, Celery and Channels for real-time features and scheduled tasks.
-- Frontend apps are built with Expo and React Native, supporting Android, iOS and web.
+## Environments
 
+| Environment | Backend EB env      | Restaurant FE branch | Customer FE branch |
+|-------------|--------------------|----------------------|--------------------|
+| Develop     | `${EB_ENV_DEVELOP}` | `develop`            | `develop`          |
+| Production  | `${EB_ENV_MAIN}`    | `main`               | `main`             |
+
+## Make commands
+
+- `make dev:up` – start local stack
+- `make dev:down` – stop stack
+- `make dev:logs` – tail API logs
+- `make db:migrate` – run migrations
+- `make db:seed` – seed data
