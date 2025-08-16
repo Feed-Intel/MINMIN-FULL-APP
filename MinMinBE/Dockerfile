@@ -1,6 +1,7 @@
 # syntax=docker/dockerfile:1
 # Python base
 FROM python:3.12-slim
+ARG DEBIAN_FRONTEND=noninteractive
 
 # App/env settings
 ENV PYTHONDONTWRITEBYTECODE=1 \
