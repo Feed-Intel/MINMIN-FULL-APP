@@ -1,462 +1,642 @@
 [
   {
+    "url": "http://127.0.0.1:8000/api/auth/register/",
+    "status": 401,
+    "elapsed_ms": 22
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/auth/login/",
+    "status": 403,
+    "elapsed_ms": 4
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/auth/logout/",
+    "status": 401,
+    "elapsed_ms": 3
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/auth/token/refresh/",
+    "status": 401,
+    "elapsed_ms": 5
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/auth/user/123e4567-e89b-12d3-a456-426614174000/",
+    "status": 401,
+    "elapsed_ms": 5
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/auth/users/",
+    "status": 401,
+    "elapsed_ms": 4
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/auth/branchAdmins/",
+    "status": 401,
+    "elapsed_ms": 4
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/auth/social/google/",
+    "status": 401,
+    "elapsed_ms": 5
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/auth/social/facebook/",
+    "status": 401,
+    "elapsed_ms": 3
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/auth/verify-otp/",
+    "status": 401,
+    "elapsed_ms": 3
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/auth/check-otp/",
+    "status": 401,
+    "elapsed_ms": 2
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/auth/password-reset/request/",
+    "status": 401,
+    "elapsed_ms": 3
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/auth/password-reset/verify/",
+    "status": 401,
+    "elapsed_ms": 4
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/auth/social/login/",
+    "status": 200,
+    "elapsed_ms": 53
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/auth/social/logout/",
+    "status": 302,
+    "elapsed_ms": 2
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/auth/social/inactive/",
+    "status": 200,
+    "elapsed_ms": 4
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/auth/social/signup/",
+    "status": 200,
+    "elapsed_ms": 33
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/auth/social/reauthenticate/",
+    "status": 302,
+    "elapsed_ms": 2
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/auth/social/email/",
+    "status": 302,
+    "elapsed_ms": 2
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/auth/social/confirm-email/",
+    "status": 200,
+    "elapsed_ms": 4
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/auth/social/password/change/",
+    "status": 302,
+    "elapsed_ms": 5
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/auth/social/password/set/",
+    "status": 302,
+    "elapsed_ms": 4
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/auth/social/password/reset/",
+    "status": 200,
+    "elapsed_ms": 7
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/auth/social/password/reset/done/",
+    "status": 200,
+    "elapsed_ms": 6
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/auth/social/password/reset/key/done/",
+    "status": 200,
+    "elapsed_ms": 8
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/auth/social/login/code/confirm/",
+    "status": 302,
+    "elapsed_ms": 3
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/auth/social/3rdparty/login/cancelled/",
+    "status": 200,
+    "elapsed_ms": 5
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/auth/social/3rdparty/login/error/",
+    "status": 200,
+    "elapsed_ms": 10
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/auth/social/3rdparty/signup/",
+    "status": 302,
+    "elapsed_ms": 2
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/auth/social/3rdparty/",
+    "status": 302,
+    "elapsed_ms": 2
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/auth/social/social/login/cancelled/",
+    "status": 301,
+    "elapsed_ms": 2
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/auth/social/social/login/error/",
+    "status": 301,
+    "elapsed_ms": 3
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/auth/social/social/signup/",
+    "status": 301,
+    "elapsed_ms": 4
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/auth/social/social/connections/",
+    "status": 301,
+    "elapsed_ms": 5
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/auth/social/google/login/",
+    "status": 500,
+    "elapsed_ms": 37
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/auth/social/google/login/callback/",
+    "status": 500,
+    "elapsed_ms": 28
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/auth/social/google/login/token/",
+    "status": 500,
+    "elapsed_ms": 28
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/auth/social/facebook/login/",
+    "status": 500,
+    "elapsed_ms": 25
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/auth/social/facebook/login/callback/",
+    "status": 500,
+    "elapsed_ms": 27
+  },
+  {
+    "url": "http://127.0.0.1:8000/api/auth/social/facebook/login/token/",
+    "status": 500,
+    "elapsed_ms": 29
+  },
+  {
     "url": "http://127.0.0.1:8000/api/v1/^menu/",
     "status": 404,
-    "elapsed_ms": 33
+    "elapsed_ms": 13
   },
   {
     "url": "http://127.0.0.1:8000/api/v1/",
     "status": 401,
-    "elapsed_ms": 19
+    "elapsed_ms": 3
   },
   {
     "url": "http://127.0.0.1:8000/api/v1/1",
     "status": 404,
-    "elapsed_ms": 27
+    "elapsed_ms": 13
   },
   {
     "url": "http://127.0.0.1:8000/api/v1/^branch/",
     "status": 404,
-    "elapsed_ms": 27
+    "elapsed_ms": 11
   },
   {
     "url": "http://127.0.0.1:8000/api/v1/^branch/all-with-distance/",
     "status": 404,
-    "elapsed_ms": 32
+    "elapsed_ms": 12
   },
   {
     "url": "http://127.0.0.1:8000/api/v1/^branch/call_waiter/",
     "status": 404,
-    "elapsed_ms": 28
+    "elapsed_ms": 15
   },
   {
     "url": "http://127.0.0.1:8000/api/v1/^branch/nearby/",
     "status": 404,
-    "elapsed_ms": 30
+    "elapsed_ms": 12
   },
   {
     "url": "http://127.0.0.1:8000/api/v1/",
     "status": 401,
-    "elapsed_ms": 21
+    "elapsed_ms": 3
   },
   {
     "url": "http://127.0.0.1:8000/api/v1/1",
     "status": 404,
-    "elapsed_ms": 42
+    "elapsed_ms": 14
   },
   {
     "url": "http://127.0.0.1:8000/api/v1/^tenant/",
     "status": 404,
-    "elapsed_ms": 23
+    "elapsed_ms": 13
   },
   {
     "url": "http://127.0.0.1:8000/api/v1/^tenant/dashboard/",
     "status": 404,
-    "elapsed_ms": 25
+    "elapsed_ms": 13
   },
   {
     "url": "http://127.0.0.1:8000/api/v1/^tenant/price-stats/",
     "status": 404,
-    "elapsed_ms": 29
+    "elapsed_ms": 12
   },
   {
     "url": "http://127.0.0.1:8000/api/v1/^dashboard/stats/",
     "status": 404,
-    "elapsed_ms": 33
+    "elapsed_ms": 13
   },
   {
     "url": "http://127.0.0.1:8000/api/v1/^dashboard/top-items/",
     "status": 404,
-    "elapsed_ms": 29
+    "elapsed_ms": 14
   },
   {
     "url": "http://127.0.0.1:8000/api/v1/",
     "status": 401,
-    "elapsed_ms": 19
+    "elapsed_ms": 2
   },
   {
     "url": "http://127.0.0.1:8000/api/v1/1",
     "status": 404,
-    "elapsed_ms": 38
+    "elapsed_ms": 16
   },
   {
     "url": "http://127.0.0.1:8000/api/v1/^table/",
     "status": 404,
-    "elapsed_ms": 40
+    "elapsed_ms": 17
   },
   {
     "url": "http://127.0.0.1:8000/api/v1/",
     "status": 401,
-    "elapsed_ms": 21
+    "elapsed_ms": 4
   },
   {
     "url": "http://127.0.0.1:8000/api/v1/1",
     "status": 404,
-    "elapsed_ms": 44
+    "elapsed_ms": 16
   },
   {
     "url": "http://127.0.0.1:8000/api/v1/^combo/",
     "status": 404,
-    "elapsed_ms": 39
+    "elapsed_ms": 11
   },
   {
     "url": "http://127.0.0.1:8000/api/v1/^combo-item/",
     "status": 404,
-    "elapsed_ms": 42
+    "elapsed_ms": 12
   },
   {
     "url": "http://127.0.0.1:8000/api/v1/",
     "status": 401,
-    "elapsed_ms": 24
+    "elapsed_ms": 3
   },
   {
     "url": "http://127.0.0.1:8000/api/v1/1",
     "status": 404,
-    "elapsed_ms": 25
+    "elapsed_ms": 14
   },
   {
     "url": "http://127.0.0.1:8000/api/v1/^related-menu/",
     "status": 404,
-    "elapsed_ms": 30
+    "elapsed_ms": 13
   },
   {
     "url": "http://127.0.0.1:8000/api/v1/",
     "status": 401,
-    "elapsed_ms": 19
+    "elapsed_ms": 3
   },
   {
     "url": "http://127.0.0.1:8000/api/v1/1",
     "status": 404,
-    "elapsed_ms": 43
+    "elapsed_ms": 14
   },
   {
     "url": "http://127.0.0.1:8000/api/v1/^menu-availability/",
     "status": 404,
-    "elapsed_ms": 36
+    "elapsed_ms": 13
   },
   {
     "url": "http://127.0.0.1:8000/api/v1/^menu-availability/available_categories/",
     "status": 404,
-    "elapsed_ms": 39
+    "elapsed_ms": 13
   },
   {
     "url": "http://127.0.0.1:8000/api/v1/^menu-availability/best_dishes_of_week/",
     "status": 404,
-    "elapsed_ms": 37
+    "elapsed_ms": 13
   },
   {
     "url": "http://127.0.0.1:8000/api/v1/^menu-availability/recommended_items/",
     "status": 404,
-    "elapsed_ms": 41
+    "elapsed_ms": 13
   },
   {
     "url": "http://127.0.0.1:8000/api/v1/",
     "status": 401,
-    "elapsed_ms": 22
+    "elapsed_ms": 4
   },
   {
     "url": "http://127.0.0.1:8000/api/v1/1",
     "status": 404,
-    "elapsed_ms": 49
+    "elapsed_ms": 17
   },
   {
     "url": "http://127.0.0.1:8000/api/v1/^qr-code/",
     "status": 404,
-    "elapsed_ms": 39
+    "elapsed_ms": 15
   },
   {
     "url": "http://127.0.0.1:8000/api/v1/",
     "status": 401,
-    "elapsed_ms": 16
+    "elapsed_ms": 3
   },
   {
     "url": "http://127.0.0.1:8000/api/v1/1",
     "status": 404,
-    "elapsed_ms": 29
+    "elapsed_ms": 14
   },
   {
     "url": "http://127.0.0.1:8000/api/v1/^order/",
     "status": 404,
-    "elapsed_ms": 33
+    "elapsed_ms": 11
   },
   {
     "url": "http://127.0.0.1:8000/api/v1/^order/check-discount/",
     "status": 404,
-    "elapsed_ms": 37
+    "elapsed_ms": 11
   },
   {
     "url": "http://127.0.0.1:8000/api/v1/",
     "status": 401,
-    "elapsed_ms": 15
+    "elapsed_ms": 3
   },
   {
     "url": "http://127.0.0.1:8000/api/v1/1",
     "status": 404,
-    "elapsed_ms": 28
+    "elapsed_ms": 13
   },
   {
     "url": "http://127.0.0.1:8000/api/v1/^feedback/",
     "status": 404,
-    "elapsed_ms": 24
+    "elapsed_ms": 13
   },
   {
     "url": "http://127.0.0.1:8000/api/v1/",
     "status": 401,
-    "elapsed_ms": 17
+    "elapsed_ms": 3
   },
   {
     "url": "http://127.0.0.1:8000/api/v1/1",
     "status": 404,
-    "elapsed_ms": 31
+    "elapsed_ms": 15
   },
   {
     "url": "http://127.0.0.1:8000/api/v1/^cart/",
     "status": 404,
-    "elapsed_ms": 40
+    "elapsed_ms": 13
   },
   {
     "url": "http://127.0.0.1:8000/api/v1/^cart-item/",
     "status": 404,
-    "elapsed_ms": 40
+    "elapsed_ms": 12
   },
   {
     "url": "http://127.0.0.1:8000/api/v1/",
     "status": 401,
-    "elapsed_ms": 22
+    "elapsed_ms": 3
   },
   {
     "url": "http://127.0.0.1:8000/api/v1/1",
     "status": 404,
-    "elapsed_ms": 45
+    "elapsed_ms": 13
   },
   {
     "url": "http://127.0.0.1:8000/api/v1/^discount/",
     "status": 404,
-    "elapsed_ms": 29
+    "elapsed_ms": 11
   },
   {
     "url": "http://127.0.0.1:8000/api/v1/^discount/apply-discount/",
     "status": 404,
-    "elapsed_ms": 34
+    "elapsed_ms": 13
   },
   {
     "url": "http://127.0.0.1:8000/api/v1/^discount/big_discount_items/",
     "status": 404,
-    "elapsed_ms": 40
+    "elapsed_ms": 13
   },
   {
     "url": "http://127.0.0.1:8000/api/v1/^discount-rule/",
     "status": 404,
-    "elapsed_ms": 37
+    "elapsed_ms": 12
   },
   {
     "url": "http://127.0.0.1:8000/api/v1/^discount-application/",
     "status": 404,
-    "elapsed_ms": 38
+    "elapsed_ms": 13
   },
   {
     "url": "http://127.0.0.1:8000/api/v1/^coupon/",
     "status": 404,
-    "elapsed_ms": 41
+    "elapsed_ms": 12
   },
   {
     "url": "http://127.0.0.1:8000/api/v1/",
     "status": 401,
-    "elapsed_ms": 22
+    "elapsed_ms": 2
   },
   {
     "url": "http://127.0.0.1:8000/api/v1/1",
     "status": 404,
-    "elapsed_ms": 44
+    "elapsed_ms": 12
   },
   {
     "url": "http://127.0.0.1:8000/api/v1/^address/",
     "status": 404,
-    "elapsed_ms": 25
+    "elapsed_ms": 11
   },
   {
     "url": "http://127.0.0.1:8000/api/v1/",
     "status": 401,
-    "elapsed_ms": 19
+    "elapsed_ms": 2
   },
   {
     "url": "http://127.0.0.1:8000/api/v1/1",
     "status": 404,
-    "elapsed_ms": 39
+    "elapsed_ms": 13
   },
   {
     "url": "http://127.0.0.1:8000/api/v1/^payment/",
     "status": 404,
-    "elapsed_ms": 28
+    "elapsed_ms": 13
   },
   {
     "url": "http://127.0.0.1:8000/api/v1/^payment/process/",
     "status": 404,
-    "elapsed_ms": 30
+    "elapsed_ms": 12
   },
   {
     "url": "http://127.0.0.1:8000/api/v1/^payment-check/",
     "status": 404,
-    "elapsed_ms": 35
+    "elapsed_ms": 11
   },
   {
     "url": "http://127.0.0.1:8000/api/v1/",
     "status": 401,
-    "elapsed_ms": 20
+    "elapsed_ms": 2
   },
   {
     "url": "http://127.0.0.1:8000/api/v1/1",
     "status": 404,
-    "elapsed_ms": 43
+    "elapsed_ms": 16
   },
   {
     "url": "http://127.0.0.1:8000/api/v1/^feedback/",
     "status": 404,
-    "elapsed_ms": 39
+    "elapsed_ms": 14
   },
   {
     "url": "http://127.0.0.1:8000/api/v1/",
     "status": 401,
-    "elapsed_ms": 22
+    "elapsed_ms": 2
   },
   {
     "url": "http://127.0.0.1:8000/api/v1/1",
     "status": 404,
-    "elapsed_ms": 44
+    "elapsed_ms": 18
   },
   {
     "url": "http://127.0.0.1:8000/api/v1/^notification/",
     "status": 404,
-    "elapsed_ms": 41
+    "elapsed_ms": 15
   },
   {
     "url": "http://127.0.0.1:8000/api/v1/",
     "status": 401,
-    "elapsed_ms": 22
+    "elapsed_ms": 4
   },
   {
     "url": "http://127.0.0.1:8000/api/v1/1",
     "status": 404,
-    "elapsed_ms": 47
+    "elapsed_ms": 12
   },
   {
     "url": "http://127.0.0.1:8000/api/v1/^discount/",
     "status": 404,
-    "elapsed_ms": 41
+    "elapsed_ms": 11
   },
   {
     "url": "http://127.0.0.1:8000/api/v1/^discount/apply-discount/",
     "status": 404,
-    "elapsed_ms": 25
+    "elapsed_ms": 11
   },
   {
     "url": "http://127.0.0.1:8000/api/v1/^discount/big_discount_items/",
     "status": 404,
-    "elapsed_ms": 28
+    "elapsed_ms": 12
   },
   {
     "url": "http://127.0.0.1:8000/api/v1/^discount-rule/",
     "status": 404,
-    "elapsed_ms": 31
+    "elapsed_ms": 13
   },
   {
     "url": "http://127.0.0.1:8000/api/v1/^discount-application/",
     "status": 404,
-    "elapsed_ms": 38
+    "elapsed_ms": 13
   },
   {
     "url": "http://127.0.0.1:8000/api/v1/^coupon/",
     "status": 404,
-    "elapsed_ms": 34
+    "elapsed_ms": 12
   },
   {
     "url": "http://127.0.0.1:8000/api/v1/",
     "status": 401,
-    "elapsed_ms": 22
+    "elapsed_ms": 3
   },
   {
     "url": "http://127.0.0.1:8000/api/v1/1",
     "status": 404,
-    "elapsed_ms": 44
+    "elapsed_ms": 17
   },
   {
     "url": "http://127.0.0.1:8000/api/v1/^customer-loyalty/",
     "status": 404,
-    "elapsed_ms": 43
+    "elapsed_ms": 12
   },
   {
     "url": "http://127.0.0.1:8000/api/v1/^restaurant-loyalty-settings/",
     "status": 404,
-    "elapsed_ms": 39
+    "elapsed_ms": 14
   },
   {
     "url": "http://127.0.0.1:8000/api/v1/^loyalty-conversion-rate/",
     "status": 404,
-    "elapsed_ms": 38
+    "elapsed_ms": 15
   },
   {
     "url": "http://127.0.0.1:8000/api/v1/^loyalty-transaction/",
     "status": 404,
-    "elapsed_ms": 27
+    "elapsed_ms": 11
   },
   {
     "url": "http://127.0.0.1:8000/api/v1/",
     "status": 401,
-    "elapsed_ms": 16
+    "elapsed_ms": 3
   },
   {
     "url": "http://127.0.0.1:8000/api/v1/1",
     "status": 404,
-    "elapsed_ms": 30
+    "elapsed_ms": 19
   },
   {
     "url": "http://127.0.0.1:8000/api/v1/^posts/",
     "status": 404,
-    "elapsed_ms": 32
+    "elapsed_ms": 17
   },
   {
     "url": "http://127.0.0.1:8000/api/v1/^comments/",
     "status": 404,
-    "elapsed_ms": 40
+    "elapsed_ms": 11
   },
   {
     "url": "http://127.0.0.1:8000/api/v1/^tags/",
     "status": 404,
-    "elapsed_ms": 39
+    "elapsed_ms": 13
   },
   {
     "url": "http://127.0.0.1:8000/api/v1/^user/bookmarks/",
     "status": 404,
-    "elapsed_ms": 40
+    "elapsed_ms": 12
   },
   {
     "url": "http://127.0.0.1:8000/api/v1/",
     "status": 401,
-    "elapsed_ms": 20
+    "elapsed_ms": 2
   },
   {
     "url": "http://127.0.0.1:8000/api/v1/1",
     "status": 404,
-    "elapsed_ms": 44
-  },
-  {
-    "url": "http://127.0.0.1:8000/docs/",
-    "status": 401,
-    "elapsed_ms": 27
-  },
-  {
-    "url": "http://127.0.0.1:8000/redoc/",
-    "status": 401,
-    "elapsed_ms": 25
-  },
-  {
-    "url": "http://127.0.0.1:8000/terms/",
-    "status": 200,
-    "elapsed_ms": 27
-  },
-  {
-    "url": "http://127.0.0.1:8000/privacy/",
-    "status": 200,
-    "elapsed_ms": 24
+    "elapsed_ms": 12
   }
 ]
