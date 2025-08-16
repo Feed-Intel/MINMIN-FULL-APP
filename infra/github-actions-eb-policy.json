@@ -1,0 +1,18 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "ElasticBeanstalkDeploy",
+      "Effect": "Allow",
+      "Action": [
+        "elasticbeanstalk:CreateApplicationVersion",
+        "elasticbeanstalk:UpdateEnvironment"
+      ],
+      "Resource": [
+        "arn:aws:elasticbeanstalk:*:*:application/*",
+        "arn:aws:elasticbeanstalk:*:*:applicationversion/*",
+        "arn:aws:elasticbeanstalk:*:*:environment/*/*"
+      ]
+    }
+  ]
+}
