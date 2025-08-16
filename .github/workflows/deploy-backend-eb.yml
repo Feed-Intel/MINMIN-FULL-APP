@@ -66,8 +66,8 @@ jobs:
           ZIP=backend-$VERSION_LABEL.zip
           zip -r $ZIP Dockerrun.aws.json
           aws s3 cp $ZIP s3://$EB_BUCKET/$ZIP
-          aws elasticbeanstalk create-application-version --application-name $EB_APP --version-label $VERSION_LABEL --source-bundle S3Bucket=$EB_BUCKET,S3Key=$ZIP
-          aws elasticbeanstalk update-environment --application-name $EB_APP --environment-name $EB_ENV --version-label $VERSION_LABEL
+          aws elasticbeanstalk create-application-version --application-name $EB_APP --version-label $VERSION_LABEL --source-bundle S3Bucket=$EB_BUCKET,S3Key=$ZIP || \
+            aws elasticbeanstalk update-environment --application-name $EB_APP --environment-name $EB_ENV --version-label $VERSION_LABEL
       - name: Post-deploy health check
         run: |
           curl -f https://${EB_ENV}.elasticbeanstalk.${{ secrets.AWS_REGION }}.amazonaws.com/healthz
