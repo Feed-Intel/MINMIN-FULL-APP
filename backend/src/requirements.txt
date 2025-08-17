@@ -1,1 +1,2 @@
-# add backend requirements here
+# Backend dependencies
+gunicorn
