@@ -4,7 +4,7 @@ on:
   push:
     branches: [main, develop]
     paths:
-      - 'backend/**'
+      - 'MinMinBE/**'
 
 jobs:
   deploy:
@@ -62,6 +62,7 @@ jobs:
             aws s3api create-bucket --bucket "$EB_BUCKET" --region ${{ secrets.AWS_REGION }} --create-bucket-configuration LocationConstraint=${{ secrets.AWS_REGION }}
       - name: Bundle and deploy
         run: |
+
           set -euo pipefail
           : "${EB_APP:?Missing EB_APP}"
           : "${EB_BUCKET:?Missing EB_BUCKET}"
@@ -78,6 +79,7 @@ jobs:
           aws elasticbeanstalk update-environment \
             --environment-name "$EB_ENV" \
             --version-label "$VERSION_LABEL"
+
       - name: Post-deploy health check
         run: |
           curl -f https://${EB_ENV}.elasticbeanstalk.${{ secrets.AWS_REGION }}.amazonaws.com/healthz
