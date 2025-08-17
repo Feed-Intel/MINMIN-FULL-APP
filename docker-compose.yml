@@ -2,14 +2,26 @@ version: '3.9'
 
 services:
   api:
-    build: ./backend
+    build: ./MinMinBE
     env_file:
-      - backend/env.example
+      - MinMinBE/.env
     ports:
       - '8000:8000'
     depends_on:
       - db
       - redis
+  customer-fe:
+    build:
+      context: ./MinMinFECustomer
+      dockerfile: dockerfile
+    ports:
+      - '3000:3000'
+  restaurant-fe:
+    build:
+      context: ./MinMinFERestaurant
+      dockerfile: dockerfile
+    ports:
+      - '3001:3000'
   db:
     image: postgis/postgis
     volumes:
