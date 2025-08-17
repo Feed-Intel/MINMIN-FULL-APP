@@ -4,12 +4,13 @@ This repository contains the MinMin backend API and two frontend applications.
 
 ## Local development
 
-1. Copy `backend/env.example` to `backend/.env` and adjust values as needed.
+1. Adjust environment variables in `MinMinBE/.env` as needed.
 2. Start the stack:
    ```bash
    make dev:up
    ```
 3. The API will be available at <http://localhost:8000>.
+   The customer frontend runs at <http://localhost:3000> and the restaurant frontend at <http://localhost:3001>.
 
 ## Deployment
 
