@@ -73,7 +73,8 @@ jobs:
           aws elasticbeanstalk create-application-version \
             --application-name "$EB_APP" \
             --version-label "$VERSION_LABEL" \
-            --source-bundle S3Bucket="$EB_BUCKET",S3Key="$ZIP"
+            --source-bundle S3Bucket="$EB_BUCKET",S3Key="$ZIP" || echo "Application version already exists"
+
           aws elasticbeanstalk update-environment \
             --application-name "$EB_APP" \
             --environment-name "$EB_ENV" \
