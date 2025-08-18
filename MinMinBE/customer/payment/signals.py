@@ -1,5 +1,5 @@
 from django.db.models.signals import post_save, post_delete
-from alpha.settings import EMAIL_HOST_USER
+from minminbe.settings import EMAIL_HOST_USER
 from django.dispatch import receiver
 from django.core.mail import send_mail
 from .models import Payment
@@ -22,7 +22,7 @@ def handle_payment_save(sender, instance, created, **kwargs):
             f"Payment Method: {instance.payment_method}\n"
             f"Transaction ID: {instance.transaction_id or 'N/A'}\n\n"
             f"Thank you for your payment!\n"
-            f"Best Regards,\nAlpha Team"
+            f"Best Regards,\nMinminbe Team"
         )
         send_mail(
             "Payment Initiated",
@@ -46,7 +46,7 @@ def handle_payment_save(sender, instance, created, **kwargs):
                 f"Your payment of ${instance.amount_paid} for Order ID: {instance.order.id} has been completed successfully.\n\n"
                 f"Transaction ID: {instance.transaction_id}\n"
                 f"Thank you for your business!\n\n"
-                f"Best Regards,\nAlpha Team"
+                f"Best Regards,\nMinminbe Team"
             )
             channel_layer = get_channel_layer()
             group_name = str(instance.order.tenant.id)  # Specific branch group
@@ -77,7 +77,7 @@ def handle_payment_save(sender, instance, created, **kwargs):
                 f"Dear {instance.order.customer.email},\n\n"
                 f"Your payment of ${instance.amount_paid} for Order ID: {instance.order.id} has failed.\n\n"
                 f"Please try again or contact support for assistance.\n\n"
-                f"Best Regards,\nAlpha Team"
+                f"Best Regards,\nMinminbe Team"
             )
             channel_layer = get_channel_layer()
             group_name = str(instance.order.tenant.id)  # Specific branch group
@@ -108,7 +108,7 @@ def handle_payment_save(sender, instance, created, **kwargs):
             status_message = (
                 f"Dear {instance.order.customer.email},\n\n"
                 f"The status of your payment for Order ID: {instance.order.id} has been updated to: {instance.payment_status}.\n\n"
-                f"Best Regards,\nAlpha Team"
+                f"Best Regards,\nMinminbe Team"
             )
 
         # Send status update email to the customer

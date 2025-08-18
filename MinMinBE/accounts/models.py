@@ -2,7 +2,7 @@ from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, Permis
 from django.db import models
 from restaurant.branch.models import Branch
 from django.utils.timezone import now
-from alpha.settings import MEDIA_ROOT
+from minminbe.settings import MEDIA_ROOT
 import uuid
 import os
 import logging

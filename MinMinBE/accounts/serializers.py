@@ -9,7 +9,7 @@ from restaurant.branch.models import Branch
 from .models import User
 from datetime import timedelta
 from django.utils.timezone import now
-from alpha.settings import EMAIL_HOST_USER
+from minminbe.settings import EMAIL_HOST_USER
 from rest_framework import serializers
 from django.utils.translation import gettext_lazy as _
 from rest_framework_simplejwt.tokens import RefreshToken

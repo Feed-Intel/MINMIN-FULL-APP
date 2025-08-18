@@ -6,7 +6,7 @@ from rest_framework_api_key.models import APIKey
 from django.urls import reverse
 from accounts.models import User
 from restaurant.qr_code.models import QRCode, Tenant, Branch, Table
-from alpha import settings
+from minminbe import settings
 import os
 
 class QRCodeViewSetTests(TestCase):

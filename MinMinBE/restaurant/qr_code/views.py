@@ -6,7 +6,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 from django.http import JsonResponse
 from django.db.models import Q
 
-from alpha import settings
+from minminbe import settings
 from .models import QRCode
 from rest_framework.pagination import PageNumberPagination
 from restaurant.table.models import Table
