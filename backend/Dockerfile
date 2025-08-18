@@ -26,4 +26,4 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=5s CMD curl -f http://localhost:$PORT/healthz || exit 1
 
 # IMPORTANT: use shell so $PORT expands
-CMD ["sh","-c","gunicorn app.wsgi:application --bind 0.0.0.0:$PORT"]
+CMD ["sh","-c","gunicorn minminbe.wsgi:application --bind 0.0.0.0:$PORT"]
