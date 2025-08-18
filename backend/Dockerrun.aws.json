@@ -1,0 +1,11 @@
+{
+  "AWSEBDockerrunVersion": "1",
+  "Image": {
+    "Name": "307946670404.dkr.ecr.eu-west-3.amazonaws.com/minmin-deploy-app:<TAG>",
+    "Update": "true"
+  },
+  "Ports": [{ "ContainerPort": "8000" }],
+  "Environment": [
+    { "Name": "PORT", "Value": "8000" }
+  ]
+}
