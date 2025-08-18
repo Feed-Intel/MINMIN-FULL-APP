@@ -19,7 +19,7 @@ ENV EXPO_PUBLIC_BASE_URL=https://customer.feed-intel.com
 
 # Install dependencies
 COPY package.json ./
-RUN yarn install
+RUN npm install
 
 # Install Expo CLI
 RUN yarn global add expo-cli
