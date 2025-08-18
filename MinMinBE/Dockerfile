@@ -18,6 +18,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq-dev \
     libjpeg62-turbo-dev zlib1g-dev \
     libffi-dev \
+    libgdal-dev \
     && rm -rf /var/lib/apt/lists/*
 
 
@@ -32,7 +33,8 @@ COPY requirements.txt .
 
 # If you use psycopg2, prefer psycopg2-binary in requirements to avoid building
 # Install Python deps (verbose helps when debugging CI failures)
-RUN pip install -v -r requirements.txt
+RUN pip install -v -r requirements.txt \
+    && pip install --no-cache-dir gunicorn
 
 # Copy the rest of the app
 COPY . .
@@ -48,5 +50,5 @@ EXPOSE 8000
 
 
 # Gunicorn defaults; adjust workers/threads based on CPU
-CMD ["gunicorn", "minmin.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "2", "--threads", "4", "--timeout", "60"]
+CMD ["gunicorn", "minminbe.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "2", "--threads", "4", "--timeout", "60"]
 
