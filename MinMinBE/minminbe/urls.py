@@ -14,6 +14,7 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
+from django.http import HttpResponse
 from django.contrib import admin
 from django.urls import path, include
 from django.conf.urls.static import static
@@ -33,6 +34,9 @@ schema_view = get_schema_view(
     public=True,
     permission_classes=(permissions.AllowAny,),
 )
+
+def healthz(_):
+    return HttpResponse("ok")
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -61,6 +65,7 @@ urlpatterns = [
     path('redoc/', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),
     path('terms/', TemplateView.as_view(template_name="terms_and_condition.html"), name='terms'),
     path('privacy/', TemplateView.as_view(template_name="privacy_policy.html"), name='privacy'),
+    path("healthz/", healthz),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
 if util.find_spec("silk") is not None:

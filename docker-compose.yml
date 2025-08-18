@@ -1,37 +1,67 @@
-version: '3.9'
-
 services:
+  db:
+    image: postgis/postgis:16-3.4-alpine
+    environment:
+      POSTGRES_DB: minmin
+      POSTGRES_USER: minmin
+      POSTGRES_PASSWORD: minmin
+    ports: ["5432:5432"]
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U minmin -d minmin"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    ports: ["6379:6379"]
+
   api:
-    build: ./MinMinBE
+    build:
+      context: ./MinMinBE
     env_file:
       - MinMinBE/.env
-    ports:
-      - '8000:8000'
+    environment:
+      DJANGO_SETTINGS_MODULE: minminbe.settings
+      ALLOWED_HOSTS: "localhost,127.0.0.1"
+      DATABASE_URL: "postgres://minmin:minmin@db:5432/minmin"
+      CSRF_TRUSTED_ORIGINS: "http://localhost,http://127.0.0.1"
+      SECRET_KEY: "dev-secret"
+      # --- Superuser bootstrap (override these in .env for safety) ---
+      DJANGO_SUPERUSER_USERNAME: "admin"
+      DJANGO_SUPERUSER_EMAIL: "info1@feed-intel.com"
+      DJANGO_SUPERUSER_PASSWORD: "secret"
     depends_on:
-      - db
-      - redis
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    ports: ["8000:8000"]
+    command: >
+      sh -c "
+        python manage.py migrate --noinput &&
+        python manage.py collectstatic --noinput &&
+        python manage.py shell -c
+        \"from django.contrib.auth import get_user_model;
+        import os; User=get_user_model();
+        e=os.environ.get('DJANGO_SUPERUSER_EMAIL','admin@example.com');
+        p=os.environ.get('DJANGO_SUPERUSER_PASSWORD','adminpass');
+        User.objects.filter(email=e).exists() or User.objects.create_superuser(e,p)\" &&
+        gunicorn minminbe.wsgi:application -b 0.0.0.0:8000 --workers 3 --threads 2
+      "
+
   customer-fe:
     build:
       context: ./MinMinFECustomer
       dockerfile: dockerfile
-    ports:
-      - '3000:3000'
+    ports: ["3000:3000"]
+
   restaurant-fe:
     build:
       context: ./MinMinFERestaurant
       dockerfile: dockerfile
-    ports:
-      - '3001:3000'
-  db:
-    image: postgis/postgis
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-    ports:
-      - '5432:5432'
-  redis:
-    image: redis:alpine
-    ports:
-      - '6379:6379'
+    ports: ["3001:3000"]
 
 volumes:
   pgdata:

@@ -140,7 +140,7 @@ STATIC_URL = '/static/'
 # Project-level static dir (alongside manage.py)
 STATICFILES_DIRS = [BASE_DIR / "static"]
 #Only for Prod
-# STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')  # Collect static files here
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')  # Collect static files here
 
 
 MEDIA_URL = '/media/'

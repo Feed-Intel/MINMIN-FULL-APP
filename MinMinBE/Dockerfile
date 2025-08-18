@@ -1,18 +1,11 @@
 # syntax=docker/dockerfile:1
-# Python base
-FROM python:3.12-slim
+FROM python:3.13-slim
 ARG DEBIAN_FRONTEND=noninteractive
 
-# App/env settings
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1
 
-# System deps commonly needed by Django stacks
-# - build-essential/gcc: compile native wheels if needed
-# - libpq-dev: psycopg2 (non-binary) / Postgres client headers
-# - libjpeg + zlib: Pillow
-# - libffi-dev: cryptography and friends
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential gcc \
     libpq-dev \
@@ -21,33 +14,29 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libgdal-dev \
     && rm -rf /var/lib/apt/lists/*
 
-
-# Working directory
 WORKDIR /app
 
-# Upgrade pip tooling early
 RUN python -m pip install --upgrade pip setuptools wheel
 
-# Copy dependency file first for layer caching
 COPY requirements.txt .
+RUN pip install -v -r requirements.txt && pip install --no-cache-dir gunicorn
 
-# If you use psycopg2, prefer psycopg2-binary in requirements to avoid building
-# Install Python deps (verbose helps when debugging CI failures)
-RUN pip install -v -r requirements.txt \
-    && pip install --no-cache-dir gunicorn
-
-# Copy the rest of the app
+# Copy app code
 COPY . .
 
-# (Optional) collect static at build, if you bake assets into the image
-# RUN python manage.py collectstatic --noinput
+# Create user (stay root for now to set perms on entrypoint)
+RUN useradd -m appuser && chown -R appuser:appuser /app
 
-# Non-root user for security
-RUN useradd -m appuser
+# Copy entrypoint and set execute bit as root
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod 0755 /entrypoint.sh && chown appuser:appuser /entrypoint.sh
+
+# Drop privileges only after perms are set
 USER appuser
 
 EXPOSE 8000
-
+ENTRYPOINT ["/entrypoint.sh"]
+     
 
 # Gunicorn defaults; adjust workers/threads based on CPU
 CMD ["gunicorn", "minminbe.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "2", "--threads", "4", "--timeout", "60"]
