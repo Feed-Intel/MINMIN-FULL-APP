@@ -1,7 +1,7 @@
 from django.db import models
 from restaurant.tenant.models import Tenant
 from django.core.exceptions import ValidationError
-from alpha.settings import MEDIA_ROOT
+from minminbe.settings import MEDIA_ROOT
 import uuid
 import os
 import logging
