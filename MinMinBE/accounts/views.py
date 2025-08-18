@@ -14,7 +14,7 @@ from hashlib import sha256
 from rest_framework.decorators import action
 from django.core.cache import cache
 from accounts.models import User
-from alpha.settings import EMAIL_HOST_USER, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET
+from minminbe.settings import EMAIL_HOST_USER, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters
 from rest_framework.pagination import PageNumberPagination

@@ -1,6 +1,6 @@
 from django.db import models
 from django.core.exceptions import ValidationError
-from alpha.settings import MEDIA_ROOT
+from minminbe.settings import MEDIA_ROOT
 import uuid
 import os
 import logging

@@ -6,7 +6,7 @@ from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 from .models import Order
 from customer.notification.models import Notification
-from alpha.settings import EMAIL_HOST_USER
+from minminbe.settings import EMAIL_HOST_USER
 
 @receiver(post_save, sender=Order)
 def handle_order_save(sender, instance, created, **kwargs):
@@ -23,7 +23,7 @@ def handle_order_save(sender, instance, created, **kwargs):
             f"Order ID: {instance.order_id}\n"
             f"Total Price: ${instance.calculate_total()}\n"
             f"Thank you for choosing us!\n\n"
-            f"Best Regards,\nAlpha Team"
+            f"Best Regards,\nMinminbe Team"
         )
         send_mail(
             "Order Placed Successfully",
@@ -91,7 +91,7 @@ def handle_order_save(sender, instance, created, **kwargs):
         status_message = (
             f"Dear {instance.customer.full_name},\n\n"
             f"The status of your order (ID: {instance.order_id}) has been updated to: {instance.status}.\n\n"
-            f"Best Regards,\nAlpha Team"
+            f"Best Regards,\nMinminbe Team"
         )
         send_mail(
             "Order Status Update",

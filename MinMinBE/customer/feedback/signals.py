@@ -16,14 +16,14 @@ def handle_feedback_save(sender, instance, created, **kwargs):
             f"We greatly value your input.\n\n"
             f"Your Rating: {instance.overall_rating}\n"
             f"Your Message: {instance.service_rating}\n\n"
-            f"Best Regards,\nAlpha Team"
+            f"Best Regards,\nMinminbe Team"
         )
         
         # Send email to the customer
         send_mail(
             "Thank You for Your Feedback",
             message,
-            "info@feed-alpha.com",
+            "info@feed-minminbe.com",
             [instance.customer.email]
         )
         
@@ -48,7 +48,7 @@ def handle_feedback_save(sender, instance, created, **kwargs):
             f"Your feedback for order {instance.order.id} has been updated.\n\n"
             f"Updated Rating: {instance.overall_rating}\n"
             f"Updated Message: {instance.service_rating}\n\n"
-            f"Best Regards,\nAlpha Team"
+            f"Best Regards,\nMinminbe Team"
         )
         
         # Send email to the customer

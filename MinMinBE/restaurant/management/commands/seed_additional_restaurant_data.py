@@ -16,7 +16,7 @@ import os
 import uuid
 import requests
 import io
-from alpha import settings
+from minminbe import settings
 
 User = get_user_model()
 fake = Faker()
