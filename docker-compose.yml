@@ -29,7 +29,6 @@ services:
       CSRF_TRUSTED_ORIGINS: "http://localhost,http://127.0.0.1"
       SECRET_KEY: "dev-secret"
       # --- Superuser bootstrap (override these in .env for safety) ---
-      DJANGO_SUPERUSER_USERNAME: "admin"
       DJANGO_SUPERUSER_EMAIL: "info1@feed-intel.com"
       DJANGO_SUPERUSER_PASSWORD: "secret"
     depends_on:
