@@ -49,6 +49,8 @@ python manage.py migrate --noinput
 echo "Collecting static..."
 python manage.py collectstatic --noinput
 
+
+
 echo "Ensuring superuser..."
 python manage.py shell <<'EOF'
 from django.contrib.auth import get_user_model
