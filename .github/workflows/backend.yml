@@ -1,0 +1,24 @@
+name: Backend Deploy
+
+on:
+  push:
+    paths:
+      - 'MinMinBE/**'
+      - 'docker-compose.yml'
+      - '.github/workflows/backend.yml'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Pull images and start services
+        run: |
+          docker compose -f docker-compose.yml pull db redis api
+          docker compose -f docker-compose.yml up -d db redis api
+
+      - name: Show running containers
+        run: docker compose ps
