@@ -5,6 +5,8 @@ on:
     branches: [main, develop]
     paths:
       - 'MinMinBE/**'
+      - '.platform/**'
+      - 'db/**'
 
 jobs:
   deploy:
@@ -12,29 +14,35 @@ jobs:
     permissions:
       id-token: write
       contents: read
+
     steps:
       - uses: actions/checkout@v4
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
           aws-region: ${{ secrets.AWS_REGION }}
+
       - name: Login to Amazon ECR
         uses: aws-actions/amazon-ecr-login@v2
+
       - name: Ensure ECR repository exists
         run: |
           REPO_NAME=$(echo "${{ secrets.ECR_BACKEND }}" | cut -d'/' -f2)
-          aws ecr describe-repositories --repository-names "$REPO_NAME" || aws ecr create-repository --repository-name "$REPO_NAME"
-      - name: Build and push image
+          aws ecr describe-repositories --repository-names "$REPO_NAME" >/dev/null 2>&1 || \
+          aws ecr create-repository --repository-name "$REPO_NAME"
+
+      - name: Build & Push API image
+        env:
+          ECR_BACKEND: ${{ secrets.ECR_BACKEND }}
         run: |
-          IMAGE_URI=${{ secrets.ECR_BACKEND }}:${GITHUB_SHA}
-          docker compose -p db build db
-          docker compose -p redis build redis
-          docker compose -p backend build api
-          docker tag backend-api:latest $IMAGE_URI
-          docker push $IMAGE_URI
+          IMAGE_URI="${ECR_BACKEND}:${GITHUB_SHA}"
+          docker build -t "$IMAGE_URI" MinMinBE
+          docker push "$IMAGE_URI"
           echo "IMAGE_URI=$IMAGE_URI" >> $GITHUB_ENV
-      - name: Determine EB settings
+
+      - name: Determine EB settings (main vs develop)
         run: |
           if [[ "${GITHUB_REF##*/}" == "main" ]]; then
             echo "EB_ENV=${{ secrets.EB_ENV_MAIN }}" >> $GITHUB_ENV
@@ -45,47 +53,106 @@ jobs:
             echo "EB_APP=${{ secrets.EB_APP_DEVELOP }}" >> $GITHUB_ENV
             echo "EB_BUCKET=${{ secrets.EB_BUCKET_DEVELOP }}" >> $GITHUB_ENV
           fi
-      - name: Render Dockerrun
+
+      - name: Render docker-compose.yml for EB
         run: |
-          cat > Dockerrun.aws.json <<EOD
-          {
-            "AWSEBDockerrunVersion": "1",
-            "Image": {
-              "Name": "$IMAGE_URI",
-              "Update": "true"
-            },
-            "Ports": [
-              {"ContainerPort": 8000}
-            ]
-          }
-          EOD
-      - name: Ensure EB S3 bucket exists
+          cat > docker-compose.yml <<'COMPOSE'
+          version: "3.8"
+          services:
+            api:
+              image: IMAGE_URI_REPLACEME
+              env_file:
+                - MinMinBE/.env
+              environment:
+                DJANGO_SETTINGS_MODULE: minminbe.settings
+                # EB injects PORT; your app must listen on it
+                PORT: ${PORT}
+                DATABASE_URL: postgres://minmin:minmin@db:5432/minmin
+                REDIS_URL: redis://redis:6379/0
+                ALLOWED_HOSTS: "localhost,127.0.0.1"
+              command: >
+                sh -c "
+                  python manage.py migrate --noinput &&
+                  gunicorn minminbe.asgi:application -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:${PORT:-8000}
+                "
+              depends_on:
+                db:
+                  condition: service_healthy
+                redis:
+                  condition: service_started
+              healthcheck:
+                test: ["CMD", "curl", "-f", "http://localhost:${PORT:-8000}/healthz"]
+                interval: 30s
+                timeout: 5s
+                retries: 5
+
+            db:
+              image: postgis/postgis:16-3.4-alpine
+              environment:
+                POSTGRES_DB: minmin
+                POSTGRES_USER: minmin
+                POSTGRES_PASSWORD: minmin
+              volumes:
+                - /var/app/postgres:/var/lib/postgresql/data
+                - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+              healthcheck:
+                test: ["CMD-SHELL", "pg_isready -U minmin -d minmin"]
+                interval: 5s
+                timeout: 5s
+                retries: 20
+
+            redis:
+              image: redis:7-alpine
+          COMPOSE
+
+          # Inject built image URI into compose
+          sed -i "s|IMAGE_URI_REPLACEME|${IMAGE_URI}|g" docker-compose.yml
+
+      - name: (Optional) Create EB hook to persist Postgres dir
         run: |
+          mkdir -p .platform/hooks/prebuild
+          cat > .platform/hooks/prebuild/10-mkdir-postgres.sh <<'HOOK'
+          #!/usr/bin/env bash
+          set -euo pipefail
+          sudo mkdir -p /var/app/postgres
+          sudo chown -R ec2-user:ec2-user /var/app/postgres
+          HOOK
+          chmod +x .platform/hooks/prebuild/10-mkdir-postgres.sh
+
+      - name: Bundle and deploy to EB
+        run: |
+          set -e
+
+          # Prepare bundle directory with compose and optional folders
+          BUNDLE_DIR="_bundle"
+          rm -rf "$BUNDLE_DIR"
+          mkdir -p "$BUNDLE_DIR"
+
+          cp docker-compose.yml "$BUNDLE_DIR"/
+
+          # Include optional folders if they exist (for hooks & init.sql)
+          if [ -d ".platform" ]; then cp -r .platform "$BUNDLE_DIR"/; fi
+          if [ -d "db" ]; then cp -r db "$BUNDLE_DIR"/; fi
+          if [ -f "MinMinBE/.env" ]; then echo "Note: MinMinBE/.env will NOT be uploaded (contains secrets). Ensure EB env vars are set." ; fi
+
           VERSION_LABEL="${GITHUB_SHA}-${GITHUB_RUN_NUMBER}-${GITHUB_RUN_ATTEMPT}"
-          ZIP=backend-$VERSION_LABEL.zip
-          zip -r $ZIP Dockerrun.aws.json
-          aws s3 cp $ZIP s3://$EB_BUCKET/$ZIP
-          aws elasticbeanstalk create-application-version --application-name $EB_APP --version-label $VERSION_LABEL --source-bundle S3Bucket=$EB_BUCKET,S3Key=$ZIP || echo "Application version already exists"
-          aws elasticbeanstalk update-environment --environment-name $EB_ENV --version-label $VERSION_LABEL
-      - name: Bundle and deploy
-        run: |
-          if [ -z "$EB_APP" ]; then
-            echo "EB_APP is not set" >&2
-            exit 1
-          fi
-          VERSION_LABEL="${GITHUB_SHA}-${GITHUB_RUN_NUMBER}-${GITHUB_RUN_ATTEMPT}"
-          ZIP=backend-$VERSION_LABEL.zip
-          zip -r $ZIP Dockerrun.aws.json
-          aws s3 cp $ZIP s3://$EB_BUCKET/$ZIP
+          ZIP="backend-${VERSION_LABEL}.zip"
+
+          (cd "$BUNDLE_DIR" && zip -r "../$ZIP" .)
+
+          aws s3 cp "$ZIP" "s3://$EB_BUCKET/$ZIP"
+
           aws elasticbeanstalk create-application-version \
             --application-name "$EB_APP" \
             --version-label "$VERSION_LABEL" \
-            --source-bundle S3Bucket="$EB_BUCKET",S3Key="$ZIP" || echo "Application version already exists"
+            --source-bundle S3Bucket="$EB_BUCKET",S3Key="$ZIP" || echo "Application version may already exist"
 
           aws elasticbeanstalk update-environment \
             --application-name "$EB_APP" \
             --environment-name "$EB_ENV" \
             --version-label "$VERSION_LABEL"
+
       - name: Post-deploy health check
         run: |
-          curl -f https://${EB_ENV}.elasticbeanstalk.${{ secrets.AWS_REGION }}.amazonaws.com/healthz
+          # Adjust if you use a custom domain
+          curl -f "https://${EB_ENV}.elasticbeanstalk.${{ secrets.AWS_REGION }}.amazonaws.com/healthz"

@@ -1,68 +1,59 @@
+version: "3.8"
+
 services:
+  api:
+    build:
+      context: ./MinMinBE
+    env_file:
+      - MinMinBE/.env   # For local/dev; prefer EB env vars for secrets in prod
+    environment:
+      DJANGO_SETTINGS_MODULE: minminbe.settings
+      PORT: ${PORT}  # EB injects this
+      DATABASE_URL: postgres://minmin:minmin@db:5432/minmin
+      REDIS_URL: redis://redis:6379/0
+      ALLOWED_HOSTS: "localhost,127.0.0.1"  # add your EB domain/custom domain
+    command: >
+      sh -c "
+        python manage.py migrate --noinput &&
+        gunicorn minminbe.asgi:application -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:${PORT:-8000}
+      "
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:${PORT:-8000}/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+    restart: always
+
   db:
     image: postgis/postgis:16-3.4-alpine
     environment:
       POSTGRES_DB: minmin
       POSTGRES_USER: minmin
       POSTGRES_PASSWORD: minmin
-    ports: ["5432:5432"]
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - /var/app/postgres:/var/lib/postgresql/data
       - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U minmin -d minmin"]
-      interval: 5s
-      timeout: 5s
-      retries: 20
+    restart: always
 
   redis:
     image: redis:7-alpine
-    ports: ["6379:6379"]
+    restart: always
 
-  api:
-    build:
-      context: ./MinMinBE
-    env_file:
-      - MinMinBE/.env
-    environment:
-      DJANGO_SETTINGS_MODULE: minminbe.settings
-      ALLOWED_HOSTS: "localhost,127.0.0.1"
-      DATABASE_URL: "postgres://minmin:minmin@db:5432/minmin"
-      CSRF_TRUSTED_ORIGINS: "http://localhost,http://127.0.0.1"
-      SECRET_KEY: "dev-secret"
-      # --- Superuser bootstrap (override these in .env for safety) ---
-      DJANGO_SUPERUSER_EMAIL: "info1@feed-intel.com"
-      DJANGO_SUPERUSER_PASSWORD: "secret"
-    depends_on:
-      db:
-        condition: service_healthy
-      redis:
-        condition: service_started
-    ports: ["8000:8000"]
-    command: >
-      sh -c "
-        python manage.py migrate --noinput &&
-        python manage.py collectstatic --noinput &&
-        python manage.py shell -c
-        \"from django.contrib.auth import get_user_model;
-        import os; User=get_user_model();
-        e=os.environ.get('DJANGO_SUPERUSER_EMAIL','admin@example.com');
-        p=os.environ.get('DJANGO_SUPERUSER_PASSWORD','adminpass');
-        User.objects.filter(email=e).exists() or User.objects.create_superuser(e,p)\" &&
-        gunicorn minminbe.wsgi:application -b 0.0.0.0:8000 --workers 3 --threads 2
-      "
-
-  customer-fe:
-    build:
-      context: ./MinMinFECustomer
-      dockerfile: dockerfile
-    ports: ["3000:3000"]
-
-  restaurant-fe:
-    build:
-      context: ./MinMinFERestaurant
-      dockerfile: dockerfile
-    ports: ["3001:3000"]
-
-volumes:
-  pgdata:
+  # Frontends: keep them OUT of EB unless you front them with a reverse proxy.
+  # customer-fe:
+  #   build:
+  #     context: ./MinMinFECustomer
+  #     dockerfile: Dockerfile
+  #   restart: always
+  # restaurant-fe:
+  #   build:
+  #     context: ./MinMinFERestaurant
+  #     dockerfile: Dockerfile
+  #   restart: always

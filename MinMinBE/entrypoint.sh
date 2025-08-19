@@ -47,8 +47,7 @@ echo "Running migrations..."
 python manage.py migrate --noinput
 
 echo "Collecting static..."
-python manage.py collectstatic --noinput
-
+python manage.py collectstatic --noinput 
 
 
 echo "Ensuring superuser..."
