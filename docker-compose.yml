@@ -1,35 +1,5 @@
-# docker-compose.yml  (EB bundle)
-version: "3.8"
-
+version: '3.8'
 services:
-  api:
-    # For CI: change to image: <ECR_URI>:<SHA> and let CI inject it.
-    build:
-      context: ./MinMinBE
-    environment:
-      DJANGO_SETTINGS_MODULE: minminbe.settings
-      # Use fixed port; EB discovers via Dockerfile EXPOSE 8000
-      DATABASE_URL: postgres://minmin:minmin@db:5432/minmin
-      REDIS_URL: redis://redis:6379/0
-      # Consider setting this from EB env props instead:
-      ALLOWED_HOSTS: "localhost,127.0.0.1"
-    command: >
-      sh -c "
-        python manage.py migrate --noinput &&
-        gunicorn minminbe.asgi:application -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000
-      "
-    depends_on:
-      db:
-        condition: service_healthy
-      redis:
-        condition: service_started
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/healthz"]
-      interval: 30s
-      timeout: 5s
-      retries: 5
-    restart: always
-
   db:
     image: postgis/postgis:16-3.4-alpine
     environment:
@@ -37,12 +7,45 @@ services:
       POSTGRES_USER: minmin
       POSTGRES_PASSWORD: minmin
     volumes:
-      - /var/app/postgres:/var/lib/postgresql/data
+      - pgdata:/var/lib/postgresql/data
       - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U minmin -d minmin"]
-    restart: always
-
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - minmin
   redis:
     image: redis:7-alpine
-    restart: always
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - minmin
+  api:
+    build:
+      context: ./MinMinBE
+    env_file:
+      - ./MinMinBE/.env
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+    networks:
+      - minmin
+volumes:
+  pgdata:
+
+networks:
+  minmin:

@@ -1,0 +1,40 @@
+{
+  "AWSEBDockerrunVersion": 2,
+  // Running Postgres & Redis inside EB is suitable for staging/dev. For production use RDS/ElastiCache.
+  "volumes": [
+    {"name": "pgdata", "host": {"sourcePath": "/var/app/postgresql"}}
+  ],
+  "containerDefinitions": [
+    {
+      "name": "api",
+      "image": "<ECR_BACKEND_URI>:<GITSHA>",
+      "essential": true,
+      "memory": 512,
+      "portMappings": [{"hostPort": 8000, "containerPort": 8000}],
+      "links": ["db", "redis"],
+      "environment": [
+        {"name": "DJANGO_SETTINGS_MODULE", "value": "minminbe.settings"}
+      ]
+    },
+    {
+      "name": "db",
+      "image": "postgis/postgis:16-3.4-alpine",
+      "essential": false,
+      "memory": 512,
+      "environment": [
+        {"name": "POSTGRES_DB", "value": "minmin"},
+        {"name": "POSTGRES_USER", "value": "minmin"},
+        {"name": "POSTGRES_PASSWORD", "value": "minmin"}
+      ],
+      "mountPoints": [
+        {"sourceVolume": "pgdata", "containerPath": "/var/lib/postgresql/data"}
+      ]
+    },
+    {
+      "name": "redis",
+      "image": "redis:7-alpine",
+      "essential": false,
+      "memory": 256
+    }
+  ]
+}
