@@ -15,26 +15,25 @@ from pathlib import Path
 from decouple import config
 import sys
 from celery.schedules import crontab
+from datetime import timedelta
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# ------------------------------------------------------------------------------
+# AWS region (use EB/instance region by default)
+# ------------------------------------------------------------------------------
+AWS_REGION = os.getenv("AWS_REGION") or os.getenv("AWS_DEFAULT_REGION") or "eu-west-3"
+
+# ------------------------------------------------------------------------------
+# Helpers to read config from SSM and Secrets Manager (use the EB region)
+# ------------------------------------------------------------------------------
 def get_ssm_parameter(name, default=None, with_decryption=True):
     try:
         import boto3
-        from botocore.exceptions import (
-            BotoCoreError,
-            ClientError,
-            NoCredentialsError,
-        )
-
-        ssm = boto3.client('ssm', region_name='us-east-1')
-        return ssm.get_parameter(Name=name, WithDecryption=with_decryption)[
-            'Parameter'
-        ][
-            'Value'
-        ]
-    except (ImportError, BotoCoreError, ClientError, NoCredentialsError, Exception):
+        ssm = boto3.client("ssm", region_name=AWS_REGION)
+        return ssm.get_parameter(Name=name, WithDecryption=with_decryption)["Parameter"]["Value"]
+    except Exception:
         return default
 
 
@@ -42,63 +41,57 @@ def get_secret(name, default=None):
     """Retrieve a secret value from AWS Secrets Manager."""
     try:
         import boto3
-        from botocore.exceptions import (
-            BotoCoreError,
-            ClientError,
-            NoCredentialsError,
-        )
-
-        client = boto3.client('secretsmanager', region_name=os.getenv('AWS_REGION', 'us-east-1'))
+        client = boto3.client("secretsmanager", region_name=AWS_REGION)
         response = client.get_secret_value(SecretId=name)
-        return response.get('SecretString', default)
-    except (ImportError, BotoCoreError, ClientError, NoCredentialsError, Exception):
+        return response.get("SecretString", default)
+    except Exception:
         return default
 
 
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
-
+# ------------------------------------------------------------------------------
+# Core settings
+# ------------------------------------------------------------------------------
 # SECURITY WARNING: keep the secret key used in production secret!
 # Secrets are stored in AWS Secrets Manager
-SECRET_KEY = get_secret('minmin/stg/django', config('SECRET_KEY', default='changeme'))
+SECRET_KEY = get_secret("minmin/stg/django", config("SECRET_KEY", default="changeme"))
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = config('DEBUG', default=False, cast=bool)
+DEBUG = config("DEBUG", default=False, cast=bool)
 
-# Non-secret configuration values retrieved from SSM Parameter Store
-ENV = get_ssm_parameter('minmin/stg/ENV', config('ENV', default='development'))
+# Environment label
+ENV = get_ssm_parameter("minmin/stg/ENV", config("ENV", default="development"))
 
 CSRF_TRUSTED_ORIGINS = config(
-    'CSRF_TRUSTED_ORIGINS',
-    default='https://minminbe.feed-intel.com,https://restaurant.feed-intel.com,http://localhost:8081',
-    cast=lambda v: [s.strip() for s in v.split(',')],
+    "CSRF_TRUSTED_ORIGINS",
+    default="https://minminbe.feed-intel.com,https://restaurant.feed-intel.com,http://localhost:8081",
+    cast=lambda v: [s.strip() for s in v.split(",")],
 )
 
 ALLOWED_HOSTS = get_ssm_parameter(
-    'minmin/stg/ALLOWED_HOSTS',
-    config('ALLOWED_HOSTS', default='localhost'),
+    "minmin/stg/ALLOWED_HOSTS",
+    config("ALLOWED_HOSTS", default="localhost"),
 )
-ALLOWED_HOSTS = [s.strip() for s in ALLOWED_HOSTS.split(',')] if ALLOWED_HOSTS else []
+ALLOWED_HOSTS = [s.strip() for s in ALLOWED_HOSTS.split(",")] if ALLOWED_HOSTS else []
 
 REDIS_URL = get_ssm_parameter(
-    'minmin/stg/REDIS_URL',
-    config('REDIS_URL', default='redis://127.0.0.1:6379/1'),
+    "minmin/stg/REDIS_URL",
+    config("REDIS_URL", default="redis://127.0.0.1:6379/1"),
 )
 
 S3_BUCKET_UPLOADS = get_ssm_parameter(
-    'minmin/stg/S3_BUCKET_UPLOADS',
-    config('S3_BUCKET_UPLOADS', default=''),
+    "minmin/stg/S3_BUCKET_UPLOADS",
+    config("S3_BUCKET_UPLOADS", default=""),
 )
 
 SETTINGS_MODULE = get_ssm_parameter(
-    'minmin/stg/SETTINGS',
-    config('SETTINGS', default='minminbe.settings'),
+    "minmin/stg/SETTINGS",
+    config("SETTINGS", default="minminbe.settings"),
 )
 
 CORS_ALLOWED_ORIGINS = config(
-    'CORS_ALLOWED_ORIGINS',
-    default='http://localhost:8081',
-    cast=lambda v: [s.strip() for s in v.split(',')],
+    "CORS_ALLOWED_ORIGINS",
+    default="http://localhost:8081",
+    cast=lambda v: [s.strip() for s in v.split(",")],
 )
 
 CORS_ALLOW_METHODS = [
@@ -122,312 +115,283 @@ CORS_ALLOW_HEADERS = [
     "x-xsrf-token",
 ]
 
-
-AUTH_USER_MODEL = 'accounts.User'
+AUTH_USER_MODEL = "accounts.User"
 
 DATA_UPLOAD_MAX_MEMORY_SIZE = 10485760
 
 sys.path.insert(0, os.path.join(BASE_DIR, "restaurant"))
 sys.path.insert(1, os.path.join(BASE_DIR, "customer"))
 
-# settings.py
+# ------------------------------------------------------------------------------
+# URLs & Static/Media
+# ------------------------------------------------------------------------------
+LOGIN_REDIRECT_URL = "/admin/"
+FRONTEND_BASE_URL = config("FRONTEND_BASE_URL", default="http://localhost:3000")
 
-LOGIN_REDIRECT_URL = '/admin/'  # Redirect to the admin dashboard
-FRONTEND_BASE_URL = config('FRONTEND_BASE_URL', default='http://localhost:3000')
-
-# settings.py
-STATIC_URL = '/static/'
-# Project-level static dir (alongside manage.py)
+STATIC_URL = "/static/"
 STATICFILES_DIRS = [BASE_DIR / "static"]
-#Only for Prod
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')  # Collect static files here
+STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
 
-
-MEDIA_URL = '/media/'
+MEDIA_URL = "/media/"
 MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 
-# Application definition
-
+# ------------------------------------------------------------------------------
+# Applications
+# ------------------------------------------------------------------------------
 INSTALLED_APPS = [
-    'django.contrib.sites',
-    'jazzmin',
-    'django.contrib.admin',
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
-    'django.contrib.sessions',
-    'django.contrib.messages',
-    'daphne',
-    'leaflet',
-    'django.contrib.staticfiles',
-    'rest_framework',
-    'rest_framework.authtoken',
-    'rest_framework_gis',
-    'rest_framework_simplejwt',
-    'rest_framework_simplejwt.token_blacklist',
-    'rest_framework_api_key',
-    'social_django',
-    'allauth',
-    'allauth.account',
-    'allauth.socialaccount',
-    'allauth.socialaccount.providers.google',  
-    'allauth.socialaccount.providers.facebook',
-    'dj_rest_auth',
-    'dj_rest_auth.registration',
-    'django_filters',
-    'corsheaders',
-    'accounts',
-    'channels',
-    'drf_yasg',
-    'django_seed',
+    "django.contrib.sites",
+    "jazzmin",
+    "django.contrib.admin",
+    "django.contrib.auth",
+    "django.contrib.contenttypes",
+    "django.contrib.sessions",
+    "django.contrib.messages",
+    "django.contrib.gis",          # GeoDjango (required for PostGIS fields)
+    "daphne",
+    "leaflet",
+    "django.contrib.staticfiles",
+    "rest_framework",
+    "rest_framework.authtoken",
+    "rest_framework_gis",
+    "rest_framework_simplejwt",
+    "rest_framework_simplejwt.token_blacklist",
+    "rest_framework_api_key",
+    "social_django",
+    "allauth",
+    "allauth.account",
+    "allauth.socialaccount",
+    "allauth.socialaccount.providers.google",
+    "allauth.socialaccount.providers.facebook",
+    "dj_rest_auth",
+    "dj_rest_auth.registration",
+    "django_filters",
+    "corsheaders",
+    "accounts",
+    "channels",
+    "drf_yasg",
+    "django_seed",
     "django_celery_beat",
-    'loyalty',
-    'feed',
-    'pushNotification',
-    'core',
-    'restaurant.menu',
-    'restaurant.branch',
-    'restaurant.tenant',
-    'restaurant.table',
-    'restaurant.qr_code',
-    'restaurant.menu_availability',
-    'restaurant.combo',
-    'restaurant.related_menu',
-    'restaurant.discount',
-    'customer.order',
-    'customer.feedback',
-    'customer.notification',
-    'customer.cart',
-    'customer.address',
-    'customer.payment',
-    'restaurant',
-    'customer',
+    "loyalty",
+    "feed",
+    "pushNotification",
+    "core",
+    "restaurant.menu",
+    "restaurant.branch",
+    "restaurant.tenant",
+    "restaurant.table",
+    "restaurant.qr_code",
+    "restaurant.menu_availability",
+    "restaurant.combo",
+    "restaurant.related_menu",
+    "restaurant.discount",
+    "customer.order",
+    "customer.feedback",
+    "customer.notification",
+    "customer.cart",
+    "customer.address",
+    "customer.payment",
+    "restaurant",
+    "customer",
 ]
 
-# Optionally enable Django Silk if it's installed.
+MIDDLEWARE = [
+    "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
+    "django.contrib.sessions.middleware.SessionMiddleware",
+    "corsheaders.middleware.CorsMiddleware",
+    "django.middleware.common.CommonMiddleware",
+    "django.middleware.csrf.CsrfViewMiddleware",
+    "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "django.contrib.messages.middleware.MessageMiddleware",
+    "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "allauth.account.middleware.AccountMiddleware",
+    "accounts.middleware.LogEventsMiddleware",
+]
+
+# Optionally enable Django Silk if it's installed (place AFTER MIDDLEWARE is defined).
 try:
-    import silk  # type: ignore # noqa: F401
+    import silk  # type: ignore  # noqa: F401
 
     INSTALLED_APPS += ["silk"]
     MIDDLEWARE.insert(0, "silk.middleware.SilkyMiddleware")
 except Exception:
-    # Silk is an optional dependency used for profiling; ignore if missing.
+    # Silk is optional; ignore if missing.
     pass
 
 # Optionally enable django-extensions if installed.
 try:
-    import django_extensions  # type: ignore # noqa: F401
+    import django_extensions  # type: ignore  # noqa: F401
 
     INSTALLED_APPS += ["django_extensions"]
 except Exception:
     pass
 
-MIDDLEWARE = [
-    'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
-    'corsheaders.middleware.CorsMiddleware',
-    'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
-    'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'allauth.account.middleware.AccountMiddleware',  # Added middleware for allauth
-    'accounts.middleware.LogEventsMiddleware',
-
-]
-
 AUTHENTICATION_BACKENDS = [
-    'social_core.backends.google.GoogleOAuth2',
-    'social_core.backends.facebook.FacebookOAuth2',
-    'django.contrib.auth.backends.ModelBackend',
-    'allauth.account.auth_backends.AuthenticationBackend',
+    "social_core.backends.google.GoogleOAuth2",
+    "social_core.backends.facebook.FacebookOAuth2",
+    "django.contrib.auth.backends.ModelBackend",
+    "allauth.account.auth_backends.AuthenticationBackend",
 ]
 
 REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': [
-        'minminbe.authentication.CookieJWTAuthentication'
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "minminbe.authentication.CookieJWTAuthentication"
     ],
-    'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.IsAuthenticated'
+    "DEFAULT_PERMISSION_CLASSES": [
+        "rest_framework.permissions.IsAuthenticated"
     ],
-    'DEFAULT_FILTER_BACKENDS': ['django_filters.rest_framework.DjangoFilterBackend'],
+    "DEFAULT_FILTER_BACKENDS": ["django_filters.rest_framework.DjangoFilterBackend"],
 }
-
-from datetime import timedelta
 
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=30),
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
-    'AUTH_HEADER_TYPES': ('Bearer',),
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=30),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
+    "AUTH_HEADER_TYPES": ("Bearer",),
 }
 
-
-ROOT_URLCONF = 'minminbe.urls'
+ROOT_URLCONF = "minminbe.urls"
 
 TEMPLATES = [
     {
-        'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / "templates"],
-        'APP_DIRS': True,
-        'OPTIONS': {
-            'context_processors': [
-                'django.template.context_processors.debug',
-                'django.template.context_processors.request',  # Required for django-allauth
-                'django.contrib.auth.context_processors.auth',
-                'django.contrib.messages.context_processors.messages',
+        "BACKEND": "django.template.backends.django.DjangoTemplates",
+        "DIRS": [BASE_DIR / "templates"],
+        "APP_DIRS": True,
+        "OPTIONS": {
+            "context_processors": [
+                "django.template.context_processors.debug",
+                "django.template.context_processors.request",  # Required for django-allauth
+                "django.contrib.auth.context_processors.auth",
+                "django.contrib.messages.context_processors.messages",
             ],
         },
     },
 ]
-ASGI_APPLICATION = 'minminbe.asgi.application'
 
-CHANNEL_LAYERS = {
-    "default": {
-        "BACKEND": "channels_redis.core.RedisChannelLayer",
-        "CONFIG": {
-            "hosts": [("127.0.0.1", 6379)],  
+ASGI_APPLICATION = "minminbe.asgi.application"
+WSGI_APPLICATION = "minminbe.wsgi.application"
+
+# Channels (use REDIS_URL if provided)
+if REDIS_URL:
+    CHANNEL_LAYERS = {
+        "default": {
+            "BACKEND": "channels_redis.core.RedisChannelLayer",
+            "CONFIG": {"hosts": [REDIS_URL]},
         },
-    },
-}
+    }
+else:
+    CHANNEL_LAYERS = {
+        "default": {
+            "BACKEND": "channels_redis.core.RedisChannelLayer",
+            "CONFIG": {"hosts": [("127.0.0.1", 6379)]},
+        },
+    }
 
-WSGI_APPLICATION = 'minminbe.wsgi.application'
 SWAGGER_SETTINGS = {
-    'SECURITY_DEFINITIONS': {
-        'X-API-KEY': {
-            'type': 'apiKey',
-            'name': 'X-API-KEY',  # Header name for your API key
-            'in': 'header'       # Indicates the key is sent in the HTTP header
+    "SECURITY_DEFINITIONS": {
+        "X-API-KEY": {
+            "type": "apiKey",
+            "name": "X-API-KEY",
+            "in": "header",
         },
-        'Bearer': {
-            'type': 'apiKey',
-            'name': 'Authorization',
-            'in': 'header'
-        }
+        "Bearer": {
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header",
+        },
     },
-    'USE_SESSION_AUTH': False,  # Disable session authentication if not required
+    "USE_SESSION_AUTH": False,
 }
 
-
+# ------------------------------------------------------------------------------
 # Database
-# https://docs.djangoproject.com/en/5.1/ref/settings/#databases
-
-db_secret = get_secret('minmin/stg/db')
+#   Use PostGIS if DB creds are available; otherwise, explicit SQLite fallback.
+# ------------------------------------------------------------------------------
+db_secret = get_secret("minmin/stg/db")
+db_conf = {}
 if db_secret:
     try:
-        db_conf = json.loads(db_secret)
+        db_conf = json.loads(db_secret) or {}
     except json.JSONDecodeError:
         db_conf = {}
-    db_name = db_conf.get('dbname')
-    db_user = db_conf.get('username', '')
-    db_password = db_conf.get('password', '')
-    db_host = db_conf.get('host', '')
-    db_port = db_conf.get('port', '')
-else:
-    db_name = config('DB_NAME', default=None)
-    db_user = config('DB_USER', default='')
-    db_password = config('DB_PASSWORD', default='')
-    db_host = config('DB_HOST', default='')
-    db_port = config('DB_PORT', default='')
 
-use_postgis = False
+db_name = db_conf.get("dbname") or config("DB_NAME", default=None)
+db_user = db_conf.get("username") or config("DB_USER", default="")
+db_password = db_conf.get("password") or config("DB_PASSWORD", default="")
+db_host = db_conf.get("host") or config("DB_HOST", default="")
+db_port = str(db_conf.get("port") or config("DB_PORT", default="5432"))
+
 if db_name:
-    try:
-        import django.contrib.gis.gdal  # type: ignore  # noqa: F401
-        use_postgis = True
-    except Exception:
-        use_postgis = False
-
-if use_postgis:
     DATABASES = {
-        'default': {
-            'ENGINE': 'django.contrib.gis.db.backends.postgis',
-            'NAME': db_name,
-            'USER': db_user,
-            'PASSWORD': db_password,
-            'HOST': db_host,
-            'PORT': db_port,
-        }
-    }
-elif db_name:
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.postgresql',
-            'NAME': db_name,
-            'USER': db_user,
-            'PASSWORD': db_password,
-            'HOST': db_host,
-            'PORT': db_port,
+        "default": {
+            "ENGINE": "django.contrib.gis.db.backends.postgis",
+            "NAME": db_name,
+            "USER": db_user,
+            "PASSWORD": db_password,
+            "HOST": db_host,
+            "PORT": db_port,
+            "CONN_MAX_AGE": 600,
         }
     }
 else:
+    # Explicit fallback for local/dev scenarios
     DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': BASE_DIR / 'db.sqlite3',
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / "db.sqlite3",
         }
     }
 
+# ------------------------------------------------------------------------------
+# Cache
+# ------------------------------------------------------------------------------
 CACHES = {
-    'default': {
-        'BACKEND': 'django.core.cache.backends.redis.RedisCache',
-        'LOCATION': REDIS_URL,
+    "default": {
+        "BACKEND": "django.core.cache.backends.redis.RedisCache",
+        "LOCATION": REDIS_URL,
     }
 }
 
-
+# ------------------------------------------------------------------------------
 # Password validation
-# https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
-
+# ------------------------------------------------------------------------------
 AUTH_PASSWORD_VALIDATORS = [
-    {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
-    },
+    {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
+    {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
+    {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
+    {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
 ]
 
-
-# Internationalization
-# https://docs.djangoproject.com/en/5.1/topics/i18n/
-
-LANGUAGE_CODE = 'en-us'
-
-TIME_ZONE = 'UTC'
-
+# ------------------------------------------------------------------------------
+# I18N
+# ------------------------------------------------------------------------------
+LANGUAGE_CODE = "en-us"
+TIME_ZONE = "UTC"
 USE_I18N = True
-
 USE_TZ = True
 
-# Default primary key field type
-# https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
+# ------------------------------------------------------------------------------
+# Defaults
+# ------------------------------------------------------------------------------
+DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-
+# ------------------------------------------------------------------------------
+# Social auth / Allauth
+# ------------------------------------------------------------------------------
 SOCIAL_AUTH_GOOGLE_OAUTH2_SCOPE = [
-    'openid',         # To retrieve the user's unique ID
-    'email',          # To access the user's email address
-    'profile',        # To get basic profile information (e.g., name, picture)
+    "openid",
+    "email",
+    "profile",
 ]
 
-
 SOCIALACCOUNT_PROVIDERS = {
-    'google': {
-        'SCOPE': ['profile', 'email'],
-        'AUTH_PARAMS': {'access_type': 'online'},
+    "google": {
+        "SCOPE": ["profile", "email"],
+        "AUTH_PARAMS": {"access_type": "online"},
     }
 }
 
-SOCIALACCOUNT_ADAPTER = 'accounts.adapters.MySocialAccountAdapter'
-
+SOCIALACCOUNT_ADAPTER = "accounts.adapters.MySocialAccountAdapter"
 SITE_ID = 1
-
 
 ACCOUNT_AUTHENTICATION_METHOD = "email"
 ACCOUNT_USER_MODEL_USERNAME_FIELD = None
@@ -436,123 +400,130 @@ ACCOUNT_USERNAME_REQUIRED = False
 SOCIALACCOUNT_AUTO_SIGNUP = True
 SOCIALACCOUNT_QUERY_EMAIL = True
 
-
 SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = get_ssm_parameter(
-    '/minminbe/SOCIAL_AUTH_GOOGLE_OAUTH2_KEY',
-    config('SOCIAL_AUTH_GOOGLE_OAUTH2_KEY', default=''),
+    "/minminbe/SOCIAL_AUTH_GOOGLE_OAUTH2_KEY",
+    config("SOCIAL_AUTH_GOOGLE_OAUTH2_KEY", default=""),
 )
 SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = get_ssm_parameter(
-    '/minminbe/SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET',
-    config('SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET', default=''),
+    "/minminbe/SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET",
+    config("SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET", default=""),
 )
 
 SOCIAL_AUTH_FACEBOOK_KEY = get_ssm_parameter(
-    '/minminbe/SOCIAL_AUTH_FACEBOOK_KEY',
-    config('SOCIAL_AUTH_FACEBOOK_KEY', default=''),
+    "/minminbe/SOCIAL_AUTH_FACEBOOK_KEY",
+    config("SOCIAL_AUTH_FACEBOOK_KEY", default=""),
 )
 SOCIAL_AUTH_FACEBOOK_SECRET = get_ssm_parameter(
-    '/minminbe/SOCIAL_AUTH_FACEBOOK_SECRET',
-    config('SOCIAL_AUTH_FACEBOOK_SECRET', default=''),
+    "/minminbe/SOCIAL_AUTH_FACEBOOK_SECRET",
+    config("SOCIAL_AUTH_FACEBOOK_SECRET", default=""),
 )
 
-PUSH_KEY = get_ssm_parameter('/minminbe/PUSH_KEY', config('PUSH_KEY', default=''))
-
+PUSH_KEY = get_ssm_parameter("/minminbe/PUSH_KEY", config("PUSH_KEY", default=""))
 
 REST_USE_JWT = True
-
 REST_AUTH_SERIALIZERS = {
-    'JWTSerializer': 'accounts.serializers.CustomTokenObtainPairSerializer',
+    "JWTSerializer": "accounts.serializers.CustomTokenObtainPairSerializer",
 }
 
+# ------------------------------------------------------------------------------
+# Celery
+# ------------------------------------------------------------------------------
 CELERY_BEAT_SCHEDULE = {
-    'update_best_dishes': {
-        'task': 'restaurant.menu.tasks.update_best_dishes',
-        'schedule': crontab(hour=0, minute=0),  # Runs at midnight
+    "update_best_dishes": {
+        "task": "restaurant.menu.tasks.update_best_dishes",
+        "schedule": crontab(hour=0, minute=0),
     },
-    'update_big_discount_items': {
-        'task': 'restaurant.discount.tasks.update_big_discount_items',
-        'schedule': crontab(hour=0, minute=0),
+    "update_big_discount_items": {
+        "task": "restaurant.discount.tasks.update_big_discount_items",
+        "schedule": crontab(hour=0, minute=0),
     },
 }
 
-
+# ------------------------------------------------------------------------------
+# Social auth pipeline
+# ------------------------------------------------------------------------------
 SOCIAL_AUTH_PIPELINE = (
-    'social_core.pipeline.social_auth.social_details',       
-    'social_core.pipeline.social_auth.social_uid',           
-    'social_core.pipeline.social_auth.auth_allowed',         
-    'social_core.pipeline.social_auth.social_user',          
-    'social_core.pipeline.user.get_username',               
-    'social_core.pipeline.user.create_user',                
-    'accounts.pipelines.save_user_profile',
-    'social_core.pipeline.social_auth.associate_user',      
-    'social_core.pipeline.social_auth.load_extra_data',     
-    'social_core.pipeline.user.user_details',               
+    "social_core.pipeline.social_auth.social_details",
+    "social_core.pipeline.social_auth.social_uid",
+    "social_core.pipeline.social_auth.auth_allowed",
+    "social_core.pipeline.social_auth.social_user",
+    "social_core.pipeline.user.get_username",
+    "social_core.pipeline.user.create_user",
+    "accounts.pipelines.save_user_profile",
+    "social_core.pipeline.social_auth.associate_user",
+    "social_core.pipeline.social_auth.load_extra_data",
+    "social_core.pipeline.user.user_details",
 )
 
-# EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-# EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
-EMAIL_BACKEND = 'accounts.backends.email_backend.EmailBackend'
-
-EMAIL_HOST = config('EMAIL_HOST', default='smtp.gmail.com')
-# settings.py
-CELERY_BROKER_URL = config('CELERY_BROKER_URL', default='redis://localhost:6379/0')
-CELERY_RESULT_BACKEND = config('CELERY_RESULT_BACKEND', default='redis://localhost:6379/0')
-CELERY_TIMEZONE = 'UTC'
-CELERY_TASK_TRACK_STARTED = True
-CELERY_TASK_TIME_LIMIT = 30 * 60
+# ------------------------------------------------------------------------------
+# Email
+# ------------------------------------------------------------------------------
+EMAIL_BACKEND = "accounts.backends.email_backend.EmailBackend"
+EMAIL_HOST = config("EMAIL_HOST", default="smtp.gmail.com")
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_USE_SSL = False
-EMAIL_HOST_USER = get_ssm_parameter('/minminbe/EMAIL_HOST_USER', config('EMAIL_HOST_USER', default=''))
-EMAIL_HOST_PASSWORD = get_ssm_parameter('/minminbe/EMAIL_HOST_PASSWORD', config('EMAIL_HOST_PASSWORD', default=''))
+EMAIL_HOST_USER = get_ssm_parameter("/minminbe/EMAIL_HOST_USER", config("EMAIL_HOST_USER", default=""))
+EMAIL_HOST_PASSWORD = get_ssm_parameter("/minminbe/EMAIL_HOST_PASSWORD", config("EMAIL_HOST_PASSWORD", default=""))
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
-GOOGLE_CLIENT_ID = get_ssm_parameter('/minminbe/GOOGLE_CLIENT_ID', config('GOOGLE_CLIENT_ID', default=''))
-GOOGLE_AUTH_URL = get_ssm_parameter('/minminbe/GOOGLE_AUTH_URL', config('GOOGLE_AUTH_URL', default=''))
-GOOGLE_CLIENT_SECRET = get_ssm_parameter('/minminbe/GOOGLE_CLIENT_SECRET', config('GOOGLE_CLIENT_SECRET', default=''))
-REDIRECT_URL = config('REDIRECT_URL', default='http://localhost:8081')
+
+GOOGLE_CLIENT_ID = get_ssm_parameter("/minminbe/GOOGLE_CLIENT_ID", config("GOOGLE_CLIENT_ID", default=""))
+GOOGLE_AUTH_URL = get_ssm_parameter("/minminbe/GOOGLE_AUTH_URL", config("GOOGLE_AUTH_URL", default=""))
+GOOGLE_CLIENT_SECRET = get_ssm_parameter("/minminbe/GOOGLE_CLIENT_SECRET", config("GOOGLE_CLIENT_SECRET", default=""))
+REDIRECT_URL = config("REDIRECT_URL", default="http://localhost:8081")
 MAX_FAILED_ATTEMPTS = 5
 LOCKOUT_DURATION = 15
 
+# ------------------------------------------------------------------------------
+# Celery core broker/result
+# ------------------------------------------------------------------------------
+CELERY_BROKER_URL = config("CELERY_BROKER_URL", default="redis://localhost:6379/0")
+CELERY_RESULT_BACKEND = config("CELERY_RESULT_BACKEND", default="redis://localhost:6379/0")
+CELERY_TIMEZONE = "UTC"
+CELERY_TASK_TRACK_STARTED = True
+CELERY_TASK_TIME_LIMIT = 30 * 60
 
-
-SEEDING_COMMANDS = {'seed_customers', 'seed_restaurant_data'}
+# ------------------------------------------------------------------------------
+# Seeding shortcuts (disable external services for seed commands)
+# ------------------------------------------------------------------------------
+SEEDING_COMMANDS = {"seed_customers", "seed_restaurant_data"}
 
 if any(cmd in sys.argv for cmd in SEEDING_COMMANDS):
     # Disable all email functionality
-    EMAIL_BACKEND = 'django.core.mail.backends.dummy.EmailBackend'
-    EMAIL_HOST = 'localhost'
+    EMAIL_BACKEND = "django.core.mail.backends.dummy.EmailBackend"
+    EMAIL_HOST = "localhost"
     EMAIL_PORT = 25
-    EMAIL_HOST_USER = ''
-    EMAIL_HOST_PASSWORD = ''
-    DEFAULT_FROM_EMAIL = ''
-    
+    EMAIL_HOST_USER = ""
+    EMAIL_HOST_PASSWORD = ""
+    DEFAULT_FROM_EMAIL = ""
+
     # Disable Redis connections for Channels
     CHANNEL_LAYERS = {
         "default": {
             "BACKEND": "channels.layers.InMemoryChannelLayer"
         }
     }
-    
+
     # Disable Celery
-    CELERY_BROKER_URL = 'memory://'
-    CELERY_RESULT_BACKEND = 'cache'
-    CELERY_CACHE_BACKEND = 'memory'
+    CELERY_BROKER_URL = "memory://"
+    CELERY_RESULT_BACKEND = "cache"
+    CELERY_CACHE_BACKEND = "memory"
     CELERY_TASK_ALWAYS_EAGER = True  # Run tasks synchronously
-    
+
     # Disable logging
     LOGGING = {
-        'version': 1,
-        'disable_existing_loggers': True,
-        'handlers': {
-            'null': {
-                'class': 'logging.NullHandler',
+        "version": 1,
+        "disable_existing_loggers": True,
+        "handlers": {
+            "null": {
+                "class": "logging.NullHandler",
             },
         },
-        'loggers': {
-            'django': {
-                'handlers': ['null'],
-                'level': 'CRITICAL',
-                'propagate': False,
+        "loggers": {
+            "django": {
+                "handlers": ["null"],
+                "level": "CRITICAL",
+                "propagate": False,
             },
-        }
+        },
     }
