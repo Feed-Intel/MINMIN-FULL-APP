@@ -1,21 +1,22 @@
+# docker-compose.yml  (EB bundle)
 version: "3.8"
 
 services:
   api:
+    # For CI: change to image: <ECR_URI>:<SHA> and let CI inject it.
     build:
       context: ./MinMinBE
-    env_file:
-      - MinMinBE/.env   # For local/dev; prefer EB env vars for secrets in prod
     environment:
       DJANGO_SETTINGS_MODULE: minminbe.settings
-      PORT: ${PORT}  # EB injects this
+      # Use fixed port; EB discovers via Dockerfile EXPOSE 8000
       DATABASE_URL: postgres://minmin:minmin@db:5432/minmin
       REDIS_URL: redis://redis:6379/0
-      ALLOWED_HOSTS: "localhost,127.0.0.1"  # add your EB domain/custom domain
+      # Consider setting this from EB env props instead:
+      ALLOWED_HOSTS: "localhost,127.0.0.1"
     command: >
       sh -c "
         python manage.py migrate --noinput &&
-        gunicorn minminbe.asgi:application -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:${PORT:-8000}
+        gunicorn minminbe.asgi:application -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000
       "
     depends_on:
       db:
@@ -23,7 +24,7 @@ services:
       redis:
         condition: service_started
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:${PORT:-8000}/healthz"]
+      test: ["CMD", "curl", "-f", "http://localhost:8000/healthz"]
       interval: 30s
       timeout: 5s
       retries: 5
@@ -45,15 +46,3 @@ services:
   redis:
     image: redis:7-alpine
     restart: always
-
-  # Frontends: keep them OUT of EB unless you front them with a reverse proxy.
-  # customer-fe:
-  #   build:
-  #     context: ./MinMinFECustomer
-  #     dockerfile: Dockerfile
-  #   restart: always
-  # restaurant-fe:
-  #   build:
-  #     context: ./MinMinFERestaurant
-  #     dockerfile: Dockerfile
-  #   restart: always
