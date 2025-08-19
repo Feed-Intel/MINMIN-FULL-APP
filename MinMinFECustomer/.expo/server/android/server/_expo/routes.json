@@ -1,0 +1,62 @@
+{
+  "apiRoutes": [
+    {
+      "file": "_expo/functions/api/auth/token+api.js",
+      "page": "/api/auth/token",
+      "namedRegex": "^/api/auth/token(?:/)?$",
+      "routeKeys": {}
+    },
+    {
+      "file": "_expo/functions/api/auth/logout+api.js",
+      "page": "/api/auth/logout",
+      "namedRegex": "^/api/auth/logout(?:/)?$",
+      "routeKeys": {}
+    },
+    {
+      "file": "_expo/functions/api/auth/refresh+api.js",
+      "page": "/api/auth/refresh",
+      "namedRegex": "^/api/auth/refresh(?:/)?$",
+      "routeKeys": {}
+    },
+    {
+      "file": "_expo/functions/api/auth/callback+api.js",
+      "page": "/api/auth/callback",
+      "namedRegex": "^/api/auth/callback(?:/)?$",
+      "routeKeys": {}
+    },
+    {
+      "file": "_expo/functions/api/auth/authorize+api.js",
+      "page": "/api/auth/authorize",
+      "namedRegex": "^/api/auth/authorize(?:/)?$",
+      "routeKeys": {}
+    },
+    {
+      "file": "_expo/functions/api/auth/token_web+api.js",
+      "page": "/api/auth/token_web",
+      "namedRegex": "^/api/auth/token_web(?:/)?$",
+      "routeKeys": {}
+    },
+    {
+      "file": "_expo/functions/api/auth/facebook/token+api.js",
+      "page": "/api/auth/facebook/token",
+      "namedRegex": "^/api/auth/facebook/token(?:/)?$",
+      "routeKeys": {}
+    },
+    {
+      "file": "_expo/functions/api/auth/facebook/callback+api.js",
+      "page": "/api/auth/facebook/callback",
+      "namedRegex": "^/api/auth/facebook/callback(?:/)?$",
+      "routeKeys": {}
+    },
+    {
+      "file": "_expo/functions/api/auth/facebook/authorize+api.js",
+      "page": "/api/auth/facebook/authorize",
+      "namedRegex": "^/api/auth/facebook/authorize(?:/)?$",
+      "routeKeys": {}
+    }
+  ],
+  "htmlRoutes": [],
+  "notFoundRoutes": [],
+  "redirects": [],
+  "rewrites": []
+}
