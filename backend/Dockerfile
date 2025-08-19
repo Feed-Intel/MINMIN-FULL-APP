@@ -16,8 +16,11 @@ COPY --from=builder /usr/local /usr/local
 COPY src/ ./
 USER app
 
-# Default port; can be overridden by EB env var
+# Default port; can be overridden by env var
 ENV PORT=8000
+
+# Configure the Gunicorn application module; override with env var
+ENV GUNICORN_APP=app:app
 
 # Use a literal number here; EXPOSE doesn’t reliably expand env vars
 EXPOSE 8000
@@ -25,5 +28,5 @@ EXPOSE 8000
 # HEALTHCHECK uses shell form, so $PORT expansion works
 HEALTHCHECK --interval=30s --timeout=5s CMD curl -f http://localhost:$PORT/healthz || exit 1
 
-# IMPORTANT: use shell so $PORT expands
-CMD ["sh","-c","gunicorn minminbe.wsgi:application --bind 0.0.0.0:$PORT"]
+# IMPORTANT: use shell so $PORT and GUNICORN_APP expand
+CMD ["sh","-c","gunicorn ${GUNICORN_APP} --bind 0.0.0.0:$PORT"]
