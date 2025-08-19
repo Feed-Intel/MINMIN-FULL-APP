@@ -1,0 +1,68 @@
+name: Deploy Backend
+
+on:
+  push:
+    branches: [develop, main]
+    paths:
+      - 'MinMinBE/**'
+      - 'docker-compose.yml'
+      - 'Dockerrun.aws.json'
+      - '.github/workflows/deploy-be.yml'
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: ${{ vars.AWS_REGION }}
+  ECR_BACKEND: ${{ vars.ECR_BACKEND }}
+  EB_APP: ${{ vars.EB_APP }}
+  EB_ENV: ${{ vars.EB_ENV }}
+  EB_S3_BUCKET: ${{ vars.EB_S3_BUCKET }}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to ECR
+        run: |
+          aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_BACKEND
+
+      - name: Build and push image
+        run: |
+          GITSHA=$(git rev-parse --short HEAD)
+          docker build -t $ECR_BACKEND:$GITSHA MinMinBE
+          docker push $ECR_BACKEND:$GITSHA
+          echo "GITSHA=$GITSHA" >> $GITHUB_ENV
+
+      - name: Prepare Dockerrun
+        run: |
+          jq --arg IMAGE "$ECR_BACKEND:$GITSHA" '.containerDefinitions[0].image = $IMAGE' Dockerrun.aws.json > Dockerrun.generated.json
+
+      - name: Package application
+        run: |
+          zip -r app.zip Dockerrun.generated.json
+          aws s3 cp app.zip s3://$EB_S3_BUCKET/$GITSHA.zip
+
+      - name: Create EB application version
+        run: |
+          aws elasticbeanstalk create-application-version --application-name "$EB_APP" --version-label "$GITSHA" --source-bundle S3Bucket=$EB_S3_BUCKET,S3Key=$GITSHA.zip
+
+      - name: Update EB environment
+        run: |
+          aws elasticbeanstalk update-environment --application-name "$EB_APP" --environment-name "$EB_ENV" --version-label "$GITSHA"
+
+      - name: Wait for deployment
+        run: |
+          aws elasticbeanstalk wait environment-updated --environment-name "$EB_ENV"
+          aws elasticbeanstalk wait environment-green --environment-name "$EB_ENV" || true
+          URL=$(aws elasticbeanstalk describe-environments --application-name "$EB_APP" --environment-names "$EB_ENV" --query "Environments[0].CNAME" --output text)
+          echo "Environment URL: http://$URL"

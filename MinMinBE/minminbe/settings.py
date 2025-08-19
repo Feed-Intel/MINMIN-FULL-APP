@@ -10,89 +10,33 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 import os
-import json
 from pathlib import Path
-from decouple import config
 import sys
 from celery.schedules import crontab
 from datetime import timedelta
+import dj_database_url
+from decouple import config
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# ------------------------------------------------------------------------------
-# AWS region (use EB/instance region by default)
-# ------------------------------------------------------------------------------
-AWS_REGION = os.getenv("AWS_REGION") or os.getenv("AWS_DEFAULT_REGION") or "eu-west-3"
 
-# ------------------------------------------------------------------------------
-# Helpers to read config from SSM and Secrets Manager (use the EB region)
-# ------------------------------------------------------------------------------
 def get_ssm_parameter(name, default=None, with_decryption=True):
-    try:
-        import boto3
-        ssm = boto3.client("ssm", region_name=AWS_REGION)
-        return ssm.get_parameter(Name=name, WithDecryption=with_decryption)["Parameter"]["Value"]
-    except Exception:
-        return default
+    return os.environ.get(name.split('/')[-1], default)
 
 
 def get_secret(name, default=None):
-    """Retrieve a secret value from AWS Secrets Manager."""
-    try:
-        import boto3
-        client = boto3.client("secretsmanager", region_name=AWS_REGION)
-        response = client.get_secret_value(SecretId=name)
-        return response.get("SecretString", default)
-    except Exception:
-        return default
+    return os.environ.get(name.split('/')[-1], default)
 
-
-# ------------------------------------------------------------------------------
-# Core settings
-# ------------------------------------------------------------------------------
-# SECURITY WARNING: keep the secret key used in production secret!
-# Secrets are stored in AWS Secrets Manager
-SECRET_KEY = get_secret("minmin/stg/django", config("SECRET_KEY", default="changeme"))
-
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = config("DEBUG", default=False, cast=bool)
-
-# Environment label
-ENV = get_ssm_parameter("minmin/stg/ENV", config("ENV", default="development"))
-
-CSRF_TRUSTED_ORIGINS = config(
-    "CSRF_TRUSTED_ORIGINS",
-    default="https://minminbe.feed-intel.com,https://restaurant.feed-intel.com,http://localhost:8081",
-    cast=lambda v: [s.strip() for s in v.split(",")],
-)
-
-ALLOWED_HOSTS = get_ssm_parameter(
-    "minmin/stg/ALLOWED_HOSTS",
-    config("ALLOWED_HOSTS", default="localhost"),
-)
-ALLOWED_HOSTS = [s.strip() for s in ALLOWED_HOSTS.split(",")] if ALLOWED_HOSTS else []
-
-REDIS_URL = get_ssm_parameter(
-    "minmin/stg/REDIS_URL",
-    config("REDIS_URL", default="redis://127.0.0.1:6379/1"),
-)
-
-S3_BUCKET_UPLOADS = get_ssm_parameter(
-    "minmin/stg/S3_BUCKET_UPLOADS",
-    config("S3_BUCKET_UPLOADS", default=""),
-)
-
-SETTINGS_MODULE = get_ssm_parameter(
-    "minmin/stg/SETTINGS",
-    config("SETTINGS", default="minminbe.settings"),
-)
-
-CORS_ALLOWED_ORIGINS = config(
-    "CORS_ALLOWED_ORIGINS",
-    default="http://localhost:8081",
-    cast=lambda v: [s.strip() for s in v.split(",")],
-)
+SECRET_KEY = os.environ["DJANGO_SECRET_KEY"]
+DEBUG = os.environ.get("DEBUG", "false").lower() == "true"
+ENV = os.environ.get("ENV", "development")
+CSRF_TRUSTED_ORIGINS = os.environ.get("CSRF_TRUSTED_ORIGINS", "").split(",") if os.environ.get("CSRF_TRUSTED_ORIGINS") else []
+ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "").split(",") if os.environ.get("ALLOWED_HOSTS") else []
+REDIS_URL = os.environ.get("REDIS_URL", "redis://redis:6379/0")
+S3_BUCKET_UPLOADS = os.environ.get("S3_BUCKET_UPLOADS", "")
+SETTINGS_MODULE = os.environ.get("DJANGO_SETTINGS_MODULE", "minminbe.settings")
+CORS_ALLOWED_ORIGINS = os.environ.get("DJANGO_ALLOWED_CORS_ORIGINS", "").split(",") if os.environ.get("DJANGO_ALLOWED_CORS_ORIGINS") else []
 
 CORS_ALLOW_METHODS = [
     "GET",
@@ -304,42 +248,10 @@ SWAGGER_SETTINGS = {
 
 # ------------------------------------------------------------------------------
 # Database
-#   Use PostGIS if DB creds are available; otherwise, explicit SQLite fallback.
 # ------------------------------------------------------------------------------
-db_secret = get_secret("minmin/stg/db")
-db_conf = {}
-if db_secret:
-    try:
-        db_conf = json.loads(db_secret) or {}
-    except json.JSONDecodeError:
-        db_conf = {}
-
-db_name = db_conf.get("dbname") or config("DB_NAME", default=None)
-db_user = db_conf.get("username") or config("DB_USER", default="")
-db_password = db_conf.get("password") or config("DB_PASSWORD", default="")
-db_host = db_conf.get("host") or config("DB_HOST", default="")
-db_port = str(db_conf.get("port") or config("DB_PORT", default="5432"))
-
-if db_name:
-    DATABASES = {
-        "default": {
-            "ENGINE": "django.contrib.gis.db.backends.postgis",
-            "NAME": db_name,
-            "USER": db_user,
-            "PASSWORD": db_password,
-            "HOST": db_host,
-            "PORT": db_port,
-            "CONN_MAX_AGE": 600,
-        }
-    }
-else:
-    # Explicit fallback for local/dev scenarios
-    DATABASES = {
-        "default": {
-            "ENGINE": "django.db.backends.sqlite3",
-            "NAME": BASE_DIR / "db.sqlite3",
-        }
-    }
+DATABASES = {
+    "default": dj_database_url.config(default=os.environ.get("DATABASE_URL"), conn_max_age=600)
+}
 
 # ------------------------------------------------------------------------------
 # Cache
