@@ -28,6 +28,8 @@ jobs:
       - name: Build and push image
         run: |
           IMAGE_URI=${{ secrets.ECR_BACKEND }}:${GITHUB_SHA}
+          docker compose -p db build db
+          docker compose -p redis build redis
           docker compose -p backend build api
           docker tag backend-api:latest $IMAGE_URI
           docker push $IMAGE_URI
