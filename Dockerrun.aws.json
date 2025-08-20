@@ -1,6 +1,5 @@
 {
   "AWSEBDockerrunVersion": 2,
-  // Running Postgres & Redis inside EB is suitable for staging/dev. For production use RDS/ElastiCache.
   "volumes": [
     {"name": "pgdata", "host": {"sourcePath": "/var/app/postgresql"}}
   ],
