@@ -14,11 +14,11 @@ permissions:
   contents: read
 
 env:
-  AWS_REGION: ${{ vars.AWS_REGION }}
-  ECR_BACKEND: ${{ vars.ECR_BACKEND }}
-  EB_APP: ${{ vars.EB_APP }}
-  EB_ENV: ${{ vars.EB_ENV }}
-  EB_S3_BUCKET: ${{ vars.EB_S3_BUCKET }}
+  AWS_REGION: ${{ secrets.AWS_REGION }}
+  ECR_BACKEND: ${{ secrets.ECR_BACKEND }}
+  EB_APP: ${{ secrets.EB_APP }}
+  EB_ENV: ${{ secrets.EB_ENV }}
+  EB_S3_BUCKET: ${{ secrets.EB_S3_BUCKET }}
 
 jobs:
   deploy:
