@@ -5,9 +5,11 @@ on:
     branches: [develop, main]
     paths:
       - 'MinMinBE/**'
+      - 'MinMinBE/.env'
       - 'docker-compose.yml'
       - 'Dockerrun.aws.json'
       - '.github/workflows/deploy-be.yml'
+  workflow_dispatch:
 
 permissions:
   id-token: write
@@ -55,6 +57,26 @@ jobs:
           docker push $ECR_BACKEND:$GITSHA
           echo "GITSHA=$GITSHA" >> $GITHUB_ENV
 
+      - name: Generate EB options
+        run: |
+          python3 - <<'PYTHON'
+import json, pathlib
+env_file = pathlib.Path('MinMinBE/.env')
+options = []
+for line in env_file.read_text().splitlines():
+    line = line.strip()
+    if not line or line.startswith('#') or '=' not in line:
+        continue
+    key, value = line.split('=', 1)
+    options.append({
+        "Namespace": "aws:elasticbeanstalk:application:environment",
+        "OptionName": key,
+        "Value": value
+    })
+with open('options.json', 'w') as f:
+    json.dump(options, f)
+PYTHON
+
       - name: Prepare Dockerrun
         run: |
           jq --arg IMAGE "$ECR_BACKEND:$GITSHA" '.containerDefinitions[0].image = $IMAGE' Dockerrun.aws.json > Dockerrun.generated.json
@@ -68,9 +90,13 @@ jobs:
         run: |
           aws elasticbeanstalk create-application-version --application-name "$EB_APP" --version-label "$GITSHA" --source-bundle S3Bucket=$EB_S3_BUCKET,S3Key=$GITSHA.zip
 
-      - name: Update EB environment
+      - name: Deploy EB environment
         run: |
-          aws elasticbeanstalk update-environment --application-name "$EB_APP" --environment-name "$EB_ENV" --version-label "$GITSHA"
+          if aws elasticbeanstalk describe-environments --application-name "$EB_APP" --environment-names "$EB_ENV" --query "Environments[0]" --output text | grep -q None; then
+            aws elasticbeanstalk create-environment --application-name "$EB_APP" --environment-name "$EB_ENV" --version-label "$GITSHA" --option-settings file://options.json
+          else
+            aws elasticbeanstalk update-environment --application-name "$EB_APP" --environment-name "$EB_ENV" --version-label "$GITSHA" --option-settings file://options.json
+          fi
 
       - name: Wait for deployment
         run: |
