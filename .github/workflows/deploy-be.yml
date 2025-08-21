@@ -59,22 +59,22 @@ jobs:
       - name: Generate EB options
         run: |
           python3 - <<'PYTHON'
-import json, pathlib
-env_file = pathlib.Path('MinMinBE/.env')
-options = []
-for line in env_file.read_text().splitlines():
-    line = line.strip()
-    if not line or line.startswith('#') or '=' not in line:
-        continue
-    key, value = line.split('=', 1)
-    options.append({
-        "Namespace": "aws:elasticbeanstalk:application:environment",
-        "OptionName": key,
-        "Value": value
-    })
-with open('options.json', 'w') as f:
-    json.dump(options, f)
-PYTHON
+          import json, pathlib
+          env_file = pathlib.Path('MinMinBE/.env')
+          options = []
+          for line in env_file.read_text().splitlines():
+              line = line.strip()
+              if not line or line.startswith('#') or '=' not in line:
+                  continue
+              key, value = line.split('=', 1)
+              options.append({
+                  "Namespace": "aws:elasticbeanstalk:application:environment",
+                  "OptionName": key,
+                  "Value": value
+              })
+          with open('options.json', 'w') as f:
+              json.dump(options, f)
+          PYTHON
 
       - name: Prepare Dockerrun
         run: |
