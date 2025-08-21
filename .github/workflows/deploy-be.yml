@@ -81,7 +81,8 @@ jobs:
 
       - name: Deploy EB environment
         run: |
-          if aws elasticbeanstalk describe-environments --application-name "$EB_APP" --environment-names "$EB_ENV" --query "Environments[0]" --output text | grep -q None; then
+          STATUS=$(aws elasticbeanstalk describe-environments --application-name "$EB_APP" --environment-names "$EB_ENV" --query "Environments[0].Status" --output text)
+          if [ "$STATUS" = "None" ] || [ "$STATUS" = "Terminated" ]; then
             aws elasticbeanstalk create-environment --application-name "$EB_APP" --environment-name "$EB_ENV" --version-label "$GITSHA" --option-settings file://options.json
           else
             aws elasticbeanstalk update-environment --application-name "$EB_APP" --environment-name "$EB_ENV" --version-label "$GITSHA" --option-settings file://options.json
