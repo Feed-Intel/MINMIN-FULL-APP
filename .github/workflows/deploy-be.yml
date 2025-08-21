@@ -10,7 +10,6 @@ on:
       - 'Dockerrun.aws.json'
       - '.github/workflows/deploy-be.yml'
   workflow_dispatch:
-
 permissions:
   id-token: write
   contents: read
