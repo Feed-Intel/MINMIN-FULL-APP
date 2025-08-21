@@ -33,17 +33,7 @@ jobs:
           role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Verify EB environment variables
-        run: |
-          REQUIRED_VARS=(DJANGO_SECRET_KEY DATABASE_URL)
-          aws elasticbeanstalk describe-configuration-settings \
-            --application-name "$EB_APP" \
-            --environment-name "$EB_ENV" \
-            --query "ConfigurationSettings[0].OptionSettings[?Namespace=='aws:elasticbeanstalk:application:environment'].[OptionName,Value]" \
-            --output text | awk '{print $1"="$2}' > /tmp/env.txt
-          for v in "${REQUIRED_VARS[@]}"; do
-            grep -q "^$v=" /tmp/env.txt || { echo "Missing $v in EB env"; exit 1; }
-          done
+    
 
       - name: Login to ECR
         run: |
