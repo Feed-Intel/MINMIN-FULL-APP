@@ -34,6 +34,12 @@ jobs:
           role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
           aws-region: ${{ env.AWS_REGION }}
 
+      - name: Ensure tooling (jq, zip)
+        shell: bash
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y jq zip
+
       - name: Login to ECR
         shell: bash
         run: |
@@ -54,7 +60,7 @@ jobs:
         run: |
           set -euo pipefail
           python3 - <<'PYTHON'
-          import json, pathlib, os
+          import json, pathlib
           env_file = pathlib.Path('MinMinBE/.env')
           options = []
           if env_file.exists():
@@ -93,7 +99,6 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          # If version exists, skip create; otherwise create it.
           if aws elasticbeanstalk describe-application-versions \
               --application-name "$EB_APP" \
               --query "ApplicationVersions[?VersionLabel=='$GITSHA'] | length(@)" \
@@ -107,20 +112,24 @@ jobs:
               --auto-create-application
           fi
 
-      - name: Deploy (recreate if stack is missing)
+      - name: Deploy (recreate if stack is missing; auto-pick platform)
         shell: bash
         run: |
           set -euo pipefail
 
-          # Fetch current EB environment status and ID (may return 'None')
-          read -r STATUS ENV_ID <<<"$(aws elasticbeanstalk describe-environments \
+          # 1) Discover current EB env (may be orphaned)
+          ENV_DESC_JSON=$(aws elasticbeanstalk describe-environments \
             --application-name "$EB_APP" \
             --environment-names "$EB_ENV" \
-            --query 'Environments[0].[Status,EnvironmentId]' \
-            --output text 2>/dev/null || echo "None None")"
-          echo "STATUS=$STATUS ENV_ID=$ENV_ID"
+            --query 'Environments[0]' --output json 2>/dev/null || echo 'null')
 
-          # Discover the CloudFormation stack name (can be empty if orphaned)
+          STATUS=$(jq -r '.Status // "None"' <<<"$ENV_DESC_JSON")
+          ENV_ID=$(jq -r '.EnvironmentId // "None"' <<<"$ENV_DESC_JSON")
+          EXISTING_PLATFORM_ARN=$(jq -r '.PlatformArn // empty' <<<"$ENV_DESC_JSON")
+
+          echo "STATUS=$STATUS ENV_ID=$ENV_ID EXISTING_PLATFORM_ARN=${EXISTING_PLATFORM_ARN:-<none>}"
+
+          # 2) Read CFN stack; if missing, we must recreate
           STACK_NAME=""
           if [ "$STATUS" != "None" ] && [ "$STATUS" != "Terminated" ]; then
             STACK_NAME=$(aws elasticbeanstalk describe-environment-resources \
@@ -129,35 +138,53 @@ jobs:
           fi
           echo "STACK_NAME=${STACK_NAME:-<none>}"
 
-          # Check if CloudFormation stack exists
           STACK_OK="no"
-          if [ -n "$STACK_NAME" ] && [ "$STACK_NAME" != "None" ]; then
+          if [ -n "${STACK_NAME}" ] && [ "${STACK_NAME}" != "None" ]; then
             if aws cloudformation describe-stacks --stack-name "$STACK_NAME" >/dev/null 2>&1; then
               STACK_OK="yes"
             fi
           fi
           echo "STACK_OK=$STACK_OK"
 
+          # 3) Decide platform ARN based on Dockerrun format or reuse existing
+          detect_platform_arn() {
+            if [ -n "${EXISTING_PLATFORM_ARN:-}" ]; then
+              echo "$EXISTING_PLATFORM_ARN"
+              return 0
+            fi
+            if jq -e '.containerDefinitions' Dockerrun.generated.json >/dev/null 2>&1; then
+              echo "Detected Dockerrun v2 (multicontainer). Selecting AL2 ECS platform." >&2
+              aws elasticbeanstalk list-platform-versions \
+                --filters Type=PlatformName,Operator==,Values='Multi-container Docker running on 64bit Amazon Linux 2' \
+                --query 'PlatformSummaryList[0].PlatformArn' --output text
+              return 0
+            fi
+            echo "Detected single-container. Selecting AL2023 Docker platform." >&2
+            aws elasticbeanstalk list-platform-versions \
+              --filters Type=PlatformName,Operator==,Values='Docker running on 64bit Amazon Linux 2023' \
+              --query 'PlatformSummaryList[0].PlatformArn' --output text
+          }
+
+          PLATFORM_ARN=$(detect_platform_arn)
+          if [ -z "$PLATFORM_ARN" ] || [ "$PLATFORM_ARN" = "None" ]; then
+            echo "ERROR: Could not resolve a platform ARN. Aborting." >&2
+            exit 1
+          fi
+          echo "PLATFORM_ARN=$PLATFORM_ARN"
+
           recreate_env() {
             echo "Recreating environment $EB_ENV..."
-            # Terminate ghost env if EB still holds the name
             if [ "$STATUS" != "None" ] && [ "$STATUS" != "Terminated" ]; then
               aws elasticbeanstalk terminate-environment --environment-name "$EB_ENV" --force || true
               echo "Waiting for termination..."
               aws elasticbeanstalk wait environment-terminated --environment-name "$EB_ENV" || true
             fi
-
-            # OPTIONAL: pin a platform ARN if you want to avoid default drift.
-            # PLATFORM_ARN=$(aws elasticbeanstalk list-platform-versions \
-            #   --filters Type=PlatformName,Operator==,Values='Docker running on 64bit Amazon Linux 2' \
-            #   --query 'PlatformSummaryList[0].PlatformArn' --output text)
-
             aws elasticbeanstalk create-environment \
               --application-name "$EB_APP" \
               --environment-name "$EB_ENV" \
               --version-label "$GITSHA" \
+              --platform-arn "$PLATFORM_ARN" \
               --option-settings file://options.json
-              # If using PLATFORM_ARN, add:  --platform-arn "$PLATFORM_ARN"
           }
 
           if [ "$STATUS" = "None" ] || [ "$STATUS" = "Terminated" ]; then
@@ -182,7 +209,6 @@ jobs:
         run: |
           set -euo pipefail
           aws elasticbeanstalk wait environment-updated --environment-name "$EB_ENV"
-          # environment-green isn't available in all regions/platforms; don't fail the job if it isn't ready yet
           aws elasticbeanstalk wait environment-green --environment-name "$EB_ENV" || true
           URL=$(aws elasticbeanstalk describe-environments \
             --application-name "$EB_APP" \
