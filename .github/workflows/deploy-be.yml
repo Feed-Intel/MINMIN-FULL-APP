@@ -10,6 +10,7 @@ on:
       - 'Dockerrun.aws.json'
       - '.github/workflows/deploy-be.yml'
   workflow_dispatch:
+
 permissions:
   id-token: write
   contents: read
@@ -33,64 +34,158 @@ jobs:
           role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
           aws-region: ${{ env.AWS_REGION }}
 
-    
-
       - name: Login to ECR
+        shell: bash
         run: |
-          aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_BACKEND
+          aws ecr get-login-password --region "$AWS_REGION" \
+            | docker login --username AWS --password-stdin "$ECR_BACKEND"
 
       - name: Build and push image
+        shell: bash
         run: |
+          set -euo pipefail
           GITSHA=$(git rev-parse --short HEAD)
-          docker build -t $ECR_BACKEND:$GITSHA MinMinBE
-          docker push $ECR_BACKEND:$GITSHA
-          echo "GITSHA=$GITSHA" >> $GITHUB_ENV
+          docker build -t "$ECR_BACKEND:$GITSHA" MinMinBE
+          docker push "$ECR_BACKEND:$GITSHA"
+          echo "GITSHA=$GITSHA" >> "$GITHUB_ENV"
 
-      - name: Generate EB options
+      - name: Generate EB option settings from .env
+        shell: bash
         run: |
+          set -euo pipefail
           python3 - <<'PYTHON'
-          import json, pathlib
+          import json, pathlib, os
           env_file = pathlib.Path('MinMinBE/.env')
           options = []
-          for line in env_file.read_text().splitlines():
-              line = line.strip()
-              if not line or line.startswith('#') or '=' not in line:
-                  continue
-              key, value = line.split('=', 1)
-              options.append({
-                  "Namespace": "aws:elasticbeanstalk:application:environment",
-                  "OptionName": key,
-                  "Value": value
-              })
+          if env_file.exists():
+              for raw in env_file.read_text().splitlines():
+                  line = raw.strip()
+                  if not line or line.startswith('#') or '=' not in line:
+                      continue
+                  key, value = line.split('=', 1)
+                  options.append({
+                      "Namespace": "aws:elasticbeanstalk:application:environment",
+                      "OptionName": key.strip(),
+                      "Value": value.strip()
+                  })
           with open('options.json', 'w') as f:
               json.dump(options, f)
           PYTHON
+          echo "Generated options.json"
 
-      - name: Prepare Dockerrun
+      - name: Prepare Dockerrun with current image
+        shell: bash
         run: |
-          jq --arg IMAGE "$ECR_BACKEND:$GITSHA" '.containerDefinitions[0].image = $IMAGE' Dockerrun.aws.json > Dockerrun.generated.json
+          set -euo pipefail
+          jq --arg IMAGE "$ECR_BACKEND:$GITSHA" \
+             '.containerDefinitions[0].image = $IMAGE' \
+             Dockerrun.aws.json > Dockerrun.generated.json
+          echo "Prepared Dockerrun.generated.json"
 
-      - name: Package application
+      - name: Package and upload bundle to S3
+        shell: bash
         run: |
-          zip -r app.zip Dockerrun.generated.json
-          aws s3 cp app.zip s3://$EB_S3_BUCKET/$GITSHA.zip
+          set -euo pipefail
+          zip -r app.zip Dockerrun.generated.json >/dev/null
+          aws s3 cp app.zip "s3://$EB_S3_BUCKET/$GITSHA.zip"
 
-      - name: Create EB application version
+      - name: Create (or confirm) EB application version
+        shell: bash
         run: |
-          aws elasticbeanstalk create-application-version --application-name "$EB_APP" --version-label "$GITSHA" --source-bundle S3Bucket=$EB_S3_BUCKET,S3Key=$GITSHA.zip
-
-      - name: Deploy EB environment
-        run: |
-          STATUS=$(aws elasticbeanstalk describe-environments --application-name "$EB_APP" --environment-names "$EB_ENV" --query "Environments[0].Status" --output text)
-          if [ "$STATUS" = "None" ] || [ "$STATUS" = "Terminated" ]; then
-            aws elasticbeanstalk create-environment --application-name "$EB_APP" --environment-name "$EB_ENV" --version-label "$GITSHA" --option-settings file://options.json
+          set -euo pipefail
+          # If version exists, skip create; otherwise create it.
+          if aws elasticbeanstalk describe-application-versions \
+              --application-name "$EB_APP" \
+              --query "ApplicationVersions[?VersionLabel=='$GITSHA'] | length(@)" \
+              --output text | grep -q '^1$'; then
+            echo "Application version $GITSHA already exists."
           else
-            aws elasticbeanstalk update-environment --application-name "$EB_APP" --environment-name "$EB_ENV" --version-label "$GITSHA" --option-settings file://options.json
+            aws elasticbeanstalk create-application-version \
+              --application-name "$EB_APP" \
+              --version-label "$GITSHA" \
+              --source-bundle S3Bucket="$EB_S3_BUCKET",S3Key="$GITSHA.zip" \
+              --auto-create-application
           fi
 
-      - name: Wait for deployment
+      - name: Deploy (recreate if stack is missing)
+        shell: bash
         run: |
+          set -euo pipefail
+
+          # Fetch current EB environment status and ID (may return 'None')
+          read -r STATUS ENV_ID <<<"$(aws elasticbeanstalk describe-environments \
+            --application-name "$EB_APP" \
+            --environment-names "$EB_ENV" \
+            --query 'Environments[0].[Status,EnvironmentId]' \
+            --output text 2>/dev/null || echo "None None")"
+          echo "STATUS=$STATUS ENV_ID=$ENV_ID"
+
+          # Discover the CloudFormation stack name (can be empty if orphaned)
+          STACK_NAME=""
+          if [ "$STATUS" != "None" ] && [ "$STATUS" != "Terminated" ]; then
+            STACK_NAME=$(aws elasticbeanstalk describe-environment-resources \
+              --environment-name "$EB_ENV" \
+              --query 'EnvironmentResources.StackName' --output text 2>/dev/null || echo "")
+          fi
+          echo "STACK_NAME=${STACK_NAME:-<none>}"
+
+          # Check if CloudFormation stack exists
+          STACK_OK="no"
+          if [ -n "$STACK_NAME" ] && [ "$STACK_NAME" != "None" ]; then
+            if aws cloudformation describe-stacks --stack-name "$STACK_NAME" >/dev/null 2>&1; then
+              STACK_OK="yes"
+            fi
+          fi
+          echo "STACK_OK=$STACK_OK"
+
+          recreate_env() {
+            echo "Recreating environment $EB_ENV..."
+            # Terminate ghost env if EB still holds the name
+            if [ "$STATUS" != "None" ] && [ "$STATUS" != "Terminated" ]; then
+              aws elasticbeanstalk terminate-environment --environment-name "$EB_ENV" --force || true
+              echo "Waiting for termination..."
+              aws elasticbeanstalk wait environment-terminated --environment-name "$EB_ENV" || true
+            fi
+
+            # OPTIONAL: pin a platform ARN if you want to avoid default drift.
+            # PLATFORM_ARN=$(aws elasticbeanstalk list-platform-versions \
+            #   --filters Type=PlatformName,Operator==,Values='Docker running on 64bit Amazon Linux 2' \
+            #   --query 'PlatformSummaryList[0].PlatformArn' --output text)
+
+            aws elasticbeanstalk create-environment \
+              --application-name "$EB_APP" \
+              --environment-name "$EB_ENV" \
+              --version-label "$GITSHA" \
+              --option-settings file://options.json
+              # If using PLATFORM_ARN, add:  --platform-arn "$PLATFORM_ARN"
+          }
+
+          if [ "$STATUS" = "None" ] || [ "$STATUS" = "Terminated" ]; then
+            echo "Environment missing/terminated -> create"
+            recreate_env
+          else
+            if [ "$STACK_OK" = "yes" ]; then
+              echo "Stack healthy -> update existing environment"
+              aws elasticbeanstalk update-environment \
+                --application-name "$EB_APP" \
+                --environment-name "$EB_ENV" \
+                --version-label "$GITSHA" \
+                --option-settings file://options.json
+            else
+              echo "Environment record exists but stack is missing -> recreate"
+              recreate_env
+            fi
+          fi
+
+      - name: Wait for deployment and print URL
+        shell: bash
+        run: |
+          set -euo pipefail
           aws elasticbeanstalk wait environment-updated --environment-name "$EB_ENV"
+          # environment-green isn't available in all regions/platforms; don't fail the job if it isn't ready yet
           aws elasticbeanstalk wait environment-green --environment-name "$EB_ENV" || true
-          URL=$(aws elasticbeanstalk describe-environments --application-name "$EB_APP" --environment-names "$EB_ENV" --query "Environments[0].CNAME" --output text)
+          URL=$(aws elasticbeanstalk describe-environments \
+            --application-name "$EB_APP" \
+            --environment-names "$EB_ENV" \
+            --query "Environments[0].CNAME" --output text)
           echo "Environment URL: http://$URL"
