@@ -134,7 +134,11 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             set -e
-            sudo mkdir -p /opt/minmin/deploy /opt/minmin/nginx/conf.d
+            sudo mkdir -p \
+              /opt/minmin/deploy \
+              /opt/minmin/deploy/nginx \
+              /opt/minmin/deploy/nginx/conf.d \
+              /opt/minmin/nginx/conf.d
             sudo chown -R $USER:$USER /opt/minmin
 
       - name: Download restaurantFE artifact
@@ -169,7 +173,11 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             set -e
+            echo "Staging dir tree (compose):"
+            ls -la /opt/minmin/deploy || true
+            ls -la /opt/minmin/deploy/deploy || true
             if [ -f /opt/minmin/deploy/docker-compose.prod.yml ]; then sudo mv /opt/minmin/deploy/docker-compose.prod.yml /opt/minmin/docker-compose.prod.yml; \
+            elif [ -f /opt/minmin/deploy/deploy/docker-compose.prod.yml ]; then sudo mv /opt/minmin/deploy/deploy/docker-compose.prod.yml /opt/minmin/docker-compose.prod.yml; \
             elif [ -f /tmp/docker-compose.prod.yml ]; then sudo mv /tmp/docker-compose.prod.yml /opt/minmin/docker-compose.prod.yml; \
             elif [ -f /tmp/deploy/docker-compose.prod.yml ]; then sudo mv /tmp/deploy/docker-compose.prod.yml /opt/minmin/docker-compose.prod.yml; \
             else echo "::error::compose file not found after upload"; ls -la /opt/minmin/deploy || true; ls -la /tmp || true; ls -la /tmp/deploy || true; exit 1; fi
@@ -196,7 +204,11 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             set -e
+            echo "Staging dir tree (nginx main):"
+            ls -la /opt/minmin/deploy/nginx || true
+            ls -la /opt/minmin/deploy/deploy/nginx || true
             if [ -f /opt/minmin/deploy/nginx/nginx.conf ]; then sudo mv /opt/minmin/deploy/nginx/nginx.conf /opt/minmin/nginx/nginx.conf; \
+            elif [ -f /opt/minmin/deploy/deploy/nginx/nginx.conf ]; then sudo mv /opt/minmin/deploy/deploy/nginx/nginx.conf /opt/minmin/nginx/nginx.conf; \
             elif [ -f /tmp/nginx.conf ]; then sudo mv /tmp/nginx.conf /opt/minmin/nginx/nginx.conf; \
             elif [ -f /tmp/deploy/nginx/nginx.conf ]; then sudo mv /tmp/deploy/nginx/nginx.conf /opt/minmin/nginx/nginx.conf; \
             else echo "::error::nginx.conf not found after upload"; ls -la /opt/minmin/deploy/nginx || true; ls -la /tmp || true; ls -la /tmp/deploy/nginx || true; exit 1; fi
@@ -222,7 +234,11 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             set -e
+            echo "Staging dir tree (nginx vhosts api):"
+            ls -la /opt/minmin/deploy/nginx/conf.d || true
+            ls -la /opt/minmin/deploy/deploy/nginx/conf.d || true
             if [ -f /opt/minmin/deploy/nginx/conf.d/api.conf ]; then sudo mv /opt/minmin/deploy/nginx/conf.d/api.conf /opt/minmin/nginx/conf.d/api.conf; \
+            elif [ -f /opt/minmin/deploy/deploy/nginx/conf.d/api.conf ]; then sudo mv /opt/minmin/deploy/deploy/nginx/conf.d/api.conf /opt/minmin/nginx/conf.d/api.conf; \
             elif [ -f /tmp/deploy/nginx/conf.d/api.conf ]; then sudo mv /tmp/deploy/nginx/conf.d/api.conf /opt/minmin/nginx/conf.d/api.conf; \
             elif [ -f /tmp/api.conf ]; then sudo mv /tmp/api.conf /opt/minmin/nginx/conf.d/api.conf; \
             else echo "::error::api.conf not found after upload"; ls -la /opt/minmin/deploy/nginx/conf.d || true; ls -la /tmp/deploy/nginx/conf.d || true; ls -la /tmp || true; exit 1; fi
@@ -248,7 +264,11 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             set -e
+            echo "Staging dir tree (nginx vhosts customer):"
+            ls -la /opt/minmin/deploy/nginx/conf.d || true
+            ls -la /opt/minmin/deploy/deploy/nginx/conf.d || true
             if [ -f /opt/minmin/deploy/nginx/conf.d/customer.conf ]; then sudo mv /opt/minmin/deploy/nginx/conf.d/customer.conf /opt/minmin/nginx/conf.d/customer.conf; \
+            elif [ -f /opt/minmin/deploy/deploy/nginx/conf.d/customer.conf ]; then sudo mv /opt/minmin/deploy/deploy/nginx/conf.d/customer.conf /opt/minmin/nginx/conf.d/customer.conf; \
             elif [ -f /tmp/deploy/nginx/conf.d/customer.conf ]; then sudo mv /tmp/deploy/nginx/conf.d/customer.conf /opt/minmin/nginx/conf.d/customer.conf; \
             elif [ -f /tmp/customer.conf ]; then sudo mv /tmp/customer.conf /opt/minmin/nginx/conf.d/customer.conf; \
             else echo "::error::customer.conf not found after upload"; ls -la /opt/minmin/deploy/nginx/conf.d || true; ls -la /tmp/deploy/nginx/conf.d || true; ls -la /tmp || true; exit 1; fi
@@ -274,7 +294,11 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             set -e
+            echo "Staging dir tree (nginx vhosts restaurant):"
+            ls -la /opt/minmin/deploy/nginx/conf.d || true
+            ls -la /opt/minmin/deploy/deploy/nginx/conf.d || true
             if [ -f /opt/minmin/deploy/nginx/conf.d/restaurant.conf ]; then sudo mv /opt/minmin/deploy/nginx/conf.d/restaurant.conf /opt/minmin/nginx/conf.d/restaurant.conf; \
+            elif [ -f /opt/minmin/deploy/deploy/nginx/conf.d/restaurant.conf ]; then sudo mv /opt/minmin/deploy/deploy/nginx/conf.d/restaurant.conf /opt/minmin/nginx/conf.d/restaurant.conf; \
             elif [ -f /tmp/deploy/nginx/conf.d/restaurant.conf ]; then sudo mv /tmp/deploy/nginx/conf.d/restaurant.conf /opt/minmin/nginx/conf.d/restaurant.conf; \
             elif [ -f /tmp/restaurant.conf ]; then sudo mv /tmp/restaurant.conf /opt/minmin/nginx/conf.d/restaurant.conf; \
             else echo "::error::restaurant.conf not found after upload"; ls -la /opt/minmin/deploy/nginx/conf.d || true; ls -la /tmp/deploy/nginx/conf.d || true; ls -la /tmp || true; exit 1; fi
