@@ -210,8 +210,9 @@ jobs:
             set -e
             # Ensure compose file exists
             test -f /opt/minmin/docker-compose.prod.yml || (echo "::error::Missing compose file at /opt/minmin/docker-compose.prod.yml" && exit 1)
-            # Bring up only nginx to validate config loads
-            sudo env API_IMAGE="ghcr.io/${{ steps.owner.outputs.lc }}/${{ env.API_IMAGE_NAME }}:latest" docker compose -f /opt/minmin/docker-compose.prod.yml up -d nginx
+            # Bring up only nginx to validate config loads (use env-file for API_IMAGE)
+            echo "API_IMAGE=ghcr.io/${{ steps.owner.outputs.lc }}/${{ env.API_IMAGE_NAME }}:latest" | sudo tee /opt/minmin/deploy.env >/dev/null
+            sudo docker compose --env-file /opt/minmin/deploy.env -f /opt/minmin/docker-compose.prod.yml up -d nginx
             # Allow container to boot
             sleep 3
             # Basic reachability check (do not fail on HTTP status)
@@ -270,7 +271,7 @@ jobs:
             sudo bash -c "echo 'DJANGO_SECRET_KEY=${{ secrets.DJANGO_SECRET_KEY }}' > /opt/minmin/api.env"
             sudo bash -c "echo 'DJANGO_SETTINGS_MODULE=minminbe.settings' >> /opt/minmin/api.env"
             sudo bash -c "echo 'DEBUG=false' >> /opt/minmin/api.env"
-            sudo bash -c "echo 'ALLOWED_HOSTS=${{ vars.API_DOMAIN }},${{ vars.CUSTOMER_DOMAIN }},${{ vars.RESTAURANT_DOMAIN }}' >> /opt/minmin/api.env"
+            sudo bash -c "echo 'ALLOWED_HOSTS=${{ vars.API_DOMAIN }},${{ vars.CUSTOMER_DOMAIN }},${{ vars.RESTAURANT_DOMAIN }},localhost,127.0.0.1' >> /opt/minmin/api.env"
             sudo bash -c "echo 'CSRF_TRUSTED_ORIGINS=https://${{ vars.API_DOMAIN }},https://${{ vars.CUSTOMER_DOMAIN }},https://${{ vars.RESTAURANT_DOMAIN }}' >> /opt/minmin/api.env"
             sudo bash -c "echo 'DJANGO_ALLOWED_CORS_ORIGINS=https://${{ vars.CUSTOMER_DOMAIN }},https://${{ vars.RESTAURANT_DOMAIN }}' >> /opt/minmin/api.env"
             sudo bash -c "echo 'DATABASE_URL=${{ secrets.DATABASE_URL }}' >> /opt/minmin/api.env"
@@ -331,7 +332,7 @@ jobs:
             # Ensure compose file exists
             test -f /opt/minmin/docker-compose.prod.yml
             # Make sure all services are up
-            sudo env API_IMAGE="ghcr.io/${{ steps.owner.outputs.lc }}/${{ env.API_IMAGE_NAME }}:latest" docker compose -f /opt/minmin/docker-compose.prod.yml up -d
+            sudo docker compose --env-file /opt/minmin/deploy.env -f /opt/minmin/docker-compose.prod.yml up -d
             # Health check with retries (header only)
             for i in $(seq 1 10); do
               status=$(curl -s -o /dev/null -w "%{http_code}" http://localhost/healthz/ || true)
