@@ -168,13 +168,33 @@ jobs:
           target: /opt/minmin/nginx/
           overwrite: true
 
-      - name: Copy nginx vhost configs
+      - name: Copy nginx vhost api.conf
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
-          source: deploy/nginx/conf.d/*
+          source: deploy/nginx/conf.d/api.conf
+          target: /opt/minmin/nginx/conf.d/
+          overwrite: true
+
+      - name: Copy nginx vhost customer.conf
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          source: deploy/nginx/conf.d/customer.conf
+          target: /opt/minmin/nginx/conf.d/
+          overwrite: true
+
+      - name: Copy nginx vhost restaurant.conf
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          source: deploy/nginx/conf.d/restaurant.conf
           target: /opt/minmin/nginx/conf.d/
           overwrite: true
 
