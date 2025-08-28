@@ -126,6 +126,17 @@ jobs:
           ls -la deploy/nginx
           ls -la deploy/nginx/conf.d
 
+      - name: Create target directories on server
+        uses: appleboy/ssh-action@v1.2.1
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            set -e
+            sudo mkdir -p /opt/minmin/nginx/conf.d
+            sudo chown -R $USER:$USER /opt/minmin
+
       - name: Download restaurantFE artifact
         uses: actions/download-artifact@v4
         with:
@@ -149,15 +160,6 @@ jobs:
           overwrite: true
           debug: true
 
-      - name: Create nginx dirs on server
-        uses: appleboy/ssh-action@v1.2.1
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USER }}
-          key: ${{ secrets.EC2_SSH_KEY }}
-          script: |
-            sudo mkdir -p /opt/minmin/nginx/conf.d
-            sudo chown -R $USER:$USER /opt/minmin
 
       - name: Copy nginx main config
         uses: appleboy/scp-action@v0.1.7
