@@ -10,10 +10,10 @@ This document describes how to deploy the MinMin monorepo (Django API + two Expo
 - Optional workers: add Celery worker and beat containers if needed.
 
 ## Domains
-Create DNS A-records to the EC2 public IP:
-- `api.feed-intel.com` → API (proxied by Nginx to `api:8000`)
-- `customer.feed-intel.com` → Customer web (Nginx serves static)
-- `restaurant.feed-intel.com` → Restaurant web (Nginx serves static)
+Create DNS A-records to the EC2 public IP (staging examples):
+- `stg.api.feed-intel.com` → API (proxied by Nginx to `api:8000`)
+- `stg.customer.feed-intel.com` → Customer web (Nginx serves static)
+- `stg.restaurant.feed-intel.com` → Restaurant web (Nginx serves static)
 
 If your domain provider handles SSL at the edge and forwards HTTP to origin, no further origin TLS setup is required. Otherwise add Let’s Encrypt on the EC2 host later (out of scope for now).
 
@@ -68,7 +68,7 @@ Security Group
 
 DNS
 - Create A records pointing to EC2 public IP:
-  - `api.feed-intel.com`, `customer.feed-intel.com`, `restaurant.feed-intel.com`
+  - `stg.api.feed-intel.com`, `stg.customer.feed-intel.com`, `stg.restaurant.feed-intel.com`
 
 First‑time host prep (the workflow also installs compose plugin if missing):
 ```sh
@@ -89,9 +89,9 @@ curl -fsSL https://get.docker.com | sh
 
 Verification
 - After a run, browse:
-  - `http://api.feed-intel.com/healthz/`
-  - `http://customer.feed-intel.com`
-  - `http://restaurant.feed-intel.com`
+  - `http://stg.api.feed-intel.com/healthz/`
+  - `http://stg.customer.feed-intel.com`
+  - `http://stg.restaurant.feed-intel.com`
   (Use `https://` if your provider terminates TLS and forwards to the instance.)
 
 Rollback
@@ -136,9 +136,9 @@ Secrets (Repository → Settings → Secrets and variables → Actions):
 - Optional: `EMAIL_HOST_USER`- info@feed-intel.com, `EMAIL_HOST_PASSWORD` -change@123ME
 
 Variables (Repository → Settings → Secrets and variables → Actions → Variables):
-- `API_DOMAIN` — e.g., `api.feed-intel.com`
-- `CUSTOMER_DOMAIN` — e.g., `customer.feed-intel.com`
-- `RESTAURANT_DOMAIN` — e.g., `restaurant.feed-intel.com`
+- `API_DOMAIN` — e.g., `stg.api.feed-intel.com`
+- `CUSTOMER_DOMAIN` — e.g., `stg.customer.feed-intel.com`
+- `RESTAURANT_DOMAIN` — e.g., `stg.restaurant.feed-intel.com`
 
 ## CI/CD Flow
 Workflow file: `.github/workflows/deploy-ec2.yml`
