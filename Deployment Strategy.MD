@@ -11,9 +11,9 @@ This document describes how to deploy the MinMin monorepo (Django API + two Expo
 
 ## Domains
 Create DNS A-records to the EC2 public IP:
-- `api.app.com` → API (proxied by Nginx to `api:8000`)
-- `customer.app.com` → Customer web (Nginx serves static)
-- `restaurant.app.com` → Restaurant web (Nginx serves static)
+- `api.feed-intel.com` → API (proxied by Nginx to `api:8000`)
+- `customer.feed-intel.com` → Customer web (Nginx serves static)
+- `restaurant.feed-intel.com` → Restaurant web (Nginx serves static)
 
 If your domain provider handles SSL at the edge and forwards HTTP to origin, no further origin TLS setup is required. Otherwise add Let’s Encrypt on the EC2 host later (out of scope for now).
 
@@ -44,9 +44,9 @@ Follow this checklist to prepare CI/CD:
   - Optional: `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD`
 
 - Create Variables (Repository → Settings → Secrets and variables → Actions → Variables):
-  - `API_DOMAIN`: `api.app.com`
-  - `CUSTOMER_DOMAIN`: `customer.app.com`
-  - `RESTAURANT_DOMAIN`: `restaurant.app.com`
+  - `API_DOMAIN`: `api.feed-intel.com`
+  - `CUSTOMER_DOMAIN`: `customer.feed-intel.com`
+  - `RESTAURANT_DOMAIN`: `restaurant.feed-intel.com`
   - Optional: `EMAIL_HOST` (defaults to `smtp.gmail.com`)
 
 Notes:
@@ -68,7 +68,7 @@ Security Group
 
 DNS
 - Create A records pointing to EC2 public IP:
-  - `api.app.com`, `customer.app.com`, `restaurant.app.com`
+  - `api.feed-intel.com`, `customer.feed-intel.com`, `restaurant.feed-intel.com`
 
 First‑time host prep (the workflow also installs compose plugin if missing):
 ```sh
@@ -89,9 +89,9 @@ curl -fsSL https://get.docker.com | sh
 
 Verification
 - After a run, browse:
-  - `http://api.app.com/healthz/`
-  - `http://customer.app.com`
-  - `http://restaurant.app.com`
+  - `http://api.feed-intel.com/healthz/`
+  - `http://customer.feed-intel.com`
+  - `http://restaurant.feed-intel.com`
   (Use `https://` if your provider terminates TLS and forwards to the instance.)
 
 Rollback
@@ -136,9 +136,9 @@ Secrets (Repository → Settings → Secrets and variables → Actions):
 - Optional: `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD`
 
 Variables (Repository → Settings → Secrets and variables → Actions → Variables):
-- `API_DOMAIN` — e.g., `api.app.com`
-- `CUSTOMER_DOMAIN` — e.g., `customer.app.com`
-- `RESTAURANT_DOMAIN` — e.g., `restaurant.app.com`
+- `API_DOMAIN` — e.g., `api.feed-intel.com`
+- `CUSTOMER_DOMAIN` — e.g., `customer.feed-intel.com`
+- `RESTAURANT_DOMAIN` — e.g., `restaurant.feed-intel.com`
 
 ## CI/CD Flow
 Workflow file: `.github/workflows/deploy-ec2.yml`
