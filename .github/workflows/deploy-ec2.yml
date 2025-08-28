@@ -110,16 +110,33 @@ jobs:
           name: customer-web-dist
           path: dist/customer
 
-      - name: Copy compose and nginx configs to server
+      - name: Copy compose file to server
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
-          source: |
-            deploy/docker-compose.prod.yml
-            deploy/nginx/**
+          source: deploy/docker-compose.prod.yml
           target: /opt/minmin/
+
+      - name: Create nginx dirs on server
+        uses: appleboy/ssh-action@v1.2.1
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            sudo mkdir -p /opt/minmin/nginx/conf.d
+            sudo chown -R $USER:$USER /opt/minmin
+
+      - name: Copy nginx configs to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          source: deploy/nginx/**
+          target: /opt/minmin/nginx/
 
       - name: Copy static sites to server
         uses: appleboy/scp-action@v0.1.7
