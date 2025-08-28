@@ -203,7 +203,7 @@ jobs:
             # Ensure compose file exists
             test -f /opt/minmin/docker-compose.prod.yml || (echo "::error::Missing compose file at /opt/minmin/docker-compose.prod.yml" && exit 1)
             # Bring up only nginx to validate config loads
-            docker compose -f /opt/minmin/docker-compose.prod.yml up -d nginx
+            API_IMAGE="ghcr.io/${{ github.repository_owner }}/${{ env.API_IMAGE_NAME }}:latest" docker compose -f /opt/minmin/docker-compose.prod.yml up -d nginx
             # Allow container to boot
             sleep 3
             # Basic reachability check (do not fail on HTTP status)
