@@ -147,6 +147,7 @@ jobs:
           source: deploy/docker-compose.prod.yml
           target: /opt/minmin/
           overwrite: true
+          debug: true
 
       - name: Create nginx dirs on server
         uses: appleboy/ssh-action@v1.2.1
@@ -167,6 +168,7 @@ jobs:
           source: deploy/nginx/nginx.conf
           target: /opt/minmin/nginx/
           overwrite: true
+          debug: true
 
       - name: Copy nginx vhost api.conf
         uses: appleboy/scp-action@v0.1.7
@@ -177,6 +179,7 @@ jobs:
           source: deploy/nginx/conf.d/api.conf
           target: /opt/minmin/nginx/conf.d/
           overwrite: true
+          debug: true
 
       - name: Copy nginx vhost customer.conf
         uses: appleboy/scp-action@v0.1.7
@@ -187,6 +190,7 @@ jobs:
           source: deploy/nginx/conf.d/customer.conf
           target: /opt/minmin/nginx/conf.d/
           overwrite: true
+          debug: true
 
       - name: Copy nginx vhost restaurant.conf
         uses: appleboy/scp-action@v0.1.7
@@ -197,6 +201,36 @@ jobs:
           source: deploy/nginx/conf.d/restaurant.conf
           target: /opt/minmin/nginx/conf.d/
           overwrite: true
+          debug: true
+
+      - name: Verify nginx files on server
+        uses: appleboy/ssh-action@v1.2.1
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            set -e
+            echo "Listing /opt/minmin/nginx and conf.d on server:"
+            ls -la /opt/minmin/nginx || true
+            ls -la /opt/minmin/nginx/conf.d || true
+
+      - name: Start nginx and smoke test
+        uses: appleboy/ssh-action@v1.2.1
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            set -e
+            # Ensure compose file exists
+            test -f /opt/minmin/docker-compose.prod.yml || (echo "::error::Missing compose file at /opt/minmin/docker-compose.prod.yml" && exit 1)
+            # Bring up only nginx to validate config loads
+            docker compose -f /opt/minmin/docker-compose.prod.yml up -d nginx
+            # Allow container to boot
+            sleep 3
+            # Basic reachability check (do not fail on HTTP status)
+            curl -I http://localhost || (echo "::error::Nginx not reachable on localhost" && exit 1)
 
       - name: Copy static sites to server
         uses: appleboy/scp-action@v0.1.7
