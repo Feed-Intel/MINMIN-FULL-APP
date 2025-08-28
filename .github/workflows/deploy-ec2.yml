@@ -98,6 +98,34 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Validate GHCR credentials and access
+        env:
+          GHCR_USERNAME: ${{ secrets.GHCR_USERNAME }}
+          GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
+          IMAGE: ghcr.io/${{ github.repository_owner }}/${{ env.API_IMAGE_NAME }}:latest
+        run: |
+          set -euo pipefail
+          if [ -z "${GHCR_USERNAME:-}" ] || [ -z "${GHCR_TOKEN:-}" ]; then
+            echo "::error::GHCR_USERNAME or GHCR_TOKEN is not set in repo secrets" >&2
+            exit 1
+          fi
+          echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USERNAME" --password-stdin
+          # Try to pull the image built in the previous job; warn if first run
+          if ! docker pull "$IMAGE" >/dev/null 2>&1; then
+            echo "::warning::Could not pull $IMAGE. If this is the first deploy, this is expected. Credentials validated."
+          else
+            echo "Verified pull access to $IMAGE"
+          fi
+          docker logout ghcr.io
+
+      - name: Verify required files exist in workspace
+        run: |
+          set -e
+          ls -la
+          ls -la deploy
+          ls -la deploy/nginx
+          ls -la deploy/nginx/conf.d
+
       - name: Download restaurantFE artifact
         uses: actions/download-artifact@v4
         with:
@@ -118,6 +146,7 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           source: deploy/docker-compose.prod.yml
           target: /opt/minmin/
+          overwrite: true
 
       - name: Create nginx dirs on server
         uses: appleboy/ssh-action@v1.2.1
@@ -129,14 +158,25 @@ jobs:
             sudo mkdir -p /opt/minmin/nginx/conf.d
             sudo chown -R $USER:$USER /opt/minmin
 
-      - name: Copy nginx configs to server
+      - name: Copy nginx main config
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
-          source: deploy/nginx/**
+          source: deploy/nginx/nginx.conf
           target: /opt/minmin/nginx/
+          overwrite: true
+
+      - name: Copy nginx vhost configs
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          source: deploy/nginx/conf.d/*
+          target: /opt/minmin/nginx/conf.d/
+          overwrite: true
 
       - name: Copy static sites to server
         uses: appleboy/scp-action@v0.1.7
@@ -201,9 +241,24 @@ jobs:
             sudo bash -c "echo 'EMAIL_HOST_PASSWORD=${{ secrets.EMAIL_HOST_PASSWORD || '' }}' >> /opt/minmin/api.env"
 
             # Inject domain names into nginx vhosts
-            sed -i "s/api.local/${{ vars.API_DOMAIN }}/g" /opt/minmin/nginx/conf.d/api.conf || true
-            sed -i "s/customer.local/${{ vars.CUSTOMER_DOMAIN }}/g" /opt/minmin/nginx/conf.d/customer.conf || true
-            sed -i "s/restaurant.local/${{ vars.RESTAURANT_DOMAIN }}/g" /opt/minmin/nginx/conf.d/restaurant.conf || true
+            if [ -f /opt/minmin/nginx/conf.d/api.conf ]; then
+              sed -i "s/api.local/${{ vars.API_DOMAIN }}/g" /opt/minmin/nginx/conf.d/api.conf
+            else
+              echo "::error::Missing /opt/minmin/nginx/conf.d/api.conf on server"; ls -la /opt/minmin/nginx/conf.d || true; exit 1
+            fi
+            if [ -f /opt/minmin/nginx/conf.d/customer.conf ]; then
+              sed -i "s/customer.local/${{ vars.CUSTOMER_DOMAIN }}/g" /opt/minmin/nginx/conf.d/customer.conf
+            else
+              echo "::error::Missing /opt/minmin/nginx/conf.d/customer.conf on server"; exit 1
+            fi
+            if [ -f /opt/minmin/nginx/conf.d/restaurant.conf ]; then
+              sed -i "s/restaurant.local/${{ vars.RESTAURANT_DOMAIN }}/g" /opt/minmin/nginx/conf.d/restaurant.conf
+            else
+              echo "::error::Missing /opt/minmin/nginx/conf.d/restaurant.conf on server"; exit 1
+            fi
+
+            # Sanity check compose file present
+            test -f /opt/minmin/docker-compose.prod.yml || (echo "::error::Missing compose file at /opt/minmin/docker-compose.prod.yml" && exit 1)
 
             docker compose --env-file /opt/minmin/deploy.env -f /opt/minmin/docker-compose.prod.yml pull || true
             docker compose --env-file /opt/minmin/deploy.env -f /opt/minmin/docker-compose.prod.yml up -d
