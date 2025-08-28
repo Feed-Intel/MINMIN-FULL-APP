@@ -26,6 +26,89 @@ If your domain provider handles SSL at the edge and forwards HTTP to origin, no 
   - `deploy/nginx/conf.d/restaurant.conf`
 - CI/CD workflow: `.github/workflows/deploy-ec2.yml`
 
+## GitHub Actions: Prerequisites & Setup
+
+Follow this checklist to prepare CI/CD:
+
+- Enable Actions: Repository → Settings → Actions → General → Allow GitHub Actions to run.
+
+- Create Secrets (Repository → Settings → Secrets and variables → Actions → New repository secret):
+  - `EC2_HOST`: EC2 public IP or DNS (e.g., ec2-1-2-3-4.compute.amazonaws.com)
+  - `EC2_USER`: SSH user (Ubuntu AMI uses `ubuntu`)
+  - `EC2_SSH_KEY`: Private SSH key (PEM content) that matches the EC2 key pair
+  - `GHCR_USERNAME`: Your GitHub username or org (owner of the package)
+  - `GHCR_TOKEN`: GitHub PAT with `read:packages` (for pulling images on EC2)
+  - `DJANGO_SECRET_KEY`: Secure random string
+  - `DATABASE_URL`: e.g. `postgis://minmin:<password>@db:5432/minmin`
+  - `REDIS_URL`: e.g. `redis://redis:6379/0`
+  - Optional: `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD`
+
+- Create Variables (Repository → Settings → Secrets and variables → Actions → Variables):
+  - `API_DOMAIN`: `api.app.com`
+  - `CUSTOMER_DOMAIN`: `customer.app.com`
+  - `RESTAURANT_DOMAIN`: `restaurant.app.com`
+  - Optional: `EMAIL_HOST` (defaults to `smtp.gmail.com`)
+
+Notes:
+- The pipeline pushes the API image to GHCR using the built‑in `GITHUB_TOKEN`. The server uses `GHCR_TOKEN` to pull.
+- Keep the EC2 SSH key secret scoped to this repo. Consider using a deploy key restricted to that instance.
+
+## EC2 Instance Setup & Security
+
+Provision
+- AMI: Ubuntu 22.04 LTS (or Amazon Linux 2023)
+- Instance: t3.medium (2 vCPU, 4 GB) for MVP
+- Storage: 40–80 GB gp3
+- Key pair: create/download the `.pem` and keep secure
+
+Security Group
+- Inbound allow: TCP 22 (SSH), 80 (HTTP)
+- Optional now, later for TLS: TCP 443 (HTTPS)
+- Deny/omit: 5432 (Postgres), 6379 (Redis) from the internet
+
+DNS
+- Create A records pointing to EC2 public IP:
+  - `api.app.com`, `customer.app.com`, `restaurant.app.com`
+
+First‑time host prep (the workflow also installs compose plugin if missing):
+```sh
+sudo mkdir -p /opt/minmin && sudo chown -R $USER:$USER /opt/minmin
+sudo apt-get update && sudo apt-get install -y curl
+curl -fsSL https://get.docker.com | sh
+```
+
+## Running the Pipeline
+
+- Push to `main` or trigger manually (Actions → Deploy to Single EC2 → Run workflow).
+- The workflow performs:
+  1. Build and push API container to GHCR (`ghcr.io/<owner>/minmin-api:latest` and `:sha`).
+  2. Build static frontends (Expo export web) with production URLs.
+  3. Copy compose + Nginx config and static assets to `/opt/minmin/` on EC2.
+  4. Create `/opt/minmin/api.env` from secrets and `/opt/minmin/deploy.env` with image tag.
+  5. `docker compose up -d` and health‑check `http://localhost/healthz/` via Nginx.
+
+Verification
+- After a run, browse:
+  - `http://api.app.com/healthz/`
+  - `http://customer.app.com`
+  - `http://restaurant.app.com`
+  (Use `https://` if your provider terminates TLS and forwards to the instance.)
+
+Rollback
+- Images are also tagged with the commit SHA. On the server:
+```sh
+grep API_IMAGE /opt/minmin/deploy.env
+# Set to a previous SHA tag
+echo "API_IMAGE=ghcr.io/<owner>/minmin-api:<sha>" | sudo tee /opt/minmin/deploy.env
+docker compose --env-file /opt/minmin/deploy.env -f /opt/minmin/docker-compose.prod.yml up -d
+```
+
+Troubleshooting
+- `docker compose -f /opt/minmin/docker-compose.prod.yml logs api`
+- `docker compose -f /opt/minmin/docker-compose.prod.yml ps`
+- Ensure SG and firewall expose port 80 (and 443 if using TLS on the box).
+
+
 ## Server Layout (on EC2)
 - `/opt/minmin/docker-compose.prod.yml` — compose file (copied by CI)
 - `/opt/minmin/nginx/` — nginx.conf and vhosts (copied by CI)
