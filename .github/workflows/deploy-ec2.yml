@@ -20,6 +20,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Compute lowercase owner
+        id: owner
+        run: echo "lc=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
+
       - name: Log in to GHCR
         uses: docker/login-action@v3
         with:
@@ -31,7 +35,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ghcr.io/${{ github.repository_owner }}/${{ env.API_IMAGE_NAME }}
+          images: ghcr.io/${{ steps.owner.outputs.lc }}/${{ env.API_IMAGE_NAME }}
           tags: |
             type=sha,format=long
             type=raw,value=latest
@@ -98,11 +102,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Compute lowercase owner
+        id: owner
+        run: echo "lc=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
+
       - name: Validate GHCR credentials and access
         env:
           GHCR_USERNAME: ${{ secrets.GHCR_USERNAME }}
           GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
-          IMAGE: ghcr.io/${{ github.repository_owner }}/${{ env.API_IMAGE_NAME }}:latest
+          IMAGE: ghcr.io/${{ steps.owner.outputs.lc }}/${{ env.API_IMAGE_NAME }}:latest
         run: |
           set -euo pipefail
           if [ -z "${GHCR_USERNAME:-}" ] || [ -z "${GHCR_TOKEN:-}" ]; then
@@ -203,7 +211,7 @@ jobs:
             # Ensure compose file exists
             test -f /opt/minmin/docker-compose.prod.yml || (echo "::error::Missing compose file at /opt/minmin/docker-compose.prod.yml" && exit 1)
             # Bring up only nginx to validate config loads
-            sudo env API_IMAGE="ghcr.io/${{ github.repository_owner }}/${{ env.API_IMAGE_NAME }}:latest" docker compose -f /opt/minmin/docker-compose.prod.yml up -d nginx
+            sudo env API_IMAGE="ghcr.io/${{ steps.owner.outputs.lc }}/${{ env.API_IMAGE_NAME }}:latest" docker compose -f /opt/minmin/docker-compose.prod.yml up -d nginx
             # Allow container to boot
             sleep 3
             # Basic reachability check (do not fail on HTTP status)
@@ -256,7 +264,7 @@ jobs:
             echo ${{ secrets.GHCR_TOKEN }} | sudo docker login ghcr.io -u ${{ secrets.GHCR_USERNAME }} --password-stdin
 
             # Compose deploy env (for variable substitution like API_IMAGE)
-            echo "API_IMAGE=ghcr.io/${{ github.repository_owner }}/${{ env.API_IMAGE_NAME }}:latest" | sudo tee /opt/minmin/deploy.env >/dev/null
+            echo "API_IMAGE=ghcr.io/${{ steps.owner.outputs.lc }}/${{ env.API_IMAGE_NAME }}:latest" | sudo tee /opt/minmin/deploy.env >/dev/null
 
             # API application env
             sudo bash -c "echo 'DJANGO_SECRET_KEY=${{ secrets.DJANGO_SECRET_KEY }}' > /opt/minmin/api.env"
