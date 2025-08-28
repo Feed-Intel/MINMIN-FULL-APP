@@ -297,6 +297,11 @@ jobs:
               echo "::error::Missing /opt/minmin/nginx/conf.d/restaurant.conf on server"; exit 1
             fi
 
+            # Reload nginx to pick up updated vhosts
+            sudo docker compose --env-file /opt/minmin/deploy.env -f /opt/minmin/docker-compose.prod.yml restart nginx || \
+              sudo docker compose --env-file /opt/minmin/deploy.env -f /opt/minmin/docker-compose.prod.yml up -d nginx
+            sleep 2
+
             # Sanity check compose file present
             test -f /opt/minmin/docker-compose.prod.yml || (echo "::error::Missing compose file at /opt/minmin/docker-compose.prod.yml" && exit 1)
 
