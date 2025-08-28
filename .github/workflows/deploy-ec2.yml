@@ -169,24 +169,20 @@ jobs:
             echo ${{ secrets.GHCR_TOKEN }} | docker login ghcr.io -u ${{ secrets.GHCR_USERNAME }} --password-stdin
 
             # Compose deploy env (for variable substitution like API_IMAGE)
-            cat > /opt/minmin/deploy.env <<'EOF'
-API_IMAGE=ghcr.io/${{ github.repository_owner }}/${{ env.API_IMAGE_NAME }}:latest
-EOF
+            echo "API_IMAGE=ghcr.io/${{ github.repository_owner }}/${{ env.API_IMAGE_NAME }}:latest" | sudo tee /opt/minmin/deploy.env >/dev/null
 
             # API application env
-            cat > /opt/minmin/api.env <<'EOF'
-DJANGO_SECRET_KEY=${{ secrets.DJANGO_SECRET_KEY }}
-DJANGO_SETTINGS_MODULE=minminbe.settings
-DEBUG=false
-ALLOWED_HOSTS=${{ vars.API_DOMAIN }},${{ vars.CUSTOMER_DOMAIN }},${{ vars.RESTAURANT_DOMAIN }}
-CSRF_TRUSTED_ORIGINS=https://${{ vars.API_DOMAIN }},https://${{ vars.CUSTOMER_DOMAIN }},https://${{ vars.RESTAURANT_DOMAIN }}
-DJANGO_ALLOWED_CORS_ORIGINS=https://${{ vars.CUSTOMER_DOMAIN }},https://${{ vars.RESTAURANT_DOMAIN }}
-DATABASE_URL=${{ secrets.DATABASE_URL }}
-REDIS_URL=${{ secrets.REDIS_URL }}
-EMAIL_HOST=${{ vars.EMAIL_HOST || 'smtp.gmail.com' }}
-EMAIL_HOST_USER=${{ secrets.EMAIL_HOST_USER || '' }}
-EMAIL_HOST_PASSWORD=${{ secrets.EMAIL_HOST_PASSWORD || '' }}
-EOF
+            sudo bash -c "echo 'DJANGO_SECRET_KEY=${{ secrets.DJANGO_SECRET_KEY }}' > /opt/minmin/api.env"
+            sudo bash -c "echo 'DJANGO_SETTINGS_MODULE=minminbe.settings' >> /opt/minmin/api.env"
+            sudo bash -c "echo 'DEBUG=false' >> /opt/minmin/api.env"
+            sudo bash -c "echo 'ALLOWED_HOSTS=${{ vars.API_DOMAIN }},${{ vars.CUSTOMER_DOMAIN }},${{ vars.RESTAURANT_DOMAIN }}' >> /opt/minmin/api.env"
+            sudo bash -c "echo 'CSRF_TRUSTED_ORIGINS=https://${{ vars.API_DOMAIN }},https://${{ vars.CUSTOMER_DOMAIN }},https://${{ vars.RESTAURANT_DOMAIN }}' >> /opt/minmin/api.env"
+            sudo bash -c "echo 'DJANGO_ALLOWED_CORS_ORIGINS=https://${{ vars.CUSTOMER_DOMAIN }},https://${{ vars.RESTAURANT_DOMAIN }}' >> /opt/minmin/api.env"
+            sudo bash -c "echo 'DATABASE_URL=${{ secrets.DATABASE_URL }}' >> /opt/minmin/api.env"
+            sudo bash -c "echo 'REDIS_URL=${{ secrets.REDIS_URL }}' >> /opt/minmin/api.env"
+            sudo bash -c "echo 'EMAIL_HOST=${{ vars.EMAIL_HOST || 'smtp.gmail.com' }}' >> /opt/minmin/api.env"
+            sudo bash -c "echo 'EMAIL_HOST_USER=${{ secrets.EMAIL_HOST_USER || '' }}' >> /opt/minmin/api.env"
+            sudo bash -c "echo 'EMAIL_HOST_PASSWORD=${{ secrets.EMAIL_HOST_PASSWORD || '' }}' >> /opt/minmin/api.env"
 
             # Inject domain names into nginx vhosts
             sed -i "s/api.local/${{ vars.API_DOMAIN }}/g" /opt/minmin/nginx/conf.d/api.conf || true
