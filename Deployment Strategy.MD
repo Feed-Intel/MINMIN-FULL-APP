@@ -133,7 +133,7 @@ Secrets (Repository → Settings → Secrets and variables → Actions):
 - `DJANGO_SECRET_KEY`
 - `DATABASE_URL` — e.g., `postgis://minmin:<password>@db:5432/minmin`
 - `REDIS_URL` — e.g., `redis://redis:6379/0`
-- Optional: `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD`
+- Optional: `EMAIL_HOST_USER`- info@feed-intel.com, `EMAIL_HOST_PASSWORD` -change@123ME
 
 Variables (Repository → Settings → Secrets and variables → Actions → Variables):
 - `API_DOMAIN` — e.g., `api.feed-intel.com`
@@ -180,7 +180,7 @@ SSH into EC2 and ensure:
 sudo mkdir -p /opt/minmin && sudo chown -R $USER:$USER /opt/minmin
 sudo apt-get update && sudo apt-get install -y curl
 curl -fsSL https://get.docker.com | sh
-``` 
+``` dock
 The workflow will install the compose plugin if missing.
 
 ---
