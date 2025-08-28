@@ -306,7 +306,7 @@ jobs:
             # Health check with retries (API behind Nginx)
             echo "Waiting for API to become healthy..."
             for i in $(seq 1 20); do
-              if curl -fsS -o /dev/null http://localhost/healthz/; then
+              if curl -fsS -H "Host: ${{ vars.API_DOMAIN }}" -o /dev/null http://localhost/healthz/; then
                 echo "API healthy on attempt $i"
                 break
               fi
@@ -314,9 +314,9 @@ jobs:
               sleep 3
               if [ "$i" = "20" ]; then
                 echo 'API health check failed after retries'
-                sudo docker compose -f /opt/minmin/docker-compose.prod.yml ps
-                sudo docker compose -f /opt/minmin/docker-compose.prod.yml logs api || true
-                sudo docker compose -f /opt/minmin/docker-compose.prod.yml logs nginx || true
+                sudo docker compose --env-file /opt/minmin/deploy.env -f /opt/minmin/docker-compose.prod.yml ps
+                sudo docker compose --env-file /opt/minmin/deploy.env -f /opt/minmin/docker-compose.prod.yml logs api || true
+                sudo docker compose --env-file /opt/minmin/deploy.env -f /opt/minmin/docker-compose.prod.yml logs nginx || true
                 exit 1
               fi
             done
@@ -335,7 +335,7 @@ jobs:
             sudo docker compose --env-file /opt/minmin/deploy.env -f /opt/minmin/docker-compose.prod.yml up -d
             # Health check with retries (header only)
             for i in $(seq 1 10); do
-              status=$(curl -s -o /dev/null -w "%{http_code}" http://localhost/healthz/ || true)
+              status=$(curl -s -H "Host: ${{ vars.API_DOMAIN }}" -o /dev/null -w "%{http_code}" http://localhost/healthz/ || true)
               echo "healthz status: $status (attempt $i)"
               if [ "$status" = "200" ]; then
                 echo "Final health check OK"
@@ -344,7 +344,7 @@ jobs:
               sleep 3
               if [ "$i" = "10" ]; then
                 echo '::error::/healthz did not return 200 after retries'
-                sudo docker compose -f /opt/minmin/docker-compose.prod.yml ps
+                sudo docker compose --env-file /opt/minmin/deploy.env -f /opt/minmin/docker-compose.prod.yml ps
                 exit 1
               fi
             done
