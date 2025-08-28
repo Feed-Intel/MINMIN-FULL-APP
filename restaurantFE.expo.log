@@ -1,0 +1,62 @@
+  --non-interactive is not supported, use $CI=1 instead
+env: load .env
+env: export EXPO_PUBLIC_API_KEY EXPO_PUBLIC_WS_URL EXPO_PUBLIC_IMAGE_PATH
+Starting project at /Users/hailemichaelseleshi/Documents/Feed-Intel-Dev/MinMinFullApp/restaurantFE
+Using src/app as the root directory for Expo Router.
+Starting Metro Bundler
+Waiting on http://localhost:8081
+Logs for your project will appear below.
+Recrawled this watch 1 time, most recently because:
+MustScanSubDirs UserDroppedTo resolve, please review the information on
+https://facebook.github.io/watchman/docs/troubleshooting.html#recrawl
+To clear this warning, run:
+`watchman watch-del '/Users/hailemichaelseleshi/Documents/Feed-Intel-Dev/MinMinFullApp' ; watchman watch-project '/Users/hailemichaelseleshi/Documents/Feed-Intel-Dev/MinMinFullApp'`
+
+λ Bundling failed 6580ms node_modules/expo-router/node/render.js (1577 modules)
+
+Metro error: While trying to resolve module `lodash` from file `/Users/hailemichaelseleshi/Documents/Feed-Intel-Dev/MinMinFullApp/restaurantFE/node_modules/react-native-calendars/src/expandableCalendar/Context/Provider.js`, the package `/Users/hailemichaelseleshi/Documents/Feed-Intel-Dev/MinMinFullApp/restaurantFE/node_modules/lodash/package.json` was successfully found. However, this package itself specifies a `main` module field that could not be resolved (`/Users/hailemichaelseleshi/Documents/Feed-Intel-Dev/MinMinFullApp/restaurantFE/node_modules/lodash/lodash.js`. Indeed, none of these files exist:
+
+  * /Users/hailemichaelseleshi/Documents/Feed-Intel-Dev/MinMinFullApp/restaurantFE/node_modules/lodash/lodash.js(.web.ts|.ts|.web.tsx|.tsx|.web.js|.js|.web.jsx|.jsx|.web.json|.json|.web.cjs|.cjs|.web.mjs|.mjs|.web.scss|.scss|.web.sass|.sass|.web.css|.css|.web.svg|.svg)
+  * /Users/hailemichaelseleshi/Documents/Feed-Intel-Dev/MinMinFullApp/restaurantFE/node_modules/lodash/lodash.js/index(.web.ts|.ts|.web.tsx|.tsx|.web.js|.js|.web.jsx|.jsx|.web.json|.json|.web.cjs|.cjs|.web.mjs|.mjs|.web.scss|.scss|.web.sass|.sass|.web.css|.css|.web.svg|.svg)
+
+
+Call Stack
+  <unknown> (node_modules/react-native-calendars/src/expandableCalendar/Context/Provider.js:0)
+Web Bundling failed 6849ms node_modules/expo-router/entry.js (1648 modules)
+Web Bundled 235ms node_modules/expo-router/_error.js (286 modules)
+λ Bundling failed 774ms node_modules/expo-router/node/render.js (1484 modules)
+Web Bundling failed 776ms node_modules/expo-router/entry.js (1191 modules)
+
+Metro error: Unable to resolve module lodash/isUndefined from /Users/hailemichaelseleshi/Documents/Feed-Intel-Dev/MinMinFullApp/restaurantFE/node_modules/react-native-calendars/src/expandableCalendar/AgendaList/agendaList.js: lodash/isUndefined could not be found within the project or in these directories:
+  node_modules/react-native-calendars/node_modules
+  node_modules
+[0m [90m 3 |[39m [36mimport[39m map [36mfrom[39m [32m'lodash/map'[39m[33m;[39m
+ [90m 4 |[39m [36mimport[39m isFunction [36mfrom[39m [32m'lodash/isFunction'[39m[33m;[39m
+[31m[1m>[22m[39m[90m 5 |[39m [36mimport[39m isUndefined [36mfrom[39m [32m'lodash/isUndefined'[39m[33m;[39m
+ [90m   |[39m                          [31m[1m^[22m[39m
+ [90m 6 |[39m [36mimport[39m debounce [36mfrom[39m [32m'lodash/debounce'[39m[33m;[39m
+ [90m 7 |[39m [36mimport[39m [33mXDate[39m [36mfrom[39m [32m'xdate'[39m[33m;[39m
+ [90m 8 |[39m [36mimport[39m [33mReact[39m[33m,[39m { forwardRef[33m,[39m useCallback[33m,[39m useContext[33m,[39m useEffect[33m,[39m useMemo[33m,[39m useRef } [36mfrom[39m [32m'react'[39m[33m;[39m[0m
+
+
+Call Stack
+  <unknown> (node_modules/react-native-calendars/src/expandableCalendar/AgendaList/agendaList.js:0)
+Web Bundled 9ms node_modules/expo-router/_error.js (1 module)
+λ Bundling failed 793ms node_modules/expo-router/node/render.js (1512 modules)
+Web Bundling failed 796ms node_modules/expo-router/entry.js (1181 modules)
+
+Metro error: Unable to resolve module lodash/isNumber from /Users/hailemichaelseleshi/Documents/Feed-Intel-Dev/MinMinFullApp/restaurantFE/node_modules/react-native-calendars/src/expandableCalendar/index.js: lodash/isNumber could not be found within the project or in these directories:
+  node_modules/react-native-calendars/node_modules
+  node_modules
+[0m [90m 1 |[39m [36mimport[39m first [36mfrom[39m [32m'lodash/first'[39m[33m;[39m
+ [90m 2 |[39m [36mimport[39m isFunction [36mfrom[39m [32m'lodash/isFunction'[39m[33m;[39m
+[31m[1m>[22m[39m[90m 3 |[39m [36mimport[39m isNumber [36mfrom[39m [32m'lodash/isNumber'[39m[33m;[39m
+ [90m   |[39m                       [31m[1m^[22m[39m
+ [90m 4 |[39m [36mimport[39m throttle [36mfrom[39m [32m'lodash/throttle'[39m[33m;[39m
+ [90m 5 |[39m [36mimport[39m [33mXDate[39m [36mfrom[39m [32m'xdate'[39m[33m;[39m
+ [90m 6 |[39m [36mimport[39m [33mReact[39m[33m,[39m { useContext[33m,[39m useRef[33m,[39m useState[33m,[39m useEffect[33m,[39m useCallback[33m,[39m useMemo[33m,[39m useImperativeHandle[33m,[39m forwardRef } [36mfrom[39m [32m'react'[39m[33m;[39m[0m
+
+
+Call Stack
+  <unknown> (node_modules/react-native-calendars/src/expandableCalendar/index.js:0)
+Web Bundled 19ms node_modules/expo-router/_error.js (1 module)

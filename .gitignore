@@ -23,6 +23,9 @@ autoenv
 #venv
 **/venv/
 
+# SQLite dev databases
+*.sqlite3
+
 
 # OS artifacts
 .DS_Store

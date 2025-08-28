@@ -4,18 +4,19 @@ FROM node:23-alpine AS builder
 # Set working directory
 WORKDIR /app
 
-ENV EXPO_PUBLIC_API_URL=https://alpha.feed-intel.com/api/v1
-ENV EXPO_PUBLIC_BACKEND_URL=https://alpha.feed-intel.com/api
-ENV EXPO_PUBLIC_DOMAIN=alpha.feed-intel.com
-ENV EXPO_PUBLIC_API_KEY=oiWttKrw.oiWttKrw.aVjV9LaPZ7sxxJIB8gOj918lYPDugvbO
-ENV EXPO_PUBLIC_WS_URL=wss://alpha.feed-intel.com/ws/user
-ENV GOOGLE_CLIENT_ID=897496635501-nlc0r1ijbfadqo9osj49kf3br73cl8gp.apps.googleusercontent.com
-ENV GOOGLE_CLIENT_SECRET=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
-ENV FACEBOOK_CLIENT_ID=574528398731268
-ENV FACEBOOK_CLIENT_SECRET=07aabebf4f8210784cf720ea971b22b5
-ENV EXPO_PUBLIC_CHAPA_CHECKOUT_URL=https://checkout.chapa.co/checkout/payment/
-ENV EXPO_PUBLIC_SCHEME=minmincustomer://
-ENV EXPO_PUBLIC_BASE_URL=https://customer.feed-intel.com
+# Runtime build-time variables must be provided by the build environment.
+# Avoid committing secrets or production URLs into the image.
+ARG EXPO_PUBLIC_API_URL
+ARG EXPO_PUBLIC_BACKEND_URL
+ARG EXPO_PUBLIC_DOMAIN
+ARG EXPO_PUBLIC_WS_URL
+ARG EXPO_PUBLIC_BASE_URL
+
+ENV EXPO_PUBLIC_API_URL=${EXPO_PUBLIC_API_URL} \
+    EXPO_PUBLIC_BACKEND_URL=${EXPO_PUBLIC_BACKEND_URL} \
+    EXPO_PUBLIC_DOMAIN=${EXPO_PUBLIC_DOMAIN} \
+    EXPO_PUBLIC_WS_URL=${EXPO_PUBLIC_WS_URL} \
+    EXPO_PUBLIC_BASE_URL=${EXPO_PUBLIC_BASE_URL}
 
 # Install dependencies
 COPY package.json ./

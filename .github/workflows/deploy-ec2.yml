@@ -1,0 +1,201 @@
+name: Deploy to Single EC2 (Docker Compose)
+
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  API_IMAGE_NAME: minmin-api
+
+jobs:
+  build_api:
+    name: Build and Push API Image
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata (tags, labels)
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/${{ env.API_IMAGE_NAME }}
+          tags: |
+            type=sha,format=long
+            type=raw,value=latest
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: ./MinMinBE
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+  build_frontends:
+    name: Build Frontends (static web)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install and build restaurantFE
+        working-directory: restaurantFE
+        env:
+          EXPO_PUBLIC_API_URL: https://${{ vars.API_DOMAIN }}/api/v1
+          EXPO_PUBLIC_BACKEND_URL: https://${{ vars.API_DOMAIN }}/api/
+          EXPO_PUBLIC_IMAGE_PATH: https://${{ vars.API_DOMAIN }}
+          EXPO_PUBLIC_WS_URL: wss://${{ vars.API_DOMAIN }}/ws/restaurant/
+        run: |
+          npm ci
+          npx --yes expo export --platform web --non-interactive
+
+      - name: Install and build customerFE
+        working-directory: customerFE
+        env:
+          EXPO_PUBLIC_API_URL: https://${{ vars.API_DOMAIN }}/api/v1
+          EXPO_PUBLIC_BACKEND_URL: https://${{ vars.API_DOMAIN }}/api
+          EXPO_PUBLIC_BASE_URL: https://${{ vars.CUSTOMER_DOMAIN }}
+          EXPO_PUBLIC_WS_URL: wss://${{ vars.API_DOMAIN }}/ws/user
+        run: |
+          npm ci
+          npx --yes expo export --platform web --non-interactive
+
+      - name: Upload restaurantFE artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: restaurant-web-dist
+          path: restaurantFE/dist
+
+      - name: Upload customerFE artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: customer-web-dist
+          path: customerFE/dist
+
+  deploy:
+    name: Deploy to EC2
+    runs-on: ubuntu-latest
+    needs: [build_api, build_frontends]
+    steps:
+      - name: Download restaurantFE artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: restaurant-web-dist
+          path: dist/restaurant
+
+      - name: Download customerFE artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: customer-web-dist
+          path: dist/customer
+
+      - name: Copy compose and nginx configs to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          port: ${{ secrets.EC2_SSH_PORT || 22 }}
+          source: |
+            deploy/docker-compose.prod.yml
+            deploy/nginx/**
+          target: /opt/minmin/
+
+      - name: Copy static sites to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          port: ${{ secrets.EC2_SSH_PORT || 22 }}
+          source: |
+            dist/restaurant/**
+          target: /opt/minmin/restaurant
+
+      - name: Copy static sites to server (customer)
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          port: ${{ secrets.EC2_SSH_PORT || 22 }}
+          source: |
+            dist/customer/**
+          target: /opt/minmin/customer
+
+      - name: Remote setup & deploy
+        uses: appleboy/ssh-action@v1.2.1
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          port: ${{ secrets.EC2_SSH_PORT || 22 }}
+          script: |
+            set -euo pipefail
+            sudo mkdir -p /opt/minmin/{customer,restaurant,media}
+            sudo chown -R $USER:$USER /opt/minmin
+
+            # Install Docker if missing
+            if ! command -v docker >/dev/null 2>&1; then
+              echo "Installing Docker..."
+              curl -fsSL https://get.docker.com | sh
+            fi
+            if ! docker compose version >/dev/null 2>&1; then
+              echo "Installing docker compose plugin..."
+              sudo mkdir -p /usr/local/lib/docker/cli-plugins
+              sudo curl -SL https://github.com/docker/compose/releases/download/v2.27.1/docker-compose-$(uname -s)-$(uname -m) -o /usr/local/lib/docker/cli-plugins/docker-compose
+              sudo chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
+            fi
+
+            # Login to GHCR for private image pulls
+            echo ${{ secrets.GHCR_TOKEN }} | docker login ghcr.io -u ${{ secrets.GHCR_USERNAME }} --password-stdin
+
+            # Compose deploy env (for variable substitution like API_IMAGE)
+            cat > /opt/minmin/deploy.env <<'EOF'
+API_IMAGE=ghcr.io/${{ github.repository_owner }}/${{ env.API_IMAGE_NAME }}:latest
+EOF
+
+            # API application env
+            cat > /opt/minmin/api.env <<'EOF'
+DJANGO_SECRET_KEY=${{ secrets.DJANGO_SECRET_KEY }}
+DJANGO_SETTINGS_MODULE=minminbe.settings
+DEBUG=false
+ALLOWED_HOSTS=${{ vars.API_DOMAIN }},${{ vars.CUSTOMER_DOMAIN }},${{ vars.RESTAURANT_DOMAIN }}
+CSRF_TRUSTED_ORIGINS=https://${{ vars.API_DOMAIN }},https://${{ vars.CUSTOMER_DOMAIN }},https://${{ vars.RESTAURANT_DOMAIN }}
+DJANGO_ALLOWED_CORS_ORIGINS=https://${{ vars.CUSTOMER_DOMAIN }},https://${{ vars.RESTAURANT_DOMAIN }}
+DATABASE_URL=${{ secrets.DATABASE_URL }}
+REDIS_URL=${{ secrets.REDIS_URL }}
+EMAIL_HOST=${{ vars.EMAIL_HOST || 'smtp.gmail.com' }}
+EMAIL_HOST_USER=${{ secrets.EMAIL_HOST_USER || '' }}
+EMAIL_HOST_PASSWORD=${{ secrets.EMAIL_HOST_PASSWORD || '' }}
+EOF
+
+            # Inject domain names into nginx vhosts
+            sed -i "s/api.local/${{ vars.API_DOMAIN }}/g" /opt/minmin/nginx/conf.d/api.conf || true
+            sed -i "s/customer.local/${{ vars.CUSTOMER_DOMAIN }}/g" /opt/minmin/nginx/conf.d/customer.conf || true
+            sed -i "s/restaurant.local/${{ vars.RESTAURANT_DOMAIN }}/g" /opt/minmin/nginx/conf.d/restaurant.conf || true
+
+            docker compose --env-file /opt/minmin/deploy.env -f /opt/minmin/docker-compose.prod.yml pull || true
+            docker compose --env-file /opt/minmin/deploy.env -f /opt/minmin/docker-compose.prod.yml up -d
+
+            # Basic health check
+            sleep 5
+            curl -fsS http://localhost/healthz/ || (echo 'API health check failed' && docker compose -f /opt/minmin/docker-compose.prod.yml logs api && exit 1)
