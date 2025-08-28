@@ -134,7 +134,7 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             set -e
-            sudo mkdir -p /opt/minmin/nginx/conf.d
+            sudo mkdir -p /opt/minmin/deploy /opt/minmin/nginx/conf.d
             sudo chown -R $USER:$USER /opt/minmin
 
       - name: Download restaurantFE artifact
@@ -149,16 +149,17 @@ jobs:
           name: customer-web-dist
           path: dist/customer
 
-      - name: Upload compose file to temp
+      - name: Upload compose file to server staging dir
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
           source: deploy/docker-compose.prod.yml
-          target: /tmp/
+          target: /opt/minmin/deploy/
           overwrite: true
           debug: true
+          rm: false
 
       - name: Move compose file into place
         uses: appleboy/ssh-action@v1.2.1
@@ -168,20 +169,24 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             set -e
-            sudo mv /tmp/docker-compose.prod.yml /opt/minmin/docker-compose.prod.yml
+            if [ -f /opt/minmin/deploy/docker-compose.prod.yml ]; then sudo mv /opt/minmin/deploy/docker-compose.prod.yml /opt/minmin/docker-compose.prod.yml; \
+            elif [ -f /tmp/docker-compose.prod.yml ]; then sudo mv /tmp/docker-compose.prod.yml /opt/minmin/docker-compose.prod.yml; \
+            elif [ -f /tmp/deploy/docker-compose.prod.yml ]; then sudo mv /tmp/deploy/docker-compose.prod.yml /opt/minmin/docker-compose.prod.yml; \
+            else echo "::error::compose file not found after upload"; ls -la /opt/minmin/deploy || true; ls -la /tmp || true; ls -la /tmp/deploy || true; exit 1; fi
             ls -la /opt/minmin/
 
 
-      - name: Upload nginx main config to temp
+      - name: Upload nginx main config to server staging dir
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
           source: deploy/nginx/nginx.conf
-          target: /tmp/
+          target: /opt/minmin/deploy/nginx/
           overwrite: true
           debug: true
+          rm: false
 
       - name: Move nginx main config into place
         uses: appleboy/ssh-action@v1.2.1
@@ -191,19 +196,23 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             set -e
-            sudo mv /tmp/nginx.conf /opt/minmin/nginx/nginx.conf
+            if [ -f /opt/minmin/deploy/nginx/nginx.conf ]; then sudo mv /opt/minmin/deploy/nginx/nginx.conf /opt/minmin/nginx/nginx.conf; \
+            elif [ -f /tmp/nginx.conf ]; then sudo mv /tmp/nginx.conf /opt/minmin/nginx/nginx.conf; \
+            elif [ -f /tmp/deploy/nginx/nginx.conf ]; then sudo mv /tmp/deploy/nginx/nginx.conf /opt/minmin/nginx/nginx.conf; \
+            else echo "::error::nginx.conf not found after upload"; ls -la /opt/minmin/deploy/nginx || true; ls -la /tmp || true; ls -la /tmp/deploy/nginx || true; exit 1; fi
             ls -la /opt/minmin/nginx/
 
-      - name: Upload nginx vhost api.conf to temp
+      - name: Upload nginx vhost api.conf to server staging dir
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
           source: deploy/nginx/conf.d/api.conf
-          target: /tmp/
+          target: /opt/minmin/deploy/nginx/conf.d/
           overwrite: true
           debug: true
+          rm: false
 
       - name: Move nginx vhost api.conf into place
         uses: appleboy/ssh-action@v1.2.1
@@ -213,19 +222,23 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             set -e
-            sudo mv /tmp/api.conf /opt/minmin/nginx/conf.d/api.conf
+            if [ -f /opt/minmin/deploy/nginx/conf.d/api.conf ]; then sudo mv /opt/minmin/deploy/nginx/conf.d/api.conf /opt/minmin/nginx/conf.d/api.conf; \
+            elif [ -f /tmp/deploy/nginx/conf.d/api.conf ]; then sudo mv /tmp/deploy/nginx/conf.d/api.conf /opt/minmin/nginx/conf.d/api.conf; \
+            elif [ -f /tmp/api.conf ]; then sudo mv /tmp/api.conf /opt/minmin/nginx/conf.d/api.conf; \
+            else echo "::error::api.conf not found after upload"; ls -la /opt/minmin/deploy/nginx/conf.d || true; ls -la /tmp/deploy/nginx/conf.d || true; ls -la /tmp || true; exit 1; fi
             ls -la /opt/minmin/nginx/conf.d/
 
-      - name: Upload nginx vhost customer.conf to temp
+      - name: Upload nginx vhost customer.conf to server staging dir
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
           source: deploy/nginx/conf.d/customer.conf
-          target: /tmp/
+          target: /opt/minmin/deploy/nginx/conf.d/
           overwrite: true
           debug: true
+          rm: false
 
       - name: Move nginx vhost customer.conf into place
         uses: appleboy/ssh-action@v1.2.1
@@ -235,19 +248,23 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             set -e
-            sudo mv /tmp/customer.conf /opt/minmin/nginx/conf.d/customer.conf
+            if [ -f /opt/minmin/deploy/nginx/conf.d/customer.conf ]; then sudo mv /opt/minmin/deploy/nginx/conf.d/customer.conf /opt/minmin/nginx/conf.d/customer.conf; \
+            elif [ -f /tmp/deploy/nginx/conf.d/customer.conf ]; then sudo mv /tmp/deploy/nginx/conf.d/customer.conf /opt/minmin/nginx/conf.d/customer.conf; \
+            elif [ -f /tmp/customer.conf ]; then sudo mv /tmp/customer.conf /opt/minmin/nginx/conf.d/customer.conf; \
+            else echo "::error::customer.conf not found after upload"; ls -la /opt/minmin/deploy/nginx/conf.d || true; ls -la /tmp/deploy/nginx/conf.d || true; ls -la /tmp || true; exit 1; fi
             ls -la /opt/minmin/nginx/conf.d/
 
-      - name: Upload nginx vhost restaurant.conf to temp
+      - name: Upload nginx vhost restaurant.conf to server staging dir
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
           source: deploy/nginx/conf.d/restaurant.conf
-          target: /tmp/
+          target: /opt/minmin/deploy/nginx/conf.d/
           overwrite: true
           debug: true
+          rm: false
 
       - name: Move nginx vhost restaurant.conf into place
         uses: appleboy/ssh-action@v1.2.1
@@ -257,7 +274,10 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             set -e
-            sudo mv /tmp/restaurant.conf /opt/minmin/nginx/conf.d/restaurant.conf
+            if [ -f /opt/minmin/deploy/nginx/conf.d/restaurant.conf ]; then sudo mv /opt/minmin/deploy/nginx/conf.d/restaurant.conf /opt/minmin/nginx/conf.d/restaurant.conf; \
+            elif [ -f /tmp/deploy/nginx/conf.d/restaurant.conf ]; then sudo mv /tmp/deploy/nginx/conf.d/restaurant.conf /opt/minmin/nginx/conf.d/restaurant.conf; \
+            elif [ -f /tmp/restaurant.conf ]; then sudo mv /tmp/restaurant.conf /opt/minmin/nginx/conf.d/restaurant.conf; \
+            else echo "::error::restaurant.conf not found after upload"; ls -la /opt/minmin/deploy/nginx/conf.d || true; ls -la /tmp/deploy/nginx/conf.d || true; ls -la /tmp || true; exit 1; fi
             ls -la /opt/minmin/nginx/conf.d/
 
       - name: Verify nginx files on server
@@ -377,3 +397,18 @@ jobs:
             # Basic health check
             sleep 5
             curl -fsS http://localhost/healthz/ || (echo 'API health check failed' && docker compose -f /opt/minmin/docker-compose.prod.yml logs api && exit 1)
+
+      - name: Finalize stack and verify healthz
+        uses: appleboy/ssh-action@v1.2.1
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            set -e
+            # Ensure compose file exists
+            test -f /opt/minmin/docker-compose.prod.yml
+            # Make sure all services are up
+            docker compose -f /opt/minmin/docker-compose.prod.yml up -d
+            # Header-only health check
+            curl -I http://localhost/healthz/ | head -n1 | grep "200" || (echo '::error::/healthz did not return 200' && exit 1)
