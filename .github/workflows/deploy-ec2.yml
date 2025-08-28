@@ -149,61 +149,116 @@ jobs:
           name: customer-web-dist
           path: dist/customer
 
-      - name: Copy compose file to server
+      - name: Upload compose file to temp
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
           source: deploy/docker-compose.prod.yml
-          target: /opt/minmin/
+          target: /tmp/
           overwrite: true
           debug: true
 
+      - name: Move compose file into place
+        uses: appleboy/ssh-action@v1.2.1
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            set -e
+            sudo mv /tmp/docker-compose.prod.yml /opt/minmin/docker-compose.prod.yml
+            ls -la /opt/minmin/
 
-      - name: Copy nginx main config
+
+      - name: Upload nginx main config to temp
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
           source: deploy/nginx/nginx.conf
-          target: /opt/minmin/nginx/
+          target: /tmp/
           overwrite: true
           debug: true
 
-      - name: Copy nginx vhost api.conf
+      - name: Move nginx main config into place
+        uses: appleboy/ssh-action@v1.2.1
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            set -e
+            sudo mv /tmp/nginx.conf /opt/minmin/nginx/nginx.conf
+            ls -la /opt/minmin/nginx/
+
+      - name: Upload nginx vhost api.conf to temp
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
           source: deploy/nginx/conf.d/api.conf
-          target: /opt/minmin/nginx/conf.d/
+          target: /tmp/
           overwrite: true
           debug: true
 
-      - name: Copy nginx vhost customer.conf
+      - name: Move nginx vhost api.conf into place
+        uses: appleboy/ssh-action@v1.2.1
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            set -e
+            sudo mv /tmp/api.conf /opt/minmin/nginx/conf.d/api.conf
+            ls -la /opt/minmin/nginx/conf.d/
+
+      - name: Upload nginx vhost customer.conf to temp
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
           source: deploy/nginx/conf.d/customer.conf
-          target: /opt/minmin/nginx/conf.d/
+          target: /tmp/
           overwrite: true
           debug: true
 
-      - name: Copy nginx vhost restaurant.conf
+      - name: Move nginx vhost customer.conf into place
+        uses: appleboy/ssh-action@v1.2.1
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            set -e
+            sudo mv /tmp/customer.conf /opt/minmin/nginx/conf.d/customer.conf
+            ls -la /opt/minmin/nginx/conf.d/
+
+      - name: Upload nginx vhost restaurant.conf to temp
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
           source: deploy/nginx/conf.d/restaurant.conf
-          target: /opt/minmin/nginx/conf.d/
+          target: /tmp/
           overwrite: true
           debug: true
+
+      - name: Move nginx vhost restaurant.conf into place
+        uses: appleboy/ssh-action@v1.2.1
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            set -e
+            sudo mv /tmp/restaurant.conf /opt/minmin/nginx/conf.d/restaurant.conf
+            ls -la /opt/minmin/nginx/conf.d/
 
       - name: Verify nginx files on server
         uses: appleboy/ssh-action@v1.2.1
