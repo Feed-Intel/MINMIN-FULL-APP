@@ -150,7 +150,9 @@ jobs:
               /opt/minmin/tls \
               /opt/minmin/tls/stg.api.feed-intel.com \
               /opt/minmin/tls/stg.customer.feed-intel.com \
-              /opt/minmin/tls/stg.restaurant.feed-intel.com
+              /opt/minmin/tls/stg.restaurant.feed-intel.com \
+              /opt/minmin/acme \
+              /opt/minmin/letsencrypt
             sudo chown -R $USER:$USER /opt/minmin
 
       - name: Ensure TLS certs exist (self-signed fallback for staging)
@@ -261,6 +263,45 @@ jobs:
                 exit 1
               fi
             done
+
+      - name: Issue Let's Encrypt certificates (webroot)
+        if: ${{ vars.CERTBOT_EMAIL != '' }}
+        uses: appleboy/ssh-action@v1.2.1
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            set -euo pipefail
+            EMAIL='${{ vars.CERTBOT_EMAIL }}'
+            if [ -z "$EMAIL" ]; then
+              echo '::warning::CERTBOT_EMAIL repo variable is empty; skipping LE issuance'
+              exit 0
+            fi
+            # Request/renew certs via webroot (served by nginx)
+            sudo docker run --rm \
+              -v /opt/minmin/letsencrypt:/etc/letsencrypt \
+              -v /opt/minmin/acme:/var/www/certbot \
+              certbot/certbot:latest certonly --webroot -w /var/www/certbot \
+              -d stg.api.feed-intel.com -d stg.customer.feed-intel.com -d stg.restaurant.feed-intel.com \
+              --agree-tos -m "$EMAIL" --no-eff-email --non-interactive --keep-until-expiring || true
+
+            sync_copy() {
+              dom="$1"; src="/opt/minmin/letsencrypt/live/$dom"; dst="/opt/minmin/tls/$dom";
+              if [ -d "$src" ]; then
+                sudo install -m 0644 -D "$src/fullchain.pem" "$dst/fullchain.pem"
+                sudo install -m 0600 -D "$src/privkey.pem" "$dst/privkey.pem"
+                echo "Installed certs for $dom"
+              else
+                echo "::warning::No LE cert directory for $dom; using existing certs if any"
+              fi
+            }
+            sync_copy stg.api.feed-intel.com
+            sync_copy stg.customer.feed-intel.com
+            sync_copy stg.restaurant.feed-intel.com
+
+            # Reload nginx to pick up new certs (ignore failures)
+            sudo docker compose --env-file /opt/minmin/deploy.env -f /opt/minmin/docker-compose.prod.yml exec -T nginx nginx -s reload || true
 
       - name: Copy static sites to server
         uses: appleboy/scp-action@v0.1.7
