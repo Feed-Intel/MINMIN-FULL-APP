@@ -248,17 +248,27 @@ jobs:
             set -e
             echo "Restaurant root contents:"; ls -la /opt/minmin/restaurant || true
             echo "Customer root contents:"; ls -la /opt/minmin/customer || true
-            # If index.html is not at the root but exists under a dist/ subfolder, promote contents
-            if [ ! -f /opt/minmin/restaurant/index.html ] && [ -d /opt/minmin/restaurant/dist ]; then
-              echo "Promoting /opt/minmin/restaurant/dist to root"
-              sudo rsync -a --delete /opt/minmin/restaurant/dist/ /opt/minmin/restaurant/
-              sudo rm -rf /opt/minmin/restaurant/dist
-            fi
-            if [ ! -f /opt/minmin/customer/index.html ] && [ -d /opt/minmin/customer/dist ]; then
-              echo "Promoting /opt/minmin/customer/dist to root"
-              sudo rsync -a --delete /opt/minmin/customer/dist/ /opt/minmin/customer/
-              sudo rm -rf /opt/minmin/customer/dist
-            fi
+            # Promote Expo export 'dist' contents (handles nested subfolder like dist/restaurant or dist/customer)
+            for site in restaurant customer; do
+              root="/opt/minmin/${site}"
+              if [ ! -f "$root/index.html" ] && [ -d "$root/dist" ]; then
+                if [ -d "$root/dist/${site}" ]; then
+                  echo "Promoting $root/dist/${site} to $root"
+                  sudo rsync -a "$root/dist/${site}/" "$root/" || true
+                else
+                  echo "Promoting $root/dist to $root"
+                  sudo rsync -a "$root/dist/" "$root/" || true
+                fi
+                sudo rm -rf "$root/dist"
+              fi
+            done
+            # If still no index.html, do not fail the deploy, just log
+            for site in restaurant customer; do
+              root="/opt/minmin/${site}"
+              if [ ! -f "$root/index.html" ]; then
+                echo "::warning::No index.html found at $root after normalization. Verify build artifacts."
+              fi
+            done
             # Ensure safe read perms for nginx
             sudo find /opt/minmin/restaurant -type d -exec chmod 755 {} +
             sudo find /opt/minmin/restaurant -type f -exec chmod 644 {} +
