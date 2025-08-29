@@ -248,25 +248,33 @@ jobs:
             set -e
             echo "Restaurant root contents:"; ls -la /opt/minmin/restaurant || true
             echo "Customer root contents:"; ls -la /opt/minmin/customer || true
-            # Promote Expo export 'dist' contents (handles nested subfolder like dist/restaurant or dist/customer)
-            for site in restaurant customer; do
+            # Normalize customer app only (restaurant already serves from root)
+            for site in customer; do
               root="/opt/minmin/${site}"
-              if [ ! -f "$root/index.html" ] && [ -d "$root/dist" ]; then
-                if [ -d "$root/dist/${site}" ]; then
-                  echo "Promoting $root/dist/${site} to $root"
-                  sudo rsync -a "$root/dist/${site}/" "$root/" || true
-                else
-                  echo "Promoting $root/dist to $root"
-                  sudo rsync -a "$root/dist/" "$root/" || true
-                fi
-                sudo rm -rf "$root/dist"
+              client="${root}/client"
+              mkdir -p "$client"
+              if [ -f "$client/index.html" ]; then
+                echo "$site: client/index.html already present"
+                continue
               fi
-            done
-            # If still no index.html, do not fail the deploy, just log
-            for site in restaurant customer; do
-              root="/opt/minmin/${site}"
-              if [ ! -f "$root/index.html" ]; then
-                echo "::warning::No index.html found at $root after normalization. Verify build artifacts."
+              if [ -d "$root/dist/client" ]; then
+                echo "$site: Promoting dist/client -> client"
+                sudo rsync -a "$root/dist/client/" "$client/" || true
+                sudo rm -rf "$root/dist"
+              elif [ -d "$root/dist/${site}" ]; then
+                echo "$site: Promoting dist/${site} -> client"
+                sudo rsync -a "$root/dist/${site}/" "$client/" || true
+                sudo rm -rf "$root/dist"
+              elif [ -d "$root/dist" ]; then
+                echo "$site: Promoting dist -> client"
+                sudo rsync -a "$root/dist/" "$client/" || true
+                sudo rm -rf "$root/dist"
+              elif [ -f "$root/index.html" ]; then
+                echo "$site: Moving root contents -> client"
+                sudo rsync -a "$root/" "$client/" || true
+                # Keep originals in place as a fallback; do not delete root
+              else
+                echo "::warning::$site: No export found (dist or index.html)."
               fi
             done
             # Ensure safe read perms for nginx
@@ -274,8 +282,8 @@ jobs:
             sudo find /opt/minmin/restaurant -type f -exec chmod 644 {} +
             sudo find /opt/minmin/customer -type d -exec chmod 755 {} +
             sudo find /opt/minmin/customer -type f -exec chmod 644 {} +
-            echo "Post-normalize Restaurant:"; ls -la /opt/minmin/restaurant | head -n 20
-            echo "Post-normalize Customer:"; ls -la /opt/minmin/customer | head -n 20
+            echo "Restaurant (unchanged root):"; ls -la /opt/minmin/restaurant | head -n 40 || true
+            echo "Post-normalize Customer:"; ls -la /opt/minmin/customer | head -n 40; ls -la /opt/minmin/customer/client | head -n 40 || true
             # Reload nginx to ensure it serves updated static
             sudo docker compose --env-file /opt/minmin/deploy.env -f /opt/minmin/docker-compose.prod.yml exec -T nginx nginx -s reload || \
               sudo docker compose --env-file /opt/minmin/deploy.env -f /opt/minmin/docker-compose.prod.yml restart nginx
