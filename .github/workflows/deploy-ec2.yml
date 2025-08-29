@@ -146,7 +146,11 @@ jobs:
               /opt/minmin/deploy \
               /opt/minmin/deploy/nginx \
               /opt/minmin/deploy/nginx/conf.d \
-              /opt/minmin/nginx/conf.d
+              /opt/minmin/nginx/conf.d \
+              /opt/minmin/tls \
+              /opt/minmin/tls/stg.api.feed-intel.com \
+              /opt/minmin/tls/stg.customer.feed-intel.com \
+              /opt/minmin/tls/stg.restaurant.feed-intel.com
             sudo chown -R $USER:$USER /opt/minmin
 
       - name: Download restaurantFE artifact
