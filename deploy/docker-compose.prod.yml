@@ -48,8 +48,6 @@ services:
     depends_on:
       api:
         condition: service_healthy
-      customer_expo:
-        condition: service_healthy
     volumes:
       - /opt/minmin/restaurant:/usr/share/nginx/html/restaurant:ro
       - /opt/minmin/customer:/usr/share/nginx/html/customer:ro
@@ -62,6 +60,7 @@ services:
 
   customer_expo:
     image: node:20-alpine
+    profiles: ["dev"]
     working_dir: /app
     environment:
       NODE_ENV: production
@@ -71,7 +70,7 @@ services:
     volumes:
       - /opt/minmin/customer:/app
       - customer_node_modules:/app/node_modules
-    command: ["sh", "-lc", "set -e; if [ -d client ] && [ ! -e dist ]; then ln -s client dist; fi; (npm ci --omit=dev || npm install --omit=dev); npx --yes expo serve --host 0.0.0.0 --port 3001 --non-interactive"]
+    command: ["sh", "-lc", "set -e; if [ -d client ] && [ ! -e dist ]; then ln -s client dist; fi; (npm ci --omit=dev || npm install --omit=dev); npx --yes expo start --web --host 0.0.0.0 --port 3001 --non-interactive --no-open"]
     expose:
       - "3001"
     healthcheck:
