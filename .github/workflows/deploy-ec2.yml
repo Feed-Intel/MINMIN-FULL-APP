@@ -238,6 +238,38 @@ jobs:
             dist/customer/**
           target: /opt/minmin/customer
 
+      - name: Verify and normalize static site roots
+        uses: appleboy/ssh-action@v1.2.1
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            set -e
+            echo "Restaurant root contents:"; ls -la /opt/minmin/restaurant || true
+            echo "Customer root contents:"; ls -la /opt/minmin/customer || true
+            # If index.html is not at the root but exists under a dist/ subfolder, promote contents
+            if [ ! -f /opt/minmin/restaurant/index.html ] && [ -d /opt/minmin/restaurant/dist ]; then
+              echo "Promoting /opt/minmin/restaurant/dist to root"
+              sudo rsync -a --delete /opt/minmin/restaurant/dist/ /opt/minmin/restaurant/
+              sudo rm -rf /opt/minmin/restaurant/dist
+            fi
+            if [ ! -f /opt/minmin/customer/index.html ] && [ -d /opt/minmin/customer/dist ]; then
+              echo "Promoting /opt/minmin/customer/dist to root"
+              sudo rsync -a --delete /opt/minmin/customer/dist/ /opt/minmin/customer/
+              sudo rm -rf /opt/minmin/customer/dist
+            fi
+            # Ensure safe read perms for nginx
+            sudo find /opt/minmin/restaurant -type d -exec chmod 755 {} +
+            sudo find /opt/minmin/restaurant -type f -exec chmod 644 {} +
+            sudo find /opt/minmin/customer -type d -exec chmod 755 {} +
+            sudo find /opt/minmin/customer -type f -exec chmod 644 {} +
+            echo "Post-normalize Restaurant:"; ls -la /opt/minmin/restaurant | head -n 20
+            echo "Post-normalize Customer:"; ls -la /opt/minmin/customer | head -n 20
+            # Reload nginx to ensure it serves updated static
+            sudo docker compose --env-file /opt/minmin/deploy.env -f /opt/minmin/docker-compose.prod.yml exec -T nginx nginx -s reload || \
+              sudo docker compose --env-file /opt/minmin/deploy.env -f /opt/minmin/docker-compose.prod.yml restart nginx
+
       - name: Remote setup & deploy
         uses: appleboy/ssh-action@v1.2.1
         with:
