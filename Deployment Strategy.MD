@@ -87,6 +87,23 @@ curl -fsSL https://get.docker.com | sh
   4. Create `/opt/minmin/api.env` from secrets and `/opt/minmin/deploy.env` with image tag.
   5. `docker compose up -d` and health‑check `http://localhost/healthz/` via Nginx.
 
+### Admin / Superuser (staging)
+- Create an admin user on the EC2 host:
+  - Interactive:
+    ```sh
+    sudo docker compose -f /opt/minmin/docker-compose.prod.yml exec api \
+      python manage.py createsuperuser --email admin@feed-intel.com
+    ```
+  - Non‑interactive:
+    ```sh
+    sudo docker compose -f /opt/minmin/docker-compose.prod.yml exec \
+      -e DJANGO_SUPERUSER_EMAIL=admin@feed-intel.com \
+      -e DJANGO_SUPERUSER_PASSWORD='<strong-password>' \
+      -e DJANGO_SUPERUSER_NAME='Admin' \
+      api python manage.py createsuperuser --noinput
+    ```
+- Admin URL: `http://stg.api.feed-intel.com/admin/`
+
 Verification
 - After a run, browse:
   - `http://stg.api.feed-intel.com/healthz/`
@@ -163,6 +180,10 @@ Workflow file: `.github/workflows/deploy-ec2.yml`
 - `customer.conf` and `restaurant.conf`: serve static SPA builds with fallback to `index.html`.
 - Nginx listens on port `80`. If terminating TLS locally later, add `listen 443 ssl;` and certificates to each server block.
 
+Notes:
+- API root `/` is redirected to `/docs` to avoid 404 on `/`.
+- `/healthz/` location forwards `Host` and standard proxy headers so Django host checks pass.
+
 ## Scaling & Ops
 - Instance: start with `t3.medium` (2 vCPU, 4 GB RAM); monitor CPU and memory.
 - Data: keep Postgres/Redis local for MVP; move to RDS/ElastiCache when needed.
@@ -182,6 +203,11 @@ sudo apt-get update && sudo apt-get install -y curl
 curl -fsSL https://get.docker.com | sh
 ``` dock
 The workflow will install the compose plugin if missing.
+
+## Static Sites: Artifact Layout
+- The deploy workflow promotes common Expo export layouts to match Nginx roots:
+  - If artifacts land under `/opt/minmin/{customer,restaurant}/dist/` or `/opt/minmin/{customer,restaurant}/dist/{customer|restaurant}/`, they are moved up so `index.html` sits directly in `/opt/minmin/customer` and `/opt/minmin/restaurant`.
+- Permissions are normalized (dirs 755, files 644), and Nginx is reloaded.
 
 ---
 

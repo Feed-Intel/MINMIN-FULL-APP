@@ -1,84 +1,32 @@
 # MinMin Monorepo
 
-Django API with two React/Vite frontends. Backend runs on Elastic Beanstalk (multi-container Docker). Frontends deploy to AWS Amplify.
+Django API with two Expo web frontends. Run locally with Docker Compose; deploy staging to a single EC2 instance via GitHub Actions + Docker Compose.
 
 ## Repository structure
 ```
-MinMinBE/
-customerFE/
-restaurantFE/
-db/init.sql
-docker-compose.yml
-Dockerrun.aws.json
-.github/workflows/
-amplify.customer.yml
-amplify.restaurant.yml
+MinMinBE/                 # Django backend (ASGI)
+customerFE/               # Customer Expo app (web export)
+restaurantFE/             # Restaurant Expo app (web export)
+db/init.sql               # PostGIS init (CREATE EXTENSION postgis)
+docker-compose.yml        # Local dev: db, redis, api (+ optional web dev servers)
+deploy/                   # Production compose and Nginx configs
+  ├─ docker-compose.prod.yml
+  └─ nginx/
+.github/workflows/        # CI/CD (deploy-ec2.yml)
 ```
 
-## Backend environment variables
-Set the following in Elastic Beanstalk (plain text):
+## Key environment variables
+Backend (local `.env` and staging `/opt/minmin/api.env`):
 ```
 DJANGO_SETTINGS_MODULE=minminbe.settings
 DJANGO_SECRET_KEY=<generate>
 DEBUG=false
 ALLOWED_HOSTS=<your.domain>,127.0.0.1,localhost
-CSRF_TRUSTED_ORIGINS=https://<your.domain>,https://<your-other-domain>
-DATABASE_URL=postgresql://minmin:<password>@db:5432/minmin
+CSRF_TRUSTED_ORIGINS=https://<your.domain>
+DATABASE_URL=postgis://minmin:<password>@db:5432/minmin
 REDIS_URL=redis://redis:6379/0
-DJANGO_ALLOWED_CORS_ORIGINS=https://<your.domain>
+DJANGO_ALLOWED_CORS_ORIGINS=https://<frontend.domain>
 ```
-
-### Django settings snippet
-```python
-import os
-import dj_database_url
-
-SECRET_KEY = os.environ["DJANGO_SECRET_KEY"]
-DEBUG = os.environ.get("DEBUG", "false").lower() == "true"
-ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "").split(",")
-CSRF_TRUSTED_ORIGINS = os.environ.get("CSRF_TRUSTED_ORIGINS", "").split(",")
-DATABASES = {
-    "default": dj_database_url.config(default=os.environ.get("DATABASE_URL"), conn_max_age=600)
-}
-CACHES = {
-    "default": {
-        "BACKEND": "django.core.cache.backends.redis.RedisCache",
-        "LOCATION": os.environ.get("REDIS_URL"),
-    }
-}
-```
-
-## Step-by-step AWS setup
-### Prereqs
-1. Create ECR repository for the backend: `<ECR_BACKEND_URI>`
-2. Create S3 bucket for EB app versions: `<EB_S3_BUCKET>`
-3. Create Elastic Beanstalk application `<EB_APP>` and environment `<EB_ENV>` (Multi-container Docker on ECS)
-4. Configure EB environment variables listed above
-5. Create IAM role for GitHub OIDC with permissions:
-   * ECR (push/pull)
-   * S3 PutObject to `<EB_S3_BUCKET>`
-   * Elastic Beanstalk (CreateApplicationVersion, UpdateEnvironment, Describe*)
-   * CloudWatch Logs (optional)
-   Trust policy: `token.actions.githubusercontent.com` with `sub: repo:<org>/<repo>:ref:refs/heads/*`
-6. Create two Amplify apps:
-   * customerFE – baseDirectory `customerFE`
-   * restaurantFE – baseDirectory `restaurantFE`
-   Set Amplify environment variables as needed and note each App ID
-
-### CI/CD wiring
-Add GitHub repository secrets/variables:
-```
-AWS_REGION
-AWS_ROLE_TO_ASSUME
-ECR_BACKEND
-EB_APP
-EB_ENV
-EB_S3_BUCKET
-AMPLIFY_APP_ID_CUSTOMER
-AMPLIFY_APP_ID_RESTAURANT
-AMPLIFY_BRANCH
-```
-Push to `develop` or `main` to trigger deployments.
 
 ### Local development
 1. Create `MinMinBE/.env`
@@ -88,6 +36,74 @@ Push to `develop` or `main` to trigger deployments.
    ```
 3. API at http://localhost:8000, Postgres at localhost:5432, Redis at localhost:6379
 
+### Admin / Superuser
+- Create an admin account (running inside the `api` container):
+  - Interactive:
+    ```bash
+    docker compose exec api python manage.py createsuperuser --email admin@example.com
+    ```
+  - Non‑interactive:
+    ```bash
+    docker compose exec \
+      -e DJANGO_SUPERUSER_EMAIL=admin@example.com \
+      -e DJANGO_SUPERUSER_PASSWORD='<strong-password>' \
+      -e DJANGO_SUPERUSER_NAME='Admin' \
+      api python manage.py createsuperuser --noinput
+    ```
+- Admin URL: `http://localhost:8000/admin/`
+
+### Frontends (local web)
+- Restaurant web (Expo): http://localhost:19007
+- Customer web (Expo): http://localhost:19006
+- If you run via compose services added in `docker-compose.yml`, the API URLs are prewired to `http://localhost:8000`.
+
+---
+
+## Single‑EC2 Staging Deployment (CI/CD)
+
+This repo includes a GitHub Actions workflow that deploys the full stack (API + Nginx + static frontends) to a single EC2 instance with Docker Compose:
+
+- Workflow: `.github/workflows/deploy-ec2.yml`
+- Compose: `deploy/docker-compose.prod.yml`
+- Nginx config: `deploy/nginx/`
+
+### Required GitHub settings
+- Secrets:
+  - `EC2_HOST`, `EC2_USER`, `EC2_SSH_KEY`
+  - `GHCR_USERNAME`, `GHCR_TOKEN` (PAT with `read:packages`)
+  - `DJANGO_SECRET_KEY`, `DATABASE_URL`, `REDIS_URL`
+  - Optional: `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD`
+- Variables:
+  - `API_DOMAIN` (e.g., `stg.api.feed-intel.com`)
+  - `CUSTOMER_DOMAIN` (e.g., `stg.customer.feed-intel.com`)
+  - `RESTAURANT_DOMAIN` (e.g., `stg.restaurant.feed-intel.com`)
+
+### What the workflow does
+- Builds and pushes the API image to GHCR.
+- Builds both frontends as static sites with production URLs baked in.
+- Copies Compose + Nginx + static artifacts to `/opt/minmin/` on EC2.
+- Writes `/opt/minmin/api.env` (Django env) and `/opt/minmin/deploy.env` (API image tag).
+- Restarts Nginx and brings up the full stack via `docker compose`.
+- Health checks `http://localhost/healthz/` through Nginx using the proper Host header.
+
+### Domains and routing
+- DNS A records should point staging subdomains to the EC2 public IP:
+  - `stg.api.feed-intel.com`, `stg.customer.feed-intel.com`, `stg.restaurant.feed-intel.com`
+- Nginx vhosts are templated and patched by the workflow to use those domains.
+- API root `/` redirects to `/docs`. Health endpoint is `/healthz/`.
+
+### HTTPS
+- Out of the box, Nginx listens on port 80 (HTTP). To enable HTTPS either:
+  - Add Let’s Encrypt to the EC2 instance and 443 server blocks, or
+  - Front with a proxy/CDN (e.g., Cloudflare) and use an origin cert.
+
+### Staging superuser (on EC2)
+```bash
+sudo docker compose -f /opt/minmin/docker-compose.prod.yml exec api \
+  python manage.py createsuperuser --email admin@feed-intel.com
+```
+Admin URL: `http://stg.api.feed-intel.com/admin/`
+
 ### Notes
-* `CSRF_TRUSTED_ORIGINS` must include scheme (`https://` or `http://`)
-* Bundled Postgres/Redis inside Elastic Beanstalk are suitable for staging/dev. For production, use RDS and ElastiCache.
+- `CSRF_TRUSTED_ORIGINS` must include scheme (`https://` or `http://`).
+- For production hardening, consider RDS (Postgres) and ElastiCache (Redis), HTTPS on EC2 or via a proxy, and restricting SSH.
