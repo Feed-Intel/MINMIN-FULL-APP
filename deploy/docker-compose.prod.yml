@@ -64,9 +64,12 @@ services:
     environment:
       NODE_ENV: production
       PORT: "3001"
+      CI: "true"
+      EXPO_NO_TELEMETRY: "1"
     volumes:
-      - /opt/minmin/customer:/app:ro
-    command: ["sh", "-lc", "if [ -d client ] && [ ! -e dist ]; then ln -s client dist; fi; npx --yes expo serve --host 0.0.0.0 --port 3001 --non-interactive"]
+      - /opt/minmin/customer:/app
+      - customer_node_modules:/app/node_modules
+    command: ["sh", "-lc", "set -e; if [ -d client ] && [ ! -e dist ]; then ln -s client dist; fi; (npm ci --omit=dev || npm install --omit=dev); npx --yes expo serve --host 0.0.0.0 --port 3001 --non-interactive"]
     expose:
       - "3001"
     networks: [minmin]
@@ -74,6 +77,7 @@ services:
 volumes:
   pgdata:
   media_data:
+  customer_node_modules:
 
 networks:
   minmin:
