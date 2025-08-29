@@ -47,6 +47,7 @@ services:
     image: nginx:1.27-alpine
     depends_on:
       - api
+      - customer_server
     volumes:
       - /opt/minmin/restaurant:/usr/share/nginx/html/restaurant:ro
       - /opt/minmin/customer:/usr/share/nginx/html/customer:ro
@@ -55,6 +56,19 @@ services:
       - ./nginx/conf.d:/etc/nginx/conf.d:ro
     ports:
       - "80:80"
+    networks: [minmin]
+
+  customer_server:
+    image: node:20-alpine
+    working_dir: /app
+    environment:
+      NODE_ENV: production
+      PORT: "3001"
+    volumes:
+      - /opt/minmin/customer:/app:ro
+    command: ["node", "server/index.js"]
+    expose:
+      - "3001"
     networks: [minmin]
 
 volumes:

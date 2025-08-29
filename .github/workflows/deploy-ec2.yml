@@ -210,9 +210,9 @@ jobs:
             set -e
             # Ensure compose file exists
             test -f /opt/minmin/docker-compose.prod.yml || (echo "::error::Missing compose file at /opt/minmin/docker-compose.prod.yml" && exit 1)
-            # Bring up only nginx to validate config loads (use env-file for API_IMAGE)
+            # Bring up supporting services for smoke tests
             echo "API_IMAGE=ghcr.io/${{ steps.owner.outputs.lc }}/${{ env.API_IMAGE_NAME }}:latest" | sudo tee /opt/minmin/deploy.env >/dev/null
-            sudo docker compose --env-file /opt/minmin/deploy.env -f /opt/minmin/docker-compose.prod.yml up -d nginx
+            sudo docker compose --env-file /opt/minmin/deploy.env -f /opt/minmin/docker-compose.prod.yml up -d nginx customer_server
             # Allow container to boot
             sleep 3
             # Basic reachability check (do not fail on HTTP status)
@@ -403,3 +403,24 @@ jobs:
                 exit 1
               fi
             done
+
+      - name: Customer SSR smoke test
+        uses: appleboy/ssh-action@v1.2.1
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            set -e
+            # Verify customer server responds via Nginx
+            for i in $(seq 1 10); do
+              code=$(curl -s -o /dev/null -w "%{http_code}" -H "Host: ${{ vars.CUSTOMER_DOMAIN }}" http://localhost/ || true)
+              echo "customer / status: $code (attempt $i)"
+              if [ "$code" = "200" ] || [ "$code" = "302" ] || [ "$code" = "301" ]; then
+                echo "Customer SSR reachable"
+                exit 0
+              fi
+              sleep 3
+            done
+            echo "::warning::Customer SSR did not return 2xx/3xx; check customer_server logs"
+            sudo docker compose --env-file /opt/minmin/deploy.env -f /opt/minmin/docker-compose.prod.yml logs customer_server || true
