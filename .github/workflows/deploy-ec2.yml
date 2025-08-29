@@ -153,6 +153,35 @@ jobs:
               /opt/minmin/tls/stg.restaurant.feed-intel.com
             sudo chown -R $USER:$USER /opt/minmin
 
+      - name: Ensure TLS certs exist (self-signed fallback for staging)
+        uses: appleboy/ssh-action@v1.2.1
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            set -e
+            gen_cert() {
+              domain="$1"
+              dir="/opt/minmin/tls/$domain"
+              crt="$dir/fullchain.pem"
+              key="$dir/privkey.pem"
+              mkdir -p "$dir"
+              if [ -s "$crt" ] && [ -s "$key" ]; then
+                echo "$domain: TLS certs already present"
+                return 0
+              fi
+              echo "Generating self-signed certs for $domain (staging fallback)"
+              openssl req -x509 -nodes -newkey rsa:2048 \
+                -subj "/CN=$domain" \
+                -days 365 \
+                -keyout "$key" -out "$crt" >/dev/null 2>&1 || true
+              chmod 600 "$key"
+            }
+            gen_cert stg.api.feed-intel.com
+            gen_cert stg.customer.feed-intel.com
+            gen_cert stg.restaurant.feed-intel.com
+
       - name: Download restaurantFE artifact
         uses: actions/download-artifact@v4
         with:
@@ -217,10 +246,21 @@ jobs:
             # Bring up supporting services for smoke tests
             echo "API_IMAGE=ghcr.io/${{ steps.owner.outputs.lc }}/${{ env.API_IMAGE_NAME }}:latest" | sudo tee /opt/minmin/deploy.env >/dev/null
             sudo docker compose --env-file /opt/minmin/deploy.env -f /opt/minmin/docker-compose.prod.yml up -d nginx
-            # Allow container to boot
-            sleep 3
-            # Basic reachability check (do not fail on HTTP status)
-            curl -I http://localhost || (echo "::error::Nginx not reachable on localhost" && exit 1)
+            # Wait for Nginx to accept connections on :80
+            for i in $(seq 1 20); do
+              if curl -sI http://localhost >/dev/null; then
+                echo "Nginx reachable on :80"
+                break
+              fi
+              echo "Attempt $i: Nginx not yet reachable; sleeping 2s"
+              sleep 2
+              if [ "$i" = "20" ]; then
+                echo '::error::Nginx not reachable on localhost after retries'
+                sudo docker compose --env-file /opt/minmin/deploy.env -f /opt/minmin/docker-compose.prod.yml ps
+                sudo docker compose --env-file /opt/minmin/deploy.env -f /opt/minmin/docker-compose.prod.yml logs nginx || true
+                exit 1
+              fi
+            done
 
       - name: Copy static sites to server
         uses: appleboy/scp-action@v0.1.7
