@@ -46,8 +46,10 @@ services:
   nginx:
     image: nginx:1.27-alpine
     depends_on:
-      - api
-      - customer_expo
+      api:
+        condition: service_healthy
+      customer_expo:
+        condition: service_healthy
     volumes:
       - /opt/minmin/restaurant:/usr/share/nginx/html/restaurant:ro
       - /opt/minmin/customer:/usr/share/nginx/html/customer:ro
@@ -72,6 +74,11 @@ services:
     command: ["sh", "-lc", "set -e; if [ -d client ] && [ ! -e dist ]; then ln -s client dist; fi; (npm ci --omit=dev || npm install --omit=dev); npx --yes expo serve --host 0.0.0.0 --port 3001 --non-interactive"]
     expose:
       - "3001"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://localhost:3001/ >/dev/null 2>&1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
     networks: [minmin]
 
 volumes:
