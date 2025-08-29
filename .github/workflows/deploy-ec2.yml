@@ -356,7 +356,10 @@ jobs:
             test -f /opt/minmin/docker-compose.prod.yml || (echo "::error::Missing compose file at /opt/minmin/docker-compose.prod.yml" && exit 1)
 
             sudo docker compose --env-file /opt/minmin/deploy.env -f /opt/minmin/docker-compose.prod.yml pull || true
-            sudo docker compose --env-file /opt/minmin/deploy.env -f /opt/minmin/docker-compose.prod.yml up -d
+            # Remove any orphaned/renamed services (like historical customer_server/customer_expo)
+            sudo docker compose --env-file /opt/minmin/deploy.env -f /opt/minmin/docker-compose.prod.yml up -d --remove-orphans
+            # Ensure customer_expo (dev-only) is not running even if it exists from prior versions
+            sudo docker compose --env-file /opt/minmin/deploy.env -f /opt/minmin/docker-compose.prod.yml rm -f customer_expo || true
 
             # Health check with retries (API behind Nginx)
             echo "Waiting for API to become healthy..."
@@ -412,15 +415,14 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             set -e
-            # Verify customer server responds via Nginx
+            # Verify customer static site responds via Nginx
             for i in $(seq 1 10); do
-              code=$(curl -s -o /dev/null -w "%{http_code}" -H "Host: ${{ vars.CUSTOMER_DOMAIN }}" http://localhost/ || true)
-              echo "customer / status: $code (attempt $i)"
+              code=$(curl -s -o /dev/null -w "%{http_code}" -H "Host: ${{ vars.CUSTOMER_DOMAIN }}" http://localhost/index.html || true)
+              echo "customer /index.html status: $code (attempt $i)"
               if [ "$code" = "200" ] || [ "$code" = "302" ] || [ "$code" = "301" ]; then
-                echo "Customer SSR reachable"
+                echo "Customer static reachable"
                 exit 0
               fi
               sleep 3
             done
-            echo "::warning::Customer SSR did not return 2xx/3xx; check customer_server logs"
-            sudo docker compose --env-file /opt/minmin/deploy.env -f /opt/minmin/docker-compose.prod.yml logs customer_expo || true
+            echo "::warning::Customer static did not return 2xx/3xx; verify /opt/minmin/customer/client contents and nginx customer vhost"
