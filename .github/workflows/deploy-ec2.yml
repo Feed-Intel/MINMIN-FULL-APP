@@ -248,35 +248,30 @@ jobs:
             set -e
             echo "Restaurant root contents:"; ls -la /opt/minmin/restaurant || true
             echo "Customer root contents:"; ls -la /opt/minmin/customer || true
-            # Normalize customer app only (restaurant already serves from root)
-            for site in customer; do
-              root="/opt/minmin/${site}"
-              client="${root}/client"
-              mkdir -p "$client"
-              if [ -f "$client/index.html" ]; then
-                echo "$site: client/index.html already present"
-                continue
-              fi
+            # Normalize customer web export into /opt/minmin/customer/client deterministically
+            root="/opt/minmin/customer"; client="$root/client"; mkdir -p "$client"
+            if [ ! -f "$client/index.html" ]; then
               if [ -d "$root/dist/client" ]; then
-                echo "$site: Promoting dist/client -> client"
+                echo "customer: Promoting dist/client -> client"
                 sudo rsync -a "$root/dist/client/" "$client/" || true
                 sudo rm -rf "$root/dist"
-              elif [ -d "$root/dist/${site}" ]; then
-                echo "$site: Promoting dist/${site} -> client"
-                sudo rsync -a "$root/dist/${site}/" "$client/" || true
+              elif [ -d "$root/dist/customer" ]; then
+                echo "customer: Promoting dist/customer -> client"
+                sudo rsync -a "$root/dist/customer/" "$client/" || true
                 sudo rm -rf "$root/dist"
-              elif [ -d "$root/dist" ]; then
-                echo "$site: Promoting dist -> client"
-                sudo rsync -a "$root/dist/" "$client/" || true
-                sudo rm -rf "$root/dist"
-              elif [ -f "$root/index.html" ]; then
-                echo "$site: Moving root contents -> client"
-                sudo rsync -a "$root/" "$client/" || true
-                # Keep originals in place as a fallback; do not delete root
               else
-                echo "::warning::$site: No export found (dist or index.html)."
+                CAND=$(sudo find "$root" -maxdepth 3 -type f -name index.html | head -n 1 || true)
+                if [ -n "$CAND" ]; then
+                  SRC=$(dirname "$CAND")
+                  echo "customer: Found index.html at $CAND; syncing $SRC -> client"
+                  sudo rsync -a "$SRC/" "$client/" || true
+                else
+                  echo "::warning::customer: No client export found (looked for dist/* or index.html)"
+                fi
               fi
-            done
+            else
+              echo "customer: client/index.html already present"
+            fi
             # Ensure safe read perms for nginx
             sudo find /opt/minmin/restaurant -type d -exec chmod 755 {} +
             sudo find /opt/minmin/restaurant -type f -exec chmod 644 {} +
