@@ -64,10 +64,11 @@ services:
     expose:
       - '3001'
     healthcheck:
-      test: ['CMD-SHELL', 'wget -q -O- http://localhost:3001/ >/dev/null 2>&1']
-      interval: 15s
+      test: ['CMD', 'curl', '-f', 'http://localhost:3001/']
+      interval: 10s
       timeout: 5s
-      retries: 10
+      retries: 5
+      start_period: 20s
     networks: [minmin]
 
   nginx:
@@ -77,6 +78,18 @@ services:
         condition: service_healthy
       customer_expo:
         condition: service_healthy
+    entrypoint: [
+        'sh',
+        '-c',
+        "
+        echo 'Waiting for customer_expo...';
+        while ! curl -s http://customer_expo:3001 >/dev/null 2>&1; do
+        sleep 3;
+        done;
+        echo 'customer_expo ready, starting nginx';
+        nginx -g 'daemon off;';
+        ",
+      ]
     volumes:
       - /opt/minmin/restaurant:/usr/share/nginx/html/restaurant:ro
       - /opt/minmin/customer:/usr/share/nginx/html/customer:ro
