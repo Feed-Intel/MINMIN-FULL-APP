@@ -33,4 +33,4 @@ RUN npx expo export --platform web
 
 # Run the production server on port 3000
 EXPOSE 3000
-CMD ["npx", "expo", "serve", "--port", "3000"]
+CMD ["npx", "expo", "serve", "--port", "3001"]
