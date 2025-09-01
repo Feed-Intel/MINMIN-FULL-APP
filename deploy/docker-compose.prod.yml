@@ -48,6 +48,8 @@ services:
     depends_on:
       api:
         condition: service_healthy
+      customer_expo:
+        condition: service_healthy
     volumes:
       - /opt/minmin/restaurant:/usr/share/nginx/html/restaurant:ro
       - /opt/minmin/customer:/usr/share/nginx/html/customer:ro
