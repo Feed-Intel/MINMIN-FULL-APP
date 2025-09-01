@@ -42,27 +42,7 @@ services:
       timeout: 5s
       retries: 5
     networks: [minmin]
-
-  nginx:
-    image: nginx:1.27-alpine
-    depends_on:
-      api:
-        condition: service_healthy
-      customer_expo:
-        condition: service_healthy
-    volumes:
-      - /opt/minmin/restaurant:/usr/share/nginx/html/restaurant:ro
-      - /opt/minmin/customer:/usr/share/nginx/html/customer:ro
-      - media_data:/usr/share/nginx/html/media:ro
-      - /opt/minmin/acme:/var/www/certbot:ro
-      - /opt/minmin/tls:/etc/nginx/tls:ro
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./nginx/conf.d:/etc/nginx/conf.d:ro
-    ports:
-      - '80:80'
-      - '443:443'
-    networks: [minmin]
-
+    
   customer_expo:
     image: node:20-alpine
     profiles: ['dev']
@@ -88,6 +68,26 @@ services:
       interval: 15s
       timeout: 5s
       retries: 10
+    networks: [minmin]
+
+  nginx:
+    image: nginx:1.27-alpine
+    depends_on:
+      api:
+        condition: service_healthy
+      customer_expo:
+        condition: service_healthy
+    volumes:
+      - /opt/minmin/restaurant:/usr/share/nginx/html/restaurant:ro
+      - /opt/minmin/customer:/usr/share/nginx/html/customer:ro
+      - media_data:/usr/share/nginx/html/media:ro
+      - /opt/minmin/acme:/var/www/certbot:ro
+      - /opt/minmin/tls:/etc/nginx/tls:ro
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+    ports:
+      - '80:80'
+      - '443:443'
     networks: [minmin]
 
 volumes:
