@@ -24,9 +24,9 @@ services:
     networks: [minmin]
 
   api:
-    image: backend
-    # env_file:
-    #   - /opt/minmin/api.env
+    image: ${API_IMAGE}
+    env_file:
+      - /opt/minmin/api.env
     depends_on:
       db:
         condition: service_healthy
@@ -44,7 +44,7 @@ services:
     networks: [minmin]
 
   customer_expo:
-    image: customer-frontend
+    image: ${CUSTOMER_IMAGE}
     expose:
       - '3001'
     healthcheck:
