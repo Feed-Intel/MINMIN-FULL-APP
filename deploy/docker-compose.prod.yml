@@ -84,7 +84,7 @@ services:
         "
         echo 'Waiting for customer_expo...';
         while ! curl -s http://customer_expo:3001 >/dev/null 2>&1; do
-        sleep 3;
+        sleep 10;
         done;
         echo 'customer_expo ready, starting nginx';
         nginx -g 'daemon off;';
