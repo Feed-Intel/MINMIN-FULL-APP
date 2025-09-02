@@ -44,7 +44,7 @@ services:
     networks: [minmin]
 
   customer_expo:
-    image: customer-frontend
+    image: ${CUSTOMER_IMAGE}
     expose:
       - '3001'
     healthcheck:
