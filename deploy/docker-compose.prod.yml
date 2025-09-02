@@ -45,7 +45,6 @@ services:
     
   customer_expo:
     image: node:20-alpine
-    profiles: ['dev']
     working_dir: /app
     environment:
       NODE_ENV: production
@@ -84,7 +83,7 @@ services:
         "
         echo 'Waiting for customer_expo...';
         while ! curl -s http://customer_expo:3001 >/dev/null 2>&1; do
-        sleep 10;
+        sleep 2;
         done;
         echo 'customer_expo ready, starting nginx';
         nginx -g 'daemon off;';
