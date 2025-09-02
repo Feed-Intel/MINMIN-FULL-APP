@@ -47,7 +47,22 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+      - name: Extract metadata (tags, labels) for frontend
+        id: meta-fe
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ steps.owner.outputs.lc }}/customer-frontend
+          tags: |
+            type=sha,format=long
+            type=raw,value=latest
 
+      - name: Build and push frontend
+        uses: docker/build-push-action@v6
+        with:
+          context: ./customerFE
+          push: true
+          tags: ${{ steps.meta-fe.outputs.tags }}
+          labels: ${{ steps.meta-fe.outputs.labels }}
   build_frontends:
     name: Build Frontends (static web)
     runs-on: ubuntu-latest

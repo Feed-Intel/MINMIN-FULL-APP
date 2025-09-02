@@ -44,22 +44,7 @@ services:
     networks: [minmin]
     
   customer_expo:
-    image: node:20-alpine
-    working_dir: /app
-    environment:
-      NODE_ENV: production
-      PORT: '3001'
-      CI: 'true'
-      EXPO_NO_TELEMETRY: '1'
-    volumes:
-      - /opt/minmin/customer:/app
-      - customer_node_modules:/app/node_modules
-    command:
-      [
-        'sh',
-        '-lc',
-        'set -e; if ! npm ci --omit=dev; then npm install --omit=dev; fi; npx --yes expo serve --host 0.0.0.0 --port 3001 --non-interactive --no-open',
-      ]
+    image: customer-frontend
     expose:
       - '3001'
     healthcheck:
@@ -77,18 +62,6 @@ services:
         condition: service_healthy
       customer_expo:
         condition: service_healthy
-    entrypoint: [
-        'sh',
-        '-c',
-        "
-        echo 'Waiting for customer_expo...';
-        while ! curl -s http://customer_expo:3001 >/dev/null 2>&1; do
-        sleep 2;
-        done;
-        echo 'customer_expo ready, starting nginx';
-        nginx -g 'daemon off;';
-        ",
-      ]
     volumes:
       - /opt/minmin/restaurant:/usr/share/nginx/html/restaurant:ro
       - /opt/minmin/customer:/usr/share/nginx/html/customer:ro
