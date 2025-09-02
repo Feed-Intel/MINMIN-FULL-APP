@@ -58,10 +58,8 @@ services:
   nginx:
     image: nginx:1.27-alpine
     depends_on:
-      api:
-        condition: service_healthy
-      customer_expo:
-        condition: service_healthy
+      - api
+      - customer_expo
     volumes:
       - /opt/minmin/restaurant:/usr/share/nginx/html/restaurant:ro
       - /opt/minmin/customer:/usr/share/nginx/html/customer:ro
