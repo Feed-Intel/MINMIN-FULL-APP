@@ -42,7 +42,7 @@ services:
       timeout: 5s
       retries: 5
     networks: [minmin]
-
+    
   customer_expo:
     image: node:20-alpine
     working_dir: /app
