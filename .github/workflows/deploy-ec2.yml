@@ -65,7 +65,7 @@ jobs:
           tags: ${{ steps.meta-fe.outputs.tags }}
           labels: ${{ steps.meta-fe.outputs.labels }}
   build_frontends:
-    name: Build Frontends (static web)
+    name: Build Frontend (Restaurant web)
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -92,12 +92,6 @@ jobs:
         with:
           name: restaurant-web-dist
           path: restaurantFE/dist
-
-      - name: Upload customerFE artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: customer-web-dist
-          path: customerFE
 
   deploy:
     name: Deploy to EC2
@@ -280,7 +274,7 @@ jobs:
             fi
             # Request/renew certs via webroot (served by nginx)
             sudo docker run --rm \
-              -v /opt/minmin/letsencrypt:/etc/letsencrypt \
+              -v /opt/minmin/tls:/etc/letsencrypt \
               -v /opt/minmin/acme:/var/www/certbot \
               certbot/certbot:latest certonly --webroot -w /var/www/certbot \
               -d stg.api.feed-intel.com -d stg.customer.feed-intel.com -d stg.restaurant.feed-intel.com \
@@ -312,16 +306,6 @@ jobs:
           source: |
             dist/restaurant/**
           target: /opt/minmin/restaurant
-
-      - name: Copy site to server (customer)
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USER }}
-          key: ${{ secrets.EC2_SSH_KEY }}
-          source: |
-            customerFE/**
-          target: /opt/minmin/customer
 
       - name: Verify and normalize static site roots
         uses: appleboy/ssh-action@v1.2.1
@@ -360,8 +344,6 @@ jobs:
             # Ensure safe read perms for nginx
             sudo find /opt/minmin/restaurant -type d -exec chmod 755 {} +
             sudo find /opt/minmin/restaurant -type f -exec chmod 644 {} +
-            sudo find /opt/minmin/customer -type d -exec chmod 755 {} +
-            sudo find /opt/minmin/customer -type f -exec chmod 644 {} +
             echo "Restaurant (unchanged root):"; ls -la /opt/minmin/restaurant | head -n 40 || true
             echo "Post-normalize Customer:"; ls -la /opt/minmin/customer | head -n 40; ls -la /opt/minmin/customer/client | head -n 40 || true
             # Reload nginx to ensure it serves updated static
@@ -376,7 +358,7 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             set -euo pipefail
-            sudo mkdir -p /opt/minmin/{customer,restaurant,media}
+            sudo mkdir -p /opt/minmin/{restaurant,media}
             sudo chown -R $USER:$USER /opt/minmin
 
             # Install Docker if missing
@@ -402,9 +384,9 @@ jobs:
             sudo bash -c "echo 'DJANGO_SECRET_KEY=${{ secrets.DJANGO_SECRET_KEY }}' > /opt/minmin/api.env"
             sudo bash -c "echo 'DJANGO_SETTINGS_MODULE=minminbe.settings' >> /opt/minmin/api.env"
             sudo bash -c "echo 'DEBUG=false' >> /opt/minmin/api.env"
-            sudo bash -c "echo 'ALLOWED_HOSTS=${{ vars.API_DOMAIN }},${{ vars.CUSTOMER_DOMAIN }},${{ vars.RESTAURANT_DOMAIN }},localhost,127.0.0.1' >> /opt/minmin/api.env"
-            sudo bash -c "echo 'CSRF_TRUSTED_ORIGINS=https://${{ vars.API_DOMAIN }},https://${{ vars.CUSTOMER_DOMAIN }},https://${{ vars.RESTAURANT_DOMAIN }}' >> /opt/minmin/api.env"
-            sudo bash -c "echo 'DJANGO_ALLOWED_CORS_ORIGINS=https://${{ vars.CUSTOMER_DOMAIN }},https://${{ vars.RESTAURANT_DOMAIN }}' >> /opt/minmin/api.env"
+            sudo bash -c "echo 'ALLOWED_HOSTS=${{ vars.API_DOMAIN }},${{ vars.CUSTOMER_DOMAIN }},${{ vars.RESTAURANT_DOMAIN }},localhost,127.0.0.1,stg.customer.feed-intel.com,stg.restaurant.feed-intel.com,stg.api.feed-intel.com' >> /opt/minmin/api.env"
+            sudo bash -c "echo 'CSRF_TRUSTED_ORIGINS=https://${{ vars.API_DOMAIN }},https://${{ vars.CUSTOMER_DOMAIN }},https://${{ vars.RESTAURANT_DOMAIN }},https://stg.restaurant.feed-intel.com,https://stg.customer.feed-intel.com' >> /opt/minmin/api.env"
+            sudo bash -c "echo 'DJANGO_ALLOWED_CORS_ORIGINS=https://${{ vars.CUSTOMER_DOMAIN }},https://${{ vars.RESTAURANT_DOMAIN }},https://stg.restaurant.feed-intel.com,https://stg.customer.feed-intel.com' >> /opt/minmin/api.env"
             sudo bash -c "echo 'DATABASE_URL=${{ secrets.DATABASE_URL }}' >> /opt/minmin/api.env"
             sudo bash -c "echo 'REDIS_URL=${{ secrets.REDIS_URL }}' >> /opt/minmin/api.env"
             sudo bash -c "echo 'EMAIL_HOST=${{ vars.EMAIL_HOST || 'smtp.gmail.com' }}' >> /opt/minmin/api.env"
