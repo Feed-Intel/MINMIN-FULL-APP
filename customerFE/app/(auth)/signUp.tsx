@@ -73,15 +73,6 @@ const RegisterScreen = () => {
       });
       return;
     }
-    if (!isAgeGreaterThan18(user.birthday)) {
-      // Replaced Alert.alert with Toast.show as per instructions
-      Toast.show({
-        type: "error",
-        text1: i18n.t("error_toast_title"),
-        text2: i18n.t("age_restriction_error"),
-      });
-      return;
-    }
     setError(null);
     RegisterFn(user, { onSuccess });
   };
@@ -429,11 +420,5 @@ const styles = StyleSheet.create({
     color: "#fff", // Orange color for "Log In"
   },
 });
-
-function isAgeGreaterThan18(birthDate: string) {
-  const currentDate = dayjs();
-  const age = currentDate.diff(dayjs(birthDate), "year");
-  return age >= 18 && age < 100; // Changed to >= 18 for inclusive
-}
 
 export default RegisterScreen;
