@@ -66,7 +66,6 @@ services:
         condition: service_healthy
     volumes:
       - /opt/minmin/restaurant:/usr/share/nginx/html/restaurant:ro
-      - /opt/minmin/customer:/usr/share/nginx/html/customer:ro
       - media_data:/usr/share/nginx/html/media:ro
       - /opt/minmin/acme:/var/www/certbot
       - /opt/minmin/tls:/etc/nginx/tls:ro
