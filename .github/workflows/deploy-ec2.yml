@@ -52,7 +52,7 @@ jobs:
         id: meta-fe
         uses: docker/metadata-action@v5
         with:
-          images: ghcr.io/${{ steps.owner.outputs.lc }}/${{env.CUSTOMER_IMAGE_NAME}}
+          images: ghcr.io/${{ steps.owner.outputs.lc }}/${{env.CUSTOMER_IMAGE_NAME}}:${{ github.sha }}
           tags: |
             type=sha,format=long
             type=raw,value=latest
@@ -241,7 +241,7 @@ jobs:
             test -f /opt/minmin/docker-compose.prod.yml || (echo "::error::Missing compose file at /opt/minmin/docker-compose.prod.yml" && exit 1)
             # Bring up supporting services for smoke tests
             echo "API_IMAGE=ghcr.io/${{ steps.owner.outputs.lc }}/${{ env.API_IMAGE_NAME }}:latest" | sudo tee /opt/minmin/deploy.env >/dev/null
-            echo "CUSTOMER_IMAGE=ghcr.io/${{ steps.owner.outputs.lc }}/${{ env.CUSTOMER_IMAGE_NAME }}:latest" | sudo tee -a /opt/minmin/deploy.env >/dev/null
+            echo "CUSTOMER_IMAGE=ghcr.io/${{ steps.owner.outputs.lc }}/${{ env.CUSTOMER_IMAGE_NAME }}:${{ github.sha }}" | sudo tee -a /opt/minmin/deploy.env >/dev/null
             sudo docker compose --env-file /opt/minmin/deploy.env -f /opt/minmin/docker-compose.prod.yml up -d nginx
             # Wait for Nginx to accept connections on :80
             for i in $(seq 1 20); do
@@ -354,7 +354,7 @@ jobs:
 
             # Compose deploy env (for variable substitution like API_IMAGE)
             echo "API_IMAGE=ghcr.io/${{ steps.owner.outputs.lc }}/${{ env.API_IMAGE_NAME }}:latest" | sudo tee /opt/minmin/deploy.env >/dev/null
-            echo "CUSTOMER_IMAGE=ghcr.io/${{ steps.owner.outputs.lc }}/${{ env.CUSTOMER_IMAGE_NAME }}:latest" | sudo tee -a /opt/minmin/deploy.env >/dev/null
+            echo "CUSTOMER_IMAGE=ghcr.io/${{ steps.owner.outputs.lc }}/${{ env.CUSTOMER_IMAGE_NAME }}:${{ github.sha }}" | sudo tee -a /opt/minmin/deploy.env >/dev/null
 
             # API application env
             sudo bash -c "echo 'DJANGO_SECRET_KEY=${{ secrets.DJANGO_SECRET_KEY }}' > /opt/minmin/api.env"
@@ -415,7 +415,7 @@ jobs:
             # Sanity check compose file present
             test -f /opt/minmin/docker-compose.prod.yml || (echo "::error::Missing compose file at /opt/minmin/docker-compose.prod.yml" && exit 1)
 
-            sudo docker compose --env-file /opt/minmin/deploy.env -f /opt/minmin/docker-compose.prod.yml pull || true
+            sudo docker compose --env-file /opt/minmin/deploy.env -f /opt/minmin/docker-compose.prod.yml pull  --ignore-pull-failures|| true
             # Remove any orphaned/renamed services (like historical customer_server/customer_expo)
             sudo docker compose --env-file /opt/minmin/deploy.env -f /opt/minmin/docker-compose.prod.yml up -d --remove-orphans
             # Ensure customer_expo (dev-only) is not running even if it exists from prior versions
