@@ -242,7 +242,7 @@ jobs:
             # Bring up supporting services for smoke tests
             echo "API_IMAGE=ghcr.io/${{ steps.owner.outputs.lc }}/${{ env.API_IMAGE_NAME }}:latest" | sudo tee /opt/minmin/deploy.env >/dev/null
             echo "CUSTOMER_IMAGE=ghcr.io/${{ steps.owner.outputs.lc }}/${{ env.CUSTOMER_IMAGE_NAME }}:latest" | sudo tee -a /opt/minmin/deploy.env >/dev/null
-            sudo docker compose -f /opt/minmin/docker-compose.prod.yml down
+            sudo docker compose --env-file /opt/minmin/deploy.env -f /opt/minmin/docker-compose.prod.yml down
             sudo docker compose --env-file /opt/minmin/deploy.env -f /opt/minmin/docker-compose.prod.yml up -d nginx
             # Wait for Nginx to accept connections on :80
             for i in $(seq 1 20); do
