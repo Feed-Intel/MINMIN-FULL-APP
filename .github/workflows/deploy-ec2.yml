@@ -52,7 +52,7 @@ jobs:
         id: meta-fe
         uses: docker/metadata-action@v5
         with:
-          images: ghcr.io/${{ steps.owner.outputs.lc }}/${{env.CUSTOMER_IMAGE_NAME}}:${{ github.sha }}
+          images: ghcr.io/${{ steps.owner.outputs.lc }}/${{env.CUSTOMER_IMAGE_NAME}}
           tags: |
             type=sha,format=long
             type=raw,value=latest
