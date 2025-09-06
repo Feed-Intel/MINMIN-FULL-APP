@@ -45,8 +45,6 @@ services:
 
   customer_expo:
     image: ${CUSTOMER_IMAGE}
-    env_file:
-      - /opt/minmin/web.env
     expose:
       - '3001'
     healthcheck:
