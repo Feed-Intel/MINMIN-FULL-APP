@@ -8,6 +8,7 @@ on:
 permissions:
   contents: read
   packages: write
+  actions: write
 
 env:
   API_IMAGE_NAME: minmin-api
@@ -109,9 +110,17 @@ jobs:
           npx --yes expo export --platform web --non-interactive
       
       - name: Delete old restaurant artifacts
-        uses: geekyeggo/delete-artifact@v2
-        with:
-          name: restaurant-web-dist
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          artifacts=$(gh api repos/${{ github.repository }}/actions/artifacts \
+            --paginate -q '.artifacts[] | select(.name=="restaurant-web-dist") | .id')
+
+          for artifact_id in $artifacts; do
+            echo "Deleting artifact ID: $artifact_id"
+            gh api --method DELETE repos/${{ github.repository }}/actions/artifacts/$artifact_id
+          done
+
 
 
       - name: Upload restaurantFE artifact
