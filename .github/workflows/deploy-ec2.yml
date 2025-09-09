@@ -70,7 +70,7 @@ jobs:
             EXPO_PUBLIC_API_KEY=${{ secrets.API_KEY || '' }}
             EXPO_PUBLIC_DOMAIN=${{ vars.API_DOMAIN }}
             EXPO_PUBLIC_WS_URL=wss://${{ vars.API_DOMAIN }}/ws/user
-            EXPO_PUBLIC_BASE_URL=https://${{ vars.API_DOMAIN }}
+            EXPO_PUBLIC_BASE_URL=${{ vars.EXPO_PUBLIC_BASE_URL }}
             EXPO_PUBLIC_GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID || '' }}
             GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET || '' }}
             FACEBOOK_CLIENT_ID=${{ secrets.FACEBOOK_CLIENT_ID || '' }}
@@ -83,6 +83,7 @@ jobs:
             EXPO_PUBLIC_MERCHANT_APPID=${{ secrets.MERCHANT_APPID || '' }}
             EXPO_PUBLIC_MERCHANT_SHORTCODE=${{ secrets.MERCHANT_SHORTCODE || '' }}
             EXPO_PUBLIC_SCHEME=minmin://
+            
   build_restaurant:
     name: Build Frontend (Restaurant web)
     runs-on: ubuntu-latest
@@ -106,6 +107,12 @@ jobs:
         run: |
           npm ci
           npx --yes expo export --platform web --non-interactive
+      
+      - name: Delete old restaurant artifacts
+        uses: geekyeggo/delete-artifact@v2
+        with:
+          name: restaurant-web-dist
+
 
       - name: Upload restaurantFE artifact
         uses: actions/upload-artifact@v4
