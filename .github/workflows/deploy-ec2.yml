@@ -223,7 +223,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: restaurant-web-dist
-          path: dist/restaurant
+          path: dist
 
       - name: Upload deployment bundle
         uses: appleboy/scp-action@v0.1.7
@@ -359,7 +359,7 @@ jobs:
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
           source: |
-            dist/restaurant/**
+            dist/**
           target: /opt/minmin/restaurant
 
       - name: Verify and normalize static site roots
