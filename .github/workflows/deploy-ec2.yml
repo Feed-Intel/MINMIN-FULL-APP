@@ -350,8 +350,7 @@ jobs:
               echo "No existing /opt/minmin/restaurant found, skipping"
             fi
             sudo mkdir -p /opt/minmin/restaurant
-            sudo chown -R {{ secrets.EC2_USER }}:{{ secrets.EC2_USER }} /opt/minmin/restaurant
-
+            sudo chown -R $USER:$USER /opt/minmin/restaurant
 
       - name: Copy static sites to server
         uses: appleboy/scp-action@v0.1.7
