@@ -335,6 +335,24 @@ jobs:
             # Reload nginx to pick up new certs (ignore failures)
             sudo docker compose --env-file /opt/minmin/deploy.env -f /opt/minmin/docker-compose.prod.yml exec -T nginx nginx -s reload || true
 
+      - name: Remove old restaurant folder if exists
+        uses: appleboy/ssh-action@v1.2.1
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            set -e
+            if [ -d "/opt/minmin/restaurant" ]; then
+              echo "Removing old /opt/minmin/restaurant"
+              sudo rm -rf /opt/minmin/restaurant
+            else
+              echo "No existing /opt/minmin/restaurant found, skipping"
+            fi
+            sudo mkdir -p /opt/minmin/restaurant
+            sudo chown -R {{ secrets.EC2_USER }}:{{ secrets.EC2_USER }} /opt/minmin/restaurant
+
+
       - name: Copy static sites to server
         uses: appleboy/scp-action@v0.1.7
         with:
