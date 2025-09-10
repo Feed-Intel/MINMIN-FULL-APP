@@ -374,6 +374,7 @@ jobs:
             # Ensure safe read perms for nginx
             sudo find /opt/minmin/restaurant -type d -exec chmod 755 {} +
             sudo find /opt/minmin/restaurant -type f -exec chmod 644 {} +
+            sudo mv /opt/minmin/restaurant/dist/** /opt/minmin/restaurant
             echo "Restaurant (unchanged root):"; ls -la /opt/minmin/restaurant | head -n 40 || true
             echo "Post-normalize Customer:"; ls -la /opt/minmin/customer | head -n 40; ls -la /opt/minmin/customer/client | head -n 40 || true
             # Reload nginx to ensure it serves updated static
