@@ -450,7 +450,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setIsLoading(false);
       router.replace("/(protected)/feed");
     } catch (e) {
-      //(e);
       setIsLoading(false);
       Toast.show({
         type: "error",
