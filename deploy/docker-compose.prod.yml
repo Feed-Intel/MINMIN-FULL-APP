@@ -34,6 +34,7 @@ services:
         condition: service_healthy
     volumes:
       - media_data:/app/media
+    user: "1000:1000"
     expose:
       - '8000'
     healthcheck:

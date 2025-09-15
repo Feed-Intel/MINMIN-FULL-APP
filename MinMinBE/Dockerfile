@@ -1,4 +1,3 @@
-# syntax=docker/dockerfile:1
 FROM python:3.11-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
@@ -25,8 +24,6 @@ RUN useradd -m appuser && chown -R appuser:appuser /app
 
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
-
-# ⚠️ Do not set USER here — docker-compose.yml will run as appuser (1000:1000)
 
 EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=30s CMD curl -f http://localhost:8000/healthz || exit 1
