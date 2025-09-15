@@ -2,6 +2,7 @@
 set -e
 
 mkdir -p /app/media/images
+chown -R appuser:appuser /app/media
 
 if [ -n "$DATABASE_URL" ]; then
   echo "Waiting for Postgres..."
