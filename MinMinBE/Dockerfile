@@ -20,12 +20,13 @@ RUN pip install --upgrade pip && pip install -r requirements.txt && pip install 
 
 COPY . .
 
+# Create non-root user (UID 1000 by default) for safety
 RUN useradd -m appuser && chown -R appuser:appuser /app
 
 COPY entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh && chown appuser:appuser /entrypoint.sh
+RUN chmod +x /entrypoint.sh
 
-USER appuser
+# ⚠️ Do not set USER here — docker-compose.yml will run as appuser (1000:1000)
 
 EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=30s CMD curl -f http://localhost:8000/healthz || exit 1
