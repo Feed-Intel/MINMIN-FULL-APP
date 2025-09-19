@@ -9,6 +9,7 @@ import os
 
 class TableSerializer(serializers.ModelSerializer):
     branch = serializers.PrimaryKeyRelatedField(queryset=Branch.objects.all())
+    table_code = serializers.CharField(read_only=True)
     qr_code = QRCodeSerializer(read_only=True)
     class Meta:
         model = Table

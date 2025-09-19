@@ -90,6 +90,13 @@ export const OrderModal: React.FC<OrderModalProps> = ({
   const { mutateAsync: createOrder } = useCreateOrder();
   const tenantId = useAppSelector((state) => state.auth.restaurant?.id);
   const branch = useAppSelector((state) => state.auth.restaurant?.branch);
+  const branchId = (() => {
+    if (typeof branch === "string") return branch;
+    if (branch && typeof branch === "object" && "id" in branch) {
+      return (branch as { id?: string }).id ?? null;
+    }
+    return null;
+  })();
 
   const {
     control,
@@ -101,6 +108,9 @@ export const OrderModal: React.FC<OrderModalProps> = ({
   } = useForm<OrderFormData>({
     resolver: yupResolver(schema),
     defaultValues: {
+      customerName: "",
+      contactNumber: "",
+      tinNumber: "",
       items: [
         {
           id: Date.now().toString(),
@@ -181,14 +191,23 @@ export const OrderModal: React.FC<OrderModalProps> = ({
 
   const onSubmit = async (data: OrderFormData) => {
     try {
+      if (!branchId) {
+        setSnackbarMessage("Please select a branch before creating an order.");
+        setSnackbarVisible(true);
+        return;
+      }
+
       const orderData = {
         tenant: tenantId,
-        branch: branch,
+        branch: branchId,
+        customer_name: data.customerName,
+        customer_phone: data.contactNumber,
+        customer_tinNo: data.tinNumber || undefined,
         items: data.items.map((item: OrderItem) => ({
           menu_item: item.menuItem?.id,
           quantity: item.quantity,
-          price: item.price,
-          remarks: item.remarks,
+          price: item.price ?? 0,
+          remarks: item.remarks ?? "",
         })),
       };
       await createOrder(orderData);
@@ -237,7 +256,7 @@ export const OrderModal: React.FC<OrderModalProps> = ({
                 render={({ field: { onChange, value } }) => (
                   <TextInput
                     label="Customer Name"
-                    value={value}
+                    value={value ?? ""}
                     onChangeText={onChange}
                     error={!!errors.customerName}
                     style={styles.input}
@@ -256,7 +275,7 @@ export const OrderModal: React.FC<OrderModalProps> = ({
                 render={({ field: { onChange, value } }) => (
                   <TextInput
                     label="Contact Number"
-                    value={value}
+                    value={value ?? ""}
                     onChangeText={onChange}
                     keyboardType="phone-pad"
                     error={!!errors.contactNumber}
@@ -279,7 +298,7 @@ export const OrderModal: React.FC<OrderModalProps> = ({
                 render={({ field: { onChange, value } }) => (
                   <TextInput
                     label="Tin Number (Optional)"
-                    value={value}
+                    value={value ?? ""}
                     onChangeText={onChange}
                     style={styles.input}
                     mode="outlined"
@@ -351,7 +370,7 @@ export const OrderModal: React.FC<OrderModalProps> = ({
                       </TouchableOpacity>
                     </DataTable.Cell>
                     <DataTable.Cell numeric style={styles.dataTableCell}>
-                      <Text style={styles.priceText}>${item.price?.toFixed(2) || "0.00"}</Text>
+                      <Text style={styles.priceText}>${(item.price ?? 0).toFixed(2)}</Text>
                     </DataTable.Cell>
                     <DataTable.Cell numeric style={styles.dataTableCell}>
                       <TextInput
@@ -370,7 +389,7 @@ export const OrderModal: React.FC<OrderModalProps> = ({
                     </DataTable.Cell>
                     <DataTable.Cell style={styles.dataTableCell}>
                       <TextInput
-                        value={item.remarks}
+                        value={item.remarks ?? ""}
                         onChangeText={(text) => updateRemarks(item.id, text)}
                         style={styles.quantityInput}
                         outlineStyle={styles.quantityOutline}
@@ -381,7 +400,7 @@ export const OrderModal: React.FC<OrderModalProps> = ({
                       />
                     </DataTable.Cell>
                     <DataTable.Cell numeric style={styles.dataTableCell}>
-                      <Text style={styles.taxText}>${item.tax?.toFixed(2) || "0.00"}</Text>
+                      <Text style={styles.taxText}>${(item.tax ?? 0).toFixed(2)}</Text>
                     </DataTable.Cell>
                     <DataTable.Cell numeric style={styles.dataTableCell}>
                       <Text style={styles.totalText}>

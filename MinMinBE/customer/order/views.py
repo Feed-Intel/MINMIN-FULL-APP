@@ -1,7 +1,8 @@
 from rest_framework.pagination import PageNumberPagination
 from rest_framework import viewsets
 from rest_framework.decorators import action
-from django.db.models import Q
+from django.db.models import Q, F, Sum, DecimalField, ExpressionWrapper
+from django.db.models.functions import Coalesce
 from accounts.permissions import HasCustomAPIKey
 from accounts.utils import get_user_branch, get_user_tenant
 from django.core.exceptions import ValidationError
@@ -52,9 +53,26 @@ class OrderView(viewsets.ModelViewSet):
                     qs =  qs.annotate(distance=Distance('branch__location', user_location))
             return qs
         
-        queryset = Order.objects.filter(
-            status__in=['placed', 'progress', 'payment_complete', 'delivered', 'cancelled']
-        ).select_related('table', 'customer', 'branch', 'tenant').prefetch_related('items').order_by('-updated_at')
+        total_price_expression = Coalesce(
+            Sum(
+                ExpressionWrapper(
+                    F('items__price') * F('items__quantity'),
+                    output_field=DecimalField(max_digits=12, decimal_places=2)
+                )
+            ),
+            0,
+            output_field=DecimalField(max_digits=12, decimal_places=2),
+        )
+
+        queryset = (
+            Order.objects.filter(
+                status__in=['placed', 'progress', 'payment_complete', 'delivered', 'cancelled']
+            )
+            .select_related('table', 'customer', 'branch', 'tenant')
+            .prefetch_related('items')
+            .annotate(total_price=total_price_expression)
+            .order_by('-updated_at')
+        )
 
         if user.user_type == 'admin':
             return queryset
