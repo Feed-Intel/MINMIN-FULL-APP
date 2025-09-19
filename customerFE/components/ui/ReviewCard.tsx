@@ -2,6 +2,7 @@ import * as React from "react";
 import { View, StyleSheet } from "react-native";
 import { Avatar, Card, Text } from "react-native-paper";
 import { MaterialIcons } from "@expo/vector-icons"; // Import MaterialIcons
+import { normalizeImageUrl } from "@/utils/imageUrl";
 
 type ReviewCardProps = {
   userName: string;
@@ -42,7 +43,7 @@ export default function ReviewCard({
         <View style={styles.header}>
           <Avatar.Image
             size={40}
-            source={{ uri: userAvatarUrl?.replace("http://", "https://") }}
+            source={{ uri: normalizeImageUrl(userAvatarUrl) }}
           />
           <View style={styles.userInfo}>
             <Text style={styles.userName}>{userName}</Text>

@@ -1,19 +1,21 @@
 import React, { useState, useEffect } from "react";
 import { StyleSheet, Image, View, useWindowDimensions, ScrollView } from "react-native";
-import { 
-  Text, 
-  Button, 
-  TextInput, 
-  Switch, 
-  Portal, 
+import {
+  Text,
+  Button,
+  TextInput,
+  Switch,
+  Portal,
   Dialog,
-  Menu 
+  Menu,
+  Chip,
 } from "react-native-paper";
 import Toast from "react-native-toast-message";
 import * as ImagePicker from "expo-image-picker";
 import { useUpdateMenu } from "@/services/mutation/menuMutation";
 import { useQueryClient } from "@tanstack/react-query";
 import { base64ToBlob } from "@/util/imageUtils";
+import ModalHeader from "@/components/ModalHeader";
 
 interface EditMenuDialogProps {
   visible: boolean;
@@ -21,12 +23,21 @@ interface EditMenuDialogProps {
   onClose: () => void;
 }
 
+type MenuFormState = {
+  name: string;
+  description: string;
+  categories: string[];
+  price: string;
+  is_side: boolean;
+  image: { uri: string; name: string; type: string };
+};
+
 export default function EditMenuDialog({ visible, menu, onClose }: EditMenuDialogProps) {
   const { width } = useWindowDimensions();
-  const [menuData, setMenuData] = useState({
+  const [menuData, setMenuData] = useState<MenuFormState>({
     name: "",
     description: "",
-    category: "",
+    categories: [],
     price: "",
     is_side: false,
     image: { uri: "", name: "", type: "" },
@@ -43,10 +54,15 @@ export default function EditMenuDialog({ visible, menu, onClose }: EditMenuDialo
 
   useEffect(() => {
     if (menu) {
+      const parsedCategories = Array.isArray(menu.categories)
+        ? menu.categories
+        : menu.category
+        ? [menu.category]
+        : [];
       setMenuData({
         name: menu.name,
         description: menu.description,
-        category: menu.category,
+        categories: parsedCategories,
         price: menu.price,
         is_side: menu.is_side,
         image: menu.image
@@ -56,11 +72,24 @@ export default function EditMenuDialog({ visible, menu, onClose }: EditMenuDialo
     }
   }, [menu]);
 
-  const handleInputChange = (field: string, value: string | boolean) => {
+  const handleInputChange = <K extends keyof MenuFormState>(
+    field: K,
+    value: MenuFormState[K]
+  ) => {
     setMenuData((prevData) => ({
       ...prevData,
       [field]: value,
     }));
+  };
+
+  const toggleCategory = (category: string) => {
+    setMenuData((prevData) => {
+      const exists = prevData.categories.includes(category);
+      const categories = exists
+        ? prevData.categories.filter((item) => item !== category)
+        : [...prevData.categories, category];
+      return { ...prevData, categories };
+    });
   };
 
   const pickImage = async () => {
@@ -92,17 +121,27 @@ export default function EditMenuDialog({ visible, menu, onClose }: EditMenuDialo
       return;
     }
 
+    if (menuData.categories.length === 0) {
+      Toast.show({
+        type: "error",
+        text1: "Error",
+        text2: "Please select at least one category",
+      });
+      return;
+    }
+
     const formData = new FormData();
-    Object.entries(menuData).forEach(([key, value]) => {
-      if (key !== "image" && typeof value === "string") {
-        formData.append(key, value);
-      }
-    });
+    formData.append("name", menuData.name);
+    formData.append("description", menuData.description);
+    formData.append("price", menuData.price);
+    formData.append("is_side", String(menuData.is_side));
+    formData.append("categories", JSON.stringify(menuData.categories));
 
     if (menuData.image.uri.includes("data:image")) {
       const base64Data = menuData.image.uri;
-      const contentType = menuData.image.type;
-      const imageName = Date.now() + "." + menuData.image.name?.split(".")[1];
+      const contentType = menuData.image.type || "image/jpeg";
+      const extension = menuData.image.name?.split(".").pop() || "jpg";
+      const imageName = `${Date.now()}.${extension}`;
 
       const blob = base64ToBlob(base64Data, contentType);
       formData.append(
@@ -124,7 +163,9 @@ export default function EditMenuDialog({ visible, menu, onClose }: EditMenuDialo
   return (
     <Portal>
       <Dialog visible={visible} onDismiss={onClose} style={styles.dialog}>
-        {/* <Dialog.Title>Edit Menu Item</Dialog.Title> */}
+        <Dialog.Title>
+          <ModalHeader title="Edit Menu Item" onClose={onClose} />
+        </Dialog.Title>
         <Dialog.Content>
           <ScrollView>
             <TextInput
@@ -185,7 +226,9 @@ export default function EditMenuDialog({ visible, menu, onClose }: EditMenuDialo
                     }}
                     icon={categoryMenuVisible ? "chevron-up" : "chevron-down"}
                   >
-                    {menuData.category || "Select Category"}
+                    {menuData.categories.length > 0
+                      ? menuData.categories.join(", ")
+                      : "Select Categories"}
                   </Button>
                 }
                 contentStyle={[styles.menuContent, { width: "100%" }]}
@@ -196,10 +239,12 @@ export default function EditMenuDialog({ visible, menu, onClose }: EditMenuDialo
                   categories.map((category) => (
                     <Menu.Item
                       key={category}
-                      onPress={() => {
-                        handleInputChange("category", category);
-                        setCategoryMenuVisible(false);
-                      }}
+                      onPress={() => toggleCategory(category)}
+                      leadingIcon={
+                        menuData.categories.includes(category)
+                          ? "check"
+                          : undefined
+                      }
                       title={category}
                       titleStyle={styles.menuItem}
                     />
@@ -207,8 +252,29 @@ export default function EditMenuDialog({ visible, menu, onClose }: EditMenuDialo
                 ) : (
                   <Menu.Item title="No categories available" disabled />
                 )}
+                <Menu.Item
+                  onPress={() => setCategoryMenuVisible(false)}
+                  title="Done"
+                  titleStyle={styles.menuItem}
+                />
               </Menu>
             </View>
+
+            {menuData.categories.length > 0 && (
+              <View style={styles.selectedCategoriesContainer}>
+                {menuData.categories.map((category) => (
+                  <Chip
+                    key={category}
+                    mode="outlined"
+                    onClose={() => toggleCategory(category)}
+                    style={styles.categoryChip}
+                    textStyle={styles.categoryChipText}
+                  >
+                    {category}
+                  </Chip>
+                ))}
+              </View>
+            )}
 
             <TextInput
               label="Price"
@@ -355,5 +421,19 @@ const styles = StyleSheet.create({
   menuItem: {
     fontSize: 14,
     color: '#202B1866',
+  },
+  selectedCategoriesContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginBottom: 12,
+  },
+  categoryChip: {
+    marginRight: 8,
+    marginBottom: 8,
+    borderColor: '#91B275',
+    backgroundColor: '#EBF1E6',
+  },
+  categoryChipText: {
+    color: '#40392B',
   },
 });

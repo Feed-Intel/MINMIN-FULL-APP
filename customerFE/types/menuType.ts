@@ -4,7 +4,8 @@ export interface MenuType {
   id?: string;
   name: string;
   description: string;
-  category: string;
+  categories: string[];
+  category?: string;
   price: string;
   tags: string[];
   is_side: boolean;

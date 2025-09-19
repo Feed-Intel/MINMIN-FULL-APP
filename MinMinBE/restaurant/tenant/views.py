@@ -31,6 +31,7 @@ from django.db.models import ExpressionWrapper, F, IntegerField
 from .serializers import DashboardSerializer
 from django.db.models.functions import TruncDate
 from core.cache import CachedModelViewSet
+from accounts.utils import get_user_branch, get_user_tenant
 class TenantPagination(PageNumberPagination):
     page_size = 10
 
@@ -71,8 +72,17 @@ class TenantView(CachedModelViewSet):
                 'menus'
             )
         else:
-            queryset =  Tenant.objects.filter(admin=user).prefetch_related('menus',
-            'branches__tables')
+            tenant = get_user_tenant(user)
+
+            if user.user_type == 'admin':
+                queryset = Tenant.objects.prefetch_related('menus', 'branches__tables')
+            elif user.user_type == 'restaurant' and tenant:
+                queryset = Tenant.objects.filter(id=tenant.id).prefetch_related('menus', 'branches__tables')
+            elif user.user_type == 'branch' and tenant:
+                queryset = Tenant.objects.filter(id=tenant.id).prefetch_related('menus', 'branches__tables')
+            else:
+                queryset = Tenant.objects.none()
+
         return queryset
     
     def perform_create(self, serializer):
@@ -81,7 +91,9 @@ class TenantView(CachedModelViewSet):
     @action(detail=False, methods=['get'], url_path='dashboard')
     def get_dashboard(self, request):
         user = request.user
-        tenant = user.tenants
+        tenant, context_error = self._get_tenant_or_error(user)
+        if context_error:
+            return Response({"error": context_error}, status=status.HTTP_400_BAD_REQUEST)
 
         cache_key = f"tenant_dashboard:{user.id}"
         cached_data = cache.get(cache_key)
@@ -93,7 +105,7 @@ class TenantView(CachedModelViewSet):
         table_filter = Q(branch__tenant=tenant)
         feedback_filter = Q(restaurant=tenant)
         
-        if user.user_type == 'branch_staff':
+        if user.user_type == 'branch':
             order_filter &= Q(branch=user.branch)
             table_filter &= Q(branch=user.branch)
             feedback_filter &= Q(order__branch=user.branch)
@@ -214,24 +226,50 @@ class TenantView(CachedModelViewSet):
 
 class DashboardViewSet(viewsets.ViewSet):
     permission_classes = [IsAuthenticated, HasCustomAPIKey]
-    
-    def _get_base_filters(self, user, branch_id=None):
+
+    def _get_tenant_or_error(self, user):
+        """Resolve tenant context for the current user or return an error message."""
+        tenant = get_user_tenant(user)
+        if tenant:
+            return tenant, None
+
+        if user.user_type == 'branch':
+            return None, "Your account is not assigned to a branch. Please contact your administrator."
+
+        if user.user_type == 'restaurant':
+            return None, "Your account is not linked to a restaurant profile. Please contact your administrator."
+
+        return None, None
+
+    def _get_base_filters(self, user, tenant=None, branch_id=None):
         """
         Get base filters based on user type and branch_id
         """
         filters = Q()
-        
+
         # For branch staff, only show their branch data
-        if user.user_type == 'branch_staff':
-            filters &= Q(branch=user.branch)
-        # For restaurant admin, filter by branch if specified
-        elif user.user_type == 'restaurant':
-            if branch_id:
-                try:
-                    branch = Branch.objects.get(id=branch_id, tenant=user.tenants)
-                    filters &= Q(branch=branch)
-                except Branch.DoesNotExist:
-                    pass
+        if user.user_type == 'branch':
+            branch = get_user_branch(user)
+            if not branch:
+                raise ValidationError("Your account is not assigned to a branch. Please contact your administrator.")
+
+            filters &= Q(branch=branch)
+            if branch_id and str(branch.id) != str(branch_id):
+                raise ValidationError("You can only view data for your assigned branch.")
+        elif tenant:
+            filters &= Q(branch__tenant=tenant)
+
+        if branch_id and not (user.user_type == 'branch' and getattr(user, 'branch', None) and str(user.branch.id) == str(branch_id)):
+            try:
+                branch = Branch.objects.get(id=branch_id)
+            except Branch.DoesNotExist:
+                raise ValidationError("Branch not found.")
+
+            if tenant and branch.tenant_id != tenant.id:
+                raise ValidationError("You do not have access to this branch.")
+
+            filters &= Q(branch=branch)
+
         return filters
 
     @action(detail=False, methods=['get'], url_path='stats')
@@ -242,27 +280,39 @@ class DashboardViewSet(viewsets.ViewSet):
         # Get parameters from request
         period = request.query_params.get('period', 'today')
         branch_id = request.query_params.get('branch_id')
-        
+
+        tenant, context_error = self._get_tenant_or_error(request.user)
+        if context_error:
+            return Response({"error": context_error}, status=status.HTTP_400_BAD_REQUEST)
+
         # Get base filters
-        filters = self._get_base_filters(request.user, branch_id)
-        
-        # Get data based on period
-        if period == 'today':
-            data = self._get_today_stats(filters)
-        elif period == 'month':
-            data = self._get_month_stats(filters)
-        elif period == 'year':
-            data = self._get_year_stats(filters)
-        else:
-            # Custom date range
-            start_date = request.query_params.get('start_date')
-            end_date = request.query_params.get('end_date')
-            if not start_date or not end_date:
-                return Response(
-                    {"error": "Both start_date and end_date are required for custom range"},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-            data = self._get_custom_range_stats(filters, start_date, end_date)
+        try:
+            filters = self._get_base_filters(request.user, tenant, branch_id)
+        except ValidationError as exc:
+            error_detail = exc.messages[0] if hasattr(exc, 'messages') else str(exc)
+            return Response({"error": error_detail}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            # Get data based on period
+            if period == 'today':
+                data = self._get_today_stats(filters)
+            elif period == 'month':
+                data = self._get_month_stats(filters)
+            elif period == 'year':
+                data = self._get_year_stats(filters)
+            else:
+                # Custom date range
+                start_date = request.query_params.get('start_date')
+                end_date = request.query_params.get('end_date')
+                if not start_date or not end_date:
+                    return Response(
+                        {"error": "Both start_date and end_date are required for custom range"},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+                data = self._get_custom_range_stats(filters, start_date, end_date)
+        except ValidationError as exc:
+            error_detail = exc.messages[0] if hasattr(exc, 'messages') else str(exc)
+            return Response({"error": error_detail}, status=status.HTTP_400_BAD_REQUEST)
         
         # Calculate revenue change percentage
         if period != 'custom':
@@ -275,7 +325,7 @@ class DashboardViewSet(viewsets.ViewSet):
         """Get statistics for today"""
         today = timezone.now().date()
         today_start = timezone.make_aware(timezone.datetime.combine(today, timezone.datetime.min.time()))
-        
+
         # Orders
         orders = Order.objects.filter(filters & Q(created_at__gte=today_start))
         total_orders = orders.count()
@@ -284,10 +334,10 @@ class DashboardViewSet(viewsets.ViewSet):
         revenue = Payment.objects.filter(
             order__in=orders
         ).aggregate(total=Sum('amount_paid'))['total'] or 0
-        
+
         # Active tables
         active_tables = Table.objects.filter(
-            branch__tenant=self.request.user.tenants,
+            filters,
             table_order__status__in=['pending_payment', 'placed', 'progress']
         ).distinct().count()
         
@@ -312,7 +362,7 @@ class DashboardViewSet(viewsets.ViewSet):
         """Get statistics for current month"""
         today = timezone.now().date()
         month_start = today.replace(day=1)
-        
+
         # Orders
         orders = Order.objects.filter(filters & Q(created_at__date__gte=month_start))
         total_orders = orders.count()
@@ -321,10 +371,10 @@ class DashboardViewSet(viewsets.ViewSet):
         revenue = Payment.objects.filter(
             order__in=orders
         ).aggregate(total=Sum('amount_paid'))['total'] or 0
-        
+
         # Active tables
         active_tables = Table.objects.filter(
-            branch__tenant=self.request.user.tenants,
+            filters,
             table_order__status__in=['pending_payment', 'placed', 'progress']
         ).distinct().count()
         
@@ -349,7 +399,7 @@ class DashboardViewSet(viewsets.ViewSet):
         """Get statistics for current year"""
         today = timezone.now().date()
         year_start = today.replace(month=1, day=1)
-        
+
         # Orders
         orders = Order.objects.filter(filters & Q(created_at__date__gte=year_start))
         total_orders = orders.count()
@@ -358,10 +408,10 @@ class DashboardViewSet(viewsets.ViewSet):
         revenue = Payment.objects.filter(
             order__in=orders
         ).aggregate(total=Sum('amount_paid'))['total'] or 0
-        
+
         # Active tables
         active_tables = Table.objects.filter(
-            branch__tenant=self.request.user.tenants,
+            filters,
             table_order__status__in=['pending_payment', 'placed', 'progress']
         ).distinct().count()
         
@@ -388,10 +438,7 @@ class DashboardViewSet(viewsets.ViewSet):
             start_date = timezone.datetime.strptime(start_date, '%Y-%m-%d').date()
             end_date = timezone.datetime.strptime(end_date, '%Y-%m-%d').date()
         except ValueError:
-            return Response(
-                {"error": "Invalid date format. Use YYYY-MM-DD"},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+            raise ValidationError("Invalid date format. Use YYYY-MM-DD")
             
         # Orders
         orders = Order.objects.filter(
@@ -403,10 +450,10 @@ class DashboardViewSet(viewsets.ViewSet):
         revenue = Payment.objects.filter(
             order__in=orders
         ).aggregate(total=Sum('amount_paid'))['total'] or 0
-        
+
         # Active tables
         active_tables = Table.objects.filter(
-            branch__tenant=self.request.user.tenants,
+            filters,
             table_order__status__in=['pending_payment', 'placed', 'progress']
         ).distinct().count()
         
@@ -576,8 +623,15 @@ class DashboardViewSet(viewsets.ViewSet):
         start_date = request.query_params.get('start_date')
         end_date = request.query_params.get('end_date')
         
-        # Get base filters
-        filters = self._get_base_filters(request.user, branch_id)
+        tenant, context_error = self._get_tenant_or_error(request.user)
+        if context_error:
+            return Response({"error": context_error}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            filters = self._get_base_filters(request.user, tenant, branch_id)
+        except ValidationError as exc:
+            error_detail = exc.messages[0] if hasattr(exc, 'messages') else str(exc)
+            return Response({"error": error_detail}, status=status.HTTP_400_BAD_REQUEST)
         
         # Date filters
         date_filter = Q()

@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from "react";
-import { View, StyleSheet, TouchableOpacity, ScrollView } from "react-native";
+import React, { useEffect, useState } from "react";
+import { View, StyleSheet, TouchableOpacity, ScrollView, Platform } from "react-native";
 import { Text, Icon } from "react-native-paper"; // Using Icon from react-native-paper
 import { router, usePathname } from "expo-router"; // Assuming expo-router is configured, added usePathname
 import { useResponsive } from "@/hooks/useResponsive";
+import { useRestaurantIdentity } from "@/hooks/useRestaurantIdentity";
 
 // Define the structure for a menu link
 interface Link {
@@ -12,6 +13,8 @@ interface Link {
 }
 
 const Sidebar: React.FC = () => {
+  const { isBranch } = useRestaurantIdentity();
+
   // Define the menu links exactly as seen in the image
   const links: Link[] = [
     {
@@ -50,7 +53,18 @@ const Sidebar: React.FC = () => {
       route: "/(protected)/feedback",
       icon: "comment-text-multiple-outline",
     },
+    {
+      name: "Profile",
+      route: "/(protected)/profile",
+      icon: "account-circle-outline",
+    },
   ];
+
+  const visibleLinks = isBranch
+    ? links.filter(
+        (link) => !["Branch", "Administration"].includes(link.name)
+      )
+    : links;
 
   // State to manage the active link
   const [activeLink, setActiveLink] = useState<string>("/(protected)/tables"); // Default active to Tables, as per image
@@ -80,7 +94,7 @@ const Sidebar: React.FC = () => {
     >
       {/* Menu Items */}
       <ScrollView style={sidebarStyles.menu}>
-        {links.map((item: Link) => (
+        {visibleLinks.map((item: Link) => (
           <TouchableOpacity
             key={item.name}
             style={[
@@ -120,11 +134,15 @@ const sidebarStyles = StyleSheet.create({
     paddingHorizontal: 15,
     borderRightWidth: 1,
     borderRightColor: "#eee",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 5, // For Android shadow
+    ...(Platform.OS === "web"
+      ? { boxShadow: "0px 2px 4px rgba(0,0,0,0.1)" }
+      : {
+          shadowColor: "#000",
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.1,
+          shadowRadius: 4,
+          elevation: 5,
+        }),
   },
   sidebarMobile: {
     width: 220,

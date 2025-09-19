@@ -1,0 +1,1 @@
+{"version":3,"file":"card.d.ts","sourceRoot":"","sources":["../../../src/mobile/components/card.tsx"],"names":[],"mappings":"AAAA,OAAO,KAAK,MAAM,OAAO,CAAC;AAC1B,OAAO,EAAQ,SAAS,EAAE,MAAM,cAAc,CAAC;AAE/C,UAAU,SAAS;IACjB,KAAK,CAAC,EAAE,SAAS,CAAC;IAClB,QAAQ,EAAE,KAAK,CAAC,SAAS,CAAC;CAC3B;AAED,wBAAgB,IAAI,CAAC,EAAE,QAAQ,EAAE,KAAK,EAAE,EAAE,SAAS,2CAmBlD"}

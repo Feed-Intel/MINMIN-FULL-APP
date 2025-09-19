@@ -13,10 +13,10 @@ export const useWebSockets = () => {
 
   useEffect(() => {
     if (!restaurant) return;
-    let wsUrl = address?.startsWith("ws://")
-      ? address.replace("ws://", "ws://")
-      : address;
-    wsUrl = `${wsUrl}${restaurant.id}/`;
+    if (!address) return;
+
+    const normalizedUrl = address.endsWith("/") ? address : `${address}/`;
+    const wsUrl = `${normalizedUrl}${restaurant.id}/`;
     console.log(wsUrl);
     wsRef.current = new WebSocket(wsUrl);
 

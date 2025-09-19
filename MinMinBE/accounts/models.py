@@ -69,7 +69,8 @@ class User(AbstractBaseUser, PermissionsMixin):
     user_type = models.CharField(max_length=10, choices=USER_TYPE_CHOICES, default='customer')
     push_token = models.CharField(max_length=255, blank=True, null=True)
     birthday = models.DateField(blank=True, null=True)  # User's birthday
-    branch = models.OneToOneField(Branch, on_delete=models.DO_NOTHING, blank=True, null=True)  # User's branch
+    # If a Branch is deleted, cascade delete the associated user account
+    branch = models.OneToOneField(Branch, on_delete=models.CASCADE, blank=True, null=True)  # User's branch
     otp = models.CharField(max_length=255, blank=True, null=True)
     otp_expiry = models.DateTimeField(blank=True, null=True)
     failed_attempts = models.IntegerField(default=0)  # Track failed login attempts

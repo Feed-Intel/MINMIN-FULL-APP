@@ -23,6 +23,7 @@ import { ThemedView } from "@/components/ThemedView";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { i18n } from "@/app/_layout";
 import { useBottomTabOverflow } from "@/components/ui/TabBarBackground";
+import { normalizeImageUrl } from "@/utils/imageUrl";
 
 export default function CartScreen() {
   const headerAnimation = useRef(new Animated.Value(0)).current;
@@ -177,9 +178,7 @@ export default function CartScreen() {
                   <View key={dish.id} style={styles.card}>
                     <View style={styles.cardContent}>
                       <Image
-                        source={{
-                          uri: dish.image?.replace("http://", "https://"),
-                        }}
+                        source={{ uri: normalizeImageUrl(dish.image) }}
                         style={styles.cardImage}
                       />
                       <View style={styles.dishDetails}>

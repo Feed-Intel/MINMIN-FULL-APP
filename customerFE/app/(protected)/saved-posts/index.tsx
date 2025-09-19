@@ -34,6 +34,8 @@ import {
 } from "@/services/mutation/feedMutation";
 import { useAuth } from "@/context/auth";
 import { useGetUser } from "@/services/mutation/authMutation";
+import { normalizeImageUrl } from "@/utils/imageUrl";
+import { safeCount } from "@/utils/count";
 
 // Import SVG icons
 import LikeIcon from "@/assets/icons/like.svg";
@@ -87,6 +89,33 @@ const SavedPostsScreen = () => {
     </TouchableOpacity>
   );
 
+  const updateBookmarkCaches = (
+    postId: string,
+    updater: (post: any) => any
+  ) => {
+    queryClient.setQueryData(["bookMarkPosts"], (oldData: any) => {
+      if (!Array.isArray(oldData)) {
+        return oldData;
+      }
+      return oldData.map((post: any) =>
+        post.id === postId ? updater(post) : post
+      );
+    });
+
+    queryClient.setQueryData(["posts"], (oldData: any) => {
+      if (!Array.isArray(oldData)) {
+        return oldData;
+      }
+      return oldData.map((post: any) =>
+        post.id === postId ? updater(post) : post
+      );
+    });
+
+    setSelectedPost((prev) =>
+      prev?.id === postId ? updater(prev) : prev
+    );
+  };
+
   const handleRefresh = async () => {
     setRefreshing(true);
     try {
@@ -103,41 +132,23 @@ const SavedPostsScreen = () => {
   };
 
   const handleLike = async (postId: string) => {
-    queryClient.setQueryData(["bookmarks"], (oldData: any) => {
-      if (!oldData) return oldData;
-      return oldData.map((post: any) => {
-        if (post.id === postId) {
-          return {
-            ...post,
-            is_liked: !post.is_liked,
-            likes_count: post.is_liked
-              ? post.likes_count - 1
-              : post.likes_count + 1,
-          };
-        }
-        return post;
-      });
-    });
+    const toggleLike = (post: any) => {
+      const likeValue = Number(post.likes_count ?? 0);
+      return {
+        ...post,
+        is_liked: !post.is_liked,
+        likes_count: post.is_liked
+          ? Math.max(0, likeValue - 1)
+          : likeValue + 1,
+      };
+    };
+
+    updateBookmarkCaches(postId, toggleLike);
 
     try {
       await likePost(postId);
-      await refetch();
     } catch (error) {
-      queryClient.setQueryData(["bookmarks"], (oldData: any) => {
-        if (!oldData) return oldData;
-        return oldData.map((post: any) => {
-          if (post.id === postId) {
-            return {
-              ...post,
-              is_liked: !post.is_liked,
-              likes_count: post.is_liked
-                ? post.likes_count + 1
-                : post.likes_count - 1,
-            };
-          }
-          return post;
-        });
-      });
+      updateBookmarkCaches(postId, toggleLike);
       Toast.show({
         type: "error",
         text1: i18n.t("like_failed_toast_title"),
@@ -147,15 +158,39 @@ const SavedPostsScreen = () => {
   };
 
   const addCommentToPost = async (postId: string) => {
-    const commentText = newComment;
+    const commentText = newComment.trim();
+    if (!commentText) {
+      return;
+    }
+
+    const optimisticComment = {
+      id: `temp-${Date.now()}`,
+      text: commentText,
+      created_at: new Date().toISOString(),
+      user: {
+        full_name: userInfo?.full_name || user?.full_name || "",
+        image: user?.image,
+      },
+    };
+
+    const previousBookmarks = queryClient.getQueryData(["bookMarkPosts"]);
+    const previousPosts = queryClient.getQueryData(["posts"]);
+    const previousSelectedPost = selectedPost;
+
     setNewComment("");
+    updateBookmarkCaches(postId, (post: any) => ({
+      ...post,
+      comments: [...(post.comments || []), optimisticComment],
+    }));
+    requestAnimationFrame(() => {
+      commentsListRef.current?.scrollToEnd({ animated: true });
+    });
     try {
       await addComment({ post: postId, text: commentText });
-      queryClient.invalidateQueries({ queryKey: ["bookmarks"] });
-      setTimeout(() => {
-        commentsListRef.current?.scrollToEnd({ animated: true });
-      }, 100);
     } catch (error) {
+      queryClient.setQueryData(["bookMarkPosts"], previousBookmarks);
+      queryClient.setQueryData(["posts"], previousPosts);
+      setSelectedPost(previousSelectedPost);
       setNewComment(commentText);
       Toast.show({
         type: "error",
@@ -171,6 +206,63 @@ const SavedPostsScreen = () => {
     setNewComment("");
   };
 
+  const handleBookmarkToggle = async (post: any) => {
+    const wasBookmarked = post.is_bookmarked;
+    const postId = post.id;
+
+    const previousBookmarks = queryClient.getQueryData(["bookMarkPosts"]);
+    const previousPosts = queryClient.getQueryData(["posts"]);
+    const previousSelectedPost = selectedPost;
+
+    queryClient.setQueryData(["posts"], (oldData: any) => {
+      if (!Array.isArray(oldData)) {
+        return oldData;
+      }
+      return oldData.map((item: any) =>
+        item.id === postId
+          ? { ...item, is_bookmarked: !item.is_bookmarked }
+          : item
+      );
+    });
+
+    queryClient.setQueryData(["bookMarkPosts"], (oldData: any) => {
+      if (!Array.isArray(oldData)) {
+        return oldData;
+      }
+      if (wasBookmarked) {
+        return oldData.filter((item: any) => item.id !== postId);
+      }
+
+      const updatedPost = { ...post, is_bookmarked: true };
+      const exists = oldData.some((item: any) => item.id === postId);
+      if (exists) {
+        return oldData.map((item: any) =>
+          item.id === postId ? updatedPost : item
+        );
+      }
+      return [updatedPost, ...oldData];
+    });
+
+    setSelectedPost((prev) =>
+      prev?.id === postId
+        ? { ...prev, is_bookmarked: !prev.is_bookmarked }
+        : prev
+    );
+
+    try {
+      await bookmarkPost(postId);
+    } catch (error) {
+      queryClient.setQueryData(["bookMarkPosts"], previousBookmarks);
+      queryClient.setQueryData(["posts"], previousPosts);
+      setSelectedPost(previousSelectedPost);
+      Toast.show({
+        type: "error",
+        text1: i18n.t("bookmark_failed_toast_title"),
+        text2: i18n.t("could_not_bookmark_post_toast_message"),
+      });
+    }
+  };
+
   const closeComments = () => {
     Animated.timing(overlayY, {
       toValue: screenHeight,
@@ -180,10 +272,36 @@ const SavedPostsScreen = () => {
   };
 
   const handleShare = async (post: any) => {
+    let shareIncremented = false;
+    const increaseShareCount = () => {
+      updateBookmarkCaches(post.id, (item: any) => {
+        const shareValue = safeCount(item.shares_count);
+        return {
+          ...item,
+          shares_count: shareValue + 1,
+        };
+      });
+      shareIncremented = true;
+    };
+
+    const decreaseShareCount = () => {
+      if (!shareIncremented) {
+        return;
+      }
+      updateBookmarkCaches(post.id, (item: any) => {
+        const shareValue = safeCount(item.shares_count);
+        return {
+          ...item,
+          shares_count: Math.max(0, shareValue - 1),
+        };
+      });
+      shareIncremented = false;
+    };
+
     try {
       const webLink = `https://alphafeed.com/post/${post.id}`;
       const downloadLink = "https://alphafeed.com/download";
-      const imageUrl = post.image?.replace("http://", "https://") || webLink;
+      const imageUrl = normalizeImageUrl(post.image) || webLink;
 
       if (Platform.OS === "web") {
         const shareData = {
@@ -194,6 +312,8 @@ const SavedPostsScreen = () => {
 
         if (navigator.share) {
           await navigator.share(shareData);
+          increaseShareCount();
+          await sharePost(post.id);
         } else if (navigator.clipboard) {
           await navigator.clipboard.writeText(`${shareData.text}\n${webLink}`);
           Toast.show({
@@ -201,6 +321,8 @@ const SavedPostsScreen = () => {
             text1: i18n.t("link_copied_toast_title"),
             text2: i18n.t("post_link_copied_toast_message"),
           });
+          increaseShareCount();
+          await sharePost(post.id);
         }
       } else {
         const shareOptions = {
@@ -215,18 +337,19 @@ const SavedPostsScreen = () => {
           const { default: RNShare } = await import("react-native-share");
           const result = await RNShare.open(shareOptions);
           if (result) {
+            increaseShareCount();
             await sharePost(post.id);
           }
         } else {
           const { default: RNShare } = await import("react-native-share");
           await RNShare.open(shareOptions);
+          increaseShareCount();
           await sharePost(post.id);
         }
       }
-
-      queryClient.invalidateQueries({ queryKey: ["bookmarks"] });
     } catch (error: any) {
-      if (!error.message.includes("User did not share")) {
+      decreaseShareCount();
+      if (!error?.message?.includes("User did not share")) {
         Toast.show({
           type: "error",
           text1: i18n.t("share_failed_toast_title"),
@@ -284,7 +407,7 @@ const SavedPostsScreen = () => {
               subtitleStyle={styles.subtitle}
             />
             <Card.Cover
-              source={{ uri: item.image?.replace("http://", "https://") }}
+              source={{ uri: normalizeImageUrl(item.image) }}
               style={styles.postImage}
             />
             <Card.Content style={styles.content}>
@@ -296,7 +419,9 @@ const SavedPostsScreen = () => {
                     isActive={item.is_liked}
                     onPress={() => handleLike(item.id)}
                   />
-                  <Text style={styles.actionText}>{item.likes_count}</Text>
+                  <Text style={styles.actionText}>
+                    {safeCount(item.likes_count)}
+                  </Text>
                 </View>
 
                 <View style={styles.actionItem}>
@@ -304,7 +429,9 @@ const SavedPostsScreen = () => {
                     IconComponent={<CommentIcon width={22} height={22} />}
                     onPress={() => openCommentsModal(item)}
                   />
-                  <Text style={styles.actionText}>{item.comments.length}</Text>
+                  <Text style={styles.actionText}>
+                    {safeCount(item.comments?.length ?? 0)}
+                  </Text>
                 </View>
 
                 <View style={styles.actionItem}>
@@ -312,7 +439,9 @@ const SavedPostsScreen = () => {
                     IconComponent={<ShareIcon width={22} height={22} />}
                     onPress={() => handleShare(item)}
                   />
-                  <Text style={styles.actionText}>{item.shares_count}</Text>
+                  <Text style={styles.actionText}>
+                    {safeCount(item.shares_count)}
+                  </Text>
                 </View>
 
                 <View style={styles.spacer} />
@@ -325,10 +454,7 @@ const SavedPostsScreen = () => {
                     <BookmarkedIcon width={22} height={22} fill="#666" />
                   }
                   isActive={item.is_bookmarked}
-                  onPress={async () => {
-                    await bookmarkPost(item.id);
-                    queryClient.invalidateQueries({ queryKey: ["bookmarks"] });
-                  }}
+                  onPress={() => handleBookmarkToggle(item)}
                 />
               </View>
 
@@ -424,11 +550,11 @@ const SavedPostsScreen = () => {
                   <Avatar.Image
                     size={32}
                     source={{
-                      uri:
-                        item?.user?.image?.replace("http://", "https://") ||
-                        `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(
-                          item?.user.full_name
-                        )}`,
+                    uri:
+                      normalizeImageUrl(item?.user?.image) ||
+                      `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(
+                        item?.user.full_name
+                      )}`,
                     }}
                     style={styles.commentAvatar}
                   />
@@ -463,9 +589,9 @@ const SavedPostsScreen = () => {
                 <Avatar.Image
                   size={32}
                   source={{
-                    uri:
-                      user?.image?.replace("http://", "https://") ||
-                      `https://api.dicebear.com/7.x/initials/svg?seed=You`,
+                  uri:
+                    normalizeImageUrl(user?.image) ||
+                    `https://api.dicebear.com/7.x/initials/svg?seed=You`,
                   }}
                   style={styles.inputAvatar}
                 />
@@ -474,9 +600,7 @@ const SavedPostsScreen = () => {
                 mode="flat"
                 placeholder={i18n.t("add_comment_placeholder")}
                 value={newComment}
-                onChangeText={(text) =>
-                  setNewComment(text.replace(/\s+/g, " ").trim())
-                }
+                onChangeText={(text) => setNewComment(text)}
                 style={styles.commentInput}
                 dense
                 underlineColor="transparent"

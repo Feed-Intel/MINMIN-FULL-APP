@@ -1,4 +1,4 @@
-import { DefaultTheme, ThemeProvider } from "@react-navigation/native";
+import { ThemeProvider } from "@react-navigation/native";
 import { QueryClient } from "@tanstack/react-query";
 import ReduxStoreProvider from "@/lib/reduxStore/ReduxStoreProvider";
 import { useFonts } from "expo-font";
@@ -6,6 +6,8 @@ import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
+import { LogBox, useColorScheme } from "react-native";
+import PlusJakartaSans from "../assets/fonts/PlusJakartaSans.ttf";
 import "react-native-reanimated";
 import Toast from "react-native-toast-message";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -14,18 +16,28 @@ import { Provider as PaperProvider } from "react-native-paper";
 import Loader from "@/components/dashboard/Loader";
 import { createAsyncStoragePersister } from "@tanstack/query-async-storage-persister";
 import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
+import {
+  navigationDarkTheme,
+  navigationLightTheme,
+  paperDarkTheme,
+  paperLightTheme,
+} from "@/theme/minminTheme";
 
 const queryClient = new QueryClient();
 
 const asyncStoragePersister = createAsyncStoragePersister({
   storage: AsyncStorage,
 });
+
+LogBox.ignoreLogs([
+  "Warning: findDOMNode is deprecated",
+]);
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const [loaded] = useFonts({
-    SpaceMono: require("../assets/fonts/PlusJakartaSans.ttf"),
+    PlusJakartaSans,
   });
 
   async function checkAuth() {
@@ -46,24 +58,30 @@ export default function RootLayout() {
     return null;
   }
 
+  const scheme = useColorScheme();
+  const navigationTheme = scheme === "dark" ? navigationDarkTheme : navigationLightTheme;
+  const paperTheme = scheme === "dark" ? paperDarkTheme : paperLightTheme;
+
   return (
-    <ThemeProvider value={DefaultTheme}>
-      <PaperProvider>
+    <ThemeProvider value={navigationTheme}>
+      <PaperProvider theme={paperTheme}>
         <PersistQueryClientProvider
           client={queryClient}
           persistOptions={{ persister: asyncStoragePersister }}
         >
           <ReduxStoreProvider>
-            <Stack screenOptions={{ headerShown: false }}>
-              <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-              <Stack.Screen
-                name="(protected)"
-                options={{ headerShown: false }}
-              />
-            </Stack>
-            <StatusBar style="auto" />
-            <Toast />
-            <Loader />
+            <>
+              <Stack screenOptions={{ headerShown: false }}>
+                <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+                <Stack.Screen
+                  name="(protected)"
+                  options={{ headerShown: false }}
+                />
+              </Stack>
+              <StatusBar style="auto" />
+              <Toast />
+              <Loader />
+            </>
           </ReduxStoreProvider>
         </PersistQueryClientProvider>
       </PaperProvider>

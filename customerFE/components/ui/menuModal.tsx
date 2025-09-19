@@ -28,6 +28,7 @@ import {
   useGetRelatedMenus,
 } from "@/services/mutation/menuMutation";
 import { RootState } from "@/lib/reduxStore/store";
+import { normalizeImageUrl } from "@/utils/imageUrl";
 
 const MenuItemModal = ({
   menuId,
@@ -62,6 +63,13 @@ const MenuItemModal = ({
 
   const quantity =
     cartItems?.find((cartItem) => cartItem.id === menuId)?.quantity || 1;
+
+  const categoryList =
+    item?.categories && item.categories.length
+      ? item.categories
+      : item?.category
+      ? [item.category]
+      : [];
 
   // Handle cart errors
   useEffect(() => {
@@ -306,7 +314,7 @@ const MenuItemModal = ({
                   <View style={styles.modalHeader}>
                     <Image
                       source={{
-                        uri: item?.image?.replace("http://", "https://"),
+                        uri: normalizeImageUrl(item?.image),
                       }}
                       style={styles.modalImage}
                     />
@@ -341,7 +349,11 @@ const MenuItemModal = ({
 
                   <View style={styles.detailsContainer}>
                     <Text style={styles.sectionTitle}>Category</Text>
-                    <Text style={styles.categoryText}>{item?.category}</Text>
+                    <Text style={styles.categoryText}>
+                      {categoryList.length
+                        ? categoryList.join(", ")
+                        : "—"}
+                    </Text>
 
                     <Text style={styles.sectionTitle}>Tags</Text>
                     <View style={styles.chipContainer}>

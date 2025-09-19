@@ -108,6 +108,7 @@ const ForgotPasswordScreen = () => {
             keyboardType="email-address" // Changed keyboardType
             mode="outlined"
             style={styles.input}
+            placeholder={i18n.t("email_placeholder")}
             theme={{ colors: { primary: "#8BC34A", outline: "#ddd" } }} // Changed primary color to a greenish hue
             left={
               <TextInput.Icon

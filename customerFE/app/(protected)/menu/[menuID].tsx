@@ -16,6 +16,7 @@ import { Colors } from "@/constants/Colors";
 import { useSelector } from "react-redux";
 import { RootState } from "@/lib/reduxStore/store";
 import { i18n } from "@/app/_layout";
+import { normalizeImageUrl } from "@/utils/imageUrl";
 
 const MenuItemPage = () => {
   const { menuID } = useLocalSearchParams();
@@ -42,7 +43,7 @@ const MenuItemPage = () => {
       <ScrollView>
         <Card style={styles.card}>
           <Card.Cover
-            source={{ uri: item?.image.replace("http://", "https://") }}
+            source={{ uri: normalizeImageUrl(item?.image) }}
             style={styles.image}
           />
           <Card.Content>

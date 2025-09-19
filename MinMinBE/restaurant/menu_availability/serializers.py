@@ -20,15 +20,36 @@ class MenuAvailabilitySerializer(serializers.ModelSerializer):
         feedbacks = getattr(tenant, 'prefetched_feedbacks', [])
         if hasattr(obj, 'distance') and obj.distance is not None:
             distance_km = round(obj.distance.km, 2)
+        branch_location = obj.branch.location
+        location_payload = None
+        if branch_location:
+            # Ensure both coordinates are available before attempting to read
+            try:
+                location_payload = {
+                    'type': 'Point',
+                    'coordinates': [branch_location.x, branch_location.y],
+                }
+            except Exception:
+                location_payload = None
+
         return {
             'id': obj.branch.id,
             'address': obj.branch.address,
-            'tenant': {'id':obj.branch.tenant.id,'restaurant_name':obj.branch.tenant.restaurant_name,'CHAPA_API_KEY':obj.branch.tenant.CHAPA_API_KEY,'CHAPA_PUBLIC_KEY':obj.branch.tenant.CHAPA_PUBLIC_KEY,'tax':obj.branch.tenant.tax,'service_charge':obj.branch.tenant.service_charge,'average_rating':obj.branch.tenant.average_rating, 'image':self.get_tenant_image_url(obj.branch.tenant), 'profile': obj.branch.tenant.profile,'posts': PostSerializer(posts, many=True, context=self.context).data, 'feedbacks': FeedbackSerializer(feedbacks, many=True, context=self.context).data},
-            'distance_km': distance_km,
-            'location': {
-                'type': 'Point',
-                'coordinates': [obj.branch.location.x, obj.branch.location.y]
+            'tenant': {
+                'id': obj.branch.tenant.id,
+                'restaurant_name': obj.branch.tenant.restaurant_name,
+                'CHAPA_API_KEY': obj.branch.tenant.CHAPA_API_KEY,
+                'CHAPA_PUBLIC_KEY': obj.branch.tenant.CHAPA_PUBLIC_KEY,
+                'tax': obj.branch.tenant.tax,
+                'service_charge': obj.branch.tenant.service_charge,
+                'average_rating': obj.branch.tenant.average_rating,
+                'image': self.get_tenant_image_url(obj.branch.tenant),
+                'profile': obj.branch.tenant.profile,
+                'posts': PostSerializer(posts, many=True, context=self.context).data,
+                'feedbacks': FeedbackSerializer(feedbacks, many=True, context=self.context).data,
             },
+            'distance_km': distance_km,
+            'location': location_payload,
         }
     
     def get_menu_item(self, obj):
@@ -37,6 +58,7 @@ class MenuAvailabilitySerializer(serializers.ModelSerializer):
             'name': obj.menu_item.name,
             'description': obj.menu_item.description,
             'tags': obj.menu_item.tags,
+            'categories': obj.menu_item.categories,
             'category': obj.menu_item.category,
             'image': self.get_image_url(obj.menu_item),
             'price': obj.menu_item.price,
@@ -75,4 +97,3 @@ class MenuAvailabilitySerializer(serializers.ModelSerializer):
         menuAvailability.save()
         return menuAvailability
     
-

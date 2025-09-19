@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   ScrollView,
   StyleSheet,
@@ -40,6 +40,8 @@ import Download from "@/assets/icons/Download.svg";
 import { Branch } from "@/types/branchType";
 import { useGetBranches } from "@/services/mutation/branchMutation";
 import Toast from "react-native-toast-message";
+import { useRestaurantIdentity } from "@/hooks/useRestaurantIdentity";
+import BranchSelector from "@/components/BranchSelector";
 
 interface TableStates {
   [key: string]: {
@@ -112,19 +114,41 @@ const ManageTables: React.FC = () => {
   const [tableID, setTableID] = React.useState<string | null>(null);
   const [addTableModalVisible, setAddTableModalVisible] = useState(false);
   const { data: branches = [] } = useGetBranches();
-  const [tableStates, setTableStates] = useState<TableStates>(
-    tables.reduce((acc: TableStates, table: any) => {
-      acc[table.id] = {
-        isFast: table.is_fast_table,
-        isDelivery: table.is_delivery_table,
-        isInside: table.is_inside_table,
-        isActive: true,
-      };
-      return acc;
-    }, {} as TableStates)
+  const { isRestaurant, isBranch, branchId } = useRestaurantIdentity();
+  const [tableStates, setTableStates] = useState<TableStates>({});
+  const [selectedBranch, setSelectedBranch] = useState<string | null>(
+    isBranch ? branchId ?? null : null
   );
   const [table, setTable] = useState<{} | null>(null);
   const isSmallScreen: boolean = width < 768;
+
+  useEffect(() => {
+    if (!tables) return;
+    setTableStates((prevStates) => {
+      const nextStates: TableStates = { ...prevStates };
+      tables.forEach((tbl: any) => {
+        nextStates[tbl.id] =
+          nextStates[tbl.id] ?? {
+            isFast: tbl.is_fast_table,
+            isDelivery: tbl.is_delivery_table,
+            isInside: tbl.is_inside_table,
+            isActive: true,
+          };
+      });
+      return nextStates;
+    });
+  }, [tables]);
+
+  const displayedTables = useMemo(() => {
+    if (!tables) return [] as typeof tables;
+    if (!selectedBranch || selectedBranch === "all") return tables;
+
+    return tables.filter((tbl: any) => {
+      const branchValue =
+        typeof tbl.branch === "object" ? tbl.branch?.id : tbl.branch;
+      return branchValue === selectedBranch;
+    });
+  }, [tables, selectedBranch]);
 
   const handleDeleteTable = async (): Promise<void> => {
     setTableID(null);
@@ -207,6 +231,12 @@ const ManageTables: React.FC = () => {
                 Table
               </Text>
             </View>
+            <BranchSelector
+              selectedBranch={selectedBranch}
+              onChange={setSelectedBranch}
+              includeAllOption={isRestaurant}
+              style={styles.branchSelector}
+            />
 
             {/* Search Bar */}
             <View style={styles.searchBarContainer}>
@@ -255,7 +285,7 @@ const ManageTables: React.FC = () => {
                   ))}
                 </View>
 
-                {tables.map((table: any) => (
+                {displayedTables.map((table: any) => (
                   <View key={table.id} style={styles.row}>
                     {/* Branch */}
                     <Text
@@ -281,7 +311,9 @@ const ManageTables: React.FC = () => {
 
                     <Text style={[styles.cell, { flex: COLUMN_WIDTHS[2] }]}>
                       <YesNoDropdown
-                        value={tableStates[table.id]?.isFast}
+                        value={
+                          tableStates[table.id]?.isFast ?? table.is_fast_table
+                        }
                         onChange={(val: boolean) =>
                           handleToggleSwitch(table.id, "isFast", val)
                         }
@@ -291,7 +323,10 @@ const ManageTables: React.FC = () => {
                     {/* Delivery table */}
                     <Text style={[styles.cell, { flex: COLUMN_WIDTHS[3] }]}>
                       <YesNoDropdown
-                        value={tableStates[table.id]?.isDelivery}
+                        value={
+                          tableStates[table.id]?.isDelivery ??
+                          table.is_delivery_table
+                        }
                         onChange={(val: boolean) =>
                           handleToggleSwitch(table.id, "isDelivery", val)
                         }
@@ -301,7 +336,10 @@ const ManageTables: React.FC = () => {
                     {/* Inside table */}
                     <Text style={[styles.cell, { flex: COLUMN_WIDTHS[4] }]}>
                       <YesNoDropdown
-                        value={tableStates[table.id]?.isInside}
+                        value={
+                          tableStates[table.id]?.isInside ??
+                          table.is_inside_table
+                        }
                         onChange={(val: boolean) =>
                           handleToggleSwitch(table.id, "isInside", val)
                         }
@@ -325,7 +363,7 @@ const ManageTables: React.FC = () => {
                     <Text style={[styles.cell, { flex: COLUMN_WIDTHS[6] }]}>
                       <View style={styles.actionContainer}>
                         <Switch
-                          value={tableStates[table.id]?.isActive}
+                          value={tableStates[table.id]?.isActive ?? true}
                           onValueChange={(val) =>
                             handleToggleSwitch(table.id, "isActive", val)
                           }
@@ -335,7 +373,10 @@ const ManageTables: React.FC = () => {
                           onPress={() =>
                             setTable({
                               id: table.id,
-                              branch: (table.branch as Branch).id!,
+                              branch:
+                                typeof table.branch === "object"
+                                  ? (table.branch as Branch).id
+                                  : (table.branch as string),
                               is_fast_table: table.is_fast_table,
                               is_delivery_table: table.is_delivery_table,
                               is_inside_table: table.is_inside_table,
@@ -407,6 +448,12 @@ const ManageTables: React.FC = () => {
         branches={branches as Branch[]}
         visible={addTableModalVisible}
         onClose={() => setAddTableModalVisible(false)}
+        defaultBranchId={
+          selectedBranch && selectedBranch !== "all"
+            ? selectedBranch
+            : branchId ?? (branches as Branch[])[0]?.id
+        }
+        lockBranch={isBranch}
       />
       {table && (
         <EditTableModal
@@ -414,6 +461,7 @@ const ManageTables: React.FC = () => {
           table={table as any}
           visible={Boolean(table)}
           onClose={() => setTable(null)}
+          lockBranch={isBranch}
         />
       )}
     </View>
@@ -444,6 +492,9 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: 20,
+  },
+  branchSelector: {
+    marginBottom: 16,
   },
   title: {
     fontWeight: "600",
@@ -532,9 +583,17 @@ type AddTableModalProps = {
   branches: Branch[];
   visible: boolean;
   onClose: () => void;
+  defaultBranchId?: string | null;
+  lockBranch?: boolean;
 };
 
-function AddTableModal({ branches, visible, onClose }: AddTableModalProps) {
+function AddTableModal({
+  branches,
+  visible,
+  onClose,
+  defaultBranchId,
+  lockBranch = false,
+}: AddTableModalProps) {
   const [branch, setBranch] = useState<string>("");
   const [menuVisible, setMenuVisible] = useState(false);
   const [isFastTable, setIsFastTable] = useState(false);
@@ -544,61 +603,75 @@ function AddTableModal({ branches, visible, onClose }: AddTableModalProps) {
   const { mutateAsync: onAdd } = useCreateTable();
   const queryClient = useQueryClient();
 
+  useEffect(() => {
+    if (visible) {
+      const fallbackBranch = defaultBranchId ?? branches[0]?.id ?? "";
+      setBranch(fallbackBranch);
+      setIsFastTable(false);
+      setIsDeliveryTable(false);
+      setIsInsideTable(false);
+    }
+  }, [visible, defaultBranchId, branches]);
+
+  const branchLabel = branch
+    ? branches.find((b: any) => b.id === branch)?.address ?? "Branch"
+    : "Branch";
+
   return (
     <Portal>
       <Dialog visible={visible} onDismiss={onClose} style={stylesModal.dialog}>
         <Dialog.Content>
           <ScrollView>
-            {/* Branch Dropdown */}
             <View style={stylesModal.container}>
-              <Menu
-                visible={menuVisible}
-                onDismiss={() => setMenuVisible(false)}
-                anchor={
-                  <Button
-                    mode="outlined"
-                    style={stylesModal.dropdownBtn}
-                    labelStyle={{
-                      color: "#333",
-                      fontSize: 14,
-                      width: "100%",
-                      textAlign: "left",
-                    }}
-                    onPress={() => setMenuVisible(true)}
-                    contentStyle={{
-                      flexDirection: "row-reverse",
-                      width: "100%",
-                    }}
-                    icon={menuVisible ? "chevron-up" : "chevron-down"}
-                  >
-                    {branch
-                      ? branches.find((b: any) => b.id === branch)?.address
-                      : "Branch"}
-                  </Button>
-                }
-                contentStyle={[stylesModal.menuContainer, { width: "100%" }]} // custom menu style
-                style={{ alignSelf: "stretch" }} // Make it align with the anchor width
-                anchorPosition="bottom"
-              >
-                {branches.length > 0 ? (
-                  branches.map((b: any) => (
-                    <Menu.Item
-                      key={b.id}
-                      onPress={() => {
-                        setBranch(b.id);
-                        setMenuVisible(false);
+              {lockBranch ? (
+                <Text style={stylesModal.readonlyBranch}>{branchLabel}</Text>
+              ) : (
+                <Menu
+                  visible={menuVisible}
+                  onDismiss={() => setMenuVisible(false)}
+                  anchor={
+                    <Button
+                      mode="outlined"
+                      style={stylesModal.dropdownBtn}
+                      labelStyle={{
+                        color: "#333",
+                        fontSize: 14,
+                        width: "100%",
+                        textAlign: "left",
                       }}
-                      title={b.address}
-                      titleStyle={stylesModal.menuItem}
-                    />
-                  ))
-                ) : (
-                  <Menu.Item title="No branches available" disabled />
-                )}
-              </Menu>
+                      onPress={() => setMenuVisible(true)}
+                      contentStyle={{
+                        flexDirection: "row-reverse",
+                        width: "100%",
+                      }}
+                      icon={menuVisible ? "chevron-up" : "chevron-down"}
+                    >
+                      {branchLabel}
+                    </Button>
+                  }
+                  contentStyle={[stylesModal.menuContainer, { width: "100%" }]}
+                  style={{ alignSelf: "stretch" }}
+                  anchorPosition="bottom"
+                >
+                  {branches.length > 0 ? (
+                    branches.map((b: any) => (
+                      <Menu.Item
+                        key={b.id}
+                        onPress={() => {
+                          setBranch(b.id);
+                          setMenuVisible(false);
+                        }}
+                        title={b.address}
+                        titleStyle={stylesModal.menuItem}
+                      />
+                    ))
+                  ) : (
+                    <Menu.Item title="No branches available" disabled />
+                  )}
+                </Menu>
+              )}
             </View>
 
-            {/* Toggles */}
             <View style={stylesModal.toggleRow}>
               <Text style={stylesModal.toggleLabel}>Fast Table</Text>
               <Switch
@@ -634,23 +707,24 @@ function AddTableModal({ branches, visible, onClose }: AddTableModalProps) {
             style={styles.addButton}
             labelStyle={{ color: "#fff" }}
             onPress={async () => {
-              if (branch) {
-                await onAdd({
-                  branch,
-                  is_fast_table: isFastTable,
-                  is_delivery_table: isDeliveryTable,
-                  is_inside_table: isInsideTable,
-                });
-                queryClient.invalidateQueries({ queryKey: ["tables"] });
-                queryClient.invalidateQueries({ queryKey: ["qrCode"] });
-                onClose();
-              } else {
+              if (!branch) {
                 Toast.show({
                   type: "error",
                   text1: "Error",
                   text2: "Branch is required.",
                 });
+                return;
               }
+
+              await onAdd({
+                branch,
+                is_fast_table: isFastTable,
+                is_delivery_table: isDeliveryTable,
+                is_inside_table: isInsideTable,
+              });
+              queryClient.invalidateQueries({ queryKey: ["tables"] });
+              queryClient.invalidateQueries({ queryKey: ["qrCode"] });
+              onClose();
             }}
           >
             + Add Table
@@ -672,6 +746,7 @@ interface EditTableModalProps {
   };
   visible: boolean;
   onClose: () => void;
+  lockBranch?: boolean;
 }
 
 function EditTableModal({
@@ -679,6 +754,7 @@ function EditTableModal({
   table,
   visible,
   onClose,
+  lockBranch = false,
 }: EditTableModalProps) {
   const [branch, setBranch] = useState<string>(table.branch);
   const [menuVisible, setMenuVisible] = useState(false);
@@ -691,60 +767,65 @@ function EditTableModal({
   const { mutateAsync: onUpdate } = useUpdateTable();
   const queryClient = useQueryClient();
 
+  const branchLabel = branch
+    ? branches.find((b: any) => b.id === branch)?.address ?? "Branch"
+    : "Branch";
+
   return (
     <Portal>
       <Dialog visible={visible} onDismiss={onClose} style={stylesModal.dialog}>
         <Dialog.Content>
           <ScrollView>
             <View style={stylesModal.container}>
-              <Menu
-                visible={menuVisible}
-                onDismiss={() => setMenuVisible(false)}
-                anchor={
-                  <Button
-                    mode="outlined"
-                    style={stylesModal.dropdownBtn}
-                    labelStyle={{
-                      color: "#333",
-                      fontSize: 14,
-                      width: "100%",
-                      textAlign: "left",
-                    }}
-                    onPress={() => setMenuVisible(true)}
-                    contentStyle={{
-                      flexDirection: "row-reverse",
-                      width: "100%",
-                    }}
-                    icon={menuVisible ? "chevron-up" : "chevron-down"}
-                  >
-                    {branch
-                      ? branches.find((b: any) => b.id === branch)?.address
-                      : "Branch"}
-                  </Button>
-                }
-                contentStyle={[stylesModal.menuContainer, { width: "100%" }]} // custom menu style
-                style={{ alignSelf: "stretch" }} // Make it align with the anchor width
-                anchorPosition="bottom"
-              >
-                {branches.length > 0 ? (
-                  branches.map((b: any) => (
-                    <Menu.Item
-                      key={b.id}
-                      onPress={() => {
-                        setBranch(b.id);
-                        setMenuVisible(false);
+              {lockBranch ? (
+                <Text style={stylesModal.readonlyBranch}>{branchLabel}</Text>
+              ) : (
+                <Menu
+                  visible={menuVisible}
+                  onDismiss={() => setMenuVisible(false)}
+                  anchor={
+                    <Button
+                      mode="outlined"
+                      style={stylesModal.dropdownBtn}
+                      labelStyle={{
+                        color: "#333",
+                        fontSize: 14,
+                        width: "100%",
+                        textAlign: "left",
                       }}
-                      title={b.address}
-                      titleStyle={stylesModal.menuItem}
-                    />
-                  ))
-                ) : (
-                  <Menu.Item title="No branches available" disabled />
-                )}
-              </Menu>
+                      onPress={() => setMenuVisible(true)}
+                      contentStyle={{
+                        flexDirection: "row-reverse",
+                        width: "100%",
+                      }}
+                      icon={menuVisible ? "chevron-up" : "chevron-down"}
+                    >
+                      {branchLabel}
+                    </Button>
+                  }
+                  contentStyle={[stylesModal.menuContainer, { width: "100%" }]}
+                  style={{ alignSelf: "stretch" }}
+                  anchorPosition="bottom"
+                >
+                  {branches.length > 0 ? (
+                    branches.map((b: any) => (
+                      <Menu.Item
+                        key={b.id}
+                        onPress={() => {
+                          setBranch(b.id);
+                          setMenuVisible(false);
+                        }}
+                        title={b.address}
+                        titleStyle={stylesModal.menuItem}
+                      />
+                    ))
+                  ) : (
+                    <Menu.Item title="No branches available" disabled />
+                  )}
+                </Menu>
+              )}
             </View>
 
-            {/* Toggles */}
             <View style={stylesModal.toggleRow}>
               <Text style={stylesModal.toggleLabel}>Fast Table</Text>
               <Switch
@@ -821,6 +902,14 @@ const stylesModal = StyleSheet.create({
     borderColor: "#ccc",
     justifyContent: "space-between",
     width: "100%",
+  },
+  readonlyBranch: {
+    backgroundColor: "#f5f9f5",
+    borderRadius: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    color: "#333",
+    marginBottom: 16,
   },
   menuContainer: {
     backgroundColor: "#fff",

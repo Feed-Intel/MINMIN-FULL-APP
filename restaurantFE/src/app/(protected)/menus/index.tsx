@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useMemo } from "react";
 import {
   ScrollView,
   StyleSheet,
@@ -39,12 +39,14 @@ import { AppDispatch } from "@/lib/reduxStore/store";
 import { hideLoader, showLoader } from "@/lib/reduxStore/loaderSlice";
 import { useGetCombos } from "@/services/mutation/comboMutation";
 import { useGetBranches } from "@/services/mutation/branchMutation";
+import BranchSelector from "@/components/BranchSelector";
+import { useRestaurantIdentity } from "@/hooks/useRestaurantIdentity";
 import AddMenuModal from "./addMenu";
 import AddComboModal from "../combos/addCombo";
 import EditMenuDialog from "./[menuId]";
 import EditComboDialog from "../combos/[comboId]";
 
-const CATEGORIES = ["All", "Main course", "Pasta", "Dessert", "Drinks"];
+const DEFAULT_CATEGORIES = ["Main course", "Pasta", "Dessert", "Drinks"];
 const TAGS = ["Best Paired With", "Alternative", "Customer Favorite"];
 
 export default function Menus() {
@@ -55,13 +57,16 @@ export default function Menus() {
   const { mutateAsync: menuDelete } = useDeleteMenu();
   const { mutateAsync: updateAvailability } = useUpdateMenuAvailability();
   const { data: availabilityData } = useGetMenuAvailabilities();
+  const { isRestaurant, isBranch, branchId } = useRestaurantIdentity();
 
   const queryClient = useQueryClient();
   const [showDialog, setShowDialog] = React.useState(false);
   const [menuID, setMenuID] = React.useState<string | null>(null);
   const dispatch = useDispatch<AppDispatch>();
   const [activeTab, setActiveTab] = useState<"all" | "combos">("all");
-  const [selectedBranch, setSelectedBranch] = useState<string | null>(null);
+  const [selectedBranch, setSelectedBranch] = useState<string | null>(
+    isBranch ? branchId ?? null : null
+  );
   const [snackbarVisible, setSnackbarVisible] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
 
@@ -87,12 +92,30 @@ export default function Menus() {
   const [showEditComboDialog, setShowEditComboDialog] = useState(false);
   const [selectedItem, setSelectedItem] = useState<any>(null);
 
-  // Set default branch
-  useEffect(() => {
-    if (branches && branches.length > 0 && !selectedBranch) {
-      setSelectedBranch(branches?.[0].id!);
+  const getMenuCategories = (menu: any): string[] => {
+    if (Array.isArray(menu?.categories) && menu.categories.length) {
+      return menu.categories;
     }
-  }, [branches]);
+    if (Array.isArray(menu?.category) && menu.category.length) {
+      return menu.category.filter((value: any) => typeof value === 'string');
+    }
+    if (typeof menu?.category === 'string' && menu.category) {
+      return [menu.category];
+    }
+    return [];
+  };
+
+  const categoryOptions = useMemo(() => {
+    const set = new Set<string>(DEFAULT_CATEGORIES);
+    menus?.forEach((menuItem) => {
+      getMenuCategories(menuItem).forEach((category) => {
+        if (category) {
+          set.add(category);
+        }
+      });
+    });
+    return ['All', ...Array.from(set).sort((a, b) => a.localeCompare(b))];
+  }, [menus]);
 
   const handleDeleteMenu = async () => {
     setMenuID(null);
@@ -132,17 +155,53 @@ export default function Menus() {
     });
   };
 
+  const branchFilteredMenus = useMemo(() => {
+    if (!menus) return [] as typeof menus;
+    if (!selectedBranch || selectedBranch === "all") return menus;
+
+    if (!availabilityData?.results) return menus;
+
+    return menus.filter((menu) =>
+      availabilityData.results.some((avail) => {
+        const branchValue =
+          typeof avail.branch === "object" ? avail.branch?.id : avail.branch;
+        const menuValue =
+          typeof avail.menu_item === "object"
+            ? avail.menu_item?.id
+            : avail.menu_item;
+
+        return branchValue === selectedBranch && menuValue === menu.id;
+      })
+    );
+  }, [menus, selectedBranch, availabilityData]);
+
   // Filter menus for main table
-  const filteredMenus = menus?.filter(
-    (menu) =>
-      (mainSelectedCategory === "All" ||
-        menu.category === mainSelectedCategory) &&
+  const filteredMenus = branchFilteredMenus?.filter((menu) => {
+    const categories = getMenuCategories(menu);
+    const matchesCategory =
+      mainSelectedCategory === "All" || categories.includes(mainSelectedCategory);
+    const categoryText = categories.join(" ");
+
+    return (
+      matchesCategory &&
       (menu.name.toLowerCase().includes(mainSearchQuery.toLowerCase()) ||
-        menu.category.toLowerCase().includes(mainSearchQuery.toLowerCase()))
-  );
+        categoryText.toLowerCase().includes(mainSearchQuery.toLowerCase()))
+    );
+  });
+
+  const branchFilteredCombos = useMemo(() => {
+    if (!combos) return [] as typeof combos;
+    if (!selectedBranch || selectedBranch === "all") return combos;
+
+    return combos.filter((combo) => {
+      const branchValue =
+        typeof combo.branch === "object" ? combo.branch?.id : combo.branch;
+      return branchValue === selectedBranch;
+    });
+  }, [combos, selectedBranch]);
 
   // Filter combos for combos tab
-  const filteredCombos = combos?.filter(
+  const filteredCombos = branchFilteredCombos?.filter(
     (combo) =>
       combo.name.toLowerCase().includes(combosSearchQuery.toLowerCase()) ||
       (typeof combo.branch === "object"
@@ -153,18 +212,25 @@ export default function Menus() {
   );
 
   // Filter menus for modal
-  const modalFilteredMenus = menus?.filter(
-    (menu) =>
-      menu.id !== currentMenuItem?.id &&
-      (modalSelectedCategory === "All" ||
-        menu.category === modalSelectedCategory) &&
+  const modalFilteredMenus = branchFilteredMenus?.filter((menu) => {
+    if (menu.id === currentMenuItem?.id) {
+      return false;
+    }
+    const categories = getMenuCategories(menu);
+    const matchesCategory =
+      modalSelectedCategory === "All" || categories.includes(modalSelectedCategory);
+    const categoryText = categories.join(" ");
+
+    return (
+      matchesCategory &&
       (menu.name.toLowerCase().includes(modalSearchQuery.toLowerCase()) ||
-        menu.category.toLowerCase().includes(modalSearchQuery.toLowerCase()))
-  );
+        categoryText.toLowerCase().includes(modalSearchQuery.toLowerCase()))
+    );
+  });
 
   // Get availability status for a menu item
   const getAvailabilityStatus = (menuId: string) => {
-    if (!selectedBranch) return false;
+    if (!selectedBranch || selectedBranch === "all") return false;
 
     const availability = availabilityData?.results.find(
       (avail) =>
@@ -180,7 +246,7 @@ export default function Menus() {
 
   // Toggle menu availability
   const toggleAvailability = async (menuId: string, isAvailable: boolean) => {
-    if (!selectedBranch) return;
+    if (!selectedBranch || selectedBranch === "all") return;
 
     try {
       await updateAvailability({
@@ -209,6 +275,12 @@ export default function Menus() {
         <Text variant="headlineSmall" style={styles.title}>
           Menus
         </Text>
+        <BranchSelector
+          selectedBranch={selectedBranch}
+          onChange={setSelectedBranch}
+          includeAllOption={isRestaurant}
+          style={styles.branchSelector}
+        />
         <View style={styles.searchContainer}>
           <Searchbar
             placeholder={
@@ -247,7 +319,7 @@ export default function Menus() {
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.categoryContainer}
       >
-        {CATEGORIES.map((category) => (
+        {categoryOptions.map((category) => (
           <Chip
             key={category}
             mode="outlined"
@@ -344,7 +416,13 @@ export default function Menus() {
               </DataTable.Title>
             </DataTable.Header>
 
-            {filteredMenus?.map((menu) => (
+            {filteredMenus?.map((menu) => {
+              const categories = getMenuCategories(menu);
+              const categoriesLabel = categories.length
+                ? categories.join(", ")
+                : "—";
+
+              return (
               <DataTable.Row key={menu.id} style={styles.tableRow}>
                 <DataTable.Cell style={styles.imageCell}>
                   <Image
@@ -356,7 +434,7 @@ export default function Menus() {
                   <Text style={styles.menuName}>{menu.name}</Text>
                 </DataTable.Cell>
                 <DataTable.Cell>
-                  <Text style={styles.categoryTag}>{menu.category}</Text>
+                  <Text style={styles.categoryTag}>{categoriesLabel}</Text>
                 </DataTable.Cell>
                 <DataTable.Cell>
                   <Text style={styles.menuPrice}>${menu.price}</Text>
@@ -380,7 +458,7 @@ export default function Menus() {
                           toggleAvailability(menu.id!, value)
                         }
                         color="#91B275"
-                        disabled={!selectedBranch}
+                        disabled={!selectedBranch || selectedBranch === "all"}
                       />
                     </View>
                     <Button
@@ -408,7 +486,8 @@ export default function Menus() {
                   </View>
                 </DataTable.Cell>
               </DataTable.Row>
-            ))}
+            );
+            })}
           </DataTable>
         </View>
       )}
@@ -542,7 +621,7 @@ export default function Menus() {
               showsHorizontalScrollIndicator={false}
               style={styles.categoryContainer}
             >
-              {CATEGORIES.map((category) => (
+              {categoryOptions.map((category) => (
                 <Chip
                   key={category}
                   mode="outlined"
@@ -565,7 +644,13 @@ export default function Menus() {
             </ScrollView>
 
             <ScrollView style={styles.itemsContainer}>
-              {modalFilteredMenus?.map((menu) => (
+              {modalFilteredMenus?.map((menu) => {
+                const categories = getMenuCategories(menu);
+                const categoriesLabel = categories.length
+                  ? categories.join(", ")
+                  : "—";
+
+                return (
                 <View key={menu.id} style={styles.itemRow}>
                   <Checkbox.Android
                     status={
@@ -581,11 +666,12 @@ export default function Menus() {
                   />
                   <View style={styles.itemDetails}>
                     <Text style={styles.itemName}>{menu.name}</Text>
-                    <Text style={styles.categoryText}>{menu.category}</Text>
+                    <Text style={styles.categoryText}>{categoriesLabel}</Text>
                   </View>
                   <Text style={styles.itemPrice}>${menu.price}</Text>
                 </View>
-              ))}
+              );
+              })}
             </ScrollView>
           </View>
           <View style={styles.modalFooter}>
@@ -674,6 +760,9 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: "#22281B",
     marginBottom: 12,
+  },
+  branchSelector: {
+    marginBottom: 16,
   },
   branchContainer: {
     flexDirection: "row",

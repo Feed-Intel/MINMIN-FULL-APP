@@ -5,21 +5,32 @@ import { asyncHandler } from "@/util/asyncHandler";
 //   const resp = await apiClient.get("/tenant/dashboard");
 //   return resp.data;
 // });
-export const GetDashboardData = asyncHandler(async (params?: {
-  period?: 'today' | 'month' | 'year' | 'custom';
+type DashboardParams = {
+  period?: "today" | "month" | "year" | "custom";
   start_date?: string;
   end_date?: string;
-  // branch_id?: string;
-}) => {
-  const resp = await apiClient.get("/dashboard/stats/", { params });
+  branch_id?: string;
+};
+
+export const GetDashboardData = asyncHandler(async (params?: DashboardParams) => {
+  const query = { ...params } as DashboardParams;
+  if (!query.branch_id) delete query.branch_id;
+
+  const resp = await apiClient.get("/dashboard/stats/", { params: query });
   return resp.data;
 });
 
-export const GetTopMenuItems = asyncHandler(async (params?: {
+type TopMenuParams = {
   start_date?: string;
   end_date?: string;
-}) => {
-  const resp = await apiClient.get("/dashboard/top-items/", { params });
+  branch_id?: string;
+};
+
+export const GetTopMenuItems = asyncHandler(async (params?: TopMenuParams) => {
+  const query = { ...params } as TopMenuParams;
+  if (!query.branch_id) delete query.branch_id;
+
+  const resp = await apiClient.get("/dashboard/top-items/", { params: query });
   return resp.data;
 });
 export const GetTenantProfile = asyncHandler(async (id: string) => {

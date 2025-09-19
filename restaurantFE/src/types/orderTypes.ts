@@ -19,7 +19,13 @@ export interface Order {
   table: Table; // Table ID
   order_id: string;
   customer: string | Customer; // Customer/User ID
-  status: "placed" | "progress" | "delivered" | "cancelled";
+  status:
+    | "pending_payment"
+    | "placed"
+    | "progress"
+    | "payment_complete"
+    | "delivered"
+    | "cancelled";
   total_price: number;
   created_at: string;
   updated_at: string;

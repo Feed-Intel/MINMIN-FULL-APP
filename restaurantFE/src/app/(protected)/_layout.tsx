@@ -1,14 +1,7 @@
-import React, { useEffect, useState } from "react";
-import {
-  StyleSheet,
-  ScrollView,
-  View,
-  Text,
-  TouchableOpacity,
-  useWindowDimensions,
-} from "react-native";
-import { Slot, Stack } from "expo-router";
-import { Appbar, Surface, Avatar, IconButton } from "react-native-paper";
+import React, { useEffect } from "react";
+import { StyleSheet, View } from "react-native";
+import { Slot } from "expo-router";
+import { Surface } from "react-native-paper";
 import Sidebar from "@/components/dashboard/Sidebar";
 import { router } from "expo-router";
 import { jwtDecode, JwtPayload } from "jwt-decode";
@@ -18,16 +11,9 @@ import { useDispatch, useSelector } from "react-redux";
 import { setRestaurant } from "@/lib/reduxStore/authSlice";
 import Logo from "@/assets/icons/Logo.svg";
 
-const COLLAPSED_WIDTH = 60;
-const EXPANDED_WIDTH = 200;
-const MOBILE_THRESHOLD = 768; // Example breakpoint for mobile/tablet
-
 export default function ProtectedLayout() {
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const dispatch = useDispatch();
   const user = useSelector((state: any) => state.auth.restaurant);
-  const { width } = useWindowDimensions();
-  const isMobile = width < MOBILE_THRESHOLD;
 
   useWebSockets();
 
@@ -70,7 +56,6 @@ export default function ProtectedLayout() {
 
   return (
     <Surface style={styles.container}>
-      {/* Sidebar */}
       <View
         style={{
           paddingHorizontal: 30,
@@ -81,17 +66,10 @@ export default function ProtectedLayout() {
         <Logo height={60} color={"#91B275"} />
       </View>
       <View style={styles.horizontal}>
-        <Sidebar
-        // isCollapsed={isSidebarCollapsed}
-        // onCollapseToggle={toggleSidebar}
-        />
-
-        {/* Main Content */}
-        <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
-          <Stack screenOptions={{ headerShown: false }}>
-            <Slot />
-          </Stack>
-        </ScrollView>
+        <Sidebar />
+        <View style={styles.stackContainer}>
+          <Slot />
+        </View>
       </View>
     </Surface>
   );
@@ -110,25 +88,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     backgroundColor: "#EFF4EB",
   },
-  content: {
+  stackContainer: {
     flex: 1,
-    backgroundColor: "white",
-  },
-  rightActions: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  profileContainer: {
-    flexDirection: "column",
-    alignItems: "center",
-    marginLeft: 10,
-  },
-  avatar: {
-    marginRight: 5,
-  },
-  profileName: {
-    color: "white",
-    fontSize: 14,
-    fontWeight: "500",
+    backgroundColor: "#EFF4EB",
   },
 });

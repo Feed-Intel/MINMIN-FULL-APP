@@ -12,7 +12,8 @@ from rest_framework.pagination import PageNumberPagination
 from restaurant.table.models import Table
 from .serializers import QRCodeSerializer
 from .utils import generate_qr_code
-from accounts.permissions import HasCustomAPIKey, IsAdminOrRestaurant
+from accounts.permissions import HasCustomAPIKey, IsAdminRestaurantOrBranch
+from accounts.utils import get_user_branch, get_user_tenant
 from core.cache import CachedModelViewSet
 
 import os
@@ -26,7 +27,7 @@ class QRCodeViewSet(CachedModelViewSet):
     """
     queryset = QRCode.objects.all()
     serializer_class = QRCodeSerializer
-    permission_classes = [IsAuthenticated, HasCustomAPIKey, IsAdminOrRestaurant]
+    permission_classes = [IsAuthenticated, HasCustomAPIKey, IsAdminRestaurantOrBranch]
     pagination_class = QRCodeViewPagination
 
     # Add filter backends
@@ -37,7 +38,21 @@ class QRCodeViewSet(CachedModelViewSet):
     def get_queryset(self):
         # Get the currently authenticated user
         user = self.request.user
-        return QRCode.objects.filter(Q(branch__tenant__admin=user.id) | Q(branch=user.branch)).select_related('branch','table','tenant')
+
+        queryset = QRCode.objects.select_related('branch', 'table', 'tenant')
+
+        if user.user_type == 'admin':
+            return queryset
+
+        if user.user_type == 'restaurant':
+            tenant = get_user_tenant(user)
+            return queryset.filter(branch__tenant=tenant) if tenant else queryset.none()
+
+        if user.user_type == 'branch':
+            branch = get_user_branch(user)
+            return queryset.filter(branch=branch) if branch else queryset.none()
+
+        return queryset.none()
 
     def sanitize_filename(self, filename):
         """
@@ -90,4 +105,3 @@ class QRCodeViewSet(CachedModelViewSet):
 
         serializer = self.get_serializer(qr_code_instance)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
-

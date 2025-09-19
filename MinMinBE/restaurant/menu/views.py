@@ -10,6 +10,7 @@ from .models import Menu
 from .menuFilter import MenuFilter
 from .serializers import MenuSerializer
 from accounts.permissions import HasCustomAPIKey
+from accounts.utils import get_user_branch, get_user_tenant
 from core.cache import CachedModelViewSet
 
 class MenuViewPagination(PageNumberPagination):
@@ -27,14 +28,28 @@ class MenuView(CachedModelViewSet):
     def get_queryset(self):
     #     # Get the currently authenticated user
         user = self.request.user
-        user_branch_tenant = None
-        if user.branch:
-            user_branch_tenant = user.branch.tenant
+
         if user.user_type == 'customer':
-            queryset = Menu.objects.filter(menu_items_availabilities__is_available=True).select_related('tenant').distinct()
-        else:
-            queryset = Menu.objects.filter(Q(tenant__admin=user.id) | Q(tenant=user_branch_tenant)).select_related('tenant').distinct()
-        return queryset
+            return Menu.objects.filter(
+                menu_items_availabilities__is_available=True
+            ).select_related('tenant').distinct()
+
+        queryset = Menu.objects.select_related('tenant').distinct()
+
+        if user.user_type == 'admin':
+            return queryset
+
+        tenant = get_user_tenant(user)
+        if user.user_type == 'restaurant':
+            return queryset.filter(tenant=tenant) if tenant else queryset.none()
+
+        if user.user_type == 'branch':
+            branch = get_user_branch(user)
+            if tenant and branch:
+                return queryset.filter(tenant=tenant, menu_items_availabilities__branch=branch).distinct()
+            return queryset.none()
+
+        return queryset.none()
     
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()

@@ -3,6 +3,7 @@ import {
   Modal,
   ScrollView,
   StyleSheet,
+  TouchableOpacity,
   View,
   useWindowDimensions,
 } from "react-native";
@@ -12,10 +13,10 @@ import {
   DataTable,
   Card,
   TextInput,
-  Menu,
   Divider,
   ActivityIndicator,
   Snackbar,
+  TextInput as PaperTextInput,
 } from "react-native-paper";
 import { useGetMenus } from "@/services/mutation/menuMutation";
 import { MenuType } from "@/types/menuType";
@@ -24,6 +25,8 @@ import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
 import { useAppSelector } from "@/lib/reduxStore/hooks";
 import { useCreateOrder } from "@/services/mutation/orderMutation";
+import MenuItemSelectorModal from "@/components/MenuItemSelectorModal";
+import ModalHeader from "@/components/ModalHeader";
 
 interface OrderItem {
   id: string;
@@ -79,8 +82,9 @@ export const OrderModal: React.FC<OrderModalProps> = ({
   onOrderCreated,
 }) => {
   const { width } = useWindowDimensions();
-  const { data: menus, isLoading: menusLoading } = useGetMenus();
-  const [visibleMenuId, setVisibleMenuId] = useState<string | null>(null);
+  const { data: menus = [], isLoading: menusLoading } = useGetMenus();
+  const [selectorVisible, setSelectorVisible] = useState(false);
+  const [selectorRowId, setSelectorRowId] = useState<string | null>(null);
   const [snackbarVisible, setSnackbarVisible] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
   const { mutateAsync: createOrder } = useCreateOrder();
@@ -156,6 +160,9 @@ export const OrderModal: React.FC<OrderModalProps> = ({
       "items",
       orderItems.filter((item) => item.id !== itemId)
     );
+    if (selectorRowId === itemId) {
+      closeSelector();
+    }
   };
 
   const updateQuantity = (itemId: string, newQuantity: number) => {
@@ -199,6 +206,13 @@ export const OrderModal: React.FC<OrderModalProps> = ({
   const handleClose = () => {
     reset();
     onClose();
+    setSelectorVisible(false);
+    setSelectorRowId(null);
+  };
+
+  const closeSelector = () => {
+    setSelectorVisible(false);
+    setSelectorRowId(null);
   };
 
   if (menusLoading) return <ActivityIndicator animating={true} size="large" />;
@@ -207,12 +221,12 @@ export const OrderModal: React.FC<OrderModalProps> = ({
     <Modal
       visible={visible}
       onDismiss={handleClose}
-      transparent={true}  // Add this prop
-      animationType="slide" 
+      transparent
+      animationType="slide"
     >
       <View style={styles.modalOverlay}>
       <Card style={styles.modalCard}>
-        <Card.Title title="Create New Order" />
+        <Card.Title title={<ModalHeader title="Create New Order" onClose={handleClose} />} />
         <Card.Content>
           <ScrollView style={styles.scrollView}>
             {/* Customer Information */}
@@ -312,35 +326,29 @@ export const OrderModal: React.FC<OrderModalProps> = ({
                 {orderItems.map((item) => (
                   <DataTable.Row key={item.id} style={styles.dataTableRow}>
                     <DataTable.Cell>
-                      <Menu
-                        visible={visibleMenuId === item.id}
-                        onDismiss={() => setVisibleMenuId(null)}
-                        anchor={
-                          <Button
-                            onPress={() => setVisibleMenuId(item.id)}
-                            mode="contained"
-                            icon="menu-down"
-                            contentStyle={styles.menuButtonContent}
-                            style={styles.menuButton}
-                            labelStyle={styles.menuButtonLabel}
-                          >
-                            {item.menuItem?.name || "Select Item"}
-                          </Button>
-                        }
+                      <TouchableOpacity
+                        activeOpacity={0.85}
+                        onPress={() => {
+                          setSelectorRowId(item.id);
+                          setSelectorVisible(true);
+                        }}
                       >
-                        {menus?.map((menuItem) => (
-                          <Menu.Item
-                            key={menuItem.id}
-                            title={menuItem.name}
-                            titleStyle={styles.menuItemText}
-                            onPress={() => {
-                              handleItemSelect(item.id, menuItem);
-                              setVisibleMenuId(null);
-                            }}
-                            style={styles.menuItem}
-                          />
-                        ))}
-                      </Menu>
+                        <PaperTextInput
+                          mode="outlined"
+                          placeholder="Select item"
+                          value={item.menuItem?.name || ""}
+                          editable={false}
+                          right={<PaperTextInput.Icon icon="chevron-down" />}
+                          outlineStyle={styles.menuInputOutline}
+                          style={styles.menuInput}
+                          theme={{
+                            colors: {
+                              outline: "#5E6E4933",
+                              primary: "#91B275",
+                            },
+                          }}
+                        />
+                      </TouchableOpacity>
                     </DataTable.Cell>
                     <DataTable.Cell numeric style={styles.dataTableCell}>
                       <Text style={styles.priceText}>${item.price?.toFixed(2) || "0.00"}</Text>
@@ -394,7 +402,7 @@ export const OrderModal: React.FC<OrderModalProps> = ({
                     </DataTable.Cell>
                   </DataTable.Row>
                 ))}
-              </DataTable>
+      </DataTable>
             </ScrollView>
 
             {/* Order Summary */}
@@ -464,11 +472,42 @@ export const OrderModal: React.FC<OrderModalProps> = ({
         onDismiss={() => setSnackbarVisible(false)}
         duration={3000}
       >
-        {snackbarMessage}
+        <Text>{snackbarMessage}</Text>
       </Snackbar>
+      <MenuItemSelectorModal
+        title="Select menu item"
+        visible={selectorVisible}
+        menus={menus}
+        selectedIds={
+          selectorRowId
+            ? (
+                orderItems.find((row) => row.id === selectorRowId)?.menuItem
+                  ?.id
+              ? [
+                  orderItems.find((row) => row.id === selectorRowId)?.menuItem
+                    ?.id as string,
+                ]
+              : []
+            )
+            : []
+        }
+        onApply={(ids) => {
+          const selectedId = ids[0];
+          if (selectorRowId && selectedId) {
+            const menu = menus.find((m) => m.id === selectedId);
+            if (menu) {
+              handleItemSelect(selectorRowId, menu);
+            }
+          }
+        }}
+        onClose={closeSelector}
+        multiSelect={false}
+      />
     </Modal>
   );
 };
+
+export default OrderModal;
 
 const styles = StyleSheet.create({
   modalOverlay: {
@@ -552,26 +591,14 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingVertical: 12,
   },
-  menuButton: {
-    backgroundColor: '#91B27517',
-    borderRadius: 8,
-    paddingHorizontal: 12,
+  menuInput: {
+    backgroundColor: '#50693A17',
+    borderRadius: 12,
+    width: 220,
   },
-  menuButtonContent: {
-    flexDirection: "row-reverse",
-  },
-  menuButtonLabel: {
-    color: '#40392B',
-    fontWeight: "500",
-    marginHorizontal: 4,
-  },
-  menuItem: {
-    minWidth: 200,
-  },
-  menuItemText: {
-    fontSize: 17,
-    fontWeight: '400',
-    color: '#40392B',
+  menuInputOutline: {
+    borderRadius: 12,
+    borderColor: '#5E6E4933',
   },
   quantityInput: {
     width: 64,

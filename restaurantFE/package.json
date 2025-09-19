@@ -4,6 +4,7 @@
   "version": "1.0.0",
   "scripts": {
     "start": "expo start",
+    "dev": "expo start --web",
     "reset-project": "node ./scripts/reset-project.js",
     "android": "DARK_MODE=media expo start --android",
     "ios": "DARK_MODE=media expo start --ios",
@@ -17,6 +18,7 @@
   "dependencies": {
     "@expo/vector-icons": "^14.0.2",
     "@hookform/resolvers": "^5.0.1",
+    "@minmin/theme": "file:../packages/theme",
     "@react-native-async-storage/async-storage": "1.23.1",
     "@react-native-community/datetimepicker": "8.2.0",
     "@react-native-google-signin/google-signin": "^13.1.0",

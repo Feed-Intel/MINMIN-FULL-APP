@@ -12,6 +12,7 @@ import LikedIcon from "@/assets/icons/liked.svg";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { i18n } from "@/app/_layout";
+import { normalizeImageUrl } from "@/utils/imageUrl";
 
 export const RestaurantCards = ({ data, rounded }: any) => {
   return (
@@ -101,20 +102,20 @@ const RestaurantCard = ({ item, rounded, callBack }: any) => {
           <Image
             style={{ ...styles.mainImage, borderRadius: rounded ? 8 : 0 }}
             source={{
-              uri: item.sampleDishes[0]?.replace("http://", "https://"),
+              uri: normalizeImageUrl(item.sampleDishes[0]),
             }}
           />
           <View style={styles.sideImages}>
             <Image
               style={{ ...styles.sideImage, borderRadius: rounded ? 8 : 0 }}
               source={{
-                uri: item?.sampleDishes[1]?.replace("http://", "https://"),
+                uri: normalizeImageUrl(item?.sampleDishes[1]),
               }}
             />
             <Image
               style={{ ...styles.sideImage, borderRadius: rounded ? 8 : 0 }}
               source={{
-                uri: item?.sampleDishes[2]?.replace("http://", "https://"),
+                uri: normalizeImageUrl(item?.sampleDishes[2]),
               }}
             />
           </View>

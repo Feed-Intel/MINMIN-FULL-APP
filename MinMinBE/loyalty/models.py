@@ -22,7 +22,9 @@ class RestaurantLoyaltySettings(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return self.tenant.restaurant_name
+        # Tenant can be null for global/non-tenant transactions; avoid AttributeError in admin lists
+        tenant_name = self.tenant.restaurant_name if self.tenant else "Global"
+        return tenant_name
 
 class CustomerLoyalty(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -59,7 +61,8 @@ class LoyaltyTransaction(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return self.tenant.restaurant_name
+        tenant_name = self.tenant.restaurant_name if self.tenant else "Global"
+        return f"{tenant_name} - {self.customer.email}"
 
 class LoyaltyConversionRate(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)

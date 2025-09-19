@@ -15,6 +15,7 @@ import { router } from "expo-router";
 import { jwtDecode, JwtPayload } from "jwt-decode";
 import { Platform } from "react-native";
 import Toast from "react-native-toast-message";
+import { Login as ApiLogin } from "@/services/api/authApi";
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -430,43 +431,36 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     rememberMe?: boolean
   ) => {
     setIsLoading(true);
-    const formData = new FormData();
-    formData.append("email", email);
-    formData.append("password", password);
-    formData.append("remember_me", rememberMe?.toString() || "false");
-    if (isWeb) {
-      formData.append("platform", "web");
-    }
     try {
-      const tokenResponse = await fetch(`${BASE_URL}/api/auth/token_web`, {
-        method: "POST",
-        body: formData,
-        credentials: isWeb ? "include" : "same-origin", // Include cookies for web
-      });
+      // Call backend login endpoint via axios client with proper baseURL and headers
+      const data = await ApiLogin({
+        email: email.trim().toLowerCase(),
+        password,
+        remember_me: rememberMe ? "true" : "false",
+      } as any);
 
-      const tokens = await tokenResponse.json();
-      await handleNativeTokens(tokens);
+      // Backend returns access_token and refresh_token
+      const accessToken = data?.access_token;
+      const refreshToken = data?.refresh_token;
+      if (!accessToken || !refreshToken) {
+        throw new Error("Invalid response from server");
+      }
 
-      setIsLoading(false);
+      await handleNativeTokens({ accessToken, refreshToken });
       router.replace("/(protected)/feed");
-    } catch (e) {
-      //(e);
-      setIsLoading(false);
+    } catch (e: any) {
+      const message =
+        typeof e === "string"
+          ? e
+          : e?.response?.data?.error || e?.response?.data?.detail || e?.message;
       Toast.show({
         type: "error",
-        text1: "Error Handling Request",
-        text2: "An error occurred while handling the request",
+        text1: "Login Error",
+        text2: message || "Login failed. Please try again.",
       });
+    } finally {
+      setIsLoading(false);
     }
-
-    // if (tokenResponse.status === 401) {
-    //   Toast.show({
-    //     type: "info",
-    //     text1: "Invalid Credentials",
-    //     text2: "Please check your credentials and try again",
-    //   });
-    //   return null;
-    // }
   };
 
   const signInWithGoogle = async () => {

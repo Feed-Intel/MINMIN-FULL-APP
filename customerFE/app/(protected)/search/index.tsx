@@ -28,6 +28,7 @@ import { addToCart, updateQuantity } from "@/lib/reduxStore/cartSlice";
 import Toast from "react-native-toast-message";
 import { RootState } from "@/lib/reduxStore/store";
 import { i18n } from "@/app/_layout";
+import { normalizeImageUrl } from "@/utils/imageUrl";
 
 const { width } = Dimensions.get("window");
 
@@ -149,12 +150,14 @@ const RestaurantSearch: React.FC = () => {
       const restObj = restaurantsMap.get(tenantId);
       if (restObj && restObj.sampleDishes.length < 3 && menu_item.image) {
         restObj.sampleDishes.push(
-          menu_item.image.replace("http://", "https://")
+          normalizeImageUrl(menu_item.image) || menu_item.image
         );
       }
       const brObj = branchesMap.get(branchId);
       if (brObj && brObj.sampleDishes.length < 3 && menu_item.image) {
-        brObj.sampleDishes.push(menu_item.image.replace("http://", "https://"));
+        brObj.sampleDishes.push(
+          normalizeImageUrl(menu_item.image) || menu_item.image
+        );
       }
     }
 
@@ -274,7 +277,7 @@ const RestaurantSearch: React.FC = () => {
 
           <Image
             source={{
-              uri: item.menu_item.image?.replace("http://", "https://"),
+              uri: normalizeImageUrl(item.menu_item.image),
             }}
             style={styles.dishImage}
           />

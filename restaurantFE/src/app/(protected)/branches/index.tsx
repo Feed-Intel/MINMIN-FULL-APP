@@ -29,6 +29,7 @@ import { AppDispatch } from "@/lib/reduxStore/store";
 import { hideLoader, showLoader } from "@/lib/reduxStore/loaderSlice";
 import AddBranchDialog from "./addBranch";
 import EditBranchDialog from "./[branchId]";
+import { useRestaurantIdentity } from "@/hooks/useRestaurantIdentity";
 
 export default function Branches() {
   const { data: branches } = useGetBranches();
@@ -43,6 +44,7 @@ export default function Branches() {
   const [searchQuery, setSearchQuery] = React.useState("");
   const dispatch = useDispatch<AppDispatch>();
   const { width } = useWindowDimensions();
+  const { isBranch } = useRestaurantIdentity();
 
   const handleDeleteBranch = async () => {
     try {
@@ -104,14 +106,16 @@ export default function Branches() {
               value={searchQuery}
               onChangeText={setSearchQuery}
             />
-            <Button
-              mode="contained"
-              onPress={() => setShowAddDialog(true)}
-              style={styles.addButton}
-              textColor="#fff"
-            >
-              + Add branch
-            </Button>
+            {!isBranch && (
+              <Button
+                mode="contained"
+                onPress={() => setShowAddDialog(true)}
+                style={styles.addButton}
+                textColor="#fff"
+              >
+                + Add branch
+              </Button>
+            )}
           </View>
 
           <ScrollView style={styles.tableContainer}>
@@ -162,41 +166,45 @@ export default function Branches() {
                       <Text style={styles.tableTitle2}>Set on map</Text>
                     </DataTable.Cell>
                     <DataTable.Cell>
-                      <View style={styles.actionButtons}>
-                        <View style={styles.switchContainer}>
-                          <Switch
-                            value={branch.is_default}
-                            onValueChange={() => handleToggleDefault(branch)}
-                            color="#96B76E"
-                            trackColor={{ false: "#96B76E", true: "#96B76E" }}
-                            thumbColor={branch.is_default ? "#fff" : "#fff"}
+                      {!isBranch ? (
+                        <View style={styles.actionButtons}>
+                          <View style={styles.switchContainer}>
+                            <Switch
+                              value={branch.is_default}
+                              onValueChange={() => handleToggleDefault(branch)}
+                              color="#96B76E"
+                              trackColor={{ false: "#96B76E", true: "#96B76E" }}
+                              thumbColor={branch.is_default ? "#fff" : "#fff"}
+                            />
+                          </View>
+                          <Button
+                            icon="pencil"
+                            mode="text"
+                            textColor="#5A6E5A"
+                            onPress={() => {
+                              setSelectedBranch(branch);
+                              setShowEditDialog(true);
+                            }}
+                            contentStyle={styles.deleteButtonContent}
+                            labelStyle={styles.deleteButtonLabel}
+                            style={{ margin: 0, padding: 0 }}
+                          />
+                          <Button
+                            icon="delete"
+                            mode="text"
+                            textColor="#FF6B6B"
+                            onPress={() => {
+                              setBranchID(branch.id!);
+                              setShowDeleteDialog(true);
+                            }}
+                            contentStyle={styles.deleteButtonContent}
+                            labelStyle={styles.deleteButtonLabel}
+                            style={{ margin: 0, padding: 0 }}
                           />
                         </View>
-                        <Button
-                          icon="pencil"
-                          mode="text"
-                          textColor="#5A6E5A"
-                          onPress={() => {
-                            setSelectedBranch(branch);
-                            setShowEditDialog(true);
-                          }}
-                          contentStyle={styles.deleteButtonContent}
-                          labelStyle={styles.deleteButtonLabel}
-                          style={{ margin: 0, padding: 0 }}
-                        />
-                        <Button
-                          icon="delete"
-                          mode="text"
-                          textColor="#FF6B6B"
-                          onPress={() => {
-                            setBranchID(branch.id!);
-                            setShowDeleteDialog(true);
-                          }}
-                          contentStyle={styles.deleteButtonContent}
-                          labelStyle={styles.deleteButtonLabel}
-                          style={{ margin: 0, padding: 0 }}
-                        />
-                      </View>
+                      ) : (
+                        <Text style={styles.tableTitle2}>View only</Text>
+                      )}
                     </DataTable.Cell>
                   </DataTable.Row>
                 );

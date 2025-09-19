@@ -43,7 +43,8 @@ interface MenuItem {
   price: string;
   image: string;
   tags: string[];
-  category: string;
+  categories: string[];
+  category?: string;
   is_side: boolean;
 }
 
@@ -194,7 +195,14 @@ const BranchDetailsScreen = () => {
       price: item.menu_item.price.toString(),
       image: item.menu_item.image,
       tags: item.menu_item.tags,
-      category: item.menu_item.category,
+      categories:
+        Array.isArray(item.menu_item.categories) &&
+        item.menu_item.categories.length
+          ? item.menu_item.categories
+          : item.menu_item.category
+          ? [item.menu_item.category]
+          : [],
+      category: item.menu_item.category ?? undefined,
       is_side: item.menu_item.is_side,
     }));
   }, [menuAvailabilities]);
@@ -209,7 +217,21 @@ const BranchDetailsScreen = () => {
 
   // Get unique categories from menu items
   const categories = useMemo(() => {
-    const uniqueCategories = new Set(parsedMenus.map((menu) => menu.category));
+    const uniqueCategories = new Set<string>();
+    parsedMenus.forEach((menu) => {
+      const categoryList = menu.categories && menu.categories.length
+        ? menu.categories
+        : menu.category
+        ? [menu.category]
+        : [];
+
+      categoryList.forEach((category) => {
+        if (category) {
+          uniqueCategories.add(category);
+        }
+      });
+    });
+
     return [i18n.t("all_category_tab"), ...Array.from(uniqueCategories)];
   }, [parsedMenus]);
 
@@ -218,14 +240,22 @@ const BranchDetailsScreen = () => {
     const lowerSearchQuery = searchQuery.toLowerCase();
 
     return parsedMenus.filter((menu) => {
+      const categoryList = menu.categories && menu.categories.length
+        ? menu.categories
+        : menu.category
+        ? [menu.category]
+        : [];
+
       const matchesCategory =
         activeCategory === i18n.t("all_category_tab") ||
-        menu.category === activeCategory;
+        categoryList.includes(activeCategory);
       const matchesSearch =
         searchQuery === "" ||
         menu.name.toLowerCase().includes(lowerSearchQuery) ||
         menu.description.toLowerCase().includes(lowerSearchQuery) ||
-        menu.category.toLowerCase().includes(lowerSearchQuery);
+        categoryList.some((category) =>
+          category.toLowerCase().includes(lowerSearchQuery)
+        );
 
       return matchesCategory && matchesSearch;
     });
@@ -236,10 +266,17 @@ const BranchDetailsScreen = () => {
     const categoriesMap: { [key: string]: MenuItem[] } = {};
 
     filteredMenus.forEach((menu) => {
-      if (!categoriesMap[menu.category]) {
-        categoriesMap[menu.category] = [];
+      const categoryList = menu.categories && menu.categories.length
+        ? menu.categories
+        : menu.category
+        ? [menu.category]
+        : [];
+      const primaryCategory = categoryList[0] ?? "Others";
+
+      if (!categoriesMap[primaryCategory]) {
+        categoriesMap[primaryCategory] = [];
       }
-      categoriesMap[menu.category].push(menu);
+      categoriesMap[primaryCategory].push(menu);
     });
 
     return categoriesMap;

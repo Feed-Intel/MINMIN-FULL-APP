@@ -3,6 +3,7 @@ from rest_framework import viewsets
 from rest_framework.decorators import action
 from django.db.models import Q
 from accounts.permissions import HasCustomAPIKey
+from accounts.utils import get_user_branch, get_user_tenant
 from django.core.exceptions import ValidationError
 from rest_framework.response import Response
 from rest_framework import status
@@ -38,9 +39,6 @@ class OrderView(viewsets.ModelViewSet):
     def get_queryset(self):
         user = self.request.user
         user_location = redis_client.get(str(user.id))
-        user_branch_tenant = None
-        if user.branch:
-            user_branch_tenant = user.branch.tenant
         if user.user_type == 'customer':
             qs = Order.objects.filter(customer=user,status__in=['placed', 'progress', 'payment_complete', 'delivered', 'cancelled']).select_related(
                     'table', 'customer', 'branch', 'tenant'
@@ -54,9 +52,22 @@ class OrderView(viewsets.ModelViewSet):
                     qs =  qs.annotate(distance=Distance('branch__location', user_location))
             return qs
         
-        return Order.objects.filter(Q(branch__tenant=user_branch_tenant)|Q(branch=user.branch),status__in=['placed', 'progress', 'payment_complete', 'delivered', 'cancelled']).select_related(
-                    'table', 'customer', 'branch', 'tenant'
-            ).prefetch_related('items').order_by('-updated_at')
+        queryset = Order.objects.filter(
+            status__in=['placed', 'progress', 'payment_complete', 'delivered', 'cancelled']
+        ).select_related('table', 'customer', 'branch', 'tenant').prefetch_related('items').order_by('-updated_at')
+
+        if user.user_type == 'admin':
+            return queryset
+
+        if user.user_type == 'restaurant':
+            tenant = get_user_tenant(user)
+            return queryset.filter(branch__tenant=tenant) if tenant else queryset.none()
+
+        if user.user_type == 'branch':
+            branch = get_user_branch(user)
+            return queryset.filter(branch=branch) if branch else queryset.none()
+
+        return queryset.none()
 
 
 
@@ -119,8 +130,17 @@ class OrderView(viewsets.ModelViewSet):
 
     def retrieve(self, request, *args, **kwargs):
         order = self.get_object()
-        if request.user.user_type not in ['admin', 'restaurant'] and order.customer != request.user:
+        user = request.user
+
+        if user.user_type == 'customer' and order.customer != user:
             raise PermissionDenied("You are not allowed to perform this action.")
+
+        if user.user_type == 'branch':
+            branch = get_user_branch(user)
+            if not branch or order.branch_id != branch.id:
+                raise PermissionDenied("You are not allowed to perform this action.")
+
+        # Admins and restaurant owners are already constrained by queryset
         return super().retrieve(request, *args, **kwargs)
     
     @action(detail=False, methods=['post'], url_path='check-discount')

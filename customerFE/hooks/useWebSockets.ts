@@ -5,7 +5,11 @@ import { useAuth } from "@/context/auth";
 
 export const useWebSockets = () => {
   const { user } = useAuth();
-  const address = process.env.EXPO_PUBLIC_WS_URL;
+  // Failover WS scheme for localhost
+  const envAddress = process.env.EXPO_PUBLIC_WS_URL;
+  const address = envAddress
+    ? envAddress.replace(/^wss:\/\/(localhost|127\.0\.0\.1)/i, "ws://$1")
+    : undefined;
   const dispatch = useDispatch();
   const wsRef = useRef<WebSocket | null>(null);
 

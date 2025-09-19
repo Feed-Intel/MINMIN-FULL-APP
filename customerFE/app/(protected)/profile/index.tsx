@@ -25,6 +25,7 @@ import { useGetBookMarks } from "@/services/mutation/feedMutation";
 import { i18n } from "@/app/_layout";
 import { useDispatch } from "react-redux";
 import { setLanguage } from "@/lib/reduxStore/localeSlice";
+import { normalizeImageUrl } from "@/utils/imageUrl";
 
 const ProfileScreen = () => {
   const { width } = useWindowDimensions();
@@ -169,7 +170,10 @@ const ProfileScreen = () => {
   };
 
   const renderSavedPost = ({ item }: { item: any }) => (
-    <Image source={{ uri: item.image }} style={styles.savedPostImage} />
+                      <Image
+                        source={{ uri: normalizeImageUrl(item.image) }}
+                        style={styles.savedPostImage}
+                      />
   );
 
   return (
@@ -210,7 +214,7 @@ const ProfileScreen = () => {
                   localImage
                     ? { uri: localImage }
                     : user?.image
-                    ? { uri: user.image.replace("http://", "https://") }
+                    ? { uri: normalizeImageUrl(user.image) }
                     : require("@/assets/images/avatar.jpg")
                 }
                 style={styles.profileImage}

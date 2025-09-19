@@ -22,6 +22,14 @@ class IsAdminOrCustomer(BasePermission):
         return request.user.is_authenticated and (request.user.user_type == 'admin' or request.user.user_type == 'customer')
 
 
+class IsAdminRestaurantOrBranch(BasePermission):
+    def has_permission(self, request, view):
+        return (
+            request.user.is_authenticated
+            and request.user.user_type in {'admin', 'restaurant', 'branch'}
+        )
+
+
 class HasCustomAPIKey(BasePermission):
     """
     Custom permission class that checks for an API key in the X-API-KEY header.
@@ -45,5 +53,4 @@ class HasCustomAPIKey(BasePermission):
             return False
 
         # Validate the key and check if it's not revoked
-        return api_key_obj.is_valid(key) and not api_key_obj.revoked
-
+        return api_key_obj.is_valid(api_key) and not api_key_obj.revoked

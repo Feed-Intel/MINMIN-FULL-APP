@@ -7,6 +7,7 @@ from .models import RelatedMenuItem
 from .serializers import RelatedMenuItemSerializer
 from .relatedMenuItemFilter import RelatedMenuItemFilter
 from core.cache import CachedModelViewSet
+from accounts.utils import get_user_branch, get_user_tenant
 
 class RelatedMenuItemPagination(PageNumberPagination):
     page_size = 10
@@ -22,12 +23,19 @@ class RelatedMenuItemView(CachedModelViewSet):
     def get_queryset(self):
         # Get the currently authenticated user
         user = self.request.user
-        user_branch_tenant = None
-        if user.branch:
-            user_branch_tenant = user.branch.tenant
         if user.user_type == 'customer':
-            queryset = RelatedMenuItem.objects.select_related('related_item','menu_item').all()
-        else:
-            queryset = RelatedMenuItem.objects.filter(Q(tenant__admin=user.id) | Q(tenant=user_branch_tenant)).select_related('related_item', 'menu_item')
-        return queryset
+            return RelatedMenuItem.objects.select_related('related_item', 'menu_item')
 
+        if user.user_type == 'admin':
+            return RelatedMenuItem.objects.select_related('related_item', 'menu_item')
+
+        tenant = get_user_tenant(user)
+        if tenant is None:
+            return RelatedMenuItem.objects.none()
+
+        queryset = RelatedMenuItem.objects.filter(tenant=tenant).select_related('related_item', 'menu_item')
+
+        if user.user_type == 'branch' and get_user_branch(user) is None:
+            return RelatedMenuItem.objects.none()
+
+        return queryset

@@ -57,6 +57,31 @@ DJANGO_ALLOWED_CORS_ORIGINS=https://<frontend.domain>
 - Customer web (Expo): http://localhost:19006
 - If you run via compose services added in `docker-compose.yml`, the API URLs are prewired to `http://localhost:8000`.
 
+### Seed sample data
+- Bring the stack up first (db + redis + api running).
+- Seed everything (restaurants + customers):
+  ```bash
+  make db:seed
+  # or
+  docker compose exec api python manage.py seed_full
+  ```
+- Seed only restaurants (heavier; downloads images, needs network):
+  ```bash
+  make db:seed:restaurants
+  # or
+  docker compose exec api python manage.py seed_full --no-customers
+  ```
+- Seed only customers:
+  ```bash
+  make db:seed:customers
+  # or
+  docker compose exec api python manage.py seed_full --no-restaurants
+  ```
+- Notes:
+  - The seeding command temporarily disables outbound emails and websocket broadcasting.
+  - Restaurant seeding generates and downloads images; this can take time and memory.
+  - Seeding is idempotent-ish: it adds data without deleting existing records.
+
 ---
 
 ## Single‑EC2 Staging Deployment (CI/CD)

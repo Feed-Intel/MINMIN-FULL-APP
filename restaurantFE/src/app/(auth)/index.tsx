@@ -34,12 +34,23 @@ const LoginScreen = () => {
       branch?: string;
     }>(data.access_token);
     console.log(decoded);
-    if (!Boolean(decoded?.branch)) {
+    const isBranchUser = decoded.user_type === "branch";
+
+    if (isBranchUser && !decoded?.branch) {
       Toast.show({
         type: "error",
         text1: "Error",
         text2:
-          "Please Contact Administrator to assign a branch to your account.",
+          "Please contact your administrator to assign a branch to your account.",
+      });
+      return;
+    }
+
+    if (decoded.user_type === "restaurant" && !decoded?.tenant) {
+      Toast.show({
+        type: "error",
+        text1: "Error",
+        text2: "Your restaurant profile is not linked. Please contact support.",
       });
       return;
     }

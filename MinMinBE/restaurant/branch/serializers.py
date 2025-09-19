@@ -50,6 +50,7 @@ class BranchSerializer(serializers.ModelSerializer):
                         "name": menu_avl.menu_item.name,
                         "description": menu_avl.menu_item.description,
                         "tags": menu_avl.menu_item.tags,
+                        "categories": menu_avl.menu_item.categories,
                         "category": menu_avl.menu_item.category,
                         "image": self.get_image_url(menu_avl.menu_item),
                         "price": menu_avl.menu_item.price,
@@ -88,7 +89,7 @@ class BranchSerializer(serializers.ModelSerializer):
         representation['tenant'] = self.get_tenant(instance)
         
         # Convert PointField to lat/lng in output
-        representation['branch_menu_availabilities'] = self.get_branch_menu_availabilities(instance)
+        representation['branch_menu_availabilities'] = list(self.get_branch_menu_availabilities(instance))
         if instance.location:
             representation['location'] = {
                 'lat': str(instance.location.y) if instance.location.y is not None else "",

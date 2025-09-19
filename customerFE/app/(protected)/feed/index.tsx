@@ -33,6 +33,8 @@ import {
   useSharePost,
 } from "@/services/mutation/feedMutation";
 import { friendlyTime } from "@/utils/friendlyTimeUtil";
+import { safeCount } from "@/utils/count";
+import { normalizeImageUrl } from "@/utils/imageUrl";
 import { useQueryClient } from "@tanstack/react-query";
 import { useGetNotifications } from "@/services/mutation/notificationMutation";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
@@ -94,6 +96,33 @@ const FoodFeedScreen = () => {
   const { data: user, isLoading: isUserLoading } = useGetUser(
     userInfo?.id || userInfo?.user_id
   );
+
+  const updateCachedPost = (
+    postId: string,
+    updater: (post: any) => any
+  ) => {
+    queryClient.setQueryData(["posts"], (oldData: any) => {
+      if (!Array.isArray(oldData)) {
+        return oldData;
+      }
+      return oldData.map((post: any) =>
+        post.id === postId ? updater(post) : post
+      );
+    });
+
+    queryClient.setQueryData(["bookMarkPosts"], (oldData: any) => {
+      if (!Array.isArray(oldData)) {
+        return oldData;
+      }
+      return oldData.map((post: any) =>
+        post.id === postId ? updater(post) : post
+      );
+    });
+
+    setSelectedPost((prev) =>
+      prev?.id === postId ? updater(prev) : prev
+    );
+  };
 
   const CustomIconButton = ({
     IconComponent,
@@ -173,42 +202,24 @@ const FoodFeedScreen = () => {
   };
 
   const handleLike = async (postId: string) => {
-    // Optimistic update for immediate UI feedback
-    queryClient.setQueryData(["posts"], (oldData: any) => {
-      return oldData.map((post: any) => {
-        if (post.id === postId) {
-          return {
-            ...post,
-            is_liked: !post.is_liked,
-            likes_count: post.is_liked
-              ? post.likes_count - 1
-              : post.likes_count + 1,
-          };
-        }
-        return post;
-      });
-    });
+    const toggleLike = (post: any) => {
+      const likeValue = Number(post.likes_count ?? 0);
+      return {
+        ...post,
+        is_liked: !post.is_liked,
+        likes_count: post.is_liked
+          ? Math.max(0, likeValue - 1)
+          : likeValue + 1,
+      };
+    };
+
+    updateCachedPost(postId, toggleLike);
 
     try {
       await likePost(postId);
-      // Refetch to ensure data consistency
-      await refetchPosts();
+      void refetchPosts();
     } catch (error) {
-      // Revert on error
-      queryClient.setQueryData(["posts"], (oldData: any) => {
-        return oldData.map((post: any) => {
-          if (post.id === postId) {
-            return {
-              ...post,
-              is_liked: !post.is_liked,
-              likes_count: post.is_liked
-                ? post.likes_count + 1
-                : post.likes_count - 1,
-            };
-          }
-          return post;
-        });
-      });
+      updateCachedPost(postId, toggleLike);
       Toast.show({
         type: "error",
         text1: i18n.t("like_failed_toast_title"),
@@ -218,16 +229,42 @@ const FoodFeedScreen = () => {
   };
 
   const addCommentToPost = async (postId: string) => {
-    const commentText = newComment;
+    const commentText = newComment.trim();
+    if (!commentText) {
+      return;
+    }
+
+    const optimisticComment = {
+      id: `temp-${Date.now()}`,
+      text: commentText,
+      created_at: new Date().toISOString(),
+      user: {
+        full_name: userInfo?.full_name || user?.full_name || "",
+        image: user?.image,
+      },
+    };
+
+    const previousPosts = queryClient.getQueryData(["posts"]);
+    const previousBookmarks = queryClient.getQueryData(["bookMarkPosts"]);
+    const previousSelectedPost = selectedPost;
+
     setNewComment("");
+    updateCachedPost(postId, (post: any) => ({
+      ...post,
+      comments: [...(post.comments || []), optimisticComment],
+    }));
+    requestAnimationFrame(() => {
+      commentsListRef.current?.scrollToEnd({ animated: true });
+    });
+
     try {
       await addComment({ post: postId, text: commentText });
       queryClient.invalidateQueries({ queryKey: ["posts"] });
-      // Scroll to bottom after adding comment
-      setTimeout(() => {
-        commentsListRef.current?.scrollToEnd({ animated: true });
-      }, 100);
+      queryClient.invalidateQueries({ queryKey: ["bookMarkPosts"] });
     } catch (error) {
+      queryClient.setQueryData(["posts"], previousPosts);
+      queryClient.setQueryData(["bookMarkPosts"], previousBookmarks);
+      setSelectedPost(previousSelectedPost);
       setNewComment(commentText);
       Toast.show({
         type: "error",
@@ -238,11 +275,37 @@ const FoodFeedScreen = () => {
   };
 
   const handleShare = async (post: any) => {
+    let shareIncremented = false;
+    const increaseShareCount = () => {
+      updateCachedPost(post.id, (item: any) => {
+        const shareValue = safeCount(item.shares_count);
+        return {
+          ...item,
+          shares_count: shareValue + 1,
+        };
+      });
+      shareIncremented = true;
+    };
+
+    const decreaseShareCount = () => {
+      if (!shareIncremented) {
+        return;
+      }
+      updateCachedPost(post.id, (item: any) => {
+        const shareValue = safeCount(item.shares_count);
+        return {
+          ...item,
+          shares_count: Math.max(0, shareValue - 1),
+        };
+      });
+      shareIncremented = false;
+    };
+
     try {
       const deepLink = `myapp://feed/${post.id}`;
       const webLink = `https://alphafeed.com/post/${post.id}`;
       const downloadLink = "https://alphafeed.com/download";
-      const imageUrl = post.image?.replace("http://", "https://") || webLink;
+      const imageUrl = normalizeImageUrl(post.image) || webLink;
 
       if (Platform.OS === "web") {
         // Web sharing logic
@@ -254,6 +317,7 @@ const FoodFeedScreen = () => {
 
         if (navigator.share) {
           await navigator.share(shareData);
+          increaseShareCount();
           await sharePost(post.id);
         } else if (navigator.clipboard) {
           await navigator.clipboard.writeText(`${shareData.text}\n${webLink}`);
@@ -262,6 +326,7 @@ const FoodFeedScreen = () => {
             text1: i18n.t("link_copied_toast_title"),
             text2: i18n.t("post_link_copied_toast_message"),
           });
+          increaseShareCount();
           await sharePost(post.id);
         }
       } else {
@@ -282,25 +347,27 @@ const FoodFeedScreen = () => {
               const { default: RNShare } = await import("react-native-share");
               const result = await RNShare.open(shareOptions);
               if (result) {
+                increaseShareCount();
                 await sharePost(post.id);
               }
             }
           } catch (error) {
             // Fallback to web browser on iOS if native share fails
             await WebBrowser.openBrowserAsync(webLink);
+            increaseShareCount();
             await sharePost(post.id);
           }
         } else {
           // Android share
           const { default: RNShare } = await import("react-native-share");
           await RNShare.open(shareOptions);
+          increaseShareCount();
           await sharePost(post.id);
         }
       }
-
-      queryClient.invalidateQueries({ queryKey: ["posts"] });
     } catch (error: any) {
-      if (!error.message.includes("User did not share")) {
+      decreaseShareCount();
+      if (!error?.message?.includes("User did not share")) {
         console.error(i18n.t("share_error_console_message"), error);
         Toast.show({
           type: "error",
@@ -315,6 +382,62 @@ const FoodFeedScreen = () => {
     setSelectedPost(post);
     setIsCommentsVisible(true);
     setNewComment(""); // Reset comment input when opening
+  };
+
+  const handleBookmarkToggle = async (post: any) => {
+    const wasBookmarked = post.is_bookmarked;
+    const postId = post.id;
+    const previousPosts = queryClient.getQueryData(["posts"]);
+    const previousBookmarks = queryClient.getQueryData(["bookMarkPosts"]);
+    const previousSelectedPost = selectedPost;
+
+    queryClient.setQueryData(["posts"], (oldData: any) => {
+      if (!Array.isArray(oldData)) {
+        return oldData;
+      }
+      return oldData.map((item: any) =>
+        item.id === postId
+          ? { ...item, is_bookmarked: !item.is_bookmarked }
+          : item
+      );
+    });
+
+    queryClient.setQueryData(["bookMarkPosts"], (oldData: any) => {
+      if (!Array.isArray(oldData)) {
+        return oldData;
+      }
+      if (wasBookmarked) {
+        return oldData.filter((item: any) => item.id !== postId);
+      }
+
+      const updatedPost = { ...post, is_bookmarked: true };
+      const exists = oldData.some((item: any) => item.id === postId);
+      if (exists) {
+        return oldData.map((item: any) =>
+          item.id === postId ? updatedPost : item
+        );
+      }
+      return [updatedPost, ...oldData];
+    });
+
+    setSelectedPost((prev) =>
+      prev?.id === postId
+        ? { ...prev, is_bookmarked: !prev.is_bookmarked }
+        : prev
+    );
+
+    try {
+      await bookmarkPost(postId);
+    } catch (error) {
+      queryClient.setQueryData(["posts"], previousPosts);
+      queryClient.setQueryData(["bookMarkPosts"], previousBookmarks);
+      setSelectedPost(previousSelectedPost);
+      Toast.show({
+        type: "error",
+        text1: i18n.t("bookmark_failed_toast_title"),
+        text2: i18n.t("could_not_bookmark_post_toast_message"),
+      });
+    }
   };
 
   const closeComments = () => {
@@ -349,7 +472,7 @@ const FoodFeedScreen = () => {
                 ) : user?.image ? (
                   <Avatar.Image
                     size={32}
-                    source={{ uri: user.image?.replace("http://", "https://") }}
+                    source={{ uri: normalizeImageUrl(user.image) }}
                   />
                 ) : (
                   <Avatar.Image size={32} source={AvatarImage} />
@@ -434,7 +557,7 @@ const FoodFeedScreen = () => {
                   />
 
                   <Card.Cover
-                    source={{ uri: item.image?.replace("http://", "https://") }}
+                    source={{ uri: normalizeImageUrl(item.image) }}
                     style={styles.postImage}
                     theme={{ roundness: 0 }}
                   />
@@ -450,7 +573,7 @@ const FoodFeedScreen = () => {
                           onPress={() => handleLike(item.id)}
                         />
                         <Text style={styles.actionText}>
-                          {item.likes_count}
+                          {safeCount(item.likes_count)}
                         </Text>
                       </View>
 
@@ -461,7 +584,7 @@ const FoodFeedScreen = () => {
                           onPress={() => openCommentsModal(item)}
                         />
                         <Text style={styles.actionText}>
-                          {item.comments.length}
+                          {safeCount(item.comments?.length ?? 0)}
                         </Text>
                       </View>
 
@@ -472,7 +595,7 @@ const FoodFeedScreen = () => {
                           onPress={() => handleShare(item)}
                         />
                         <Text style={styles.actionText}>
-                          {item.shares_count}
+                          {safeCount(item.shares_count)}
                         </Text>
                       </View>
 
@@ -484,18 +607,12 @@ const FoodFeedScreen = () => {
                           <BookmarkIcon width={22} height={22} fill="#666" />
                         }
                         activeIcon={
-                          <BookmarkedIcon width={22} height={22} fill="#666" />
-                        }
-                        isActive={item.is_bookmarked}
-                        onPress={async () => {
-                          await bookmarkPost(item.id);
-                          queryClient.invalidateQueries({
-                            queryKey: ["posts"],
-                          });
-                          refetch();
-                        }}
-                      />
-                    </View>
+                      <BookmarkedIcon width={22} height={22} fill="#666" />
+                    }
+                    isActive={item.is_bookmarked}
+                    onPress={() => handleBookmarkToggle(item)}
+                  />
+                </View>
 
                     <View style={styles.captionContainer}>
                       <Text style={styles.caption} numberOfLines={1}>
@@ -587,7 +704,7 @@ const FoodFeedScreen = () => {
                       size={32}
                       source={{
                         uri:
-                          item?.user?.image?.replace("http://", "https://") ||
+                          normalizeImageUrl(item?.user?.image) ||
                           `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(
                             item?.user.full_name
                           )}`,
@@ -624,7 +741,7 @@ const FoodFeedScreen = () => {
                   size={32}
                   source={{
                     uri:
-                      user?.image?.replace("http://", "https://") ||
+                      normalizeImageUrl(user?.image) ||
                       `https://api.dicebear.com/7.x/initials/svg?seed=You`,
                   }}
                   style={styles.inputAvatar}
@@ -633,9 +750,7 @@ const FoodFeedScreen = () => {
                   mode="flat"
                   placeholder={i18n.t("add_comment_placeholder")}
                   value={newComment}
-                  onChangeText={(text) =>
-                    setNewComment(text.replace(/\s+/g, " ").trim())
-                  }
+                  onChangeText={(text) => setNewComment(text)}
                   style={styles.commentInput}
                   dense
                   underlineColor="transparent"

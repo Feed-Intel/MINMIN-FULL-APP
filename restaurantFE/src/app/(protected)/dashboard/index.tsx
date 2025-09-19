@@ -1,42 +1,211 @@
 // src/components/Dashboard.tsx
-import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Dimensions, ActivityIndicator } from 'react-native';
+import React, { useEffect, useMemo, useState } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Dimensions, ActivityIndicator, Platform } from 'react-native';
 import { LineChart, BarChart } from 'react-native-chart-kit';
 import { Calendar } from 'react-native-calendars';
 import { Ionicons } from '@expo/vector-icons';
 import moment from 'moment';
-import { Portal, Dialog, Button } from 'react-native-paper';
+import { Portal, Dialog, Button, Menu } from 'react-native-paper';
+
 import { useDashboardData, useTopMenuItems } from '@/services/mutation/tenantMutation';
+import { useGetBranches } from '@/services/mutation/branchMutation';
+import { useRestaurantIdentity } from '@/hooks/useRestaurantIdentity';
 
 const screenWidth = Dimensions.get('window').width;
+
+type DashboardPeriod = 'today' | 'month' | 'year';
+
+type MetricDefinition = {
+  id: string;
+  icon?: keyof typeof Ionicons.glyphMap;
+  iconColor?: string;
+  accessor: (data: any) => number | string | undefined;
+  getTitle: (period: DashboardPeriod) => string;
+  formatValue: (value: any) => string;
+  getSubtitle?: (data: any) => string | undefined;
+};
+
+type MetricDisplay = {
+  id: string;
+  title: string;
+  value: string;
+  icon?: keyof typeof Ionicons.glyphMap;
+  iconColor?: string;
+  subtitle?: string;
+  rawValue?: any;
+};
+
+const formatCurrency = (value: number | string | undefined) => {
+  if (value === null || value === undefined) return 'ETB 0';
+  const numeric = Number(value) || 0;
+  return `ETB ${numeric.toLocaleString()}`;
+};
+
+const formatNumber = (value: number | string | undefined) => {
+  if (value === null || value === undefined) return '0';
+  const numeric = Number(value);
+  if (Number.isNaN(numeric)) return String(value);
+  return numeric.toLocaleString();
+};
+
+const getPeriodDescriptor = (period: DashboardPeriod, base: string) => {
+  switch (period) {
+    case 'today':
+      return `Today's ${base}`;
+    case 'month':
+      return `This Month's ${base}`;
+    case 'year':
+    default:
+      return `This Year's ${base}`;
+  }
+};
+
+const DEFAULT_METRICS: MetricDefinition[] = [
+  {
+    id: 'revenue',
+    icon: 'cash-outline',
+    accessor: (data) => data?.revenue,
+    getTitle: (period) => getPeriodDescriptor(period, 'Revenue'),
+    formatValue: (value) => formatCurrency(value),
+    getSubtitle: (data) =>
+      data?.revenue_change !== undefined
+        ? `${data.revenue_change > 0 ? '+' : ''}${data.revenue_change}% vs prior` 
+        : undefined,
+  },
+  {
+    id: 'orders',
+    icon: 'receipt-outline',
+    accessor: (data) => data?.orders,
+    getTitle: (period) =>
+      period === 'today'
+        ? 'Total Orders Today'
+        : period === 'month'
+        ? 'Total Orders This Month'
+        : 'Total Orders This Year',
+    formatValue: (value) => formatNumber(value),
+  },
+  {
+    id: 'active_tables',
+    icon: 'restaurant-outline',
+    accessor: (data) => data?.active_tables,
+    getTitle: () => 'Active Tables',
+    formatValue: (value) => formatNumber(value),
+  },
+  {
+    id: 'rating',
+    icon: 'star',
+    iconColor: '#FFD700',
+    accessor: (data) => data?.rating,
+    getTitle: () => 'Customer Rating',
+    formatValue: (value) => {
+      const numeric = Number(value);
+      if (Number.isNaN(numeric)) return '0.0';
+      return numeric.toFixed(1);
+    },
+    getSubtitle: () => 'Average review score',
+  },
+];
 
 const Dashboard = () => {
   const [selectedTab, setSelectedTab] = useState<'today' | 'month' | 'year'>('today');
   const [dateFilterVisible, setDateFilterVisible] = useState(false);
   const [startDate, setStartDate] = useState<string | null>(null);
   const [endDate, setEndDate] = useState<string | null>(null);
-  
+  const [branchMenuVisible, setBranchMenuVisible] = useState(false);
+
+  const { isRestaurant, isBranch, branchId } = useRestaurantIdentity();
+  const { data: branches } = useGetBranches();
+
+  const [selectedBranch, setSelectedBranch] = useState<string>(
+    isRestaurant ? 'all' : branchId ?? ''
+  );
+
+  useEffect(() => {
+    if (isBranch && branchId) {
+      setSelectedBranch(branchId);
+    }
+  }, [isBranch, branchId]);
+
+  useEffect(() => {
+    if (isRestaurant) {
+      // Reset selection if the currently selected branch is no longer available
+      const hasSelectedBranch = branches?.some(
+        (branch) => branch.id === selectedBranch
+      );
+
+      if (selectedBranch !== 'all' && !hasSelectedBranch) {
+        setSelectedBranch('all');
+      }
+    }
+  }, [isRestaurant, branches, selectedBranch]);
+
+  const branchQueryParam = useMemo(() => {
+    if (isBranch) {
+      return branchId ?? undefined;
+    }
+
+    if (isRestaurant) {
+      return selectedBranch === 'all' ? undefined : selectedBranch;
+    }
+
+    return undefined;
+  }, [isBranch, isRestaurant, branchId, selectedBranch]);
+
+  const dashboardParams = useMemo(() => {
+    if (startDate && endDate) {
+      const params: Record<string, string> = {
+        start_date: startDate,
+        end_date: endDate,
+      };
+      if (branchQueryParam) params.branch_id = branchQueryParam;
+      return params;
+    }
+
+    const params: Record<string, string> = { period: selectedTab };
+    if (branchQueryParam) params.branch_id = branchQueryParam;
+    return params;
+  }, [branchQueryParam, endDate, selectedTab, startDate]);
+
+  const topMenuParams = useMemo(() => {
+    const params: Record<string, string> = startDate && endDate
+      ? { start_date: startDate, end_date: endDate }
+      : {
+          start_date: moment().format('YYYY-MM-DD'),
+          end_date: moment().format('YYYY-MM-DD'),
+        };
+
+    if (branchQueryParam) params.branch_id = branchQueryParam;
+    return params;
+  }, [branchQueryParam, startDate, endDate]);
+
   // Fetch data based on selected tab or date range
   const { 
     data: dashboardData, 
     isLoading: isDashboardLoading, 
     isError: isDashboardError,
     refetch: refetchDashboard
-  } = useDashboardData(
-    startDate && endDate
-      ? { start_date: startDate, end_date: endDate }
-      : { period: selectedTab }
-  );
+  } = useDashboardData(dashboardParams);
 
   const { 
     data: topItemsData,
     isLoading: isTopItemsLoading,
     isError: isTopItemsError
-  } = useTopMenuItems(
-    startDate && endDate
-      ? { start_date: startDate, end_date: endDate }
-      : { start_date: moment().format('YYYY-MM-DD'), end_date: moment().format('YYYY-MM-DD') }
-  );
+  } = useTopMenuItems(topMenuParams);
+
+  const selectedBranchLabel = useMemo(() => {
+    if (isBranch) {
+      const branch = branches?.find((item) => item.id === branchId);
+      return branch?.address ?? 'My Branch';
+    }
+
+    if (isRestaurant) {
+      if (selectedBranch === 'all') return 'All Branches';
+      const branch = branches?.find((item) => item.id === selectedBranch);
+      return branch?.address ?? 'Selected Branch';
+    }
+
+    return 'All Branches';
+  }, [isBranch, isRestaurant, branches, branchId, selectedBranch]);
 
   // Generate chart data from API response
   const getChartData = () => {
@@ -63,36 +232,47 @@ const Dashboard = () => {
   const chartData = getChartData();
 
   // Format card data from API response
-  const getCardData = () => {
-    const defaultData = {
-      revenue: "ETB 0",
-      orders: "0",
-      tables: "0",
-      rating: "0.0",
-      revenueTitle: selectedTab === 'today' 
-        ? "Today's Revenue" 
-        : selectedTab === 'month' 
-          ? "This Month's Revenue" 
-          : "This Year's Revenue",
-      ordersTitle: selectedTab === 'today'
-        ? "Total Orders Today"
-        : selectedTab === 'month'
-          ? "Total Orders This Month"
-          : "Total Orders This Year"
-    };
+  const metrics: MetricDisplay[] = useMemo(() => {
+    if (
+      dashboardData?.metrics &&
+      Array.isArray(dashboardData.metrics) &&
+      dashboardData.metrics.length
+    ) {
+      return dashboardData.metrics.map((metric: any, index: number) => ({
+        id: metric.id || metric.key || `metric-${index}`,
+        title: metric.title || metric.label || `Metric ${index + 1}`,
+        value:
+          metric.display_value ??
+          (metric.unit === 'currency'
+            ? formatCurrency(metric.value)
+            : metric.unit === 'percent'
+            ? `${metric.value ?? 0}%`
+            : formatNumber(metric.value ?? metric.amount ?? 0)),
+        subtitle: metric.subtitle || metric.description,
+        icon: (metric.icon as keyof typeof Ionicons.glyphMap) || 'stats-chart-outline',
+        iconColor: metric.iconColor || metric.icon_color || '#91B275',
+        rawValue: metric.value ?? metric.amount,
+      }));
+    }
 
-    if (!dashboardData) return defaultData;
+    return DEFAULT_METRICS.map((definition) => {
+      const rawValue = definition.accessor(dashboardData);
+      return {
+        id: definition.id,
+        title: definition.getTitle(selectedTab),
+        value: definition.formatValue(rawValue),
+        subtitle: definition.getSubtitle?.(dashboardData),
+        icon: definition.icon,
+        iconColor: definition.iconColor,
+        rawValue,
+      };
+    });
+  }, [dashboardData, selectedTab]);
 
-    return {
-      ...defaultData,
-      revenue: `ETB ${dashboardData.revenue?.toLocaleString() || '0'}`,
-      orders: dashboardData.orders?.toLocaleString() || '0',
-      tables: dashboardData.active_tables?.toLocaleString() || '0',
-      rating: dashboardData.rating?.toFixed(1) || '0.0'
-    };
-  };
-
-  const cardData = getCardData();
+  const primaryMetric = useMemo(() => {
+    if (!metrics.length) return undefined;
+    return metrics.find((metric) => metric.id === 'revenue') || metrics[0];
+  }, [metrics]);
 
   // Calendar theme
   const calendarTheme = {
@@ -218,10 +398,44 @@ const Dashboard = () => {
       {/* Header */}
       <View style={styles.headerRow}>
         <Text style={styles.title}>Dashboard</Text>
-        <TouchableOpacity style={styles.branchSelector}>
-          <Text style={styles.branchText}>All Branches</Text>
-          <Ionicons name="chevron-down" size={16} color="#5E6E4933" />
-        </TouchableOpacity>
+        {isRestaurant ? (
+          <Menu
+            visible={branchMenuVisible}
+            onDismiss={() => setBranchMenuVisible(false)}
+            anchor={
+              <TouchableOpacity
+                style={styles.branchSelector}
+                onPress={() => setBranchMenuVisible(true)}
+              >
+                <Text style={styles.branchText}>{selectedBranchLabel}</Text>
+                <Ionicons name="chevron-down" size={16} color="#5E6E49" />
+              </TouchableOpacity>
+            }
+            contentStyle={styles.branchMenu}
+          >
+            <Menu.Item
+              onPress={() => {
+                setSelectedBranch('all');
+                setBranchMenuVisible(false);
+              }}
+              title="All Branches"
+            />
+            {branches?.map((branch) => (
+              <Menu.Item
+                key={branch.id}
+                onPress={() => {
+                  setSelectedBranch(branch.id!);
+                  setBranchMenuVisible(false);
+                }}
+                title={branch.address}
+              />
+            ))}
+          </Menu>
+        ) : (
+          <View style={styles.branchPill}>
+            <Text style={styles.branchText}>{selectedBranchLabel}</Text>
+          </View>
+        )}
       </View>
 
       {/* Tabs */}
@@ -262,52 +476,28 @@ const Dashboard = () => {
 
       {/* Cards */}
       <View style={styles.cardsRow}>
-        {/* Revenue Card */}
-        <View style={styles.card}>
-          <View style={styles.cardHeader}>
-            <Text style={styles.cardTitle}>{cardData.revenueTitle}</Text>
-            <TouchableOpacity>
+        {metrics.map((metric) => (
+          <View key={metric.id} style={styles.card}>
+            <View style={styles.cardHeader}>
+              <Text style={styles.cardTitle}>{metric.title}</Text>
               <Ionicons name="ellipsis-vertical" size={16} color="#888" />
-            </TouchableOpacity>
+            </View>
+            {metric.subtitle ? (
+              <Text style={styles.cardSubtitle}>{metric.subtitle}</Text>
+            ) : null}
+            <View style={styles.metricValueRow}>
+              <Text style={styles.cardValue}>{metric.value}</Text>
+              {metric.icon ? (
+                <Ionicons
+                  name={metric.icon}
+                  size={18}
+                  color={metric.iconColor || '#91B275'}
+                  style={styles.metricIcon}
+                />
+              ) : null}
+            </View>
           </View>
-          <Text style={styles.cardValue}>{cardData.revenue}</Text>
-        </View>
-        
-        {/* Orders Card */}
-        <View style={styles.card}>
-          <View style={styles.cardHeader}>
-            <Text style={styles.cardTitle}>{cardData.ordersTitle}</Text>
-            <TouchableOpacity>
-              <Ionicons name="ellipsis-vertical" size={16} color="#888" />
-            </TouchableOpacity>
-          </View>
-          <Text style={styles.cardValue}>{cardData.orders}</Text>
-        </View>
-        
-        {/* Tables Card */}
-        <View style={styles.card}>
-          <View style={styles.cardHeader}>
-            <Text style={styles.cardTitle}>Active Tables</Text>
-            <TouchableOpacity>
-              <Ionicons name="ellipsis-vertical" size={16} color="#888" />
-            </TouchableOpacity>
-          </View>
-          <Text style={styles.cardValue}>{cardData.tables}</Text>
-        </View>
-        
-        {/* Rating Card */}
-        <View style={styles.card}>
-          <View style={styles.cardHeader}>
-            <Text style={styles.cardTitle}>Customer Rating</Text>
-            <TouchableOpacity>
-              <Ionicons name="ellipsis-vertical" size={16} color="#888" />
-            </TouchableOpacity>
-          </View>
-          <View style={styles.ratingContainer}>
-            <Text style={styles.cardValue}>{cardData.rating}</Text>
-            <Ionicons name="star" size={16} color="#FFD700" />
-          </View>
-        </View>
+        ))}
       </View>
 
       {/* Date Filter */}
@@ -338,9 +528,11 @@ const Dashboard = () => {
           </View>
           
           <View style={styles.revenueContainer}>
-            <Text style={styles.revenueValue}>{cardData.revenue}</Text>
+            <Text style={styles.revenueValue}>{primaryMetric?.value ?? 'ETB 0'}</Text>
             <Text style={styles.revenueChange}>
-              {dashboardData?.revenue_change ? `${dashboardData.revenue_change > 0 ? '+' : ''}${dashboardData.revenue_change}%` : 'N/A'}
+              {dashboardData?.revenue_change !== undefined
+                ? `${dashboardData.revenue_change > 0 ? '+' : ''}${dashboardData.revenue_change}%`
+                : 'N/A'}
             </Text>
           </View>
           
@@ -474,18 +666,31 @@ const styles = StyleSheet.create({
     fontWeight: 'bold', 
     color: '#21281B' 
   },
-  branchSelector: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    borderWidth: 1, 
-    borderColor: '#5E6E4933', 
-    padding: 8, 
-    borderRadius: 8 
+  branchSelector: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#5E6E4933',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 16,
+    backgroundColor: '#ffffff',
   },
-  branchText: { 
-    color: '#21281B', 
-    marginRight: 4, 
-    fontWeight: '500' 
+  branchPill: {
+    borderWidth: 1,
+    borderColor: '#5E6E4933',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 16,
+    backgroundColor: '#ffffff',
+  },
+  branchMenu: {
+    width: 220,
+  },
+  branchText: {
+    color: '#21281B',
+    marginRight: 6,
+    fontWeight: '500',
   },
   tabsContainer: { 
     flexDirection: 'row', 
@@ -537,21 +742,24 @@ const styles = StyleSheet.create({
     color: '#21281B',
     fontWeight: '500'
   },
+  cardSubtitle: {
+    fontSize: 12,
+    color: '#4A4A4A',
+    marginBottom: 6,
+  },
   cardValue: { 
     fontSize: 34, 
     fontWeight: 'bold', 
     color: '#21281B',
     marginTop: 4
   },
-  cardChange: {
-    fontSize: 12,
-    color: '#FF5252',
-    marginTop: 4
-  },
-  ratingContainer: {
+  metricValueRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 4
+    marginTop: 4,
+  },
+  metricIcon: {
+    marginLeft: 8,
   },
   dateFilter: {
     flexDirection: 'row',
@@ -584,11 +792,15 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     width: '48%',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    ...(Platform.OS === 'web'
+      ? { boxShadow: '0px 2px 4px rgba(0,0,0,0.1)' }
+      : {
+          elevation: 2,
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.1,
+          shadowRadius: 4,
+        }),
   },
   chartHeader: {
     flexDirection: 'row',

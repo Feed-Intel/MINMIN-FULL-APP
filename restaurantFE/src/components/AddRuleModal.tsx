@@ -21,6 +21,7 @@ import { useCreateDiscountRule } from "@/services/mutation/discountMutation";
 import { Dropdown, MultiSelectDropdown } from "react-native-paper-dropdown";
 import { useGetMenus } from "@/services/mutation/menuMutation";
 import Toast from "react-native-toast-message";
+import ModalHeader from "./ModalHeader";
 
 const stylesModal = StyleSheet.create({
   dialog: {
@@ -115,9 +116,18 @@ const AddDiscountRuleModal = ({
     key: string,
     value: string | boolean | any[]
   ) => {
+    const normalizedValue =
+      key === "applicable_items" || key === "excluded_items"
+        ? Array.isArray(value)
+          ? value
+          : value == null || value === ""
+          ? []
+          : [value]
+        : value;
+
     setRuleFormValues((prev) => ({
       ...prev,
-      [key]: value,
+      [key]: normalizedValue,
     }));
   };
 
@@ -223,6 +233,9 @@ const AddDiscountRuleModal = ({
         onDismiss={() => setVisible(false)}
         style={stylesModal.dialog}
       >
+        <Dialog.Title>
+          <ModalHeader title="Add Discount Rule" onClose={() => setVisible(false)} />
+        </Dialog.Title>
         <Dialog.Content>
           <ScrollView contentContainerStyle={stylesModal.container}>
             <View>

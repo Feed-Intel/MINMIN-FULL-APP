@@ -28,7 +28,7 @@ class MenuAvailabilityViewTest(TestCase):
             image="images/test_image.jpg",
             description="Test description",
             tags=["tag1", "tag2"],
-            category="Main Course", 
+            categories=["Main Course"], 
             price=10.00,
             is_side=False, 
         )
@@ -92,4 +92,3 @@ class MenuAvailabilityViewTest(TestCase):
         response = self.client.delete(f"/api/v1/menu-availability/{self.menu_availability.id}/")
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertFalse(MenuAvailability.objects.filter(id=self.menu_availability.id).exists())
-

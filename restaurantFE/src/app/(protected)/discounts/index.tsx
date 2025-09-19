@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import {
   ScrollView,
   StyleSheet,
@@ -23,12 +23,12 @@ import {
   useGetCoupons,
 } from "@/services/mutation/discountMutation";
 import AddDiscountModal from "@/components/AddDiscount";
-import AddDiscountRuleModal from "@/components/AddRuleModal";
 import AddCouponModal from "@/components/AddCoupon";
 import EditCouponModal from "@/components/EditCoupon";
 import EditDiscountModal from "@/components/EditDiscount";
-import EditDiscountRuleModal from "@/components/EditRuleModal";
-import { set } from "react-hook-form";
+import BranchSelector from "@/components/BranchSelector";
+import ModalHeader from "@/components/ModalHeader";
+import { useRestaurantIdentity } from "@/hooks/useRestaurantIdentity";
 
 const ManageDiscounts: React.FC = () => {
   const { width }: { width: number } = useWindowDimensions();
@@ -40,6 +40,7 @@ const ManageDiscounts: React.FC = () => {
   const { mutateAsync: couponDelete } = useDeleteCoupon();
   const queryClient = useQueryClient();
   const dispatch = useDispatch();
+  const { isRestaurant, isBranch, branchId } = useRestaurantIdentity();
 
   const [showDialog, setShowDialog] = React.useState<boolean>(false);
   const [discount, setDiscount] = React.useState<any | null>(null);
@@ -49,10 +50,34 @@ const ManageDiscounts: React.FC = () => {
     useState(false);
   const [addCouponModalVisible, setAddCouponModalVisible] = useState(false);
   const [editCouponModalVisible, setEditCouponModalVisible] = useState(false);
-  const [discountRule, setDiscountRule] = useState<any | null>(null);
-  const [showDiscountRule, setShowDiscountRule] = useState(false);
+  const [selectedDiscountRule, setSelectedDiscountRule] = useState<any | null>(
+    null
+  );
   const [selectedCategory, setSelectedCategory] = useState("Discount");
+  const [selectedBranch, setSelectedBranch] = useState<string | null>(
+    isBranch ? branchId ?? null : null
+  );
   const isSmallScreen: boolean = width < 768;
+
+  const filterByBranch = <T extends { branch?: any }>(items: T[]): T[] => {
+    if (!selectedBranch || selectedBranch === "all") return items;
+
+    return items.filter((item) => {
+      const branchValue =
+        typeof item.branch === "object" ? item.branch?.id : item.branch;
+      return branchValue === selectedBranch;
+    });
+  };
+
+  const filteredDiscounts = useMemo(
+    () => filterByBranch(discounts as any) as typeof discounts,
+    [discounts, selectedBranch]
+  );
+
+  const filteredCoupons = useMemo(
+    () => filterByBranch(coupons as any) as typeof coupons,
+    [coupons, selectedBranch]
+  );
 
   const handleDeleteDiscount = async (): Promise<void> => {
     setShowDialog(false);
@@ -96,6 +121,11 @@ const ManageDiscounts: React.FC = () => {
                 Discount and Coupon
               </Text>
             </View>
+            <BranchSelector
+              selectedBranch={selectedBranch}
+              onChange={setSelectedBranch}
+              includeAllOption={isRestaurant}
+            />
 
             {/* Search Bar */}
             <View style={styles.searchBarContainer}>
@@ -187,91 +217,93 @@ const ManageDiscounts: React.FC = () => {
                     ))}
                   </View>
 
-                  {discounts.map((disc: any) => (
-                    <View key={disc.id} style={styles.row}>
-                      {/* Branch */}
-                      <Text
-                        style={[
-                          styles.cell,
-                          {
-                            flex: 0.5,
-                            textAlign: "center",
-                          },
-                        ]}
-                      >
-                        {disc.name}
-                      </Text>
+                  {filteredDiscounts.map((disc: any) => {
+                    const relatedRule = discountRules.find(
+                      (rule: any) => rule.discount_id.id === disc.id
+                    );
 
-                      <Text style={[styles.cell, { flex: COLUMN_WIDTHS[1] }]}>
-                        {disc.tenant.restaurant_name +
-                          ", " +
-                          disc.branch.address}
-                      </Text>
+                    const ruleSummary = (() => {
+                      if (!relatedRule) {
+                        return "No rule configured";
+                      }
 
-                      {/* Delivery table */}
-                      <Text style={[styles.cell, { flex: COLUMN_WIDTHS[2] }]}>
-                        {disc.type}
-                      </Text>
+                      switch (disc.type) {
+                        case "volume":
+                          return `Min items ≥ ${relatedRule.min_items ?? 0}`;
+                        case "combo":
+                          return relatedRule.combo_size
+                            ? `Combo size ${relatedRule.combo_size}`
+                            : "Combo rule configured";
+                        case "bogo":
+                        case "freeItem":
+                          return relatedRule.buy_quantity && relatedRule.get_quantity
+                            ? `Buy ${relatedRule.buy_quantity} • Get ${relatedRule.get_quantity}`
+                            : "Benefit rule configured";
+                        default:
+                          return "Rule configured";
+                      }
+                    })();
 
-                      {/* Inside table */}
-                      <Text style={[styles.cell, { flex: COLUMN_WIDTHS[3] }]}>
-                        {disc.priority}
-                      </Text>
-
-                      <Text style={[styles.cell, { flex: COLUMN_WIDTHS[4] }]}>
-                        <Button
-                          mode="outlined"
-                          onPress={() => {
-                            const dsr = discountRules.find(
-                              (dsr: any) => dsr.discount_id.id == disc.id
-                            );
-                            if (dsr?.id) {
-                              setDiscountRule(dsr);
-                            } else {
-                              setDiscount(disc);
-                              setShowDiscountRule(true);
-                            }
-                          }}
-                          style={{ borderColor: "#6E504933" }}
-                          labelStyle={{ color: "#281D1B" }}
+                    return (
+                      <View key={disc.id} style={styles.row}>
+                        <Text
+                          style={[
+                            styles.cell,
+                            {
+                              flex: 0.5,
+                              textAlign: "center",
+                            },
+                          ]}
                         >
-                          {discountRules.find(
-                            (dsr: any) => dsr.discount_id.id == disc.id
-                          )
-                            ? "Update Rule"
-                            : "+ Add Rule"}
-                        </Button>
-                      </Text>
+                          {disc.name}
+                        </Text>
 
-                      {/* Actions */}
-                      <Text style={[styles.cell, { flex: COLUMN_WIDTHS[5] }]}>
-                        <View style={styles.actionContainer}>
-                          <Switch
-                            value={true}
-                            // onValueChange={
-                            // }
-                            color="#91B275"
-                          />
-                          <TouchableOpacity
-                            onPress={() => {
-                              setDiscount(disc);
-                              setEditDiscountModalVisible(true);
-                            }}
-                          >
-                            <Pencil height={40} width={40} color="#91B275" />
-                          </TouchableOpacity>
-                          <TouchableOpacity
-                            onPress={() => {
-                              setDiscount(disc);
-                              setShowDialog(true);
-                            }}
-                          >
-                            <Delete height={40} width={40} color="#91B275" />
-                          </TouchableOpacity>
-                        </View>
-                      </Text>
-                    </View>
-                  ))}
+                        <Text style={[styles.cell, { flex: COLUMN_WIDTHS[1] }]}>
+                          {[disc.tenant?.restaurant_name, disc.branch?.address]
+                            .filter(Boolean)
+                            .join(", ")}
+                        </Text>
+
+                        <Text style={[styles.cell, { flex: COLUMN_WIDTHS[2] }]}>
+                          {disc.type}
+                        </Text>
+
+                        <Text style={[styles.cell, { flex: COLUMN_WIDTHS[3] }]}>
+                          {disc.priority}
+                        </Text>
+
+                        <Text style={[styles.cell, { flex: COLUMN_WIDTHS[4] }]}>
+                          {ruleSummary}
+                        </Text>
+
+                        <Text style={[styles.cell, { flex: COLUMN_WIDTHS[5] }]}>
+                          <View style={styles.actionContainer}>
+                            <Switch
+                             value={Boolean(disc?.is_active ?? true)}
+                              color="#91B275"
+                            />
+                            <TouchableOpacity
+                              onPress={() => {
+                                setDiscount(disc);
+                                setSelectedDiscountRule(relatedRule ?? null);
+                                setEditDiscountModalVisible(true);
+                              }}
+                            >
+                              <Pencil height={40} width={40} color="#91B275" />
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                              onPress={() => {
+                                setDiscount(disc);
+                                setShowDialog(true);
+                              }}
+                            >
+                              <Delete height={40} width={40} color="#91B275" />
+                            </TouchableOpacity>
+                          </View>
+                        </Text>
+                      </View>
+                    );
+                  })}
                 </View>
               )}
 
@@ -298,7 +330,7 @@ const ManageDiscounts: React.FC = () => {
                     )}
                   </View>
 
-                  {coupons.map((cp: any) => (
+                  {filteredCoupons.map((cp: any) => (
                     <View key={cp.id} style={styles.row}>
                       {/* Branch */}
                       <Text
@@ -361,8 +393,11 @@ const ManageDiscounts: React.FC = () => {
                 onDismiss={() => setShowDialog(false)}
                 style={[styles.dialog, { width: "50%", alignSelf: "center" }]}
               >
-                <Dialog.Title style={{ color: "#000" }}>
-                  Confirm Deletion
+                <Dialog.Title>
+                  <ModalHeader
+                    title="Confirm Deletion"
+                    onClose={() => setShowDialog(false)}
+                  />
                 </Dialog.Title>
                 <Dialog.Content>
                   <Text style={{ color: "#000" }}>
@@ -402,8 +437,13 @@ const ManageDiscounts: React.FC = () => {
         <EditDiscountModal
           branches={branches}
           discount={discount}
+          discountRule={selectedDiscountRule}
           visible={editDiscountModalVisible}
-          onClose={() => setEditDiscountModalVisible(false)}
+          onClose={() => {
+            setEditDiscountModalVisible(false);
+            setDiscount(null);
+            setSelectedDiscountRule(null);
+          }}
         />
       )}
       <AddCouponModal
@@ -420,25 +460,11 @@ const ManageDiscounts: React.FC = () => {
           coupon={coupon as any}
         />
       )}
-      {discount && (
-        <AddDiscountRuleModal
-          discount={discount}
-          visible={showDiscountRule}
-          setVisible={setShowDiscountRule}
-        />
-      )}
-      {discountRule && (
-        <EditDiscountRuleModal
-          discountRule={discountRule}
-          visible={Boolean(discountRule)}
-          setVisible={setDiscountRule}
-        />
-      )}
     </View>
   );
 };
 
-const COLUMN_WIDTHS = [1, 1, 1, 1, 1, 1, 1.5];
+const COLUMN_WIDTHS = [1, 1.2, 1, 0.8, 1.5, 1.2];
 
 const rootStyles = StyleSheet.create({
   container: {
