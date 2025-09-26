@@ -133,7 +133,8 @@ class OrderSerializer(serializers.ModelSerializer):
         return {
             'id': obj.customer.id,
             'email': obj.customer.email,
-            'full_name': obj.customer.full_name
+            'full_name': obj.customer.full_name,
+            'phone':obj.customer.phone
         }
     
     def get_customer_name(self, obj):

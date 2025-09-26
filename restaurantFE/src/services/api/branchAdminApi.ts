@@ -1,16 +1,21 @@
-import { apiClient } from "@/config/axiosConfig";
-import { asyncHandler } from "@/util/asyncHandler";
-import { BranchAdmin } from "@/types/branchAdmin";
+import { apiClient } from '@/config/axiosConfig';
+import { asyncHandler } from '@/util/asyncHandler';
+import { BranchAdmin } from '@/types/branchAdmin';
 
 const BACKEND_URL =
-  process.env.EXPO_PUBLIC_BACKEND_URL || "http://localhost:8000/api";
+  process.env.EXPO_PUBLIC_BACKEND_URL || 'http://localhost:8000/api';
 
-export const GetBranchAdmins = asyncHandler(async () => {
-  const resp = await apiClient.get("/auth/branchAdmins/", {
+export const GetBranchAdmins = asyncHandler(async (next?: number | null) => {
+  if (Boolean(next)) {
+    const resp = await apiClient.get(`/auth/branchAdmins/?page=${next}`, {
+      baseURL: BACKEND_URL,
+    });
+    return resp.data || [];
+  }
+  const resp = await apiClient.get('/auth/branchAdmins/', {
     baseURL: BACKEND_URL,
   });
-  console.log(resp.data.results);
-  return resp.data.results || [];
+  return resp.data || [];
 });
 
 export const GetBranchAdmin = asyncHandler(async (adminId: string) => {
@@ -21,7 +26,7 @@ export const GetBranchAdmin = asyncHandler(async (adminId: string) => {
 });
 
 export const CreateBranchAdmin = asyncHandler(async (data: BranchAdmin) => {
-  const resp = await apiClient.post("/auth/register/", data, {
+  const resp = await apiClient.post('/auth/register/', data, {
     baseURL: BACKEND_URL,
   });
   return resp.data;
@@ -31,8 +36,8 @@ export const UpdateBranchAdmin = asyncHandler(async (data: BranchAdmin) => {
   const resp = await apiClient.put(`/auth/user/${data.id}/`, data, {
     baseURL: BACKEND_URL,
     headers: {
-      "Content-Type": "application/json",
-      "X-API-KEY": process.env.EXPO_PUBLIC_API_KEY || "",
+      'Content-Type': 'application/json',
+      'X-API-KEY': process.env.EXPO_PUBLIC_API_KEY || '',
     },
   });
   return resp.data;

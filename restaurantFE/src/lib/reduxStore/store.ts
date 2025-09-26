@@ -1,12 +1,13 @@
-import authReducer from "./authSlice";
-import loaderReducer from "./loaderSlice";
-import discountReducer from "../features/discount/discountSlice";
-import tableReducer from "../features/table/tablesSlice";
-import comboReducer from "../features/combo/combosSlice";
-import orderReducer from "../features/order/ordersSlice";
-import pedningOrderReducer from "./orderSlice";
-import notificationReducer from "./notificationSlice";
-import { configureStore } from "@reduxjs/toolkit";
+import authReducer from './authSlice';
+import loaderReducer from './loaderSlice';
+import discountReducer from '../features/discount/discountSlice';
+import tableReducer from '../features/table/tablesSlice';
+import comboReducer from '../features/combo/combosSlice';
+import orderReducer from '../features/order/ordersSlice';
+import pedningOrderReducer from './orderSlice';
+import notificationReducer from './notificationSlice';
+import cartSliceReducer from './cartSlice';
+import { configureStore } from '@reduxjs/toolkit';
 
 export const makeStore = () => {
   return configureStore({
@@ -19,6 +20,7 @@ export const makeStore = () => {
       order: orderReducer,
       pendingOrder: pedningOrderReducer,
       notifications: notificationReducer,
+      cart: cartSliceReducer,
     },
   });
 };
@@ -26,5 +28,5 @@ export const makeStore = () => {
 // Infer the type of makeStore
 export type AppStore = ReturnType<typeof makeStore>;
 // Infer the `RootState` and `AppDispatch` types from the store itself
-export type RootState = ReturnType<AppStore["getState"]>;
-export type AppDispatch = AppStore["dispatch"];
+export type RootState = ReturnType<AppStore['getState']>;
+export type AppDispatch = AppStore['dispatch'];

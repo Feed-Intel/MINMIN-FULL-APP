@@ -1,9 +1,9 @@
-import React, { useEffect, useMemo, useState } from "react";
-import { View, StyleSheet, StyleProp, ViewStyle } from "react-native";
-import { Button, Menu, Text } from "react-native-paper";
+import React, { useEffect, useMemo, useState } from 'react';
+import { View, StyleSheet, StyleProp, ViewStyle } from 'react-native';
+import { Button, Menu, Text } from 'react-native-paper';
 
-import { useRestaurantIdentity } from "@/hooks/useRestaurantIdentity";
-import { useGetBranches } from "@/services/mutation/branchMutation";
+import { useRestaurantIdentity } from '@/hooks/useRestaurantIdentity';
+import { useGetBranches } from '@/services/mutation/branchMutation';
 
 type Props = {
   selectedBranch: string | null;
@@ -18,7 +18,7 @@ const BranchSelector: React.FC<Props> = ({
   onChange,
   includeAllOption = true,
   style,
-  label = "Branch",
+  label = 'Branch',
 }) => {
   const { isRestaurant, isBranch, branchId } = useRestaurantIdentity();
   const { data: branches, isLoading } = useGetBranches();
@@ -31,29 +31,29 @@ const BranchSelector: React.FC<Props> = ({
   }, [isBranch, branchId, selectedBranch, onChange]);
 
   useEffect(() => {
-    if (!isRestaurant || !branches?.length) return;
+    if (!isRestaurant || !branches?.results.length) return;
 
     if (!selectedBranch) {
       if (includeAllOption) {
-        onChange("all");
+        onChange('all');
       } else {
-        onChange(branches[0].id);
+        onChange(branches.results[0].id!);
       }
     }
   }, [branches, includeAllOption, isRestaurant, onChange, selectedBranch]);
 
   const currentLabel = useMemo(() => {
     if (isBranch) {
-      const branch = branches?.find((b) => b.id === branchId);
-      return branch?.address ?? "My Branch";
+      const branch = branches?.results?.find((b) => b.id === branchId);
+      return branch?.address ?? 'My Branch';
     }
 
-    if (selectedBranch === "all") {
-      return "All Branches";
+    if (selectedBranch === 'all') {
+      return 'All Branches';
     }
 
-    const branch = branches?.find((b) => b.id === selectedBranch);
-    return branch?.address ?? (isLoading ? "Loading..." : "Select Branch");
+    const branch = branches?.results.find((b) => b.id === selectedBranch);
+    return branch?.address ?? (isLoading ? 'Loading...' : 'Select Branch');
   }, [branches, branchId, isBranch, isLoading, selectedBranch]);
 
   if (isBranch) {
@@ -67,7 +67,7 @@ const BranchSelector: React.FC<Props> = ({
     );
   }
 
-  if (!branches?.length && !isLoading) {
+  if (!branches?.results.length && !isLoading) {
     return null;
   }
 
@@ -84,7 +84,7 @@ const BranchSelector: React.FC<Props> = ({
             style={styles.dropdownButton}
             labelStyle={styles.dropdownLabel}
             contentStyle={styles.dropdownContent}
-            icon={menuVisible ? "chevron-up" : "chevron-down"}
+            icon={menuVisible ? 'chevron-up' : 'chevron-down'}
             disabled={isLoading}
           >
             {currentLabel}
@@ -96,19 +96,21 @@ const BranchSelector: React.FC<Props> = ({
           <Menu.Item
             title="All Branches"
             onPress={() => {
-              onChange("all");
+              onChange('all');
               setMenuVisible(false);
             }}
+            titleStyle={styles.contentStyle}
           />
         )}
-        {branches?.map((branch) => (
+        {branches?.results.map((branch) => (
           <Menu.Item
             key={branch.id}
             title={branch.address}
             onPress={() => {
-              onChange(branch.id);
+              onChange(branch.id!);
               setMenuVisible(false);
             }}
+            titleStyle={styles.contentStyle}
           />
         ))}
       </Menu>
@@ -121,37 +123,40 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   label: {
-    color: "#5F7A3D",
-    fontWeight: "500",
+    color: '#5F7A3D',
+    fontWeight: '500',
     marginBottom: 6,
   },
   pill: {
-    backgroundColor: "#EFF4EB",
+    backgroundColor: '#EFF4EB',
     borderRadius: 16,
     paddingVertical: 8,
     paddingHorizontal: 14,
-    alignSelf: "flex-start",
+    alignSelf: 'flex-start',
   },
   pillText: {
-    color: "#21281B",
-    fontWeight: "500",
+    color: '#21281B',
+    fontWeight: '500',
   },
   dropdownButton: {
-    borderColor: "#5E6E4933",
+    borderColor: '#5E6E4933',
     borderWidth: 1,
     borderRadius: 16,
-    justifyContent: "flex-start",
-    backgroundColor: "#FFFFFF",
+    justifyContent: 'flex-start',
+    backgroundColor: '#91B27517',
   },
   dropdownLabel: {
-    color: "#21281B",
-    fontWeight: "500",
+    color: '#21281B',
+    fontWeight: '500',
   },
   dropdownContent: {
-    flexDirection: "row-reverse",
+    flexDirection: 'row-reverse',
   },
   menuContent: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: '#FFFFFF',
+  },
+  contentStyle: {
+    color: '#000000',
   },
 });
 

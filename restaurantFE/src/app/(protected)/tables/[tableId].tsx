@@ -14,7 +14,6 @@ import { Table } from "@/types/tableTypes";
 const { width } = Dimensions.get("window");
 const isSmallScreen = width < 375; // iPhone SE
 const isMediumScreen = width >= 375 && width < 768; // Most phones
-const isLargeScreen = width >= 768; // Tablets and larger devices
 
 export default function EditTableScreen() {
   const { tableId } = useLocalSearchParams();

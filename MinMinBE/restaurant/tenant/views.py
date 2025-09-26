@@ -27,11 +27,13 @@ from restaurant.menu.models import Menu
 from core.redis_client import redis_client
 from datetime import timedelta
 from django.db.models.functions import ExtractHour, ExtractWeek, ExtractMonth
-from django.db.models import ExpressionWrapper, F, IntegerField
 from .serializers import DashboardSerializer
 from django.db.models.functions import TruncDate
 from core.cache import CachedModelViewSet
 from accounts.utils import get_user_branch, get_user_tenant
+from django.shortcuts import get_object_or_404
+import json
+
 class TenantPagination(PageNumberPagination):
     page_size = 10
 
@@ -84,6 +86,23 @@ class TenantView(CachedModelViewSet):
                 queryset = Tenant.objects.none()
 
         return queryset
+    def retrieve(self, request, *args, **kwargs):
+        """
+        Custom retrieve method to bypass caching for this specific action.
+        """
+        user = self.request.user
+        tenant_id = self.kwargs.get('pk')
+        
+        # Manually fetch the single Tenant object
+        if user.user_type == 'customer':
+            queryset = self.get_queryset()
+            tenant = get_object_or_404(queryset, id=tenant_id)
+        else:
+            # Assuming other user types have a simpler queryset without Prefetch
+            tenant = get_object_or_404(Tenant, id=tenant_id)
+        
+        serializer = self.get_serializer(tenant)
+        return Response(serializer.data)
     
     def perform_create(self, serializer):
         return serializer.save(admin=self.request.user)
@@ -138,7 +157,9 @@ class TenantView(CachedModelViewSet):
         ).aggregate(total=Sum('amount_paid'))['total'] or 0
 
         # Order status breakdown
-        status_counts = orders.values('status').annotate(count=Count('id'))
+        status_counts = list(
+            orders.values('status').annotate(count=Count('id'))
+        )
 
         # Menu statistics
         menu_stats = Menu.objects.filter(tenant=tenant).aggregate(
@@ -166,7 +187,7 @@ class TenantView(CachedModelViewSet):
             ).count()
         }
 
-        cache.set(cache_key, response_data, 300)
+        cache.set(cache_key, json.loads(json.dumps(response_data, default=str)), 300)
 
         return Response(response_data, status=status.HTTP_200_OK)
     

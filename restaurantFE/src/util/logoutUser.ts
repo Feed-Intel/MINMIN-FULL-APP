@@ -1,5 +1,8 @@
-import { router } from "expo-router"; // if you're using Expo Router
+import { router } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export async function logoutUser() {
-  router.replace("/(auth)");
+  await AsyncStorage.removeItem('accessToken');
+  await AsyncStorage.removeItem('refreshToken');
+  router.replace('/(auth)');
 }

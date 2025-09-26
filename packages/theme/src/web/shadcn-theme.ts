@@ -7,7 +7,8 @@ export const button = cva(
       variant: {
         solid: 'bg-primary text-primary-foreground hover:opacity-90',
         outline: 'border border-border text-text hover:bg-surface',
-        ghost: 'text-text hover:bg-[color-mix(in_oklab,var(--text)_8%,transparent)]',
+        ghost:
+          'text-text hover:bg-[color-mix(in_oklab,var(--text)_8%,transparent)]',
       },
       size: {
         sm: 'h-9 px-3',
@@ -25,7 +26,8 @@ export const badge = cva(
     variants: {
       tone: {
         neutral: 'bg-muted text-text',
-        success: 'bg-[color-mix(in_oklab,var(--primary)_20%,transparent)] text-[color-mix(in_oklab,var(--primary)_60%,black)]',
+        success:
+          'bg-[color-mix(in_oklab,var(--primary)_20%,transparent)] text-[color-mix(in_oklab,var(--primary)_60%,black)]',
         info: 'bg-[color-mix(in_oklab,var(--accent)_12%,transparent)] text-[color-mix(in_oklab,var(--accent)_60%,black)]',
       },
     },

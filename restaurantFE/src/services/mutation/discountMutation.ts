@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   fetchDiscounts,
   createDiscount,
@@ -15,27 +15,27 @@ import {
   fetchCoupon,
   fetchDiscount,
   fetchDiscountRule,
-} from "../api/discountApi";
-import { Coupon, Discount } from "@/types/discountTypes";
-import { AppDispatch } from "@/lib/reduxStore/store";
-import { useDispatch } from "react-redux";
-import { hideLoader, showLoader } from "@/lib/reduxStore/loaderSlice";
+} from '../api/discountApi';
+import { Coupon, Discount } from '@/types/discountTypes';
+import { AppDispatch } from '@/lib/reduxStore/store';
+import { useDispatch } from 'react-redux';
+import { hideLoader, showLoader } from '@/lib/reduxStore/loaderSlice';
 
 // export const useDiscounts = () =>
 //   useQuery({
 //     queryKey: ["discounts"],
 //     queryFn: fetchDiscounts,
 //   });
-export const useDiscounts = () =>
-  useQuery<Discount[]>({
-    queryKey: ["discounts"],
-    queryFn: () => fetchDiscounts(),
+export const useDiscounts = (page?: number | null) =>
+  useQuery<{ next: string | null; results: Discount[]; count: number }>({
+    queryKey: ['discounts', page],
+    queryFn: () => fetchDiscounts(page),
     staleTime: 0,
     refetchInterval: 30000,
   });
 export function useCreateDiscount() {
   const queryClient = useQueryClient();
-    const dispatch = useDispatch<AppDispatch>();
+  const dispatch = useDispatch<AppDispatch>();
 
   return useMutation({
     mutationFn: (data: Partial<any>) => {
@@ -43,7 +43,7 @@ export function useCreateDiscount() {
       return createDiscount(data);
     },
     onError: (error: any) => {
-      console.error("Error creating discount:", error);
+      console.error('Error creating discount:', error);
     },
     onSuccess: () => {
       //("Discount created successfully");
@@ -52,7 +52,7 @@ export function useCreateDiscount() {
       if (error) {
         console.error(error);
       } else {
-        await queryClient.invalidateQueries({ queryKey: ["discounts"] });
+        await queryClient.invalidateQueries({ queryKey: ['discounts'] });
       }
       dispatch(hideLoader());
     },
@@ -61,7 +61,7 @@ export function useCreateDiscount() {
 
 export const useGetDiscountById = (id: string) =>
   useQuery({
-    queryKey: ["discount", id],
+    queryKey: ['discount', id],
     queryFn: () => fetchDiscount(id),
     staleTime: 0,
   });
@@ -73,11 +73,11 @@ export function useUpdateDiscount() {
     mutationFn: updateDiscount,
     onMutate: () => dispatch(showLoader()),
     onError: (error: any) => {
-      console.error("Error updating discount:", error);
+      console.error('Error updating discount:', error);
     },
     onSuccess: () => {
       //("Discount updated successfully");
-      queryClient.invalidateQueries({ queryKey: ["discounts"] });
+      queryClient.invalidateQueries({ queryKey: ['discounts'] });
     },
     onSettled: () => {
       dispatch(hideLoader());
@@ -91,11 +91,11 @@ export function useDeleteDiscount() {
 
   return useMutation({
     mutationFn: (id: string) => {
-      dispatch(showLoader())
+      dispatch(showLoader());
       return deleteDiscount(id);
     },
     onError: (error: any) => {
-      console.error("Error deleting discount:", error);
+      console.error('Error deleting discount:', error);
     },
     onSuccess: () => {
       //("Discount deleted successfully");
@@ -104,7 +104,7 @@ export function useDeleteDiscount() {
       if (error) {
         console.error(error);
       } else {
-        await queryClient.invalidateQueries({ queryKey: ["discounts"] });
+        await queryClient.invalidateQueries({ queryKey: ['discounts'] });
       }
       dispatch(hideLoader());
     },
@@ -118,28 +118,28 @@ export function useDeleteDiscount() {
 //   });
 export const useDiscountRules = () =>
   useQuery({
-    queryKey: ["discountRules"],
+    queryKey: ['discountRules'],
     queryFn: () => fetchDiscountRules(),
     staleTime: 0,
   });
 
 export const useGetDiscountRuleById = (id: string) =>
   useQuery({
-    queryKey: ["discountRule", id],
+    queryKey: ['discountRule', id],
     queryFn: () => fetchDiscountRule(id),
     staleTime: 0,
   });
 
-export const useGetCoupons = () =>
-  useQuery<Coupon[]>({
-    queryKey: ["coupons"],
-    queryFn: () => fetchCoupons(),
+export const useGetCoupons = (page?: number | null) =>
+  useQuery<{ next: string | null; results: Coupon[]; count: number }>({
+    queryKey: ['coupons', page],
+    queryFn: () => fetchCoupons(page),
     staleTime: 0,
   });
 
 export const useGetCoupon = (id: string) =>
   useQuery({
-    queryKey: ["coupon", id],
+    queryKey: ['coupon', id],
     queryFn: () => fetchCoupon(id),
     staleTime: 0,
   });
@@ -147,7 +147,7 @@ export function useCreateDiscountRule(
   onSuccess?: (data: any) => void,
   onError?: (error: any) => void
 ) {
-    const dispatch = useDispatch<AppDispatch>();
+  const dispatch = useDispatch<AppDispatch>();
   return useMutation({
     mutationFn: (data: Partial<any>) => {
       dispatch(showLoader());
@@ -166,29 +166,28 @@ export function useUpdateDiscountRule() {
     mutationFn: updateDiscountRule,
     onMutate: () => dispatch(showLoader()),
     onError: (error: any) => {
-      console.error("Error updating discountRule:", error);
+      console.error('Error updating discountRule:', error);
     },
     onSuccess: () => {
       //("DiscountRule updated successfully");
-      queryClient.invalidateQueries({ queryKey: ["discountRules"] });
+      queryClient.invalidateQueries({ queryKey: ['discountRules'] });
     },
     onSettled: () => {
-            dispatch(hideLoader());
-
+      dispatch(hideLoader());
     },
   });
 }
 
 export function useDeleteDiscountRule() {
   const queryClient = useQueryClient();
-    const dispatch = useDispatch<AppDispatch>();
+  const dispatch = useDispatch<AppDispatch>();
   return useMutation({
     mutationFn: (id: any) => {
       dispatch(showLoader());
       return deleteDiscountRule(id);
     },
     onError: (error: any) => {
-      console.error("Error deleting discountRule:", error);
+      console.error('Error deleting discountRule:', error);
     },
     onSuccess: () => {
       //("DiscountRule deleted successfully");
@@ -197,7 +196,7 @@ export function useDeleteDiscountRule() {
       if (error) {
         console.error(error);
       } else {
-        await queryClient.invalidateQueries({ queryKey: ["discountRules"] });
+        await queryClient.invalidateQueries({ queryKey: ['discountRules'] });
       }
       dispatch(hideLoader());
     },
@@ -206,7 +205,7 @@ export function useDeleteDiscountRule() {
 
 export function useCreateCoupon() {
   const queryClient = useQueryClient();
-    const dispatch = useDispatch<AppDispatch>();
+  const dispatch = useDispatch<AppDispatch>();
 
   return useMutation({
     mutationFn: (data: Partial<any>) => {
@@ -214,7 +213,7 @@ export function useCreateCoupon() {
       return createCoupon(data);
     },
     onError: (error: any) => {
-      console.error("Error creating discount:", error);
+      console.error('Error creating discount:', error);
     },
     onSuccess: () => {
       //("Coupon created successfully");
@@ -223,7 +222,7 @@ export function useCreateCoupon() {
       if (error) {
         console.error(error);
       } else {
-        await queryClient.invalidateQueries({ queryKey: ["coupons"] });
+        await queryClient.invalidateQueries({ queryKey: ['coupons'] });
       }
       dispatch(hideLoader());
     },
@@ -232,7 +231,7 @@ export function useCreateCoupon() {
 
 export function useUpdateCoupon() {
   const queryClient = useQueryClient();
-    const dispatch = useDispatch<AppDispatch>();
+  const dispatch = useDispatch<AppDispatch>();
 
   return useMutation({
     mutationFn: (data: { id: string; coupon: Partial<any> }) => {
@@ -240,11 +239,11 @@ export function useUpdateCoupon() {
       return updateCoupon(data.id, data.coupon);
     },
     onError: (error: any) => {
-      console.error("Error updating Coupon:", error);
+      console.error('Error updating Coupon:', error);
     },
     onSuccess: () => {
       //("Coupon updated successfully");
-      queryClient.invalidateQueries({ queryKey: ["coupons"] });
+      queryClient.invalidateQueries({ queryKey: ['coupons'] });
     },
     onSettled: () => {
       dispatch(hideLoader());
@@ -254,14 +253,14 @@ export function useUpdateCoupon() {
 
 export function useDeleteCoupon() {
   const queryClient = useQueryClient();
-    const dispatch = useDispatch<AppDispatch>();
+  const dispatch = useDispatch<AppDispatch>();
   return useMutation({
     mutationFn: (id: string) => {
       dispatch(showLoader());
       return deleteCoupon(id);
     },
     onError: (error: any) => {
-      console.error("Error deleting Coupon:", error);
+      console.error('Error deleting Coupon:', error);
     },
     onSuccess: () => {
       //("Coupon deleted successfully");
@@ -270,7 +269,7 @@ export function useDeleteCoupon() {
       if (error) {
         console.error(error);
       } else {
-        await queryClient.invalidateQueries({ queryKey: ["coupon"] });
+        await queryClient.invalidateQueries({ queryKey: ['coupon'] });
       }
       dispatch(hideLoader());
     },

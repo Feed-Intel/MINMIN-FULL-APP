@@ -95,7 +95,8 @@ class Command(BaseCommand):
                             branch=branch,
                             is_fast_table=choice([True, False]),
                             is_delivery_table=choice([True, False]),
-                            is_inside_table=choice([True, False])
+                            is_inside_table=choice([True, False]),
+                            is_active=choice([True, False])
                         )
                         tables.append(table)
 

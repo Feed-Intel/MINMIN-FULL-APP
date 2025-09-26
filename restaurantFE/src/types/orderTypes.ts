@@ -1,11 +1,12 @@
 // Orders
 
-import { MenuType } from "./menuType";
-import { Table } from "./tableTypes";
+import { MenuType } from './menuType';
+import { Table } from './tableTypes';
 
 type Customer = {
   id: string;
   full_name: string;
+  phone?: string;
 };
 
 type Branch = {
@@ -20,12 +21,12 @@ export interface Order {
   order_id: string;
   customer: string | Customer; // Customer/User ID
   status:
-    | "pending_payment"
-    | "placed"
-    | "progress"
-    | "payment_complete"
-    | "delivered"
-    | "cancelled";
+    | 'pending_payment'
+    | 'placed'
+    | 'progress'
+    | 'payment_complete'
+    | 'delivered'
+    | 'cancelled';
   total_price: number;
   created_at: string;
   updated_at: string;

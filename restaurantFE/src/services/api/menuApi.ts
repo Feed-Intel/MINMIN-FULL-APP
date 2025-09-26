@@ -1,9 +1,13 @@
-import { apiClient } from "@/config/axiosConfig";
-import { asyncHandler } from "@/util/asyncHandler";
+import { apiClient } from '@/config/axiosConfig';
+import { asyncHandler } from '@/util/asyncHandler';
 
-export const GetMenus = asyncHandler(async () => {
-  const resp = await apiClient.get("/menu/");
-  return resp.data.results;
+export const GetMenus = asyncHandler(async (page?: number | null) => {
+  if (Boolean(page)) {
+    const resp = await apiClient.get(`/menu/?page=${page}`);
+    return resp.data;
+  }
+  const resp = await apiClient.get('/menu/');
+  return resp.data;
 });
 
 export const GetMenu = asyncHandler(async (id: string) => {
@@ -12,9 +16,9 @@ export const GetMenu = asyncHandler(async (id: string) => {
 });
 
 export const CreateMenu = asyncHandler(async (data: FormData) => {
-  const resp = await apiClient.post("/menu/", data, {
+  const resp = await apiClient.post('/menu/', data, {
     headers: {
-      "Content-Type": "multipart/form-data",
+      'Content-Type': 'multipart/form-data',
     },
   });
   return resp.data;
@@ -23,7 +27,7 @@ export const CreateMenu = asyncHandler(async (data: FormData) => {
 export const UpdateMenu = asyncHandler(async (id: string, data: FormData) => {
   const resp = await apiClient.patch(`/menu/${id}/`, data, {
     headers: {
-      "Content-Type": "multipart/form-data",
+      'Content-Type': 'multipart/form-data',
     },
   });
   return resp.data;
@@ -37,11 +41,11 @@ export const DeleteMenu = asyncHandler(async (id: string) => {
 export const GetMenuAvailabilities = asyncHandler(
   async (next?: string | null) => {
     if (Boolean(next)) {
-      const page = next?.split("page=")[1];
+      const page = next?.split('page=')[1];
       const resp = await apiClient.get(`/menu-availability/?page=${page}`);
       return resp.data;
     }
-    const resp = await apiClient.get("/menu-availability/");
+    const resp = await apiClient.get('/menu-availability/');
     return resp.data;
   }
 );
@@ -62,7 +66,7 @@ export const DeleteMenuAvailability = asyncHandler(async (id: string) => {
 });
 
 export const GetRelatedItems = asyncHandler(async () => {
-  const resp = await apiClient.get("/related-menu/");
+  const resp = await apiClient.get('/related-menu/');
   return resp.data.results;
 });
 
@@ -72,7 +76,7 @@ export const GetRelatedItem = asyncHandler(async (id: string) => {
 });
 
 export const CreateRelatedItem = asyncHandler(async (data: any) => {
-  const resp = await apiClient.post("/related-menu/", data);
+  const resp = await apiClient.post('/related-menu/', data);
   return resp.data;
 });
 

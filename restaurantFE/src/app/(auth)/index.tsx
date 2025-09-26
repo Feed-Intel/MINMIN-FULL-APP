@@ -1,19 +1,19 @@
-import React, { useEffect } from "react";
-import { Animated, StyleSheet } from "react-native";
-import { Text, Button, Card, Paragraph, useTheme } from "react-native-paper";
-import { TextInput } from "react-native";
-import { router } from "expo-router";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { jwtDecode } from "jwt-decode";
-import { useDispatch } from "react-redux";
-import { setRestaurant } from "@/lib/reduxStore/authSlice";
-import { useLogin } from "@/services/mutation/authMutation";
-import Toast from "react-native-toast-message";
+import React, { useEffect } from 'react';
+import { Animated, StyleSheet } from 'react-native';
+import { Text, Button, Card, Paragraph, useTheme } from 'react-native-paper';
+import { TextInput } from 'react-native';
+import { router } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { jwtDecode } from 'jwt-decode';
+import { useDispatch } from 'react-redux';
+import { setRestaurant } from '@/lib/reduxStore/authSlice';
+import { useLogin } from '@/services/mutation/authMutation';
+import Toast from 'react-native-toast-message';
 
 const LoginScreen = () => {
   const logoAnimation = React.useRef(new Animated.Value(0)).current;
-  const [email, setEmail] = React.useState("");
-  const [password, setPassword] = React.useState("");
+  const [email, setEmail] = React.useState('');
+  const [password, setPassword] = React.useState('');
   const dispatch = useDispatch();
   const theme = useTheme();
   const { mutate: LoginFn, isPending } = useLogin();
@@ -33,29 +33,28 @@ const LoginScreen = () => {
       email: string;
       branch?: string;
     }>(data.access_token);
-    console.log(decoded);
-    const isBranchUser = decoded.user_type === "branch";
+    const isBranchUser = decoded.user_type === 'branch';
 
     if (isBranchUser && !decoded?.branch) {
       Toast.show({
-        type: "error",
-        text1: "Error",
+        type: 'error',
+        text1: 'Error',
         text2:
-          "Please contact your administrator to assign a branch to your account.",
+          'Please contact your administrator to assign a branch to your account.',
       });
       return;
     }
 
-    if (decoded.user_type === "restaurant" && !decoded?.tenant) {
+    if (decoded.user_type === 'restaurant' && !decoded?.tenant) {
       Toast.show({
-        type: "error",
-        text1: "Error",
-        text2: "Your restaurant profile is not linked. Please contact support.",
+        type: 'error',
+        text1: 'Error',
+        text2: 'Your restaurant profile is not linked. Please contact support.',
       });
       return;
     }
-    await AsyncStorage.setItem("accessToken", data.access_token);
-    await AsyncStorage.setItem("refreshToken", data.refresh_token);
+    await AsyncStorage.setItem('accessToken', data.access_token);
+    await AsyncStorage.setItem('refreshToken', data.refresh_token);
     dispatch(
       setRestaurant({
         id: decoded.tenant,
@@ -64,12 +63,12 @@ const LoginScreen = () => {
         branch: decoded?.branch,
       })
     );
-    router.replace("/(protected)/dashboard");
+    router.replace('/(protected)/dashboard');
   };
 
   const handleLogin = () => {
     if (!email || !password) {
-      alert("Please fill in both fields!");
+      alert('Please fill in both fields!');
       return;
     }
     LoginFn({ email, password }, { onSuccess });
@@ -80,7 +79,7 @@ const LoginScreen = () => {
       {/* Logo Animation */}
       <Animated.Image
         source={{
-          uri: "https://example.com/restaurant-logo.png", // Replace with your logo URL
+          uri: 'https://example.com/restaurant-logo.png', // Replace with your logo URL
         }}
         style={[
           styles.logo,
@@ -103,7 +102,7 @@ const LoginScreen = () => {
         <Card.Content>
           <Text
             variant="headlineLarge"
-            style={[styles.title, { color: "#3A3A3A" }]}
+            style={[styles.title, { color: '#3A3A3A' }]}
           >
             Welcome to MinMin Restaurant
           </Text>
@@ -133,17 +132,17 @@ const LoginScreen = () => {
             onPress={handleLogin}
             loading={isPending}
             style={styles.button}
-            labelStyle={{ color: "#fff" }}
+            labelStyle={{ color: '#fff' }}
           >
-            {isPending ? "Logging in..." : "Log in"}
+            {isPending ? 'Logging in...' : 'Log in'}
           </Button>
 
           {/* Forgot Password */}
           <Button
             mode="text"
-            onPress={() => router.push("/(auth)/forgotPassword")}
+            onPress={() => router.push('/(auth)/forgotPassword')}
             style={styles.forgotPassword}
-            labelStyle={{ color: "#3A3A3A" }}
+            labelStyle={{ color: '#3A3A3A' }}
           >
             Forgot Password?
           </Button>
@@ -156,11 +155,11 @@ const LoginScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
+    justifyContent: 'center',
+    alignItems: 'center',
     padding: 16,
     paddingTop: 0,
-    backgroundColor: "#EFF4EB", // Light theme background
+    backgroundColor: '#EFF4EB', // Light theme background
   },
   logo: {
     width: 120,
@@ -168,26 +167,26 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   card: {
-    width: "100%",
+    width: '100%',
     maxWidth: 500,
     padding: 16,
     borderRadius: 8,
     elevation: 4,
-    backgroundColor: "#fff",
+    backgroundColor: '#fff',
   },
   title: {
-    textAlign: "center",
+    textAlign: 'center',
     marginBottom: 8,
-    fontWeight: "600",
+    fontWeight: '600',
   },
   subtitle: {
-    textAlign: "center",
+    textAlign: 'center',
     marginBottom: 24,
-    color: "#6b6b6b", // Subtle subtitle color
+    color: '#6b6b6b', // Subtle subtitle color
   },
   input: {
     marginBottom: 16,
-    backgroundColor: "#91B27517",
+    backgroundColor: '#91B27517',
     height: 50,
     padding: 8,
     borderRadius: 8,
@@ -195,7 +194,7 @@ const styles = StyleSheet.create({
   button: {
     marginBottom: 16,
     paddingVertical: 8,
-    backgroundColor: "#91B275",
+    backgroundColor: '#91B275',
   },
   forgotPassword: {
     marginTop: 8,

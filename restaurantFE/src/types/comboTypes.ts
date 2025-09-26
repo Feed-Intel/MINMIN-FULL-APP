@@ -1,5 +1,6 @@
-import { Branch } from "./branchType";
-import { MenuType } from "./menuType";
+import { Branch } from './branchType';
+import { MenuType } from './menuType';
+import { Tenant } from './menuType';
 
 // Combos
 export interface Combo {
@@ -10,6 +11,7 @@ export interface Combo {
   combo_price?: number;
   created_at: string;
   combo_items: ComboItem[];
+  tenant: Tenant;
 }
 
 export interface ComboItem {

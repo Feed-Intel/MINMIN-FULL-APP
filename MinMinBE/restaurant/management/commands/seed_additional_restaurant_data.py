@@ -133,7 +133,8 @@ class Command(BaseCommand):
                     defaults={
                         'is_fast_table': fake.boolean(),
                         'is_delivery_table': fake.boolean(),
-                        'is_inside_table': fake.boolean()
+                        'is_inside_table': fake.boolean(),
+                        'is_active': fake.boolean()
                     }
                 )
 

@@ -1,32 +1,38 @@
-import React, { useEffect } from "react";
-import { StyleSheet, View } from "react-native";
-import { Slot } from "expo-router";
-import { Surface } from "react-native-paper";
-import Sidebar from "@/components/dashboard/Sidebar";
-import { router } from "expo-router";
-import { jwtDecode, JwtPayload } from "jwt-decode";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useWebSockets } from "@/hooks/useWebSockets";
-import { useDispatch, useSelector } from "react-redux";
-import { setRestaurant } from "@/lib/reduxStore/authSlice";
-import Logo from "@/assets/icons/Logo.svg";
+import React, { useEffect } from 'react';
+import { StyleSheet, View } from 'react-native';
+import { Slot } from 'expo-router';
+import { Surface } from 'react-native-paper';
+import Sidebar from '@/components/dashboard/Sidebar';
+import { router } from 'expo-router';
+import { jwtDecode, JwtPayload } from 'jwt-decode';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useWebSockets } from '@/hooks/useWebSockets';
+import { useDispatch } from 'react-redux';
+import { setRestaurant } from '@/lib/reduxStore/authSlice';
+import Logo from '@/assets/icons/Logo.svg';
+import NotificationIcon from '@/components/Notification';
+import { useAppSelector } from '@/lib/reduxStore/hooks';
+import { RootState } from '@/lib/reduxStore/store';
+import ProfileIcon from '@/components/ProfileIcon';
 
 export default function ProtectedLayout() {
   const dispatch = useDispatch();
-  const user = useSelector((state: any) => state.auth.restaurant);
+  const notifications = useAppSelector(
+    (state: RootState) => state.notifications.items
+  );
 
   useWebSockets();
 
   async function checkAuth() {
-    const refreshToken = await AsyncStorage.getItem("refreshToken");
+    const refreshToken = await AsyncStorage.getItem('refreshToken');
     if (!refreshToken) {
-      router.replace("/(auth)");
+      router.replace('/(auth)');
     } else {
       const decodedToken = jwtDecode<JwtPayload>(refreshToken);
       if (Date.now() >= Number(decodedToken.exp) * 1000) {
-        await AsyncStorage.removeItem("refreshToken");
-        await AsyncStorage.removeItem("accessToken");
-        router.replace("/(auth)");
+        await AsyncStorage.removeItem('refreshToken');
+        await AsyncStorage.removeItem('accessToken');
+        router.replace('/(auth)');
         return;
       }
 
@@ -59,11 +65,18 @@ export default function ProtectedLayout() {
       <View
         style={{
           paddingHorizontal: 30,
-          borderBottomColor: "#5A6E4933",
+          borderBottomColor: '#5A6E4933',
           borderBottomWidth: 1.5,
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          alignItems: 'center',
         }}
       >
-        <Logo height={60} color={"#91B275"} />
+        <Logo height={60} color={'#91B275'} />
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <NotificationIcon notification={notifications} />
+          <ProfileIcon />
+        </View>
       </View>
       <View style={styles.horizontal}>
         <Sidebar />
@@ -78,18 +91,18 @@ export default function ProtectedLayout() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    flexDirection: "column",
-    backgroundColor: "#EFF4EB",
-    height: "100%",
-    width: "100%",
+    flexDirection: 'column',
+    backgroundColor: '#EFF4EB',
+    height: '100%',
+    width: '100%',
   },
   horizontal: {
     flex: 1,
-    flexDirection: "row",
-    backgroundColor: "#EFF4EB",
+    flexDirection: 'row',
+    backgroundColor: '#EFF4EB',
   },
   stackContainer: {
     flex: 1,
-    backgroundColor: "#EFF4EB",
+    backgroundColor: '#EFF4EB',
   },
 });

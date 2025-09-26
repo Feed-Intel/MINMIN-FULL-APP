@@ -1,10 +1,16 @@
-import { apiClient } from "@/config/axiosConfig";
-import { asyncHandler } from "@/util/asyncHandler";
+import { apiClient } from '@/config/axiosConfig';
+import { asyncHandler } from '@/util/asyncHandler';
 
-export const fetchDiscounts = asyncHandler(async (): Promise<any[]> => {
-  const resp = await apiClient.get(`/discount/`);
-  return resp.data.results || [];
-});
+export const fetchDiscounts = asyncHandler(
+  async (page?: number | null): Promise<any[]> => {
+    if (Boolean(page)) {
+      const resp = await apiClient.get(`/discount/?page=${page}`);
+      return resp.data || [];
+    }
+    const resp = await apiClient.get(`/discount/`);
+    return resp.data || [];
+  }
+);
 
 export const fetchDiscount = asyncHandler(
   async (id: string): Promise<any[]> => {
@@ -13,10 +19,16 @@ export const fetchDiscount = asyncHandler(
   }
 );
 
-export const fetchCoupons = asyncHandler(async (): Promise<any[]> => {
-  const resp = await apiClient.get(`/coupon/`);
-  return resp.data.results || [];
-});
+export const fetchCoupons = asyncHandler(
+  async (page?: number | null): Promise<any[]> => {
+    if (Boolean(page)) {
+      const resp = await apiClient.get(`/coupon/?page=${page}`);
+      return resp.data || [];
+    }
+    const resp = await apiClient.get(`/coupon/`);
+    return resp.data || [];
+  }
+);
 
 export const fetchCoupon = asyncHandler(async (id: string): Promise<any[]> => {
   const resp = await apiClient.get(`/coupon/${id}/`);
@@ -26,7 +38,7 @@ export const fetchCoupon = asyncHandler(async (id: string): Promise<any[]> => {
 // Create a discount
 export const createDiscount = asyncHandler(
   async (discount: Partial<any>): Promise<any> => {
-    const { data } = await apiClient.post("/discount/", discount);
+    const { data } = await apiClient.post('/discount/', discount);
     return data;
   }
 );
@@ -61,7 +73,7 @@ export const fetchDiscountRule = asyncHandler(
 // Create a discountrule
 export const createDiscountRule = asyncHandler(
   async (discount: Partial<any>): Promise<any> => {
-    const { data } = await apiClient.post("/discount-rule/", discount);
+    const { data } = await apiClient.post('/discount-rule/', discount);
     return data;
   }
 );
@@ -86,7 +98,7 @@ export const deleteDiscount = asyncHandler(
 
 export const createCoupon = asyncHandler(
   async (coupon: Partial<any>): Promise<any> => {
-    const { data } = await apiClient.post("/coupon/", coupon);
+    const { data } = await apiClient.post('/coupon/', coupon);
     return data;
   }
 );

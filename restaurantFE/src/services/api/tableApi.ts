@@ -1,5 +1,5 @@
-import { apiClient } from "@/config/axiosConfig";
-import { asyncHandler } from "@/util/asyncHandler";
+import { apiClient } from '@/config/axiosConfig';
+import { asyncHandler } from '@/util/asyncHandler';
 
 // export const fetchTables = asyncHandler(async (): Promise<any[]> => {
 //   const resp = await apiClient.get("/table/", {
@@ -9,7 +9,7 @@ import { asyncHandler } from "@/util/asyncHandler";
 // });
 
 export const fetchQRs = asyncHandler(async (): Promise<any[]> => {
-  const resp = await apiClient.get("/qr-code/");
+  const resp = await apiClient.get('/qr-code/');
   return resp.data.results || [];
 });
 
@@ -18,7 +18,7 @@ export const createQR = asyncHandler(
     const tableQr = {
       table: table,
     };
-    const { data } = await apiClient.post("/qr-code/", tableQr);
+    const { data } = await apiClient.post('/qr-code/', tableQr);
     return data;
   }
 );
@@ -30,11 +30,16 @@ export const updateQr = asyncHandler(
   }
 );
 
-export const fetchTables = asyncHandler(async (): Promise<any[]> => {
-  const resp = await apiClient.get(`/table/`);
-
-  return resp.data.results;
-});
+export const fetchTables = asyncHandler(
+  async (page?: number | null): Promise<any[]> => {
+    if (Boolean(page)) {
+      const resp = await apiClient.get(`/table/?page=${page}`);
+      return resp.data || [];
+    }
+    const resp = await apiClient.get(`/table/`);
+    return resp.data || [];
+  }
+);
 
 export const fetchTableById = asyncHandler(async (id: string): Promise<any> => {
   const resp = await apiClient.get(`/table/${id}/`);
@@ -44,7 +49,7 @@ export const fetchTableById = asyncHandler(async (id: string): Promise<any> => {
 // Create a table
 export const createTable = asyncHandler(
   async (table: Partial<any>): Promise<any> => {
-    const { data } = await apiClient.post("/table/", table);
+    const { data } = await apiClient.post('/table/', table);
     return data;
   }
 );

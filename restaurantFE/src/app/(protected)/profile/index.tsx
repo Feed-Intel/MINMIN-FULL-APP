@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Image,
   Linking,
@@ -9,62 +9,46 @@ import {
   TouchableOpacity,
   View,
   useWindowDimensions,
-} from "react-native";
+  TextInput,
+} from 'react-native';
 import {
   ActivityIndicator,
   Appbar,
   Button,
   Card,
+  Dialog,
   Divider,
+  Portal,
   Snackbar,
   Text,
-  TextInput,
-} from "react-native-paper";
-import { SafeAreaView } from "react-native-safe-area-context";
-import * as ImagePicker from "expo-image-picker";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import MaterialIcons from "@expo/vector-icons/MaterialIcons";
-import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
-import Ionicons from "@expo/vector-icons/Ionicons";
-import { useQueryClient } from "@tanstack/react-query";
+} from 'react-native-paper';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import * as ImagePicker from 'expo-image-picker';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
+import Ionicons from '@expo/vector-icons/Ionicons';
+import { useQueryClient } from '@tanstack/react-query';
 
 import {
   useGetTenantProfile,
   useTopMenuItems,
   useUpdateTenantProfile,
   useUpdateTenantProfileImage,
-} from "@/services/mutation/tenantMutation";
-import { useAppSelector } from "@/lib/reduxStore/hooks";
-import { base64ToBlob } from "@/util/imageUtils";
-import { logoutUser } from "@/util/logoutUser";
+} from '@/services/mutation/tenantMutation';
+import { useAppSelector } from '@/lib/reduxStore/hooks';
+import { base64ToBlob, buildImageUrl } from '@/util/imageUtils';
+import { logoutUser } from '@/util/logoutUser';
+import LanguageSelector from '@/components/LanguageSelector';
 
-const LANGUAGE_STORAGE_KEY = "restaurant-language-preference";
-const PRIVACY_POLICY_URL = "https://alpha.feed-intel.com/privacy/";
-const TERMS_URL = "https://alpha.feed-intel.com/terms/";
-const SUPPORT_EMAIL = "mailto:support@feed-intel.com";
-
-const buildImageUrl = (path?: string | null) => {
-  if (!path) {
-    return null;
-  }
-
-  if (/^https?:/i.test(path)) {
-    return path;
-  }
-
-  const base = process.env.EXPO_PUBLIC_IMAGE_PATH ?? "";
-  if (!base) {
-    return path;
-  }
-
-  const sanitizedBase = base.endsWith("/") ? base.slice(0, -1) : base;
-  const sanitizedPath = path.startsWith("/") ? path.slice(1) : path;
-  return `${sanitizedBase}/${sanitizedPath}`;
-};
+const LANGUAGE_STORAGE_KEY = 'restaurant-language-preference';
+const PRIVACY_POLICY_URL = 'https://alpha.feed-intel.com/privacy/';
+const TERMS_URL = 'https://alpha.feed-intel.com/terms/';
+const SUPPORT_EMAIL = 'mailto:support@feed-intel.com';
 
 const formatNumber = (value?: number | null) => {
   if (value === null || value === undefined || Number.isNaN(value)) {
-    return "--";
+    return '--';
   }
 
   try {
@@ -101,43 +85,40 @@ const ProfileScreen = () => {
   const branchName = restaurant?.branch;
 
   const { data: tenant, isLoading } = useGetTenantProfile(tenantId);
-  const { data: topMenuItems, isLoading: isLoadingTopItems } = useTopMenuItems();
+  const { data: topMenuItems, isLoading: isLoadingTopItems } =
+    useTopMenuItems();
 
-  const {
-    mutate: updateProfile,
-    isPending: isSavingProfile,
-  } = useUpdateTenantProfile();
-  const {
-    mutate: updateProfileImage,
-    isPending: isUploadingImage,
-  } = useUpdateTenantProfileImage();
+  const { mutate: updateProfile, isPending: isSavingProfile } =
+    useUpdateTenantProfile();
+  const { mutate: updateProfileImage, isPending: isUploadingImage } =
+    useUpdateTenantProfileImage();
 
   const [localImage, setLocalImage] = useState<string | null>(null);
-  const [restaurantName, setRestaurantName] = useState("");
-  const [profile, setProfile] = useState("");
+  const [restaurantName, setRestaurantName] = useState('');
+  const [profile, setProfile] = useState('');
   const [maxDiscount, setMaxDiscount] = useState<number | null>(null);
-  const [chapaPaymentApiKey, setChapaPaymentApiKey] = useState("");
-  const [chapaPaymentPublicKey, setChapaPaymentPublicKey] = useState("");
+  const [chapaPaymentApiKey, setChapaPaymentApiKey] = useState('');
+  const [chapaPaymentPublicKey, setChapaPaymentPublicKey] = useState('');
   const [taxPercentage, setTaxPercentage] = useState<number | null>(null);
   const [serviceChargePercentage, setServiceChargePercentage] = useState<
     number | null
   >(null);
-  const [snackbarMessage, setSnackbarMessage] = useState("");
+  const [snackbarMessage, setSnackbarMessage] = useState('');
   const [showLanguageModal, setShowLanguageModal] = useState(false);
-  const [selectedLanguage, setSelectedLanguage] = useState<"en" | "am">("en");
+  const [selectedLanguage, setSelectedLanguage] = useState<'en' | 'am'>('en');
 
   useEffect(() => {
     if (tenant) {
-      setRestaurantName(tenant.restaurant_name ?? "");
-      setProfile(tenant.profile ?? "");
+      setRestaurantName(tenant.restaurant_name ?? '');
+      setProfile(tenant.profile ?? '');
       setLocalImage(tenant.image ?? null);
       setMaxDiscount(
         tenant.max_discount_limit === undefined
           ? null
           : Number(tenant.max_discount_limit)
       );
-      setChapaPaymentApiKey(tenant.CHAPA_API_KEY ?? "");
-      setChapaPaymentPublicKey(tenant.CHAPA_PUBLIC_KEY ?? "");
+      setChapaPaymentApiKey(tenant.CHAPA_API_KEY ?? '');
+      setChapaPaymentPublicKey(tenant.CHAPA_PUBLIC_KEY ?? '');
       setTaxPercentage(
         tenant.tax === undefined ? null : Number(tenant.tax ?? 0)
       );
@@ -151,7 +132,7 @@ const ProfileScreen = () => {
 
   useEffect(() => {
     AsyncStorage.getItem(LANGUAGE_STORAGE_KEY).then((value) => {
-      if (value === "en" || value === "am") {
+      if (value === 'en' || value === 'am') {
         setSelectedLanguage(value);
       }
     });
@@ -167,7 +148,7 @@ const ProfileScreen = () => {
       return { uri: remote };
     }
 
-    return require("@/assets/images/avatar.jpg");
+    return require('@/assets/images/avatar.jpg');
   }, [localImage, tenant?.image]);
 
   const topItems: TopMenuItem[] = useMemo(() => {
@@ -180,55 +161,40 @@ const ProfileScreen = () => {
   const quickStats = useMemo(
     () => [
       {
-        key: "discount",
-        label: "Max Discount",
+        key: 'discount',
+        label: 'Max Discount',
         value:
           maxDiscount === null || Number.isNaN(maxDiscount)
-            ? "--"
+            ? '--'
             : `${maxDiscount}%`,
-        icon: "tag-outline",
+        icon: 'tag-outline',
       },
       {
-        key: "tax",
-        label: "Tax",
+        key: 'tax',
+        label: 'Tax',
         value:
           taxPercentage === null || Number.isNaN(taxPercentage)
-            ? "--"
+            ? '--'
             : `${taxPercentage}%`,
-        icon: "chart-pie",
+        icon: 'chart-pie',
       },
       {
-        key: "service",
-        label: "Service Charge",
+        key: 'service',
+        label: 'Service Charge',
         value:
           serviceChargePercentage === null ||
           Number.isNaN(serviceChargePercentage)
-            ? "--"
+            ? '--'
             : `${serviceChargePercentage}%`,
-        icon: "credit-card-outline",
+        icon: 'credit-card-outline',
       },
     ],
     [maxDiscount, taxPercentage, serviceChargePercentage]
   );
 
-  const handleChangeLanguage = async (locale: "en" | "am") => {
-    setSelectedLanguage(locale);
-    await AsyncStorage.setItem(LANGUAGE_STORAGE_KEY, locale);
-    setShowLanguageModal(false);
-    setSnackbarMessage("Language preference saved");
-  };
-
-  const handleHelpSupport = () => {
-    if (Platform.OS === "web") {
-      window.location.href = SUPPORT_EMAIL;
-    } else {
-      Linking.openURL(SUPPORT_EMAIL);
-    }
-  };
-
   const openExternalLink = (url: string) => {
-    if (Platform.OS === "web") {
-      window.open(url, "_blank");
+    if (Platform.OS === 'web') {
+      window.open(url, '_blank');
     } else {
       Linking.openURL(url);
     }
@@ -236,7 +202,7 @@ const ProfileScreen = () => {
 
   const pickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ["images"],
+      mediaTypes: ['images'],
       allowsEditing: true,
       aspect: [1, 1],
       quality: 0.85,
@@ -250,17 +216,17 @@ const ProfileScreen = () => {
     setLocalImage(asset.uri);
 
     const formData = new FormData();
-    const mimeType = asset.mimeType || asset.type || "image/jpeg";
-    const extension = mimeType.split("/")[1] || "jpg";
+    const mimeType = asset.mimeType || asset.type || 'image/jpeg';
+    const extension = mimeType.split('/')[1] || 'jpg';
     const fileName = asset.fileName || `profile.${extension}`;
 
-    formData.append("id", tenantId);
+    formData.append('id', tenantId);
 
-    if (Platform.OS === "web") {
+    if (Platform.OS === 'web') {
       const blob = base64ToBlob(asset.uri, mimeType);
-      formData.append("image", new File([blob], fileName, { type: mimeType }));
+      formData.append('image', new File([blob], fileName, { type: mimeType }));
     } else {
-      formData.append("image", {
+      formData.append('image', {
         uri: asset.uri,
         name: fileName,
         type: mimeType,
@@ -269,11 +235,11 @@ const ProfileScreen = () => {
 
     updateProfileImage(formData, {
       onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: ["tenantProfile"] });
-        setSnackbarMessage("Profile picture updated");
+        queryClient.invalidateQueries({ queryKey: ['tenantProfile'] });
+        setSnackbarMessage('Profile picture updated');
       },
       onError: () => {
-        setSnackbarMessage("Could not update profile picture");
+        setSnackbarMessage('Could not update profile picture');
       },
     });
   };
@@ -296,11 +262,11 @@ const ProfileScreen = () => {
       },
       {
         onSuccess: () => {
-          queryClient.invalidateQueries({ queryKey: ["tenantProfile"] });
-          setSnackbarMessage("Profile details saved");
+          queryClient.invalidateQueries({ queryKey: ['tenantProfile'] });
+          setSnackbarMessage('Profile details saved');
         },
         onError: () => {
-          setSnackbarMessage("Failed to save profile details");
+          setSnackbarMessage('Failed to save profile details');
         },
       }
     );
@@ -312,33 +278,33 @@ const ProfileScreen = () => {
 
   const accountSettings: AccountSetting[] = [
     {
-      key: "language",
-      label: "Language",
-      icon: "translate",
+      key: 'language',
+      label: 'Language',
+      icon: 'translate',
       onPress: () => setShowLanguageModal(true),
     },
     {
-      key: "support",
-      label: "Help & Support",
-      icon: "lifebuoy",
-      onPress: handleHelpSupport,
+      key: 'support',
+      label: 'Help & Support',
+      icon: 'lifebuoy',
+      onPress: () => {},
     },
     {
-      key: "privacy",
-      label: "Privacy Policy",
-      icon: "shield-check-outline",
+      key: 'privacy',
+      label: 'Privacy Policy',
+      icon: 'shield-check-outline',
       onPress: () => openExternalLink(PRIVACY_POLICY_URL),
     },
     {
-      key: "terms",
-      label: "Terms & Conditions",
-      icon: "file-document-outline",
+      key: 'terms',
+      label: 'Terms & Conditions',
+      icon: 'file-document-outline',
       onPress: () => openExternalLink(TERMS_URL),
     },
     {
-      key: "logout",
-      label: "Log out",
-      icon: "logout",
+      key: 'logout',
+      label: 'Log out',
+      icon: 'logout',
       destructive: true,
       showChevron: false,
       onPress: handleLogout,
@@ -347,7 +313,7 @@ const ProfileScreen = () => {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <Appbar.Header mode="center-aligned" style={styles.header}>
+      <Appbar.Header style={styles.header}>
         <Appbar.Content title="Profile" titleStyle={styles.headerTitle} />
         <Appbar.Action icon="logout" onPress={handleLogout} />
       </Appbar.Header>
@@ -366,7 +332,10 @@ const ProfileScreen = () => {
             <Card style={[styles.sectionCard, styles.profileCard]}>
               <Card.Content>
                 <View
-                  style={[styles.profileRow, isCompact && styles.profileRowCompact]}
+                  style={[
+                    styles.profileRow,
+                    isCompact && styles.profileRowCompact,
+                  ]}
                 >
                   <View style={styles.profileImageColumn}>
                     <TouchableOpacity
@@ -374,7 +343,10 @@ const ProfileScreen = () => {
                       style={styles.profileImageButton}
                       disabled={isUploadingImage}
                     >
-                      <Image source={profileImageSource} style={styles.profileImage} />
+                      <Image
+                        source={profileImageSource}
+                        style={styles.profileImage}
+                      />
                       <View style={styles.editIcon}>
                         <MaterialIcons name="edit" size={18} color="#FFF" />
                       </View>
@@ -391,16 +363,23 @@ const ProfileScreen = () => {
                   </View>
 
                   <View
-                    style={[styles.profileDetails, isCompact && styles.profileDetailsCompact]}
+                    style={[
+                      styles.profileDetails,
+                      isCompact && styles.profileDetailsCompact,
+                    ]}
                   >
                     <Text style={styles.profileName} numberOfLines={1}>
-                      {restaurantName || tenant?.restaurant_name || "Your restaurant"}
+                      {restaurantName ||
+                        tenant?.restaurant_name ||
+                        'Your restaurant'}
                     </Text>
                     {userEmail ? (
                       <Text style={styles.profileMeta}>{userEmail}</Text>
                     ) : null}
                     {branchName ? (
-                      <Text style={styles.profileMeta}>Branch: {branchName}</Text>
+                      <Text style={styles.profileMeta}>
+                        Branch: {branchName}
+                      </Text>
                     ) : null}
                     {profile ? (
                       <Text style={styles.profileDescription}>{profile}</Text>
@@ -438,17 +417,15 @@ const ProfileScreen = () => {
                 </View>
                 <View style={styles.inputGroup}>
                   <TextInput
-                    label="Restaurant Name"
+                    placeholder="Restaurant Name"
                     value={restaurantName}
                     onChangeText={setRestaurantName}
-                    mode="outlined"
                     style={styles.input}
                   />
                   <TextInput
-                    label="Profile Description"
+                    placeholder="Profile Description"
                     value={profile}
                     onChangeText={setProfile}
-                    mode="outlined"
                     multiline
                     numberOfLines={4}
                     style={[styles.input, styles.textArea]}
@@ -461,59 +438,52 @@ const ProfileScreen = () => {
               <Card.Content>
                 <View style={styles.sectionHeader}>
                   <Text style={styles.sectionTitle}>Financial & Payments</Text>
-                  <Ionicons
-                    name="wallet-outline"
-                    size={22}
-                    color="#91B275"
-                  />
+                  <Ionicons name="wallet-outline" size={22} color="#91B275" />
                 </View>
 
                 <View style={styles.inputRow}>
                   <TextInput
-                    label="Chapa Payment API Key"
+                    placeholder="Chapa Payment API Key"
                     value={chapaPaymentApiKey}
                     onChangeText={setChapaPaymentApiKey}
-                    mode="outlined"
                     style={styles.input}
                   />
                   <TextInput
-                    label="Chapa Public Key"
+                    placeholder="Chapa Public Key"
                     value={chapaPaymentPublicKey}
                     onChangeText={setChapaPaymentPublicKey}
-                    mode="outlined"
                     style={styles.input}
                   />
                 </View>
 
                 <View style={styles.inputRow}>
                   <TextInput
-                    label="Tax Percentage"
-                    value={taxPercentage?.toString() ?? ""}
+                    placeholder="Tax Percentage"
+                    value={taxPercentage?.toString() ?? ''}
                     onChangeText={(text) =>
                       setTaxPercentage(text ? Number(text) : null)
                     }
                     keyboardType="numeric"
-                    mode="outlined"
                     style={styles.input}
                   />
                   <TextInput
-                    label="Service Charge Percentage"
-                    value={serviceChargePercentage?.toString() ?? ""}
+                    placeholder="Service Charge Percentage"
+                    value={serviceChargePercentage?.toString() ?? ''}
                     onChangeText={(text) =>
                       setServiceChargePercentage(text ? Number(text) : null)
                     }
                     keyboardType="numeric"
-                    mode="outlined"
                     style={styles.input}
                   />
                 </View>
 
                 <TextInput
-                  label="Max Discount Limit"
-                  value={maxDiscount?.toString() ?? ""}
-                  onChangeText={(text) => setMaxDiscount(text ? Number(text) : null)}
+                  placeholder="Max Discount Limit"
+                  value={maxDiscount?.toString() ?? ''}
+                  onChangeText={(text) =>
+                    setMaxDiscount(text ? Number(text) : null)
+                  }
                   keyboardType="numeric"
-                  mode="outlined"
                   style={styles.input}
                 />
 
@@ -550,14 +520,24 @@ const ProfileScreen = () => {
                     contentContainerStyle={styles.topItemsRow}
                   >
                     {topItems.map((item) => (
-                      <View key={item.id || item.name} style={styles.topItemCard}>
+                      <View
+                        key={item.id || item.name}
+                        style={styles.topItemCard}
+                      >
                         {item.image ? (
                           <Image
-                            source={{ uri: buildImageUrl(item.image) ?? item.image }}
+                            source={{
+                              uri: buildImageUrl(item.image) ?? item.image,
+                            }}
                             style={styles.topItemImage}
                           />
                         ) : (
-                          <View style={[styles.topItemImage, styles.topItemPlaceholder]}>
+                          <View
+                            style={[
+                              styles.topItemImage,
+                              styles.topItemPlaceholder,
+                            ]}
+                          >
                             <Ionicons
                               name="fast-food-outline"
                               size={26}
@@ -566,7 +546,7 @@ const ProfileScreen = () => {
                           </View>
                         )}
                         <Text style={styles.topItemName} numberOfLines={1}>
-                          {item.name || "Menu Item"}
+                          {item.name || 'Menu Item'}
                         </Text>
                         <Text style={styles.topItemMeta}>
                           {formatNumber(item.count)} orders
@@ -596,7 +576,7 @@ const ProfileScreen = () => {
                       <MaterialCommunityIcons
                         name={item.icon as any}
                         size={22}
-                        color={item.destructive ? "#D64323" : "#2E3A24"}
+                        color={item.destructive ? '#D64323' : '#2E3A24'}
                       />
                       <Text
                         style={[
@@ -608,10 +588,10 @@ const ProfileScreen = () => {
                       </Text>
                     </View>
 
-                    {item.key === "language" ? (
+                    {item.key === 'language' ? (
                       <View style={styles.settingRight}>
                         <Text style={styles.settingValue}>
-                          {selectedLanguage === "en" ? "English" : "አማርኛ"}
+                          {selectedLanguage === 'en' ? 'English' : 'አማርኛ'}
                         </Text>
                         <MaterialIcons
                           name="keyboard-arrow-right"
@@ -633,59 +613,18 @@ const ProfileScreen = () => {
           </>
         )}
       </ScrollView>
-
+      <LanguageSelector
+        showLanguageModal={showLanguageModal}
+        setShowLanguageModal={setShowLanguageModal}
+      />
       <Snackbar
         visible={Boolean(snackbarMessage)}
-        onDismiss={() => setSnackbarMessage("")}
+        onDismiss={() => setSnackbarMessage('')}
         duration={3000}
         style={styles.snackbar}
       >
         {snackbarMessage}
       </Snackbar>
-
-      <Modal
-        visible={showLanguageModal}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowLanguageModal(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <Card style={styles.modalCard}>
-            <Card.Content>
-              <Text style={styles.modalTitle}>Choose your language</Text>
-
-              {(["en", "am"] as const).map((locale) => (
-                <TouchableOpacity
-                  key={locale}
-                  style={[
-                    styles.languageOption,
-                    selectedLanguage === locale && styles.languageOptionActive,
-                  ]}
-                  onPress={() => handleChangeLanguage(locale)}
-                >
-                  <Text
-                    style={[
-                      styles.languageOptionLabel,
-                      selectedLanguage === locale &&
-                        styles.languageOptionLabelActive,
-                    ]}
-                  >
-                    {locale === "en" ? "English" : "አማርኛ"}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-
-              <Button
-                mode="text"
-                onPress={() => setShowLanguageModal(false)}
-                style={styles.modalCloseButton}
-              >
-                Cancel
-              </Button>
-            </Card.Content>
-          </Card>
-        </View>
-      </Modal>
     </SafeAreaView>
   );
 };
@@ -693,18 +632,18 @@ const ProfileScreen = () => {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#EFF4EB",
+    backgroundColor: '#EFF4EB',
   },
   header: {
-    backgroundColor: "#EFF4EB",
-    borderBottomColor: "#D9E5D5",
+    backgroundColor: '#EFF4EB',
+    borderBottomColor: '#D9E5D5',
     borderBottomWidth: 1,
     elevation: 0,
   },
   headerTitle: {
     fontSize: 22,
-    fontWeight: "600",
-    color: "#2E3A24",
+    fontWeight: '600',
+    color: '#2E3A24',
   },
   scroll: {
     flex: 1,
@@ -716,49 +655,49 @@ const styles = StyleSheet.create({
   },
   loadingContainer: {
     flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
+    alignItems: 'center',
+    justifyContent: 'center',
     paddingVertical: 80,
   },
   sectionCard: {
     borderRadius: 16,
-    backgroundColor: "#FFFFFF",
-    shadowColor: "#00000020",
+    backgroundColor: '#D2DEC400',
+    shadowColor: '#00000000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: Platform.OS === "web" ? 0 : 0.08,
+    shadowOpacity: Platform.OS === 'web' ? 0 : 0.08,
     shadowRadius: 10,
-    elevation: Platform.OS === "web" ? 0 : 3,
+    elevation: Platform.OS === 'web' ? 0 : 3,
   },
   profileCard: {
     paddingVertical: 8,
   },
   profileRow: {
-    flexDirection: "row",
-    alignItems: "flex-start",
+    flexDirection: 'row',
+    alignItems: 'flex-start',
     gap: 24,
   },
   profileRowCompact: {
-    flexDirection: "column",
-    alignItems: "center",
+    flexDirection: 'column',
+    alignItems: 'center',
   },
   profileImageColumn: {
-    alignItems: "center",
+    alignItems: 'center',
   },
   profileImageButton: {
-    position: "relative",
+    position: 'relative',
   },
   profileImage: {
     width: 104,
     height: 104,
     borderRadius: 64,
     borderWidth: 2,
-    borderColor: "#FFFFFF",
+    borderColor: '#FFFFFF',
   },
   editIcon: {
-    position: "absolute",
+    position: 'absolute',
     bottom: 6,
     right: 6,
-    backgroundColor: "#EE8429",
+    backgroundColor: '#EE8429',
     borderRadius: 12,
     padding: 4,
   },
@@ -771,33 +710,33 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   profileDetailsCompact: {
-    alignItems: "center",
-    textAlign: "center",
+    alignItems: 'center',
+    textAlign: 'center',
   },
   profileName: {
     fontSize: 24,
-    fontWeight: "700",
-    color: "#2E3A24",
+    fontWeight: '700',
+    color: '#2E3A24',
   },
   profileMeta: {
     fontSize: 14,
-    color: "#5A6E49",
+    color: '#5A6E49',
   },
   profileDescription: {
     fontSize: 14,
-    color: "#4B4F44",
+    color: '#4B4F44',
     marginTop: 8,
   },
   statsRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
+    flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 12,
     marginTop: 16,
   },
   statPill: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#F3F8EF",
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F3F8EF',
     paddingVertical: 8,
     paddingHorizontal: 12,
     borderRadius: 12,
@@ -808,35 +747,43 @@ const styles = StyleSheet.create({
   },
   statLabel: {
     fontSize: 12,
-    color: "#5A6E49",
+    color: '#5A6E49',
   },
   statValue: {
     fontSize: 16,
-    fontWeight: "600",
-    color: "#2E3A24",
+    fontWeight: '600',
+    color: '#2E3A24',
   },
   sectionHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: 16,
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: "600",
-    color: "#2E3A24",
+    fontWeight: '600',
+    color: '#2E3A24',
   },
   inputGroup: {
     gap: 16,
   },
   inputRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
+    flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 16,
   },
   input: {
     flex: 1,
     minWidth: 200,
+    paddingHorizontal: 12,
+    paddingVertical: Platform.OS === 'ios' ? 14 : 10,
+    borderWidth: 1,
+    borderColor: '#C7D3C1',
+    borderRadius: 10,
+    fontSize: 16,
+    color: '#2E3A24',
+    backgroundColor: '#91B27517',
   },
   textArea: {
     minHeight: 110,
@@ -844,7 +791,7 @@ const styles = StyleSheet.create({
   saveButton: {
     marginTop: 20,
     borderRadius: 12,
-    backgroundColor: "#91B275",
+    backgroundColor: '#91B275',
   },
   saveButtonContent: {
     height: 52,
@@ -855,110 +802,116 @@ const styles = StyleSheet.create({
   topItemCard: {
     width: 140,
     borderRadius: 12,
-    backgroundColor: "#F8FBF5",
+    backgroundColor: '#F8FBF5',
     padding: 12,
     gap: 10,
-    alignItems: "center",
+    alignItems: 'center',
   },
   topItemImage: {
     width: 80,
     height: 80,
     borderRadius: 12,
-    backgroundColor: "#E8F2E0",
+    backgroundColor: '#E8F2E0',
   },
   topItemPlaceholder: {
-    justifyContent: "center",
-    alignItems: "center",
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   topItemName: {
     fontSize: 14,
-    fontWeight: "600",
-    color: "#2E3A24",
+    fontWeight: '600',
+    color: '#2E3A24',
   },
   topItemMeta: {
     fontSize: 12,
-    color: "#5A6E49",
+    color: '#5A6E49',
   },
   emptyStateText: {
     fontSize: 14,
-    color: "#68795B",
+    color: '#68795B',
   },
   settingsDivider: {
     marginVertical: 12,
-    backgroundColor: "#E4EDE0",
+    backgroundColor: '#E4EDE0',
   },
   settingRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     paddingVertical: 12,
   },
   settingLeft: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 12,
   },
   settingLabel: {
     fontSize: 16,
-    color: "#2E3A24",
+    color: '#2E3A24',
   },
   destructiveSetting: {
-    color: "#D64323",
+    color: '#D64323',
   },
   settingRight: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 4,
   },
   settingValue: {
     fontSize: 14,
-    color: "#5A6E49",
+    color: '#5A6E49',
   },
   snackbar: {
     margin: 16,
     borderRadius: 12,
-    backgroundColor: "#3F522E",
+    backgroundColor: '#3F522E',
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.5)",
-    justifyContent: "center",
-    alignItems: "center",
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
     padding: 24,
   },
   modalCard: {
-    width: "100%",
+    width: '100%',
     maxWidth: 360,
     borderRadius: 16,
   },
   modalTitle: {
     fontSize: 18,
-    fontWeight: "600",
-    color: "#2E3A24",
+    fontWeight: '600',
+    color: '#2E3A24',
     marginBottom: 16,
+  },
+  dialog: {
+    borderRadius: 12,
+    backgroundColor: '#EFF4EB',
+    width: 500,
+    alignSelf: 'center',
   },
   languageOption: {
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#E4EDE0",
+    borderColor: '#E4EDE0',
     marginBottom: 12,
   },
   languageOptionActive: {
-    backgroundColor: "#F3F8EF",
-    borderColor: "#91B275",
+    backgroundColor: '#F3F8EF',
+    borderColor: '#91B275',
   },
   languageOptionLabel: {
     fontSize: 16,
-    color: "#2E3A24",
+    color: '#2E3A24',
   },
   languageOptionLabelActive: {
-    color: "#3F522E",
-    fontWeight: "600",
+    color: '#3F522E',
+    fontWeight: '600',
   },
   modalCloseButton: {
-    alignSelf: "center",
+    alignSelf: 'center',
     marginTop: 4,
   },
 });

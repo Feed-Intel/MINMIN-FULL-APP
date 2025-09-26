@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   fetchOrders,
   updateOrder,
@@ -6,23 +6,23 @@ import {
   fetchTenant,
   fetchOrder,
   createOrder,
-} from "../api/orderApi";
-import { Order } from "@/types/orderTypes";
-import { useDispatch } from "react-redux";
-import { AppDispatch } from "@/lib/reduxStore/store";
-import { hideLoader, showLoader } from "@/lib/reduxStore/loaderSlice";
+} from '../api/orderApi';
+import { Order } from '@/types/orderTypes';
+import { useDispatch } from 'react-redux';
+import { AppDispatch } from '@/lib/reduxStore/store';
+import { hideLoader, showLoader } from '@/lib/reduxStore/loaderSlice';
 
-export const useOrders = () =>
-  useQuery<Order[]>({
-    queryKey: ["orders"],
-    queryFn: () => fetchOrders(),
+export const useOrders = (page?: number | undefined) =>
+  useQuery<{ next: string | null; results: Order[]; count: number }>({
+    queryKey: ['orders', page],
+    queryFn: () => fetchOrders(page),
     staleTime: 0,
     refetchInterval: 15000,
   });
 
 export const useGetOrder = (id: string) =>
   useQuery<Order>({
-    queryKey: ["order", id],
+    queryKey: ['order', id],
     queryFn: () => fetchOrder(id),
     staleTime: 0,
   });
@@ -34,7 +34,7 @@ export function useCreateOrder() {
       return createOrder(data);
     },
     onError: (error: any) => {
-      console.error("Error creating Order:", error);
+      console.error('Error creating Order:', error);
     },
     onSuccess: () => {
       //("Order created successfully");
@@ -43,7 +43,7 @@ export function useCreateOrder() {
       if (error) {
         console.error(error);
       } else {
-        await queryClient.invalidateQueries({ queryKey: ["orders"] });
+        await queryClient.invalidateQueries({ queryKey: ['orders'] });
       }
     },
   });
@@ -51,7 +51,7 @@ export function useCreateOrder() {
 
 export const useTenant = () =>
   useQuery({
-    queryKey: ["tenant"],
+    queryKey: ['tenant'],
     queryFn: fetchTenant,
     staleTime: 0,
   });
@@ -65,11 +65,11 @@ export function useUpdateOrder() {
       return updateOrder(data.id, data.order);
     },
     onError: (error: any) => {
-      console.error("Error updating order:", error);
+      console.error('Error updating order:', error);
     },
     onSuccess: () => {
       //("Order updated successfully");
-      queryClient.invalidateQueries({ queryKey: ["orders"] });
+      queryClient.invalidateQueries({ queryKey: ['orders'] });
     },
     onSettled: () => {
       dispatch(hideLoader());
@@ -86,7 +86,7 @@ export function useDeleteOrder() {
       return deleteOrder(id);
     },
     onError: (error: any) => {
-      console.error("Error deleting order:", error);
+      console.error('Error deleting order:', error);
     },
     onSuccess: () => {
       //("Order deleted successfully");
@@ -95,7 +95,7 @@ export function useDeleteOrder() {
       if (error) {
         console.error(error);
       } else {
-        await queryClient.invalidateQueries({ queryKey: ["orders"] });
+        await queryClient.invalidateQueries({ queryKey: ['orders'] });
       }
       dispatch(hideLoader());
     },

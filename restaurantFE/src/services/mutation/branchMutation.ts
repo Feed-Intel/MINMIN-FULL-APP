@@ -1,26 +1,26 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   CreateBranch,
   DeleteBranch,
   GetBranch,
   GetBranches,
   UpdateBranch,
-} from "../api/branchApi";
-import { Branch } from "@/types/branchType";
-import { useDispatch } from "react-redux";
-import { AppDispatch } from "@/lib/reduxStore/store";
-import { hideLoader, showLoader } from "@/lib/reduxStore/loaderSlice";
+} from '../api/branchApi';
+import { Branch } from '@/types/branchType';
+import { useDispatch } from 'react-redux';
+import { AppDispatch } from '@/lib/reduxStore/store';
+import { hideLoader, showLoader } from '@/lib/reduxStore/loaderSlice';
 
-export const useGetBranches = () =>
-  useQuery<Branch[]>({
-    queryKey: ["branches"],
-    queryFn: GetBranches,
+export const useGetBranches = (page?: number | undefined) =>
+  useQuery<{ next: string | null; results: Branch[]; count: number }>({
+    queryKey: ['branches', page],
+    queryFn: () => GetBranches(page),
     staleTime: 0,
   });
 
 export const useGetBranch = (id: string) =>
   useQuery<Branch>({
-    queryKey: ["branch", id],
+    queryKey: ['branch', id],
     queryFn: () => GetBranch(id),
     staleTime: 0,
   });
@@ -28,44 +28,47 @@ export const useGetBranch = (id: string) =>
 export const useCreateBranch = (
   onSuccess?: (data?: any) => void,
   onError?: (error?: any) => void
-) =>{
+) => {
   const dispatch = useDispatch<AppDispatch>();
   return useMutation({
-    mutationKey: ["createBranch"],
+    mutationKey: ['createBranch'],
     mutationFn: (data: any) => {
-          dispatch(showLoader());
-          return CreateBranch(data);
-        },
-        onSuccess: (data) => {
-          if (onSuccess) onSuccess(data);
-        },
-        onError: (error) => {
-          dispatch(hideLoader());
-          if (onError) onError(error);
-        },
-        onSettled: () => dispatch(hideLoader()),
-  })};
+      dispatch(showLoader());
+      return CreateBranch(data);
+    },
+    onSuccess: (data) => {
+      if (onSuccess) onSuccess(data);
+    },
+    onError: (error) => {
+      dispatch(hideLoader());
+      if (onError) onError(error);
+    },
+    onSettled: () => dispatch(hideLoader()),
+  });
+};
 
 export const useUpdateBranch = (
   onSuccess?: (data?: any) => void,
   onError?: (error?: any) => void
-) =>{const dispatch = useDispatch<AppDispatch>();
+) => {
+  const dispatch = useDispatch<AppDispatch>();
 
-return useMutation({
-  mutationKey: ["updateBranch"],
-  mutationFn: (data: any) => {
-    dispatch(showLoader());
-    return UpdateBranch(data);
-  },
-  onSuccess: (data) => {
-    if (onSuccess) onSuccess(data);
-  },
-  onError: (error) => {
-    dispatch(hideLoader());
-    if (onError) onError(error);
-  },
-  onSettled: () => dispatch(hideLoader()),
-});}
+  return useMutation({
+    mutationKey: ['updateBranch'],
+    mutationFn: (data: any) => {
+      dispatch(showLoader());
+      return UpdateBranch(data);
+    },
+    onSuccess: (data) => {
+      if (onSuccess) onSuccess(data);
+    },
+    onError: (error) => {
+      dispatch(hideLoader());
+      if (onError) onError(error);
+    },
+    onSettled: () => dispatch(hideLoader()),
+  });
+};
 
 export const useDeleteBranch = (
   onSuccess?: (data: any) => void,
@@ -75,14 +78,14 @@ export const useDeleteBranch = (
   const dispatch = useDispatch<AppDispatch>();
 
   return useMutation({
-    mutationKey: ["deleteBranch"],
+    mutationKey: ['deleteBranch'],
     mutationFn: (data: any) => {
       dispatch(showLoader());
       return DeleteBranch(data);
     },
     onSuccess: (data) => {
       if (onSuccess) onSuccess(data);
-      queryClient.invalidateQueries({ queryKey: ["branches"] });
+      queryClient.invalidateQueries({ queryKey: ['branches'] });
     },
     onError: (error) => {
       dispatch(hideLoader());
