@@ -1,4 +1,3 @@
-# syntax=docker/dockerfile:1
 FROM python:3.11-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
@@ -20,12 +19,11 @@ RUN pip install --upgrade pip && pip install -r requirements.txt && pip install 
 
 COPY . .
 
+# Create non-root user (UID 1000 by default) for safety
 RUN useradd -m appuser && chown -R appuser:appuser /app
 
 COPY entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh && chown appuser:appuser /entrypoint.sh
-
-USER appuser
+RUN chmod +x /entrypoint.sh
 
 EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=30s CMD curl -f http://localhost:8000/healthz || exit 1

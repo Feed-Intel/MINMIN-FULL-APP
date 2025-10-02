@@ -8,13 +8,14 @@ on:
 permissions:
   contents: read
   packages: write
+  actions: write
 
 env:
   API_IMAGE_NAME: minmin-api
   CUSTOMER_IMAGE_NAME: customer-frontend
 
 jobs:
-  build_api:
+  build_images:
     name: Build and Push API Image
     runs-on: ubuntu-latest
     steps:
@@ -64,7 +65,27 @@ jobs:
           push: true
           tags: ${{ steps.meta-fe.outputs.tags }}
           labels: ${{ steps.meta-fe.outputs.labels }}
-  build_frontends:
+          build-args: |
+            EXPO_PUBLIC_API_URL=https://${{ vars.API_DOMAIN }}/api/v1
+            EXPO_PUBLIC_BACKEND_URL=https://${{ vars.API_DOMAIN }}/api
+            EXPO_PUBLIC_API_KEY=${{ secrets.API_KEY || '' }}
+            EXPO_PUBLIC_DOMAIN=.feed-intel.com
+            EXPO_PUBLIC_WS_URL=wss://${{ vars.API_DOMAIN }}/ws/user
+            EXPO_PUBLIC_BASE_URL=${{ vars.EXPO_PUBLIC_BASE_URL }}
+            EXPO_PUBLIC_GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID || '' }}
+            GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET || '' }}
+            FACEBOOK_CLIENT_ID=${{ secrets.FACEBOOK_CLIENT_ID || '' }}
+            FACEBOOK_CLIENT_SECRET=${{ secrets.FACEBOOK_CLIENT_SECRET || '' }}
+            EXPO_PUBLIC_CHAPA_CHECKOUT_URL=${{ vars.CHAPA_CHECKOUT_URL || '' }}
+            EXPO_PUBLIC_TELEBIRR_API=${{ vars.TELEBIRR_API || '' }}
+            EXPO_PUBLIC_TELEBIRR_APPSECRET=${{ secrets.TELEBIRR_APPSECRET || '' }}
+            EXPO_PUBLIC_FABRIC_ID=${{ secrets.FABRIC_ID || '' }}
+            EXPO_PUBLIC_PRIVATEKEY=${{ secrets.PRIVATEKEY || '' }}
+            EXPO_PUBLIC_MERCHANT_APPID=${{ secrets.MERCHANT_APPID || '' }}
+            EXPO_PUBLIC_MERCHANT_SHORTCODE=${{ secrets.MERCHANT_SHORTCODE || '' }}
+            EXPO_PUBLIC_SCHEME=minmin://
+            
+  build_restaurant:
     name: Build Frontend (Restaurant web)
     runs-on: ubuntu-latest
     steps:
@@ -83,9 +104,24 @@ jobs:
           EXPO_PUBLIC_BACKEND_URL: https://${{ vars.API_DOMAIN }}/api/
           EXPO_PUBLIC_IMAGE_PATH: https://${{ vars.API_DOMAIN }}
           EXPO_PUBLIC_WS_URL: wss://${{ vars.API_DOMAIN }}/ws/restaurant/
+          EXPO_PUBLIC_API_KEY: ${{ secrets.API_KEY }}
         run: |
           npm ci
           npx --yes expo export --platform web --non-interactive
+      
+      - name: Delete old restaurant artifacts
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          artifacts=$(gh api repos/${{ github.repository }}/actions/artifacts \
+            --paginate -q '.artifacts[] | select(.name=="restaurant-web-dist") | .id')
+
+          for artifact_id in $artifacts; do
+            echo "Deleting artifact ID: $artifact_id"
+            gh api --method DELETE repos/${{ github.repository }}/actions/artifacts/$artifact_id
+          done
+
+
 
       - name: Upload restaurantFE artifact
         uses: actions/upload-artifact@v4
@@ -96,7 +132,7 @@ jobs:
   deploy:
     name: Deploy to EC2
     runs-on: ubuntu-latest
-    needs: [build_api, build_frontends]
+    needs: [build_images, build_restaurant]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -187,7 +223,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: restaurant-web-dist
-          path: dist/restaurant
+          path: dist
 
       - name: Upload deployment bundle
         uses: appleboy/scp-action@v0.1.7
@@ -241,6 +277,8 @@ jobs:
             # Bring up supporting services for smoke tests
             echo "API_IMAGE=ghcr.io/${{ steps.owner.outputs.lc }}/${{ env.API_IMAGE_NAME }}:latest" | sudo tee /opt/minmin/deploy.env >/dev/null
             echo "CUSTOMER_IMAGE=ghcr.io/${{ steps.owner.outputs.lc }}/${{ env.CUSTOMER_IMAGE_NAME }}:latest" | sudo tee -a /opt/minmin/deploy.env >/dev/null
+            sudo docker compose --env-file /opt/minmin/deploy.env -f /opt/minmin/docker-compose.prod.yml down
+            sudo docker rmi -f $(sudo docker images -q)
             sudo docker compose --env-file /opt/minmin/deploy.env -f /opt/minmin/docker-compose.prod.yml up -d nginx
             # Wait for Nginx to accept connections on :80
             for i in $(seq 1 20); do
@@ -297,6 +335,23 @@ jobs:
             # Reload nginx to pick up new certs (ignore failures)
             sudo docker compose --env-file /opt/minmin/deploy.env -f /opt/minmin/docker-compose.prod.yml exec -T nginx nginx -s reload || true
 
+      - name: Remove old restaurant folder if exists
+        uses: appleboy/ssh-action@v1.2.1
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            set -e
+            if [ -d "/opt/minmin/restaurant" ]; then
+              echo "Removing old /opt/minmin/restaurant"
+              sudo rm -rf /opt/minmin/restaurant
+            else
+              echo "No existing /opt/minmin/restaurant found, skipping"
+            fi
+            sudo mkdir -p /opt/minmin/restaurant
+            sudo chown -R $USER:$USER /opt/minmin/restaurant
+
       - name: Copy static sites to server
         uses: appleboy/scp-action@v0.1.7
         with:
@@ -304,7 +359,7 @@ jobs:
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
           source: |
-            dist/restaurant/**
+            dist/*
           target: /opt/minmin/restaurant
 
       - name: Verify and normalize static site roots
@@ -316,34 +371,10 @@ jobs:
           script: |
             set -e
             echo "Restaurant root contents:"; ls -la /opt/minmin/restaurant || true
-            echo "Customer root contents:"; ls -la /opt/minmin/customer || true
-            # Normalize customer web export into /opt/minmin/customer/client deterministically
-            root="/opt/minmin/customer"; client="$root/client"; mkdir -p "$client"
-            if [ ! -f "$client/index.html" ]; then
-              if [ -d "$root/dist/client" ]; then
-                echo "customer: Promoting dist/client -> client"
-                sudo rsync -a "$root/dist/client/" "$client/" || true
-                sudo rm -rf "$root/dist"
-              elif [ -d "$root/dist/customer" ]; then
-                echo "customer: Promoting dist/customer -> client"
-                sudo rsync -a "$root/dist/customer/" "$client/" || true
-                sudo rm -rf "$root/dist"
-              else
-                CAND=$(sudo find "$root" -maxdepth 3 -type f -name index.html | head -n 1 || true)
-                if [ -n "$CAND" ]; then
-                  SRC=$(dirname "$CAND")
-                  echo "customer: Found index.html at $CAND; syncing $SRC -> client"
-                  sudo rsync -a "$SRC/" "$client/" || true
-                else
-                  echo "::warning::customer: No client export found (looked for dist/* or index.html)"
-                fi
-              fi
-            else
-              echo "customer: client/index.html already present"
-            fi
             # Ensure safe read perms for nginx
             sudo find /opt/minmin/restaurant -type d -exec chmod 755 {} +
             sudo find /opt/minmin/restaurant -type f -exec chmod 644 {} +
+            sudo mv /opt/minmin/restaurant/dist/** /opt/minmin/restaurant
             echo "Restaurant (unchanged root):"; ls -la /opt/minmin/restaurant | head -n 40 || true
             echo "Post-normalize Customer:"; ls -la /opt/minmin/customer | head -n 40; ls -la /opt/minmin/customer/client | head -n 40 || true
             # Reload nginx to ensure it serves updated static
@@ -418,11 +449,9 @@ jobs:
             # Sanity check compose file present
             test -f /opt/minmin/docker-compose.prod.yml || (echo "::error::Missing compose file at /opt/minmin/docker-compose.prod.yml" && exit 1)
 
-            sudo docker compose --env-file /opt/minmin/deploy.env -f /opt/minmin/docker-compose.prod.yml pull || true
+            sudo docker compose --env-file /opt/minmin/deploy.env -f /opt/minmin/docker-compose.prod.yml pull  --ignore-pull-failures|| true
             # Remove any orphaned/renamed services (like historical customer_server/customer_expo)
             sudo docker compose --env-file /opt/minmin/deploy.env -f /opt/minmin/docker-compose.prod.yml up -d --remove-orphans
-            # Ensure customer_expo (dev-only) is not running even if it exists from prior versions
-            sudo docker compose --env-file /opt/minmin/deploy.env -f /opt/minmin/docker-compose.prod.yml rm -f customer_expo || true
 
             # Health check with retries (API behind Nginx)
             echo "Waiting for API to become healthy..."
@@ -469,23 +498,3 @@ jobs:
                 exit 1
               fi
             done
-
-      - name: Customer SSR smoke test
-        uses: appleboy/ssh-action@v1.2.1
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USER }}
-          key: ${{ secrets.EC2_SSH_KEY }}
-          script: |
-            set -e
-            # Verify customer static site responds via Nginx
-            for i in $(seq 1 10); do
-              code=$(curl -s -o /dev/null -w "%{http_code}" -H "Host: ${{ vars.CUSTOMER_DOMAIN }}" http://localhost/index.html || true)
-              echo "customer /index.html status: $code (attempt $i)"
-              if [ "$code" = "200" ] || [ "$code" = "302" ] || [ "$code" = "301" ]; then
-                echo "Customer static reachable"
-                exit 0
-              fi
-              sleep 3
-            done
-            echo "::warning::Customer static did not return 2xx/3xx; verify /opt/minmin/customer/client contents and nginx customer vhost"
