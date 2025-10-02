@@ -107,8 +107,6 @@ def handle_order_save(sender, instance, created, **kwargs):
             notification_type="Order Updated"
         )
         
-        # Notify WebSocket group
-        
 
 @receiver(post_delete, sender=Order)
 def handle_order_delete(sender, instance, **kwargs):

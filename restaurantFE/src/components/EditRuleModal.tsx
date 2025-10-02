@@ -92,8 +92,16 @@ const EditDiscountRuleModal = ({
     min_items: discountRule.min_items,
     max_items: discountRule.max_items,
     min_price: discountRule.min_price,
-    applicable_items: discountRule,
-    excluded_items: discountRule.excluded_items,
+    applicable_items: Array.isArray(discountRule.applicable_items)
+      ? discountRule.applicable_items
+      : discountRule.applicable_items
+      ? [discountRule.applicable_items]
+      : [],
+    excluded_items: Array.isArray(discountRule.excluded_items)
+      ? discountRule.excluded_items
+      : discountRule.excluded_items
+      ? [discountRule.excluded_items]
+      : [],
     combo_size: discountRule.combo_size,
     buy_quantity: discountRule.buy_quantity,
     get_quantity: discountRule.get_quantity,
@@ -113,9 +121,18 @@ const EditDiscountRuleModal = ({
     key: string,
     value: string | boolean | any[]
   ) => {
+    const normalizedValue =
+      key === "applicable_items" || key === "excluded_items"
+        ? Array.isArray(value)
+          ? value
+          : value == null || value === ""
+          ? []
+          : [value]
+        : value;
+
     setRuleFormValues((prev) => ({
       ...prev,
-      [key]: value,
+      [key]: normalizedValue,
     }));
   };
 
@@ -207,7 +224,53 @@ const EditDiscountRuleModal = ({
     if (!validateForm()) return;
 
     try {
-      await updateDiscountRule(ruleFormValues);
+      const payload = {
+        ...ruleFormValues,
+        min_items:
+          ruleFormValues.min_items !== undefined &&
+          ruleFormValues.min_items !== null &&
+          ruleFormValues.min_items !== ""
+            ? Number(ruleFormValues.min_items)
+            : ruleFormValues.min_items,
+        max_items:
+          ruleFormValues.max_items !== undefined &&
+          ruleFormValues.max_items !== null &&
+          ruleFormValues.max_items !== ""
+            ? Number(ruleFormValues.max_items)
+            : ruleFormValues.max_items,
+        min_price:
+          ruleFormValues.min_price !== undefined &&
+          ruleFormValues.min_price !== null &&
+          ruleFormValues.min_price !== ""
+            ? Number(ruleFormValues.min_price)
+            : ruleFormValues.min_price,
+        combo_size:
+          ruleFormValues.combo_size !== undefined &&
+          ruleFormValues.combo_size !== null &&
+          ruleFormValues.combo_size !== ""
+            ? Number(ruleFormValues.combo_size)
+            : ruleFormValues.combo_size,
+        buy_quantity:
+          ruleFormValues.buy_quantity !== undefined &&
+          ruleFormValues.buy_quantity !== null &&
+          ruleFormValues.buy_quantity !== ""
+            ? Number(ruleFormValues.buy_quantity)
+            : ruleFormValues.buy_quantity,
+        get_quantity:
+          ruleFormValues.get_quantity !== undefined &&
+          ruleFormValues.get_quantity !== null &&
+          ruleFormValues.get_quantity !== ""
+            ? Number(ruleFormValues.get_quantity)
+            : ruleFormValues.get_quantity,
+        max_discount_amount:
+          ruleFormValues.max_discount_amount !== undefined &&
+          ruleFormValues.max_discount_amount !== null &&
+          ruleFormValues.max_discount_amount !== ""
+            ? Number(ruleFormValues.max_discount_amount)
+            : ruleFormValues.max_discount_amount,
+      };
+
+      await updateDiscountRule(payload);
       queryClient.invalidateQueries({ queryKey: ["discountRules"] });
       setVisible(null);
       setSnackbarVisible(true);

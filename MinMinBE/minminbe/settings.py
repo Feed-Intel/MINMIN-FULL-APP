@@ -370,13 +370,15 @@ SOCIAL_AUTH_PIPELINE = (
 # ------------------------------------------------------------------------------
 # Email
 # ------------------------------------------------------------------------------
-EMAIL_BACKEND = "accounts.backends.email_backend.EmailBackend"
-EMAIL_HOST = config("EMAIL_HOST", default="smtp.gmail.com")
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+EMAIL_HOST = os.environ.get("EMAIL_HOST", default="smtp.gmail.com")
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_USE_SSL = False
-EMAIL_HOST_USER = get_ssm_parameter("/minminbe/EMAIL_HOST_USER", config("EMAIL_HOST_USER", default=""))
-EMAIL_HOST_PASSWORD = get_ssm_parameter("/minminbe/EMAIL_HOST_PASSWORD", config("EMAIL_HOST_PASSWORD", default=""))
+# EMAIL_HOST_USER = get_ssm_parameter("/minminbe/EMAIL_HOST_USER", config("EMAIL_HOST_USER", default=""))
+# EMAIL_HOST_PASSWORD = get_ssm_parameter("/minminbe/EMAIL_HOST_PASSWORD", config("EMAIL_HOST_PASSWORD", default=""))
+EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER","feedintel1@gmail.com")
+EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD","mmwbmidynpfpzity")
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 
 GOOGLE_CLIENT_ID = get_ssm_parameter("/minminbe/GOOGLE_CLIENT_ID", config("GOOGLE_CLIENT_ID", default=""))

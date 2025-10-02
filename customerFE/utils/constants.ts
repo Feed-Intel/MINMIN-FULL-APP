@@ -42,11 +42,30 @@ export const FACEBOOK_AUTH_URL = "https://www.facebook.com/v11.0/dialog/oauth";
 // with "unsupported scheme" errors.
 const rawBaseUrl =
   process.env.EXPO_PUBLIC_BASE_URL || "https://customer.feed-intel.com";
-export const BASE_URL = rawBaseUrl.startsWith("https://")
-  ? rawBaseUrl
-  : rawBaseUrl.startsWith("http://")
-  ? rawBaseUrl.replace("http://", "https://")
-  : `https://${rawBaseUrl}`;
+
+// Normalize BASE_URL with localhost failover (http for localhost/127.0.0.1)
+function normalizeBaseUrl(input: string): string {
+  let urlStr = input.trim();
+  // Ensure the string has a scheme for URL parsing
+  if (!/^https?:\/\//i.test(urlStr)) {
+    urlStr = `https://${urlStr}`;
+  }
+  try {
+    const u = new URL(urlStr);
+    const isLocal = u.hostname === "localhost" || u.hostname === "127.0.0.1";
+    // Force http for localhost to avoid mixed-content and self-signed issues
+    if (isLocal && u.protocol === "https:") {
+      u.protocol = "http:";
+    }
+    // Ensure no trailing slash for consistency
+    return u.toString().replace(/\/$/, "");
+  } catch {
+    // Fallback to https with no trailing slash
+    return `https://${input.replace(/\/$/, "")}`;
+  }
+}
+
+export const BASE_URL = normalizeBaseUrl(rawBaseUrl);
 export const APP_SCHEME = process.env.EXPO_PUBLIC_SCHEME;
 export const JWT_SECRET = process.env.JWT_SECRET!;
 

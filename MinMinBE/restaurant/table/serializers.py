@@ -9,10 +9,11 @@ import os
 
 class TableSerializer(serializers.ModelSerializer):
     branch = serializers.PrimaryKeyRelatedField(queryset=Branch.objects.all())
+    table_code = serializers.CharField(read_only=True)
     qr_code = QRCodeSerializer(read_only=True)
     class Meta:
         model = Table
-        fields = ['id','branch','table_code','qr_code','is_fast_table','is_delivery_table','is_inside_table']
+        fields = ['id','branch','table_code','qr_code','is_fast_table','is_delivery_table','is_inside_table','is_active']
     
     def sanitize_filename(self, filename):
         """

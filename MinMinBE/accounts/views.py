@@ -10,6 +10,7 @@ from rest_framework.throttling import UserRateThrottle
 from django.shortcuts import get_object_or_404
 from django.utils.timezone import now, timedelta
 from django.core.mail import send_mail
+import logging
 from hashlib import sha256
 from rest_framework.decorators import action
 from django.core.cache import cache
@@ -49,38 +50,57 @@ class RegisterView(APIView):
     def post(self, request):
         serializer = UserSerializer(data=request.data)
 
-        if serializer.is_valid():
-            email = serializer.validated_data.get('email')
+        if not serializer.is_valid():
+            return Response({"error": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
-            # Check if a user with the same email already exists
-            if User.objects.filter(email=email.lower()).exists():
-                return Response(
+        email = (serializer.validated_data.get('email') or "").lower().strip()
+
+        # Check if a user with the same email already exists
+        if User.objects.filter(email=email).exists():
+            return Response(
                 {"error": "A user with this email already exists."},
-                status=status.HTTP_400_BAD_REQUEST)
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
-            # Create the user
-            user = serializer.save()
+        # Create the user first (without OTP), then try to email OTP.
+        # If email sending fails, roll back user creation so the UI gets a clear error
+        # and we don't leave a half-registered account.
+        user = serializer.save()
 
-            # Generate OTP
-            otp = str(random.randint(100000, 999999))
-            user.otp = sha256(otp.encode()).hexdigest()
-            user.otp_expiry = now() + timedelta(minutes=10)
-            user.save()
+        # Generate OTP (do not persist until email succeeds)
+        otp = str(random.randint(100000, 999999))
 
-            # Send OTP via email
+        try:
             send_mail(
                 subject="Your OTP for Registration",
                 message=f"Your OTP is {otp}. It is valid for 10 minutes.",
                 from_email=EMAIL_HOST_USER,
-                recipient_list=[user.email],
+                recipient_list=[email],
                 fail_silently=False,
             )
+        except Exception as e:
+            # Roll back created user if we cannot deliver the OTP
+            try:
+                user.delete()
+            except Exception:
+                pass
+            logging.getLogger(__name__).warning(
+                f"Failed to send registration OTP email to {email}: {e}"
+            )
             return Response(
-                {"message": "Registration successful. Please verify your OTP."},
-                status=status.HTTP_201_CREATED
+                {"error": "Could not send OTP email. Please try again later."},
+                status=status.HTTP_502_BAD_GATEWAY,
             )
 
-        return Response({"error": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+        # Email sent OK — persist hashed OTP and expiry
+        user.otp = sha256(otp.encode()).hexdigest()
+        user.otp_expiry = now() + timedelta(minutes=10)
+        user.save(update_fields=["otp", "otp_expiry"])
+
+        return Response(
+            {"message": "Registration successful. Please verify your OTP."},
+            status=status.HTTP_201_CREATED,
+        )
 
 
 class VerifyOTPView(APIView):
@@ -539,7 +559,7 @@ class RequestPasswordResetView(APIView):
     permission_classes = [HasCustomAPIKey]
     # throttle_classes = [PasswordResetThrottle] # to set limit to request sent to this end point
     def post(self, request):
-        email = request.data.get('email')
+        email = (request.data.get('email') or "").lower().strip()
         if not email:
             return Response({"error": "Email is required."}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -550,14 +570,10 @@ class RequestPasswordResetView(APIView):
         if user.otp and user.otp_expiry > now():
             return Response({"error": "An OTP has already been sent. Please wait until it expires."}, status=status.HTTP_400_BAD_REQUEST)
 
-
-        # Generate OTP
+        # Generate OTP (do not persist until email is successfully sent)
         otp = str(random.randint(100000, 999999))
-        user.otp = sha256(otp.encode()).hexdigest()
-        user.otp_expiry = now() + timedelta(minutes=10)
-        user.save()
 
-        # Send OTP via email
+        # Attempt to send email first
         try:
             send_mail(
                 subject="Your Password Reset OTP",
@@ -567,7 +583,17 @@ class RequestPasswordResetView(APIView):
                 fail_silently=False,
             )
         except Exception as e:
-            return Response({"error": "Failed to send email. Please try again later."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            # Do not persist OTP if email fails; return clear, non-500 error
+            return Response(
+                {"error": "Could not send OTP email. Please try again later."},
+                status=status.HTTP_502_BAD_GATEWAY,
+            )
+
+        # Email sent OK — persist hashed OTP and expiry
+        user.otp = sha256(otp.encode()).hexdigest()
+        user.otp_expiry = now() + timedelta(minutes=10)
+        user.save(update_fields=["otp", "otp_expiry"])
+
         return Response({"message": "Password reset OTP sent to your email."}, status=status.HTTP_200_OK)
 
 class CheckOTPView(APIView):

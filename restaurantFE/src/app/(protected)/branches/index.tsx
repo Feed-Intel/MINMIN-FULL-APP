@@ -1,37 +1,36 @@
-import React from "react";
+import React, { useState } from 'react';
 import {
   ScrollView,
   StyleSheet,
-  Dimensions,
   View,
   useWindowDimensions,
   TextInput,
-} from "react-native";
+} from 'react-native';
 import {
   Button,
   DataTable,
-  Appbar,
-  Card,
   Portal,
   Dialog,
   Text,
   Switch,
-} from "react-native-paper";
-import { useQueryClient } from "@tanstack/react-query";
+} from 'react-native-paper';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   useDeleteBranch,
   useGetBranches,
   useUpdateBranch,
-} from "@/services/mutation/branchMutation";
-import { router } from "expo-router";
-import { useDispatch } from "react-redux";
-import { AppDispatch } from "@/lib/reduxStore/store";
-import { hideLoader, showLoader } from "@/lib/reduxStore/loaderSlice";
-import AddBranchDialog from "./addBranch";
-import EditBranchDialog from "./[branchId]";
+} from '@/services/mutation/branchMutation';
+import { useDispatch } from 'react-redux';
+import { AppDispatch } from '@/lib/reduxStore/store';
+import { hideLoader, showLoader } from '@/lib/reduxStore/loaderSlice';
+import AddBranchDialog from './addBranch';
+import EditBranchDialog from './[branchId]';
+import { useRestaurantIdentity } from '@/hooks/useRestaurantIdentity';
+import Pagination from '@/components/Pagination';
 
 export default function Branches() {
-  const { data: branches } = useGetBranches();
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const { data: branches } = useGetBranches(currentPage);
   const { mutateAsync: branchDelete } = useDeleteBranch();
   const { mutateAsync: updateBranch } = useUpdateBranch();
   const queryClient = useQueryClient();
@@ -40,9 +39,10 @@ export default function Branches() {
   const [showEditDialog, setShowEditDialog] = React.useState(false);
   const [branchID, setBranchID] = React.useState<string | null>(null);
   const [selectedBranch, setSelectedBranch] = React.useState<any>(null);
-  const [searchQuery, setSearchQuery] = React.useState("");
+  const [searchQuery, setSearchQuery] = React.useState('');
   const dispatch = useDispatch<AppDispatch>();
   const { width } = useWindowDimensions();
+  const { isBranch } = useRestaurantIdentity();
 
   const handleDeleteBranch = async () => {
     try {
@@ -50,7 +50,7 @@ export default function Branches() {
       setShowDeleteDialog(false);
       dispatch(showLoader());
       await branchDelete(branchID!);
-      queryClient.invalidateQueries({ queryKey: ["branches"] });
+      queryClient.invalidateQueries({ queryKey: ['branches'] });
       dispatch(hideLoader());
     } catch (error) {
       setShowDeleteDialog(false);
@@ -64,14 +64,14 @@ export default function Branches() {
         ...branch,
         is_default: !branch.is_default,
       });
-      queryClient.invalidateQueries({ queryKey: ["branches"] });
+      queryClient.invalidateQueries({ queryKey: ['branches'] });
       dispatch(hideLoader());
     } catch (error) {
-      console.error("Error updating branch:", error);
+      console.error('Error updating branch:', error);
     }
   };
 
-  const filteredBranches = branches?.filter((branch) =>
+  const filteredBranches = branches?.results.filter((branch) =>
     branch?.address?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
@@ -80,19 +80,26 @@ export default function Branches() {
       <ScrollView
         contentContainerStyle={[
           styles.scrollContainer,
-          { paddingHorizontal: width > 900 ? "0%" : 16 },
+          { paddingHorizontal: width > 900 ? '0%' : 16 },
         ]}
       >
-        <Text style={{ fontSize: 24, fontWeight: "bold", margin: 16, color: "#21281B" }}>
+        <Text
+          style={{
+            fontSize: 24,
+            fontWeight: 'bold',
+            margin: 16,
+            color: '#21281B',
+          }}
+        >
           Branches
         </Text>
         <View
           style={[
             styles.card,
             {
-              width: "100%",
+              width: '100%',
               maxWidth: '100%',
-              alignSelf: "center",
+              alignSelf: 'center',
             },
           ]}
         >
@@ -104,48 +111,47 @@ export default function Branches() {
               value={searchQuery}
               onChangeText={setSearchQuery}
             />
-            <Button
-              mode="contained"
-              onPress={() => setShowAddDialog(true)}
-              style={styles.addButton}
-              textColor="#fff"
-            >
-              + Add branch
-            </Button>
+            {!isBranch && (
+              <Button
+                mode="contained"
+                onPress={() => setShowAddDialog(true)}
+                style={styles.addButton}
+                textColor="#fff"
+              >
+                + Add branch
+              </Button>
+            )}
           </View>
 
           <ScrollView style={styles.tableContainer}>
             <DataTable>
-              <DataTable.Header style={{ borderBottomColor: "#20291933", borderBottomWidth: 1.5 }}>
+              <DataTable.Header
+                style={{
+                  borderBottomColor: '#20291933',
+                  borderBottomWidth: 1.5,
+                }}
+              >
                 <DataTable.Title>
-                  <Text style={styles.tableTitle}>
-                    Branch
-                  </Text>
+                  <Text style={styles.tableTitle}>Branch</Text>
                 </DataTable.Title>
                 <DataTable.Title>
-                  <Text style={styles.tableTitle}>
-                    Latitude
-                  </Text>
+                  <Text style={styles.tableTitle}>Latitude</Text>
                 </DataTable.Title>
                 <DataTable.Title>
-                  <Text style={styles.tableTitle}>
-                    Longitude
-                  </Text>
+                  <Text style={styles.tableTitle}>Longitude</Text>
                 </DataTable.Title>
                 <DataTable.Title>
                   <Text style={styles.tableTitle}>Set on map</Text>
                 </DataTable.Title>
                 <DataTable.Title>
-                  <Text style={styles.tableTitle}>
-                    Actions
-                  </Text>
+                  <Text style={styles.tableTitle}>Actions</Text>
                 </DataTable.Title>
               </DataTable.Header>
 
               {filteredBranches?.map((branch) => {
                 const [latitude, longitude] = branch.location
                   ? [branch.location.lat, branch.location.lng]
-                  : ["1", "1"];
+                  : ['1', '1'];
 
                 return (
                   <DataTable.Row key={branch.id} style={styles.tableRow}>
@@ -162,46 +168,55 @@ export default function Branches() {
                       <Text style={styles.tableTitle2}>Set on map</Text>
                     </DataTable.Cell>
                     <DataTable.Cell>
-                      <View style={styles.actionButtons}>
-                        <View style={styles.switchContainer}>
-                          <Switch
-                            value={branch.is_default}
-                            onValueChange={() => handleToggleDefault(branch)}
-                            color="#96B76E"
-                            trackColor={{ false: "#96B76E", true: "#96B76E" }}
-                            thumbColor={branch.is_default ? "#fff" : "#fff"}
+                      {!isBranch ? (
+                        <View style={styles.actionButtons}>
+                          <View style={styles.switchContainer}>
+                            <Switch
+                              value={branch.is_default}
+                              onValueChange={() => handleToggleDefault(branch)}
+                              color="#96B76E"
+                              trackColor={{ false: '#96B76E', true: '#96B76E' }}
+                              thumbColor={branch.is_default ? '#fff' : '#fff'}
+                            />
+                          </View>
+                          <Button
+                            icon="pencil"
+                            mode="text"
+                            textColor="#5A6E5A"
+                            onPress={() => {
+                              setSelectedBranch(branch);
+                              setShowEditDialog(true);
+                            }}
+                            contentStyle={styles.deleteButtonContent}
+                            labelStyle={styles.deleteButtonLabel}
+                            style={{ margin: 0, padding: 0 }}
+                          />
+                          <Button
+                            icon="delete"
+                            mode="text"
+                            textColor="#FF6B6B"
+                            onPress={() => {
+                              setBranchID(branch.id!);
+                              setShowDeleteDialog(true);
+                            }}
+                            contentStyle={styles.deleteButtonContent}
+                            labelStyle={styles.deleteButtonLabel}
+                            style={{ margin: 0, padding: 0 }}
                           />
                         </View>
-                        <Button
-                          icon="pencil"
-                          mode="text"
-                          textColor="#5A6E5A"
-                          onPress={() => {
-                            setSelectedBranch(branch);
-                            setShowEditDialog(true);
-                          }}
-                          contentStyle={styles.deleteButtonContent}
-                          labelStyle={styles.deleteButtonLabel}
-                          style={{ margin: 0, padding: 0 }}
-                        />
-                        <Button
-                          icon="delete"
-                          mode="text"
-                          textColor="#FF6B6B"
-                          onPress={() => {
-                            setBranchID(branch.id!);
-                            setShowDeleteDialog(true);
-                          }}
-                          contentStyle={styles.deleteButtonContent}
-                          labelStyle={styles.deleteButtonLabel}
-                          style={{ margin: 0, padding: 0 }}
-                        />
-                      </View>
+                      ) : (
+                        <Text style={styles.tableTitle2}>View only</Text>
+                      )}
                     </DataTable.Cell>
                   </DataTable.Row>
                 );
               })}
             </DataTable>
+            <Pagination
+              totalPages={Math.round(branches?.count! / 10) || 0}
+              currentPage={currentPage}
+              onPageChange={setCurrentPage}
+            />
           </ScrollView>
         </View>
       </ScrollView>
@@ -212,15 +227,15 @@ export default function Branches() {
           visible={showDeleteDialog}
           onDismiss={() => setShowDeleteDialog(false)}
           style={{
-            width: width > 500 ? "80%" : "95%",
-            alignSelf: "center",
+            width: width > 500 ? '80%' : '95%',
+            alignSelf: 'center',
           }}
         >
           <Dialog.Title>Confirm Deletion</Dialog.Title>
           <Dialog.Content>
             <Text>
-              Are you sure you want to delete this branch? This action cannot
-              be undone.
+              Are you sure you want to delete this branch? This action cannot be
+              undone.
             </Text>
           </Dialog.Content>
           <Dialog.Actions>
@@ -236,7 +251,7 @@ export default function Branches() {
         onClose={() => setShowAddDialog(false)}
         onSuccess={() => {
           setShowAddDialog(false);
-          queryClient.invalidateQueries({ queryKey: ["branches"] });
+          queryClient.invalidateQueries({ queryKey: ['branches'] });
         }}
       />
 
@@ -247,7 +262,7 @@ export default function Branches() {
         onClose={() => setShowEditDialog(false)}
         onSuccess={() => {
           setShowEditDialog(false);
-          queryClient.invalidateQueries({ queryKey: ["branches"] });
+          queryClient.invalidateQueries({ queryKey: ['branches'] });
         }}
       />
     </>
@@ -257,36 +272,36 @@ export default function Branches() {
 const styles = StyleSheet.create({
   scrollContainer: {
     flex: 1,
-    backgroundColor: "#EFF4EB",
+    backgroundColor: '#EFF4EB',
     padding: 6,
   },
   card: {
-    backgroundColor: "#EFF4EB",
+    backgroundColor: '#EFF4EB',
     marginBottom: 16,
   },
   searchContainer: {
-    flexDirection: "row",
-    justifyContent: "space-evenly",
-    alignItems: "center",
+    flexDirection: 'row',
+    justifyContent: 'space-evenly',
+    alignItems: 'center',
     marginBottom: 20,
     paddingHorizontal: 8,
   },
   searchInput: {
     flex: 1,
-    backgroundColor: "#91B27517",
+    backgroundColor: '#91B27517',
     borderRadius: 16,
     paddingHorizontal: 12,
     height: 36,
     marginRight: 12,
     borderWidth: 1,
-    borderColor: "#E0E0E0",
+    borderColor: '#E0E0E0',
     fontSize: 14,
   },
   addButton: {
-    backgroundColor: "#96B76E",
+    backgroundColor: '#96B76E',
     borderRadius: 16,
     height: 36,
-    justifyContent: "center",
+    justifyContent: 'center',
     paddingHorizontal: 16,
     elevation: 0,
   },
@@ -311,14 +326,14 @@ const styles = StyleSheet.create({
     borderBottomColor: '#20291933',
   },
   actionButtons: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   deleteButtonContent: {
-    justifyContent: "center",
-    alignItems: "center",
-    alignSelf: "center",
+    justifyContent: 'center',
+    alignItems: 'center',
+    alignSelf: 'center',
     backgroundColor: '#91B275',
     borderRadius: 50,
     width: 25,
@@ -326,14 +341,14 @@ const styles = StyleSheet.create({
   },
   deleteButtonLabel: {
     color: '#fff',
-    fontWeight: "500",
+    fontWeight: '500',
     marginHorizontal: 10,
   },
   switchContainer: {
-    flexDirection: "row",
+    flexDirection: 'row',
   },
   switchLabel: {
-    color: "#666",
+    color: '#666',
     fontSize: 12,
   },
 });

@@ -1,5 +1,5 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
-import { useDispatch } from "react-redux";
+import { useMutation, useQuery } from '@tanstack/react-query';
+import { useDispatch } from 'react-redux';
 import {
   CreateMenu,
   CreateRelatedItem,
@@ -13,35 +13,37 @@ import {
   UpdateMenu,
   UpdateMenuAvailability,
   UpdateRelatedItem,
-} from "../api/menuApi";
-import { MenuAvailability, MenuType, RelatedMenu } from "@/types/menuType";
-import { AppDispatch } from "@/lib/reduxStore/store";
-import { hideLoader, showLoader } from "@/lib/reduxStore/loaderSlice";
+} from '../api/menuApi';
+import { MenuAvailability, MenuType, RelatedMenu } from '@/types/menuType';
+import { AppDispatch } from '@/lib/reduxStore/store';
+import { hideLoader, showLoader } from '@/lib/reduxStore/loaderSlice';
 
-export const useGetMenus = () =>
-  useQuery<MenuType[]>({
-    queryKey: ["menus"],
-    queryFn: GetMenus,
+export const useGetMenus = (page?: number | null) =>
+  useQuery<{ next: string | null; results: MenuType[]; count: number }>({
+    queryKey: ['menus', page],
+    queryFn: () => GetMenus(page),
     staleTime: 0,
   });
 
 export const useGetMenu = (id: string) =>
   useQuery<MenuType>({
-    queryKey: ["menu", id],
+    queryKey: ['menu', id],
     queryFn: () => GetMenu(id),
     staleTime: 0,
   });
 
 export const useGetMenuAvailabilities = (next?: string | null) =>
-  useQuery<{ next: string | null; results: MenuAvailability[] }>({
-    queryKey: ["menuAvailability", next],
-    queryFn: () => GetMenuAvailabilities(next),
-    staleTime: 0,
-  });
+  useQuery<{ next: string | null; results: MenuAvailability[]; count: number }>(
+    {
+      queryKey: ['menuAvailability', next],
+      queryFn: () => GetMenuAvailabilities(next),
+      staleTime: 0,
+    }
+  );
 
 export const useGetRelatedMenus = () =>
   useQuery<RelatedMenu[]>({
-    queryKey: ["relatedMenus"],
+    queryKey: ['relatedMenus'],
     queryFn: GetRelatedItems,
     staleTime: 0,
   });
@@ -53,7 +55,7 @@ export const useCreateMenu = (
   const dispatch = useDispatch<AppDispatch>();
 
   return useMutation({
-    mutationKey: ["createMenu"],
+    mutationKey: ['createMenu'],
     mutationFn: (data: any) => {
       dispatch(showLoader());
       return CreateMenu(data);
@@ -86,7 +88,7 @@ export const useDeleteRelatedMenu = () => {
   const dispatch = useDispatch<AppDispatch>();
 
   return useMutation({
-    mutationKey: ["deleteMenu"],
+    mutationKey: ['deleteMenu'],
     mutationFn: (data: any) => {
       dispatch(showLoader());
       return DeleteRelatedItem(data);
@@ -98,7 +100,7 @@ export const useDeleteRelatedMenu = () => {
 
 export const useGetRelatedMenuItem = (id: string) =>
   useQuery<RelatedMenu>({
-    queryKey: ["relatedMenu", id],
+    queryKey: ['relatedMenu', id],
     queryFn: () => GetRelatedItem(id),
     staleTime: 0,
   });
@@ -132,7 +134,7 @@ export const useAddRelatedMenuItem = (
   const dispatch = useDispatch<AppDispatch>();
 
   return useMutation({
-    mutationKey: ["addRelatedMenuItem"],
+    mutationKey: ['addRelatedMenuItem'],
     mutationFn: (data: any) => {
       dispatch(showLoader());
       return CreateRelatedItem(data);
@@ -155,7 +157,7 @@ export const useUpdateRelatedMenuItem = (
   const dispatch = useDispatch<AppDispatch>();
 
   return useMutation({
-    mutationKey: ["updateRelatedMenuItem"],
+    mutationKey: ['updateRelatedMenuItem'],
     mutationFn: (data: any) => {
       dispatch(showLoader());
       return UpdateRelatedItem(data);
@@ -175,7 +177,7 @@ export const useDeleteMenu = () => {
   const dispatch = useDispatch<AppDispatch>();
 
   return useMutation({
-    mutationKey: ["deleteMenu"],
+    mutationKey: ['deleteMenu'],
     mutationFn: (data: any) => {
       dispatch(showLoader());
       return DeleteMenu(data);

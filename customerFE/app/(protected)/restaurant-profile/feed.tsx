@@ -34,6 +34,8 @@ import * as WebBrowser from "expo-web-browser";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { i18n } from "@/app/_layout";
+import { normalizeImageUrl } from "@/utils/imageUrl";
+import { safeCount } from "@/utils/count";
 
 const { height: screenHeight, width: screenWidth } = Dimensions.get("window");
 
@@ -76,8 +78,38 @@ const FoodFeedScreen = () => {
   const [comments, setComments] = useState<[]>(
     JSON.parse(singlePost?.comments as any) || []
   );
+  const [likesCount, setLikesCount] = useState(
+    safeCount(singlePost?.likes_count)
+  );
+  const [sharesCount, setSharesCount] = useState(
+    safeCount(singlePost?.shares_count)
+  );
+  const [commentCount, setCommentCount] = useState(safeCount(comments.length));
 
   // For a single feed, we'll just take the first post if available
+
+  const updateCachedPost = (
+    postId: string,
+    updater: (post: any) => any
+  ) => {
+    queryClient.setQueryData(["posts"], (oldData: any) => {
+      if (!Array.isArray(oldData)) {
+        return oldData;
+      }
+      return oldData.map((post: any) =>
+        post.id === postId ? updater(post) : post
+      );
+    });
+
+    queryClient.setQueryData(["bookMarkPosts"], (oldData: any) => {
+      if (!Array.isArray(oldData)) {
+        return oldData;
+      }
+      return oldData.map((post: any) =>
+        post.id === postId ? updater(post) : post
+      );
+    });
+  };
 
   const CustomIconButton = ({
     IconComponent,
@@ -142,138 +174,244 @@ const FoodFeedScreen = () => {
   );
 
   const handleLike = async (postId: string) => {
-    // Optimistic update for immediate UI feedback
+    const toggleLike = (post: any) => {
+      const likeValue = Number(post.likes_count ?? 0);
+      return {
+        ...post,
+        is_liked: !post.is_liked,
+        likes_count: post.is_liked
+          ? Math.max(0, likeValue - 1)
+          : likeValue + 1,
+      };
+    };
+
+    const previousLiked = Boolean(isLiked);
+    updateCachedPost(postId, toggleLike);
+    setIsLiked(!previousLiked);
+    setLikesCount((count) =>
+      Math.max(0, count + (previousLiked ? -1 : 1))
+    );
 
     try {
       await likePost(postId);
-      // Refetch to ensure data consistency
-      setIsLiked(!isLiked);
     } catch (error) {
-      // Revert on error
-      queryClient.setQueryData(["posts"], (oldData: any) => {
-        return oldData.map((post: any) => {
-          if (post.id === postId) {
-            return {
-              ...post,
-              is_liked: !post.is_liked,
-              likes_count: post.is_liked
-                ? post.likes_count + 1
-                : post.likes_count - 1,
-            };
-          }
-          return post;
-        });
-      });
+      updateCachedPost(postId, toggleLike);
+      setIsLiked(previousLiked);
+      setLikesCount((count) =>
+        Math.max(0, count + (previousLiked ? 1 : -1))
+      );
       Toast.show({
         type: "error",
-        text1: i18n.t("like_failed_toast_title"), // i18n
-        text2: i18n.t("could_not_like_post_toast_message"), // i18n
+        text1: i18n.t("like_failed_toast_title"),
+        text2: i18n.t("could_not_like_post_toast_message"),
       });
     }
   };
 
   const addCommentToPost = async (postId: string) => {
-    const commentText = newComment;
+    const commentText = newComment.trim();
+    if (!commentText) {
+      return;
+    }
+    const optimisticComment: any = {
+      id: `temp-${Date.now()}`,
+      user: {
+        full_name: userInfo?.full_name || user?.full_name || "",
+        image: user?.image,
+      },
+      text: commentText,
+      created_at: new Date().toISOString(),
+    };
+
+    const previousComments = comments;
+    const previousCommentCount = commentCount;
+    const previousSelectedPost = selectedPost;
+    const previousPosts = queryClient.getQueryData(["posts"]);
+    const previousBookmarks = queryClient.getQueryData(["bookMarkPosts"]);
+
     setNewComment("");
-    setComments(
-      (prev) =>
-        [
-          ...prev,
-          {
-            id: postId,
-            user: { full_name: userInfo?.full_name },
-            text: commentText,
-            created_at: Date.now().toString(),
-          },
-        ] as any
-    );
+    setComments((prev: any) => [...prev, optimisticComment]);
+    setCommentCount((count) => Math.max(0, count + 1));
+    updateCachedPost(postId, (post: any) => ({
+      ...post,
+      comments: [
+        ...(Array.isArray(post.comments) ? post.comments : []),
+        optimisticComment,
+      ],
+    }));
+    requestAnimationFrame(() => {
+      commentsListRef.current?.scrollToEnd({ animated: true });
+    });
+
     try {
       await addComment({ post: postId, text: commentText });
       queryClient.invalidateQueries({ queryKey: ["posts"] });
-      // Scroll to bottom after adding comment
-      setTimeout(() => {
-        commentsListRef.current?.scrollToEnd({ animated: true });
-      }, 100);
+      queryClient.invalidateQueries({ queryKey: ["bookMarkPosts"] });
     } catch (error) {
+      queryClient.setQueryData(["posts"], previousPosts);
+      queryClient.setQueryData(["bookMarkPosts"], previousBookmarks);
+      setComments(previousComments as any);
+      setCommentCount(previousCommentCount);
+      setSelectedPost(previousSelectedPost);
       setNewComment(commentText);
       Toast.show({
         type: "error",
-        text1: i18n.t("comment_failed_toast_title"), // i18n
-        text2: i18n.t("could_not_add_comment_toast_message"), // i18n
+        text1: i18n.t("comment_failed_toast_title"),
+        text2: i18n.t("could_not_add_comment_toast_message"),
       });
     }
   };
 
   const handleShare = async (post: any) => {
+    let shareIncremented = false;
+    const increaseShareCount = () => {
+      updateCachedPost(post.id, (item: any) => {
+        const shareValue = safeCount(item.shares_count);
+        return {
+          ...item,
+          shares_count: shareValue + 1,
+        };
+      });
+      setSharesCount((count) => Math.max(0, count + 1));
+      shareIncremented = true;
+    };
+
+    const decreaseShareCount = () => {
+      if (!shareIncremented) {
+        return;
+      }
+      updateCachedPost(post.id, (item: any) => {
+        const shareValue = safeCount(item.shares_count);
+        return {
+          ...item,
+          shares_count: Math.max(0, shareValue - 1),
+        };
+      });
+      setSharesCount((count) => Math.max(0, count - 1));
+      shareIncremented = false;
+    };
+
     try {
       const webLink = `https://alphafeed.com/post/${post.id}`;
       const downloadLink = "https://alphafeed.com/download";
-      const imageUrl = post.image?.replace("http://", "https://") || webLink;
+      const imageUrl = normalizeImageUrl(post.image) || webLink;
 
       if (Platform.OS === "web") {
         // Web sharing logic
         const shareData: WebShareParams = {
-          title: post.caption || i18n.t("check_out_this_post_share_title"), // i18n
-          text: `${post.caption}\n\n${i18n.t("shared_via_app_text")}`, // i18n
+          title: post.caption || i18n.t("check_out_this_post_share_title"),
+          text: `${post.caption}\n\n${i18n.t("shared_via_app_text")}`,
           url: webLink,
         };
 
         if (navigator.share) {
           await navigator.share(shareData);
+          increaseShareCount();
           await sharePost(post.id);
         } else if (navigator.clipboard) {
           await navigator.clipboard.writeText(`${shareData.text}\n${webLink}`);
           Toast.show({
             type: "success",
-            text1: i18n.t("link_copied_toast_title"), // i18n
-            text2: i18n.t("post_link_copied_toast_message"), // i18n
+            text1: i18n.t("link_copied_toast_title"),
+            text2: i18n.t("post_link_copied_toast_message"),
           });
+          increaseShareCount();
           await sharePost(post.id);
         }
       } else {
         // Mobile sharing logic
         const shareOptions = {
-          title: i18n.t("share_post_share_title"), // i18n
+          title: i18n.t("share_post_share_title"),
           message: `${post.caption}\n\n${i18n.t(
             "get_the_app_share_message"
-          )}: ${downloadLink}`, // i18n
+          )}: ${downloadLink}`,
           url: imageUrl,
         };
 
         if (Platform.OS === "ios") {
           // iOS-specific share with fallback
           try {
-            // Try native share first
             if (Platform.OS === "ios") {
               const { default: RNShare } = await import("react-native-share");
               const result = await RNShare.open(shareOptions);
               if (result) {
+                increaseShareCount();
                 await sharePost(post.id);
               }
             }
           } catch (error) {
-            // Fallback to web browser on iOS if native share fails
             await WebBrowser.openBrowserAsync(webLink);
+            increaseShareCount();
             await sharePost(post.id);
           }
         } else {
-          // Android share
           const { default: RNShare } = await import("react-native-share");
           await RNShare.open(shareOptions);
+          increaseShareCount();
           await sharePost(post.id);
         }
       }
-
-      queryClient.invalidateQueries({ queryKey: ["posts"] });
     } catch (error: any) {
-      if (!error.message.includes("User did not share")) {
-        console.error(i18n.t("share_error_console_message"), error); // i18n
+      decreaseShareCount();
+      if (!error?.message?.includes("User did not share")) {
+        console.error(i18n.t("share_error_console_message"), error);
         Toast.show({
           type: "error",
-          text1: i18n.t("share_failed_toast_title"), // i18n
-          text2: i18n.t("could_not_share_post_toast_message"), // i18n
+          text1: i18n.t("share_failed_toast_title"),
+          text2: i18n.t("could_not_share_post_toast_message"),
         });
       }
+    }
+  };
+
+  const handleBookmarkToggle = async (postId: string) => {
+    const wasBookmarked = Boolean(isBookmarked);
+    const previousBookmarks = queryClient.getQueryData(["bookMarkPosts"]);
+    const previousPosts = queryClient.getQueryData(["posts"]);
+
+    updateCachedPost(postId, (post: any) => ({
+      ...post,
+      is_bookmarked: !post.is_bookmarked,
+    }));
+
+    queryClient.setQueryData(["bookMarkPosts"], (oldData: any) => {
+      if (!Array.isArray(oldData)) {
+        return oldData;
+      }
+      if (wasBookmarked) {
+        return oldData.filter((item: any) => item.id !== postId);
+      }
+
+      const updatedPost = {
+        ...singlePost,
+        is_bookmarked: true,
+        is_liked: isLiked,
+        likes_count: likesCount,
+        shares_count: sharesCount,
+        comments,
+      };
+      const exists = oldData.some((item: any) => item.id === postId);
+      if (exists) {
+        return oldData.map((item: any) =>
+          item.id === postId ? updatedPost : item
+        );
+      }
+      return [updatedPost, ...oldData];
+    });
+
+    setIsBookmarked(!wasBookmarked);
+
+    try {
+      await bookmarkPost(postId);
+    } catch (error) {
+      queryClient.setQueryData(["bookMarkPosts"], previousBookmarks);
+      queryClient.setQueryData(["posts"], previousPosts);
+      setIsBookmarked(wasBookmarked);
+      Toast.show({
+        type: "error",
+        text1: i18n.t("bookmark_failed_toast_title"),
+        text2: i18n.t("could_not_bookmark_post_toast_message"),
+      });
     }
   };
 
@@ -358,9 +496,7 @@ const FoodFeedScreen = () => {
                 />
 
                 <Card.Cover
-                  source={{
-                    uri: singlePost.image!.replace("http://", "https://"),
-                  }}
+                  source={{ uri: normalizeImageUrl(singlePost.image) }}
                   style={styles.postImage}
                   theme={{ roundness: 0 }}
                 />
@@ -376,7 +512,7 @@ const FoodFeedScreen = () => {
                         onPress={() => handleLike(singlePost.id as string)}
                       />
                       <Text style={styles.actionText}>
-                        {singlePost.likes_count}
+                        {safeCount(likesCount)}
                       </Text>
                     </View>
 
@@ -387,7 +523,7 @@ const FoodFeedScreen = () => {
                         onPress={() => openCommentsModal(singlePost)}
                       />
                       <Text style={styles.actionText}>
-                        {singlePost.comments.length}
+                        {safeCount(commentCount)}
                       </Text>
                     </View>
 
@@ -398,7 +534,7 @@ const FoodFeedScreen = () => {
                         onPress={() => handleShare(singlePost)}
                       />
                       <Text style={styles.actionText}>
-                        {singlePost.shares_count}
+                        {safeCount(sharesCount)}
                       </Text>
                     </View>
 
@@ -413,10 +549,7 @@ const FoodFeedScreen = () => {
                         <BookmarkedIcon width={22} height={22} fill="#666" />
                       }
                       isActive={isBookmarked as boolean}
-                      onPress={async () => {
-                        await bookmarkPost(singlePost.id as string);
-                        setIsBookmarked(!isBookmarked);
-                      }}
+                      onPress={() => handleBookmarkToggle(singlePost.id as string)}
                     />
                   </View>
 
@@ -503,7 +636,7 @@ const FoodFeedScreen = () => {
                       size={32}
                       source={{
                         uri:
-                          item?.user?.image?.replace("http://", "https://") ||
+                          normalizeImageUrl(item?.user?.image) ||
                           `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(
                             item?.user.full_name
                           )}`,
@@ -541,7 +674,7 @@ const FoodFeedScreen = () => {
                   size={32}
                   source={{
                     uri:
-                      user?.image?.replace("http://", "https://") ||
+                      normalizeImageUrl(user?.image) ||
                       `https://api.dicebear.com/7.x/initials/svg?seed=You`,
                   }}
                   style={styles.inputAvatar}
@@ -550,9 +683,7 @@ const FoodFeedScreen = () => {
                   mode="flat"
                   placeholder={i18n.t("add_comment_placeholder")}
                   value={newComment}
-                  onChangeText={(text) =>
-                    setNewComment(text.replace(/\s+/g, " ").trim())
-                  }
+                  onChangeText={(text) => setNewComment(text)}
                   style={styles.commentInput}
                   dense
                   underlineColor="transparent"

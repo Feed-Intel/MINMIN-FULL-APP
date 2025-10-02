@@ -13,4 +13,10 @@ db:migrate:
 	docker compose exec api python manage.py migrate
 
 db:seed:
-	docker compose exec api python manage.py seed
+	docker compose exec api python manage.py seed_full
+
+db:seed:restaurants:
+	docker compose exec api python manage.py seed_full --no-customers
+
+db:seed:customers:
+	docker compose exec api python manage.py seed_full --no-restaurants

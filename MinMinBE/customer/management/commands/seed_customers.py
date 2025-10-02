@@ -155,7 +155,7 @@ class Command(BaseCommand):
                     branch=table.branch,
                     table=table,
                     customer=user,
-                    status=random.choice(['placed', 'progress', 'delivered'])
+                    status=random.choice(['placed', 'progress', 'delivered']),
                 )
                 
                 # Add order items

@@ -7,6 +7,7 @@ from django.contrib.auth.hashers import make_password
 from django.contrib.gis.geos import Point
 from restaurant.branch.models import Branch
 from .models import User
+from .utils import get_user_branch, get_user_tenant
 from datetime import timedelta
 from django.utils.timezone import now
 from minminbe.settings import EMAIL_HOST_USER
@@ -140,8 +141,11 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         token['full_name'] = user.full_name
         token['user_type'] = user.user_type
         if user.user_type != 'customer':
-            token['tenant'] = str(user.branch.tenant.id) if user.branch else None
-            token['branch'] = str(user.branch.id) if user.branch else None
+            tenant = get_user_tenant(user)
+            branch = get_user_branch(user)
+
+            token['tenant'] = str(tenant.id) if tenant else None
+            token['branch'] = str(branch.id) if branch else None
         return token
 
     def validate(self, attrs):

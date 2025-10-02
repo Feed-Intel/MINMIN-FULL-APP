@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo, useState } from "react";
 import {
   ScrollView,
   StyleSheet,
@@ -28,6 +28,9 @@ import { router } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { useDispatch } from "react-redux";
 import { hideLoader, showLoader } from "@/lib/reduxStore/loaderSlice";
+import BranchSelector from "@/components/BranchSelector";
+import { useRestaurantIdentity } from "@/hooks/useRestaurantIdentity";
+import ModalHeader from "@/components/ModalHeader";
 
 export default function QRCodes() {
   const { data: qrCodes } = useGetQRCodes();
@@ -39,6 +42,21 @@ export default function QRCodes() {
   const [showDialog, setShowDialog] = React.useState(false);
   const [qrCodeID, setQrCodeID] = React.useState<string | null>(null);
   const queryClient = useQueryClient();
+  const { isRestaurant, isBranch, branchId } = useRestaurantIdentity();
+  const [selectedBranch, setSelectedBranch] = useState<string | null>(
+    isBranch ? branchId ?? null : null
+  );
+
+  const filteredQRCodes = useMemo(() => {
+    if (!qrCodes) return [] as typeof qrCodes;
+    if (!selectedBranch || selectedBranch === "all") return qrCodes;
+
+    return qrCodes.filter((qr) => {
+      const branchValue =
+        typeof qr.branch === "object" ? qr.branch?.id : qr.branch;
+      return branchValue === selectedBranch;
+    });
+  }, [qrCodes, selectedBranch]);
   const handleDeleteQRCode = async () => {
     setQrCodeID(null);
     setShowDialog(false);
@@ -128,6 +146,12 @@ export default function QRCodes() {
 
         <Card>
           <Card.Content>
+            <BranchSelector
+              selectedBranch={selectedBranch}
+              onChange={setSelectedBranch}
+              includeAllOption={isRestaurant}
+              style={{ marginBottom: 16 }}
+            />
             <ScrollView horizontal={isSmallScreen}>
               <DataTable>
                 <DataTable.Header>
@@ -145,7 +169,7 @@ export default function QRCodes() {
                   </DataTable.Title>
                 </DataTable.Header>
 
-                {qrCodes?.map((qr) => (
+                {filteredQRCodes.map((qr) => (
                   <DataTable.Row key={qr.id}>
                     <DataTable.Cell
                       style={{ width: isSmallScreen ? 120 : 160 }}
@@ -219,7 +243,12 @@ export default function QRCodes() {
                   alignSelf: "center",
                 }}
               >
-                <Dialog.Title>Confirm Deletion</Dialog.Title>
+                <Dialog.Title>
+                  <ModalHeader
+                    title="Confirm Deletion"
+                    onClose={() => setShowDialog(false)}
+                  />
+                </Dialog.Title>
                 <Dialog.Content>
                   <Text>
                     Are you sure you want to delete this QR code? This action

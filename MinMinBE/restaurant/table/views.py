@@ -5,7 +5,8 @@ from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
-from accounts.permissions import HasCustomAPIKey, IsAdminOrRestaurant
+from accounts.permissions import HasCustomAPIKey, IsAdminRestaurantOrBranch
+from accounts.utils import get_user_branch, get_user_tenant
 from .models import Table
 from .serializers import TableSerializer
 from .tableFilter import TableFilter
@@ -17,7 +18,7 @@ class TableViewPagination(PageNumberPagination):
 
 
 class TableView(CachedModelViewSet):
-    permission_classes = [IsAuthenticated, HasCustomAPIKey, IsAdminOrRestaurant]
+    permission_classes = [IsAuthenticated, HasCustomAPIKey, IsAdminRestaurantOrBranch]
     serializer_class = TableSerializer
     pagination_class = TableViewPagination
     filter_backends = [DjangoFilterBackend]
@@ -30,10 +31,20 @@ class TableView(CachedModelViewSet):
 
         fields_to_fetch = ['id', 'branch', 'is_fast_table', 'is_delivery_table', 'is_inside_table','qr_code']
 
-        if user.user_type in {'admin', 'restaurant'}:
-            return Table.objects.filter(branch__tenant__admin=user).select_related('branch','qr_code').only(*fields_to_fetch)
-        
-        return Table.objects.filter(branch=user.branch).select_related('branch','qr_code').only(*fields_to_fetch)
+        base_qs = Table.objects.select_related('branch', 'qr_code').only(*fields_to_fetch)
+
+        if user.user_type == 'admin':
+            return base_qs
+
+        if user.user_type == 'restaurant':
+            tenant = get_user_tenant(user)
+            return base_qs.filter(branch__tenant=tenant) if tenant else base_qs.none()
+
+        if user.user_type == 'branch':
+            branch = get_user_branch(user)
+            return base_qs.filter(branch=branch) if branch else base_qs.none()
+
+        return base_qs.none()
 
     def destroy(self, request, *args, **kwargs):
         """Handles deletion of a table with validation error handling."""

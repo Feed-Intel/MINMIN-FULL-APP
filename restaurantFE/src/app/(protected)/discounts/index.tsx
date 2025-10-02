@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from 'react';
 import {
   ScrollView,
   StyleSheet,
@@ -6,40 +6,43 @@ import {
   useWindowDimensions,
   View,
   TextInput,
-} from "react-native";
-import { Button, Text, Card, Dialog, Portal, Switch } from "react-native-paper";
-import { useQueryClient } from "@tanstack/react-query";
-import { useDispatch } from "react-redux";
-import { hideLoader, showLoader } from "@/lib/reduxStore/loaderSlice";
-import Pencil from "@/assets/icons/Pencil.svg";
-import Delete from "@/assets/icons/Delete.svg";
-import { Branch } from "@/types/branchType";
-import { useGetBranches } from "@/services/mutation/branchMutation";
+} from 'react-native';
+import { Button, Text, Card, Dialog, Portal, Switch } from 'react-native-paper';
+import { useQueryClient } from '@tanstack/react-query';
+import { useDispatch } from 'react-redux';
+import { hideLoader, showLoader } from '@/lib/reduxStore/loaderSlice';
+import Pencil from '@/assets/icons/Pencil.svg';
+import Delete from '@/assets/icons/Delete.svg';
+import { Branch } from '@/types/branchType';
+import { useGetBranches } from '@/services/mutation/branchMutation';
 import {
   useDeleteCoupon,
   useDeleteDiscount,
   useDiscountRules,
   useDiscounts,
   useGetCoupons,
-} from "@/services/mutation/discountMutation";
-import AddDiscountModal from "@/components/AddDiscount";
-import AddDiscountRuleModal from "@/components/AddRuleModal";
-import AddCouponModal from "@/components/AddCoupon";
-import EditCouponModal from "@/components/EditCoupon";
-import EditDiscountModal from "@/components/EditDiscount";
-import EditDiscountRuleModal from "@/components/EditRuleModal";
-import { set } from "react-hook-form";
+} from '@/services/mutation/discountMutation';
+import AddDiscountModal from '@/components/AddDiscount';
+import AddCouponModal from '@/components/AddCoupon';
+import EditCouponModal from '@/components/EditCoupon';
+import EditDiscountModal from '@/components/EditDiscount';
+import BranchSelector from '@/components/BranchSelector';
+import ModalHeader from '@/components/ModalHeader';
+import { useRestaurantIdentity } from '@/hooks/useRestaurantIdentity';
+import Pagination from '@/components/Pagination';
 
 const ManageDiscounts: React.FC = () => {
   const { width }: { width: number } = useWindowDimensions();
-  const { data: discounts = [] } = useDiscounts();
-  const { data: coupons = [] } = useGetCoupons();
-  const { data: branches = [] } = useGetBranches();
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const { data: discounts } = useDiscounts(currentPage);
+  const { data: coupons } = useGetCoupons(currentPage);
+  const { data: branches } = useGetBranches();
   const { data: discountRules = [] } = useDiscountRules();
   const { mutateAsync: discountDelete } = useDeleteDiscount();
   const { mutateAsync: couponDelete } = useDeleteCoupon();
   const queryClient = useQueryClient();
   const dispatch = useDispatch();
+  const { isRestaurant, isBranch, branchId } = useRestaurantIdentity();
 
   const [showDialog, setShowDialog] = React.useState<boolean>(false);
   const [discount, setDiscount] = React.useState<any | null>(null);
@@ -49,10 +52,34 @@ const ManageDiscounts: React.FC = () => {
     useState(false);
   const [addCouponModalVisible, setAddCouponModalVisible] = useState(false);
   const [editCouponModalVisible, setEditCouponModalVisible] = useState(false);
-  const [discountRule, setDiscountRule] = useState<any | null>(null);
-  const [showDiscountRule, setShowDiscountRule] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState("Discount");
+  const [selectedDiscountRule, setSelectedDiscountRule] = useState<any | null>(
+    null
+  );
+  const [selectedCategory, setSelectedCategory] = useState('Discount');
+  const [selectedBranch, setSelectedBranch] = useState<string | null>(
+    isBranch ? branchId ?? null : null
+  );
   const isSmallScreen: boolean = width < 768;
+
+  const filterByBranch = <T extends { branch?: any }>(items: T[]): T[] => {
+    if (!selectedBranch || selectedBranch === 'all') return items;
+
+    return items.filter((item) => {
+      const branchValue =
+        typeof item.branch === 'object' ? item.branch?.id : item.branch;
+      return branchValue === selectedBranch;
+    });
+  };
+  const filteredDiscounts = useMemo(
+    () =>
+      filterByBranch(discounts?.results as any) as unknown as typeof discounts,
+    [discounts, selectedBranch]
+  );
+
+  const filteredCoupons = useMemo(
+    () => filterByBranch(coupons as any) as unknown as typeof coupons,
+    [coupons, selectedBranch]
+  );
 
   const handleDeleteDiscount = async (): Promise<void> => {
     setShowDialog(false);
@@ -60,10 +87,10 @@ const ManageDiscounts: React.FC = () => {
     try {
       if (discount.id) {
         await discountDelete(discount.id!);
-        queryClient.invalidateQueries({ queryKey: ["discounts"] });
+        queryClient.invalidateQueries({ queryKey: ['discounts'] });
       }
     } catch (error) {
-      console.error("Error deleting discount:", error);
+      console.error('Error deleting discount:', error);
     } finally {
       dispatch(hideLoader());
       setDiscount(null);
@@ -76,10 +103,10 @@ const ManageDiscounts: React.FC = () => {
     try {
       if (coupon.id) {
         await couponDelete(coupon.id!);
-        queryClient.invalidateQueries({ queryKey: ["coupons"] });
+        queryClient.invalidateQueries({ queryKey: ['coupons'] });
       }
     } catch (error) {
-      console.error("Error deleting coupon:", error);
+      console.error('Error deleting coupon:', error);
     } finally {
       dispatch(hideLoader());
       setCoupon(null);
@@ -96,6 +123,11 @@ const ManageDiscounts: React.FC = () => {
                 Discount and Coupon
               </Text>
             </View>
+            <BranchSelector
+              selectedBranch={selectedBranch}
+              onChange={setSelectedBranch}
+              includeAllOption={isRestaurant}
+            />
 
             {/* Search Bar */}
             <View style={styles.searchBarContainer}>
@@ -107,32 +139,32 @@ const ManageDiscounts: React.FC = () => {
               <Button
                 mode="contained"
                 onPress={() => {
-                  if (selectedCategory === "Coupons") {
+                  if (selectedCategory === 'Coupons') {
                     setAddCouponModalVisible(true);
                   } else {
                     setAddDiscountModalVisible(true);
                   }
                 }}
                 style={styles.addButton}
-                labelStyle={{ fontSize: 14, color: "#fff" }}
+                labelStyle={{ fontSize: 14, color: '#fff' }}
               >
-                {selectedCategory === "Coupons"
-                  ? "+ Add Coupon"
-                  : "+ Add Discount"}
+                {selectedCategory === 'Coupons'
+                  ? '+ Add Coupon'
+                  : '+ Add Discount'}
               </Button>
             </View>
             <View style={styles.tabContainer}>
               <TouchableOpacity
                 style={[
                   styles.tabButton,
-                  selectedCategory === "Discount" && styles.activeTabButton,
+                  selectedCategory === 'Discount' && styles.activeTabButton,
                 ]}
-                onPress={() => setSelectedCategory("Discount")}
+                onPress={() => setSelectedCategory('Discount')}
               >
                 <Text
                   style={[
                     styles.tabText,
-                    selectedCategory === "Discount" && styles.activeTabText,
+                    selectedCategory === 'Discount' && styles.activeTabText,
                   ]}
                 >
                   Discount
@@ -141,14 +173,14 @@ const ManageDiscounts: React.FC = () => {
               <TouchableOpacity
                 style={[
                   styles.tabButton,
-                  selectedCategory === "Coupons" && styles.activeTabButton,
+                  selectedCategory === 'Coupons' && styles.activeTabButton,
                 ]}
-                onPress={() => setSelectedCategory("Coupons")}
+                onPress={() => setSelectedCategory('Coupons')}
               >
                 <Text
                   style={[
                     styles.tabText,
-                    selectedCategory === "Coupons" && styles.activeTabText,
+                    selectedCategory === 'Coupons' && styles.activeTabText,
                   ]}
                 >
                   Coupons
@@ -159,16 +191,16 @@ const ManageDiscounts: React.FC = () => {
             {/* Table */}
 
             <ScrollView horizontal={isSmallScreen}>
-              {selectedCategory === "Discount" && (
+              {selectedCategory === 'Discount' && (
                 <View style={styles.dataTable}>
                   <View style={styles.dataTableHeader}>
                     {[
-                      "Name",
-                      "Branch",
-                      "Type",
-                      "Priority",
-                      "Discount Rules",
-                      "Actions",
+                      'Name',
+                      'Branch',
+                      'Type',
+                      'Priority',
+                      'Discount Rules',
+                      'Actions',
                     ].map((title, index) => (
                       <Text
                         key={index}
@@ -176,7 +208,7 @@ const ManageDiscounts: React.FC = () => {
                           styles.headerCell,
                           {
                             flex: index == 0 ? 0.5 : COLUMN_WIDTHS[index],
-                            textAlign: "center",
+                            textAlign: 'center',
                             // position: "relative",
                             // left: index === 0 ? 20 : 0,
                           },
@@ -187,98 +219,101 @@ const ManageDiscounts: React.FC = () => {
                     ))}
                   </View>
 
-                  {discounts.map((disc: any) => (
-                    <View key={disc.id} style={styles.row}>
-                      {/* Branch */}
-                      <Text
-                        style={[
-                          styles.cell,
-                          {
-                            flex: 0.5,
-                            textAlign: "center",
-                          },
-                        ]}
-                      >
-                        {disc.name}
-                      </Text>
+                  {filteredDiscounts?.map((disc: any) => {
+                    const relatedRule = discountRules.find(
+                      (rule: any) => rule.discount_id.id === disc.id
+                    );
 
-                      <Text style={[styles.cell, { flex: COLUMN_WIDTHS[1] }]}>
-                        {disc.tenant.restaurant_name +
-                          ", " +
-                          disc.branch.address}
-                      </Text>
+                    const ruleSummary = (() => {
+                      if (!relatedRule) {
+                        return 'No rule configured';
+                      }
 
-                      {/* Delivery table */}
-                      <Text style={[styles.cell, { flex: COLUMN_WIDTHS[2] }]}>
-                        {disc.type}
-                      </Text>
+                      switch (disc.type) {
+                        case 'volume':
+                          return `Min items ≥ ${relatedRule.min_items ?? 0}`;
+                        case 'combo':
+                          return relatedRule.combo_size
+                            ? `Combo size ${relatedRule.combo_size}`
+                            : 'Combo rule configured';
+                        case 'bogo':
+                        case 'freeItem':
+                          return relatedRule.buy_quantity &&
+                            relatedRule.get_quantity
+                            ? `Buy ${relatedRule.buy_quantity} • Get ${relatedRule.get_quantity}`
+                            : 'Benefit rule configured';
+                        default:
+                          return 'Rule configured';
+                      }
+                    })();
 
-                      {/* Inside table */}
-                      <Text style={[styles.cell, { flex: COLUMN_WIDTHS[3] }]}>
-                        {disc.priority}
-                      </Text>
-
-                      <Text style={[styles.cell, { flex: COLUMN_WIDTHS[4] }]}>
-                        <Button
-                          mode="outlined"
-                          onPress={() => {
-                            const dsr = discountRules.find(
-                              (dsr: any) => dsr.discount_id.id == disc.id
-                            );
-                            if (dsr?.id) {
-                              setDiscountRule(dsr);
-                            } else {
-                              setDiscount(disc);
-                              setShowDiscountRule(true);
-                            }
-                          }}
-                          style={{ borderColor: "#6E504933" }}
-                          labelStyle={{ color: "#281D1B" }}
+                    return (
+                      <View key={disc.id} style={styles.row}>
+                        <Text
+                          style={[
+                            styles.cell,
+                            {
+                              flex: 0.5,
+                              textAlign: 'center',
+                            },
+                          ]}
                         >
-                          {discountRules.find(
-                            (dsr: any) => dsr.discount_id.id == disc.id
-                          )
-                            ? "Update Rule"
-                            : "+ Add Rule"}
-                        </Button>
-                      </Text>
+                          {disc.name}
+                        </Text>
 
-                      {/* Actions */}
-                      <Text style={[styles.cell, { flex: COLUMN_WIDTHS[5] }]}>
-                        <View style={styles.actionContainer}>
-                          <Switch
-                            value={true}
-                            // onValueChange={
-                            // }
-                            color="#91B275"
-                          />
-                          <TouchableOpacity
-                            onPress={() => {
-                              setDiscount(disc);
-                              setEditDiscountModalVisible(true);
-                            }}
-                          >
-                            <Pencil height={40} width={40} color="#91B275" />
-                          </TouchableOpacity>
-                          <TouchableOpacity
-                            onPress={() => {
-                              setDiscount(disc);
-                              setShowDialog(true);
-                            }}
-                          >
-                            <Delete height={40} width={40} color="#91B275" />
-                          </TouchableOpacity>
-                        </View>
-                      </Text>
-                    </View>
-                  ))}
+                        <Text style={[styles.cell, { flex: COLUMN_WIDTHS[1] }]}>
+                          {[disc.tenant?.restaurant_name, disc.branch?.address]
+                            .filter(Boolean)
+                            .join(', ')}
+                        </Text>
+
+                        <Text style={[styles.cell, { flex: COLUMN_WIDTHS[2] }]}>
+                          {disc.type}
+                        </Text>
+
+                        <Text style={[styles.cell, { flex: COLUMN_WIDTHS[3] }]}>
+                          {disc.priority}
+                        </Text>
+
+                        <Text style={[styles.cell, { flex: COLUMN_WIDTHS[4] }]}>
+                          {ruleSummary}
+                        </Text>
+
+                        <Text style={[styles.cell, { flex: COLUMN_WIDTHS[5] }]}>
+                          <View style={styles.actionContainer}>
+                            <Switch
+                              value={Boolean(disc?.is_active ?? true)}
+                              color="#91B275"
+                            />
+                            <TouchableOpacity
+                              onPress={() => {
+                                setDiscount(disc);
+                                setSelectedDiscountRule(relatedRule ?? null);
+                                setEditDiscountModalVisible(true);
+                              }}
+                            >
+                              <Pencil height={40} width={40} color="#91B275" />
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                              onPress={() => {
+                                setDiscount(disc);
+                                setShowDialog(true);
+                              }}
+                            >
+                              <Delete height={40} width={40} color="#91B275" />
+                            </TouchableOpacity>
+                          </View>
+                        </Text>
+                      </View>
+                    );
+                  })}
                 </View>
               )}
 
-              {selectedCategory === "Coupons" && (
+              {selectedCategory === 'Coupons' && (
                 <View style={styles.dataTable}>
                   <View style={styles.dataTableHeader}>
-                    {["Code", "Created", "Updated", "Actions"].map(
+                    {['Code', 'Created', 'Updated', 'Actions'].map(
                       (title, index) => (
                         <Text
                           key={index}
@@ -286,7 +321,7 @@ const ManageDiscounts: React.FC = () => {
                             styles.headerCell,
                             {
                               flex: index === 0 ? 0.5 : 1,
-                              textAlign: "center",
+                              textAlign: 'center',
                               // position: "relative",
                               // left: index === 0 ? 20 : 0,
                             },
@@ -298,7 +333,7 @@ const ManageDiscounts: React.FC = () => {
                     )}
                   </View>
 
-                  {coupons.map((cp: any) => (
+                  {filteredCoupons?.results.map((cp: any) => (
                     <View key={cp.id} style={styles.row}>
                       {/* Branch */}
                       <Text
@@ -306,7 +341,7 @@ const ManageDiscounts: React.FC = () => {
                           styles.cell,
                           {
                             flex: 0.5,
-                            textAlign: "center",
+                            textAlign: 'center',
                           },
                         ]}
                       >
@@ -352,6 +387,17 @@ const ManageDiscounts: React.FC = () => {
                   ))}
                 </View>
               )}
+              <Pagination
+                totalPages={
+                  Math.round(
+                    selectedCategory == 'Coupons'
+                      ? coupons?.count! / 10
+                      : discounts?.count! / 10
+                  ) || 0
+                }
+                currentPage={currentPage}
+                onPageChange={setCurrentPage}
+              />
             </ScrollView>
 
             {/* Delete Dialog */}
@@ -359,31 +405,34 @@ const ManageDiscounts: React.FC = () => {
               <Dialog
                 visible={showDialog}
                 onDismiss={() => setShowDialog(false)}
-                style={[styles.dialog, { width: "50%", alignSelf: "center" }]}
+                style={[styles.dialog, { width: '50%', alignSelf: 'center' }]}
               >
-                <Dialog.Title style={{ color: "#000" }}>
-                  Confirm Deletion
+                <Dialog.Title>
+                  <ModalHeader
+                    title="Confirm Deletion"
+                    onClose={() => setShowDialog(false)}
+                  />
                 </Dialog.Title>
                 <Dialog.Content>
-                  <Text style={{ color: "#000" }}>
-                    Are you sure you want to delete this{" "}
-                    {selectedCategory === "Coupons" ? "Coupon" : "Discount"}?
+                  <Text style={{ color: '#000' }}>
+                    Are you sure you want to delete this{' '}
+                    {selectedCategory === 'Coupons' ? 'Coupon' : 'Discount'}?
                   </Text>
                 </Dialog.Content>
                 <Dialog.Actions>
                   <Button
                     onPress={() => setShowDialog(false)}
-                    labelStyle={{ color: "#000" }}
+                    labelStyle={{ color: '#000' }}
                   >
                     Cancel
                   </Button>
                   <Button
                     onPress={
-                      selectedCategory === "Coupons"
+                      selectedCategory === 'Coupons'
                         ? handleDeleteCoupon
                         : handleDeleteDiscount
                     }
-                    labelStyle={{ color: "#ff0000" }}
+                    labelStyle={{ color: '#ff0000' }}
                   >
                     Delete
                   </Button>
@@ -394,16 +443,21 @@ const ManageDiscounts: React.FC = () => {
         </Card>
       </ScrollView>
       <AddDiscountModal
-        branches={branches as Branch[]}
+        branches={(branches?.results as Branch[]) || []}
         visible={addDiscountModalVisible}
         onClose={() => setAddDiscountModalVisible(false)}
       />
       {discount && (
         <EditDiscountModal
-          branches={branches}
+          branches={branches?.results || []}
           discount={discount}
+          discountRule={selectedDiscountRule}
           visible={editDiscountModalVisible}
-          onClose={() => setEditDiscountModalVisible(false)}
+          onClose={() => {
+            setEditDiscountModalVisible(false);
+            setDiscount(null);
+            setSelectedDiscountRule(null);
+          }}
         />
       )}
       <AddCouponModal
@@ -420,30 +474,16 @@ const ManageDiscounts: React.FC = () => {
           coupon={coupon as any}
         />
       )}
-      {discount && (
-        <AddDiscountRuleModal
-          discount={discount}
-          visible={showDiscountRule}
-          setVisible={setShowDiscountRule}
-        />
-      )}
-      {discountRule && (
-        <EditDiscountRuleModal
-          discountRule={discountRule}
-          visible={Boolean(discountRule)}
-          setVisible={setDiscountRule}
-        />
-      )}
     </View>
   );
 };
 
-const COLUMN_WIDTHS = [1, 1, 1, 1, 1, 1, 1.5];
+const COLUMN_WIDTHS = [1, 1.2, 1, 0.8, 1.5, 1.2];
 
 const rootStyles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#EFF4EB",
+    backgroundColor: '#EFF4EB',
   },
 });
 
@@ -454,117 +494,117 @@ const styles = StyleSheet.create({
   },
   card: {
     borderRadius: 12,
-    backgroundColor: "#EFF4EB",
-    borderColor: "transparent",
+    backgroundColor: '#EFF4EB',
+    borderColor: 'transparent',
   },
   headerRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: 20,
   },
   title: {
-    fontWeight: "600",
-    color: "#333",
+    fontWeight: '600',
+    color: '#333',
   },
   addButton: {
-    backgroundColor: "#91B275",
+    backgroundColor: '#91B275',
     borderRadius: 20,
     paddingHorizontal: 16,
   },
   searchBarContainer: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     marginBottom: 20,
     gap: 30,
   },
   searchBar: {
     borderWidth: 1,
-    borderColor: "#ddd",
+    borderColor: '#ddd',
     borderRadius: 8,
     paddingHorizontal: 15,
     paddingVertical: 10,
     fontSize: 16,
-    color: "#333",
-    backgroundColor: "#91B27517",
+    color: '#333',
+    backgroundColor: '#91B27517',
     flex: 1,
   },
   dataTable: {
     minWidth: 700,
   },
   tabContainer: {
-    flexDirection: "row",
-    overflow: "hidden",
+    flexDirection: 'row',
+    overflow: 'hidden',
     marginTop: 10,
     padding: 3,
   },
   tabButton: {
     paddingVertical: 10,
-    alignItems: "center",
+    alignItems: 'center',
     minWidth: 125,
     borderBottomWidth: 2,
-    borderColor: "#ccc",
+    borderColor: '#ccc',
   },
   activeTabButton: {
-    borderBottomColor: "#668442",
+    borderBottomColor: '#668442',
   },
   tabText: {
     fontSize: 14,
-    fontWeight: "600",
-    color: "#888",
+    fontWeight: '600',
+    color: '#888',
   },
   activeTabText: {
-    color: "#668442",
+    color: '#668442',
   },
   dataTableHeader: {
-    flexDirection: "row",
-    backgroundColor: "#EFF4EB",
+    flexDirection: 'row',
+    backgroundColor: '#EFF4EB',
     borderBottomWidth: 1,
-    borderBottomColor: "#eee",
+    borderBottomColor: '#eee',
   },
   headerCell: {
     flex: 1,
-    textAlign: "center",
-    fontWeight: "bold",
-    color: "#4A4A4A",
+    textAlign: 'center',
+    fontWeight: 'bold',
+    color: '#4A4A4A',
     paddingVertical: 10,
   },
   row: {
-    flexDirection: "row",
+    flexDirection: 'row',
     minHeight: 55,
   },
   cell: {
     flex: 1,
-    textAlign: "center",
-    color: "#40392B",
+    textAlign: 'center',
+    color: '#40392B',
     borderBottomWidth: 1,
-    borderBottomColor: "#eee",
-    alignSelf: "center",
+    borderBottomColor: '#eee',
+    alignSelf: 'center',
   },
   dropdownBtn: {
-    backgroundColor: "#91B27517",
+    backgroundColor: '#91B27517',
     borderRadius: 6,
     minWidth: 60,
-    justifyContent: "center",
+    justifyContent: 'center',
     borderWidth: 1.5,
-    borderColor: "#6483490F",
+    borderColor: '#6483490F',
   },
   qrCodeImage: {
     width: 40,
     height: 40,
     borderRadius: 4,
-    alignSelf: "center",
+    alignSelf: 'center',
   },
   actionContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     width: 130,
-    alignSelf: "center",
+    alignSelf: 'center',
   },
   dialog: {
     borderRadius: 12,
-    backgroundColor: "#fff",
+    backgroundColor: '#fff',
   },
 });
 

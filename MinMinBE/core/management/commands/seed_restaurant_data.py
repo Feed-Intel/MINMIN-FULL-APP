@@ -3,7 +3,7 @@ from django.core.files.base import ContentFile
 from django.db import transaction
 from faker import Faker
 from decimal import Decimal
-from random import randint, choice
+from random import randint, choice, sample
 import io
 from PIL import Image
 
@@ -12,6 +12,9 @@ from restaurant.tenant.models import Tenant
 from restaurant.branch.models import Branch
 from restaurant.table.models import Table
 from restaurant.menu.models import Menu
+from restaurant.menu_availability.models import MenuAvailability
+from restaurant.combo.models import Combo, ComboItem
+from restaurant.discount.models import Discount, DiscountRule, Coupon
 from customer.order.models import Order, OrderItem
 
 
@@ -88,21 +91,114 @@ class Command(BaseCommand):
 
                     # create tables
                     for _ in range(tables_per_branch):
-                        table = Table.objects.create(branch=branch)
+                        table = Table.objects.create(
+                            branch=branch,
+                            is_fast_table=choice([True, False]),
+                            is_delivery_table=choice([True, False]),
+                            is_inside_table=choice([True, False]),
+                            is_active=choice([True, False])
+                        )
                         tables.append(table)
 
                 # create menus
                 for _ in range(menus_per_restaurant):
+                    category_pool = ['Main', 'Drink', 'Dessert']
+                    selected_categories = sample(
+                        category_pool,
+                        k=randint(1, len(category_pool))
+                    )
                     menu = Menu.objects.create(
                         tenant=tenant,
                         name=faker.word().title() + ' ' + choice(['Burger', 'Pizza', 'Salad', 'Pasta', 'Soup']),
                         description=faker.paragraph(),
                         price=Decimal(randint(5, 40)),
-                        category=choice(['Main', 'Drink', 'Dessert']),
+                        categories=selected_categories,
                         tags=[faker.word() for _ in range(3)],
                         image=self._fake_image()
                     )
                     menus.append(menu)
+
+                # create menu availability for each branch for this tenant
+                tenant_menus = [m for m in menus if m.tenant == tenant]
+                for branch in [b for b in branches if b.tenant == tenant]:
+                    for menu in tenant_menus:
+                        MenuAvailability.objects.get_or_create(
+                            branch=branch,
+                            menu_item=menu,
+                            defaults={"is_available": choice([True, True, False])}
+                        )
+
+                    # create combos per branch
+                    branch_menu_sample = tenant_menus[:]
+                    if len(branch_menu_sample) >= 3:
+                        combo_count = min(3, len(branch_menu_sample) // 2)
+                        for combo_index in range(combo_count):
+                            combo_items = sample(branch_menu_sample, k=choice([2, 3]))
+                            combo_price = sum(item.price for item in combo_items) * Decimal("0.85")
+                            combo = Combo.objects.create(
+                                tenant=tenant,
+                                branch=branch,
+                                name=f"{branch.address.split()[0]} Special {combo_index + 1}",
+                                combo_price=combo_price,
+                            )
+                            for menu_item in combo_items:
+                                ComboItem.objects.create(
+                                    combo=combo,
+                                    menu_item=menu_item,
+                                    quantity=1,
+                                )
+
+                # create tenant level discounts and coupons
+                tenant_discount = Discount.objects.create(
+                    tenant=tenant,
+                    name=f"{tenant.restaurant_name} Happy Hour",
+                    description=faker.text(),
+                    type=choice(['volume', 'combo', 'bogo', 'freeItem']),
+                    priority=randint(1, 5),
+                    is_stackable=choice([True, False]),
+                )
+                DiscountRule.objects.create(
+                    tenant=tenant,
+                    discount_id=tenant_discount,
+                    min_items=choice([1, 2, 3]),
+                    min_price=Decimal(randint(20, 60)),
+                    applicable_items=[str(menu.id) for menu in sample(tenant_menus, k=min(len(tenant_menus), 3))],
+                    excluded_items=[],
+                )
+
+                Coupon.objects.create(
+                    tenant=tenant,
+                    discount_code=f"{tenant.restaurant_name[:5].upper()}SAVE",
+                    discount_amount=Decimal(randint(5, 15)),
+                    is_percentage=False,
+                )
+
+                for branch in [b for b in branches if b.tenant == tenant]:
+                    branch_discount = Discount.objects.create(
+                        tenant=tenant,
+                        branch=branch,
+                        name=f"{branch.address.split()[0]} Special",
+                        description=faker.text(),
+                        type=choice(['volume', 'combo', 'bogo', 'freeItem']),
+                        priority=randint(1, 5),
+                        is_stackable=choice([True, False]),
+                    )
+                    DiscountRule.objects.create(
+                        tenant=tenant,
+                        discount_id=branch_discount,
+                        min_items=choice([1, 2]),
+                        min_price=Decimal(randint(10, 40)),
+                        applicable_items=[str(menu.id) for menu in sample(tenant_menus, k=min(len(tenant_menus), 2))],
+                        excluded_items=[],
+                    )
+
+                    Coupon.objects.create(
+                        tenant=tenant,
+                        branch=branch,
+                        discount_code=f"{branch.address[:4].upper()}-{randint(100,999)}",
+                        discount_amount=Decimal(randint(10, 25)),
+                        is_percentage=True,
+                    )
 
         # create customers
         customers = [demo_customer]

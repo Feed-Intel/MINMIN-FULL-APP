@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   fetchTables,
   createTable,
@@ -8,11 +8,11 @@ import {
   fetchQRs,
   updateQr,
   fetchTableById,
-} from "../api/tableApi";
-import { Table } from "@/types/tableTypes";
-import { useDispatch } from "react-redux";
-import { AppDispatch } from "@/lib/reduxStore/store";
-import { hideLoader, showLoader } from "@/lib/reduxStore/loaderSlice";
+} from '../api/tableApi';
+import { Table } from '@/types/tableTypes';
+import { useDispatch } from 'react-redux';
+import { AppDispatch } from '@/lib/reduxStore/store';
+import { hideLoader, showLoader } from '@/lib/reduxStore/loaderSlice';
 
 // export const useTables = () =>
 //   useQuery({
@@ -21,7 +21,7 @@ import { hideLoader, showLoader } from "@/lib/reduxStore/loaderSlice";
 //   });
 export const useQRs = () =>
   useQuery({
-    queryKey: ["qrs"],
+    queryKey: ['qrs'],
     queryFn: () => fetchQRs(),
     staleTime: 0,
   });
@@ -34,7 +34,7 @@ export function useCreateQR() {
       return createQR(data);
     },
     onError: (error: any) => {
-      console.error("Error creating QR:", error);
+      console.error('Error creating QR:', error);
     },
     onSuccess: () => {
       //("QR created successfully");
@@ -43,7 +43,7 @@ export function useCreateQR() {
       if (error) {
         console.error(error);
       } else {
-        await queryClient.invalidateQueries({ queryKey: ["qrs"] });
+        await queryClient.invalidateQueries({ queryKey: ['qrs'] });
       }
       dispatch(hideLoader());
     },
@@ -56,17 +56,17 @@ export function useUpdateQr() {
     },
   });
 }
-export const useGetTables = () =>
-  useQuery<Table[]>({
-    queryKey: ["tables"],
-    queryFn: fetchTables,
+export const useGetTables = (page?: number | null) =>
+  useQuery<{ next: string | null; results: Table[]; count: number }>({
+    queryKey: ['tables', page],
+    queryFn: () => fetchTables(page),
     staleTime: 0,
     refetchOnMount: true,
   });
 
 export const useGetTableById = (id: string) =>
   useQuery<Table>({
-    queryKey: ["table", id],
+    queryKey: ['table', id],
     queryFn: () => fetchTableById(id),
     staleTime: 0,
   });
@@ -79,13 +79,13 @@ export function useCreateTable() {
       return createTable(data);
     },
     onError: (error: any) => {
-      console.error("Error creating table:", error);
+      console.error('Error creating table:', error);
     },
     onSettled: async (_: any, error: any) => {
       if (error) {
         console.error(error);
       } else {
-        await queryClient.invalidateQueries({ queryKey: ["tables"] });
+        await queryClient.invalidateQueries({ queryKey: ['tables'] });
       }
       dispatch(hideLoader());
     },
@@ -98,7 +98,7 @@ export function useUpdateTable() {
   return useMutation({
     mutationFn: updateTable,
     onError: (error: any) => {
-      console.error("Error creating table:", error);
+      console.error('Error creating table:', error);
     },
     onSuccess: () => {
       //("Table created successfully");
@@ -107,7 +107,7 @@ export function useUpdateTable() {
       if (error) {
         console.error(error);
       } else {
-        await queryClient.invalidateQueries({ queryKey: ["tables"] });
+        await queryClient.invalidateQueries({ queryKey: ['tables'] });
       }
       dispatch(hideLoader());
     },
@@ -123,7 +123,7 @@ export function useDeleteTable() {
       return deleteTable(id);
     },
     onError: (error: any) => {
-      console.error("Error deleting table:", error);
+      console.error('Error deleting table:', error);
     },
     onSuccess: () => {
       //("Table deleted successfully");

@@ -17,6 +17,7 @@ from .menuavailability_filter import MenuAvailabilityFilter # Your existing filt
 from .services import get_best_dishes_of_week, get_recommended_items # Your existing services
 from feed.models import Post # Assuming Post model is in 'feed' app
 from customer.feedback.models import Feedback # Assuming Feedback model is in 'customer.feedback' app
+from accounts.utils import get_user_branch, get_user_tenant
 
 # Caching imports
 from django.core.cache import cache 
@@ -148,10 +149,20 @@ class MenuAvailabilityView(CachedModelViewSet):
             return queryset.order_by('-created_at')
             
         else:
-            # ... (non-customer queryset logic, ensure any IDs used are strings)
-            queryset = base_queryset.filter(
-                Q(branch__tenant__admin=str(user.id)) | Q(branch=user.branch) # Ensure user.id is string
-            ).select_related('menu_item', 'branch').distinct()
+            queryset = base_queryset.none()
+
+            if user.user_type == 'admin':
+                queryset = base_queryset
+            elif user.user_type == 'restaurant':
+                tenant = get_user_tenant(user)
+                if tenant:
+                    queryset = base_queryset.filter(branch__tenant=tenant)
+            elif user.user_type == 'branch':
+                branch = get_user_branch(user)
+                if branch:
+                    queryset = base_queryset.filter(branch=branch)
+
+            queryset = queryset.select_related('menu_item', 'branch').distinct()
             return queryset.order_by('-created_at')
 
     # --- Cache Invalidation Helpers ---
@@ -219,15 +230,22 @@ class MenuAvailabilityView(CachedModelViewSet):
         """
         API endpoint to retrieve all distinct categories of available menu items.
         """
-        # Note: This query benefits from indexing on 'menu_item__category'
-        # and 'is_available'. The filter_queryset applies filters from query params.
+        # Note: This query benefits from indexing on 'is_available'.
         queryset = self.filter_queryset(self.get_queryset())
         
-        # Filter to available items and get distinct categories
-        categories = queryset.filter(is_available=True).order_by('menu_item__category').values_list(
-            'menu_item__category', flat=True
-        ).distinct()
-        return Response({'categories': list(categories)})
+        raw_category_lists = queryset.filter(is_available=True).values_list(
+            'menu_item__categories', flat=True
+        )
+
+        unique_categories = sorted({
+            category
+            for category_list in raw_category_lists
+            if isinstance(category_list, (list, tuple))
+            for category in category_list
+            if category
+        })
+
+        return Response({'categories': unique_categories})
 
     # --- Permission checks for update/destroy ---
     def update(self, request, *args, **kwargs):

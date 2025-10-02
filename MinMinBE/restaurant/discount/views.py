@@ -4,6 +4,7 @@ from rest_framework.response import Response
 from django.core.exceptions import ValidationError
 from rest_framework import status
 from rest_framework.decorators import action
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import IsAuthenticated
 from django.db.models import Q
 from rest_framework.pagination import PageNumberPagination
@@ -11,7 +12,8 @@ from .models import Discount, DiscountRule, DiscountApplication, Coupon
 from .serializers import DiscountSerializer, DiscountRuleSerializer, DiscountApplicationSerializer, CouponSerializer
 from customer.order.models import Order
 from .utils import apply_discounts
-from accounts.permissions import HasCustomAPIKey,IsAdminOrRestaurant
+from accounts.permissions import HasCustomAPIKey, IsAdminOrRestaurant, IsAdminRestaurantOrBranch
+from accounts.utils import get_user_branch, get_user_tenant
 from .services import get_big_discount_items
 from restaurant.menu_availability.serializers import MenuAvailabilitySerializer
 from restaurant.tenant.models import Tenant
@@ -32,14 +34,18 @@ class DiscountViewSet(CachedModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        if user.user_type =='restaurant' or user.user_type == 'admin':
-            queryset = Discount.objects.filter(tenant__admin=user.id).select_related('tenant', 'branch')
-        elif user.user_type == 'branch':
-            queryset = Discount.objects.filter(branch=user.branch).select_related('tenant', 'branch')
-        else:
-            queryset = Discount.objects.none()  # Unhandled user type
+        if user.user_type == 'admin':
+            return Discount.objects.select_related('tenant', 'branch')
 
-        return queryset
+        if user.user_type == 'restaurant':
+            tenant = get_user_tenant(user)
+            return Discount.objects.filter(tenant=tenant).select_related('tenant', 'branch') if tenant else Discount.objects.none()
+
+        if user.user_type == 'branch':
+            branch = get_user_branch(user)
+            return Discount.objects.filter(branch=branch).select_related('tenant', 'branch') if branch else Discount.objects.none()
+
+        return Discount.objects.none()
     @action(detail=False, methods=['post'],url_path='apply-discount')
     def apply_discounts_to_order(self, request):
         """
@@ -102,7 +108,7 @@ class DiscountRulePagination(PageNumberPagination):
     page_size = 10
 
 class DiscountRuleViewSet(CachedModelViewSet):
-    permission_classes = [IsAuthenticated,HasCustomAPIKey,IsAdminOrRestaurant]
+    permission_classes = [IsAuthenticated, HasCustomAPIKey, IsAdminRestaurantOrBranch]
     queryset = DiscountRule.objects.all()
     serializer_class = DiscountRuleSerializer
     filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
@@ -114,12 +120,19 @@ class DiscountRuleViewSet(CachedModelViewSet):
     def get_queryset(self):
         user = self.request.user
         if user.user_type == 'admin':
-            queryset = DiscountRule.objects.select_related('discount_id').all()
-        elif user.user_type == 'restaurant':
-            queryset = DiscountRule.objects.filter(tenant__admin=user.id).select_related('discount_id')
-        else:
-            queryset = DiscountRule.objects.none()  # Unhandled user type
-        return queryset
+            return DiscountRule.objects.select_related('discount_id')
+
+        if user.user_type == 'restaurant':
+            tenant = get_user_tenant(user)
+            return DiscountRule.objects.filter(tenant=tenant).select_related('discount_id') if tenant else DiscountRule.objects.none()
+
+        if user.user_type == 'branch':
+            branch = get_user_branch(user)
+            if not branch:
+                return DiscountRule.objects.none()
+            return DiscountRule.objects.filter(tenant=branch.tenant).select_related('discount_id')
+
+        return DiscountRule.objects.none()
     @action(detail=True, methods=['get'])
     def discount_applications(self, request, pk=None):
         """
@@ -146,16 +159,23 @@ class DiscountApplicationViewSet(CachedModelViewSet):
         # Get the currently authenticated user
         user = self.request.user
         if user.user_type == 'admin':
-            queryset = DiscountApplication.objects.all()
-        else:
-            queryset = DiscountApplication.objects.filter(order__tenant__admin=user.id)
-        return queryset
+            return DiscountApplication.objects.all()
+
+        tenant = get_user_tenant(user)
+        if user.user_type == 'restaurant' and tenant:
+            return DiscountApplication.objects.filter(order__tenant=tenant)
+
+        if user.user_type == 'branch':
+            branch = get_user_branch(user)
+            return DiscountApplication.objects.filter(order__branch=branch) if branch else DiscountApplication.objects.none()
+
+        return DiscountApplication.objects.none()
 
 
 class CouponPagination(PageNumberPagination):
     page_size = 10
 class CouponViewSet(CachedModelViewSet):
-    permission_classes = [IsAuthenticated,HasCustomAPIKey,IsAdminOrRestaurant]
+    permission_classes = [IsAuthenticated, HasCustomAPIKey, IsAdminRestaurantOrBranch]
     queryset = Coupon.objects.all()
     serializer_class = CouponSerializer
     filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
@@ -165,33 +185,41 @@ class CouponViewSet(CachedModelViewSet):
     pagination_class = CouponPagination
 
     def perform_create(self, serializer):
-        tenant =  Tenant.objects.get(admin=self.request.user)
-        if tenant:
-           return serializer.save(tenant=tenant)
-        tenant = self.request.user.branch.tenant
-        return serializer.save(tenant=tenant)
+        tenant = get_user_tenant(self.request.user)
+        if tenant is None:
+            raise PermissionDenied("Associated tenant not found for user")
+
+        branch = get_user_branch(self.request.user)
+        return serializer.save(tenant=tenant, branch=branch)
     
     def perform_update(self, serializer):
-        tenant =  Tenant.objects.get(admin=self.request.user)
-        if tenant:
-           return serializer.save(tenant=tenant)
-        tenant = self.request.user.branch.tenant
-        return serializer.save(tenant=tenant)
+        tenant = get_user_tenant(self.request.user)
+        if tenant is None:
+            raise PermissionDenied("Associated tenant not found for user")
+
+        branch = get_user_branch(self.request.user)
+        return serializer.save(tenant=tenant, branch=branch)
         
 
     def get_queryset(self):
         user = self.request.user
         if user.user_type == 'admin':
-            queryset = Coupon.objects.all()
-        elif user.user_type == 'restaurant':
-            queryset = Coupon.objects.filter(tenant__admin=user.id).distinct()
-        elif user.user_type == 'branch':
-            queryset = Coupon.objects.filter(branch=user.branch).distinct()
-        else:
-            queryset = Coupon.objects.none()  # Unhandled user type
-        return queryset
+            return Coupon.objects.all()
+
+        if user.user_type == 'restaurant':
+            tenant = get_user_tenant(user)
+            return Coupon.objects.filter(tenant=tenant).distinct() if tenant else Coupon.objects.none()
+
+        if user.user_type == 'branch':
+            branch = get_user_branch(user)
+            if not branch:
+                return Coupon.objects.none()
+
+            tenant = branch.tenant
+            return Coupon.objects.filter(tenant=tenant).distinct()
+
+        return Coupon.objects.none()
     
 
 
     
-

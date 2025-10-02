@@ -24,6 +24,7 @@ import { Colors } from "@/constants/Colors";
 import { useGetRelatedMenus } from "@/services/mutation/menuMutation";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { i18n } from "@/app/_layout";
+import { normalizeImageUrl } from "@/utils/imageUrl";
 
 export default function DishDetailsScreen() {
   const dispatch = useDispatch();
@@ -111,7 +112,7 @@ export default function DishDetailsScreen() {
               <Avatar.Image
                 size={60}
                 source={{
-                  uri: relatedItem.image?.replace("http://", "https://"),
+                  uri: normalizeImageUrl(relatedItem.image),
                 }}
                 style={styles.sideAvatar}
               />
@@ -127,7 +128,7 @@ export default function DishDetailsScreen() {
       <ScrollView style={styles.container}>
         <Card style={styles.imageCard}>
           <Image
-            source={{ uri: item?.image?.replace("http://", "https://") }}
+            source={{ uri: normalizeImageUrl(item?.image) }}
             style={styles.mainImage}
           />
           <IconButton

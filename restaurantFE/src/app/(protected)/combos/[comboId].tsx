@@ -20,6 +20,7 @@ import { MenuType } from "@/types/menuType";
 import { useGetBranches } from "@/services/mutation/branchMutation";
 import { useGetMenus } from "@/services/mutation/menuMutation";
 import { useUpdateCombo } from "@/services/mutation/comboMutation";
+import { useRestaurantIdentity } from "@/hooks/useRestaurantIdentity";
 
 type ComboItem = {
   menu_item: string | MenuType;
@@ -53,6 +54,7 @@ export default function EditComboDialog({ visible, combo: initialCombo, onClose 
   const { mutateAsync: updateCombo, isPending } = useUpdateCombo();
   const { width } = useWindowDimensions();
   const isSmallScreen = width < 600;
+  const { isBranch, branchId } = useRestaurantIdentity();
 
   useEffect(() => {
     if (initialCombo) {
@@ -66,6 +68,12 @@ export default function EditComboDialog({ visible, combo: initialCombo, onClose 
       });
     }
   }, [initialCombo]);
+
+  useEffect(() => {
+    if (isBranch && branchId) {
+      setCombo((prev) => ({ ...prev, branch: branchId }));
+    }
+  }, [isBranch, branchId]);
 
   const handleInputChange = (field: keyof Combo, value: any) => {
     setCombo((prev) => ({ ...prev, [field]: value }));
@@ -201,51 +209,58 @@ export default function EditComboDialog({ visible, combo: initialCombo, onClose 
 
                 {/* Branch Dropdown */}
                 <View style={styles.dropdownContainer}>
-                  <Menu
-                    visible={branchMenuVisible}
-                    onDismiss={() => setBranchMenuVisible(false)}
-                    anchor={
-                      <Button
-                        mode="outlined"
-                        style={styles.dropdownButton}
-                        labelStyle={{
-                          color: "#333",
-                          fontSize: 14,
-                          width: "100%",
-                          textAlign: "left",
-                        }}
-                        onPress={() => setBranchMenuVisible(true)}
-                        contentStyle={{
-                          flexDirection: "row-reverse",
-                          width: "100%",
-                        }}
-                        icon={branchMenuVisible ? "chevron-up" : "chevron-down"}
-                      >
-                        {combo.branch
-                          ? branches?.find((b: any) => b.id === combo.branch)?.address
-                          : "Select Branch"}
-                      </Button>
-                    }
-                    contentStyle={[styles.menuContent, { width: "100%" }]}
-                    style={{ alignSelf: "stretch" }}
-                    anchorPosition="bottom"
-                  >
-                    {branches && branches.length > 0 ? (
-                      branches.map((branch: any) => (
-                        <Menu.Item
-                          key={branch.id}
-                          onPress={() => {
-                            handleInputChange("branch", branch.id);
-                            setBranchMenuVisible(false);
+                  {isBranch ? (
+                    <Text style={styles.readonlyBranch}>
+                      {branches?.find((b: any) => b.id === (branchId ?? combo.branch))?.address ??
+                        "Assigned Branch"}
+                    </Text>
+                  ) : (
+                    <Menu
+                      visible={branchMenuVisible}
+                      onDismiss={() => setBranchMenuVisible(false)}
+                      anchor={
+                        <Button
+                          mode="outlined"
+                          style={styles.dropdownButton}
+                          labelStyle={{
+                            color: "#333",
+                            fontSize: 14,
+                            width: "100%",
+                            textAlign: "left",
                           }}
-                          title={branch.address}
-                          titleStyle={styles.menuItem}
-                        />
-                      ))
-                    ) : (
-                      <Menu.Item title="No branches available" disabled />
-                    )}
-                  </Menu>
+                          onPress={() => setBranchMenuVisible(true)}
+                          contentStyle={{
+                            flexDirection: "row-reverse",
+                            width: "100%",
+                          }}
+                          icon={branchMenuVisible ? "chevron-up" : "chevron-down"}
+                        >
+                          {combo.branch
+                            ? branches?.find((b: any) => b.id === combo.branch)?.address
+                            : "Select Branch"}
+                        </Button>
+                      }
+                      contentStyle={[styles.menuContent, { width: "100%" }]}
+                      style={{ alignSelf: "stretch" }}
+                      anchorPosition="bottom"
+                    >
+                      {branches && branches.length > 0 ? (
+                        branches.map((branch: any) => (
+                          <Menu.Item
+                            key={branch.id}
+                            onPress={() => {
+                              handleInputChange("branch", branch.id);
+                              setBranchMenuVisible(false);
+                            }}
+                            title={branch.address}
+                            titleStyle={styles.menuItem}
+                          />
+                        ))
+                      ) : (
+                        <Menu.Item title="No branches available" disabled />
+                      )}
+                    </Menu>
+                  )}
                 </View>
                 <HelperText type="error" visible={!!errors.branch}>
                   {errors.branch}
@@ -448,6 +463,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     alignSelf: 'center',
+  },
+  readonlyBranch: {
+    backgroundColor: '#96B76E',
+    borderRadius: 16,
+    width: '100%',
+    minHeight: 36,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    color: '#fff',
+    textAlign: 'left',
   },
   menuContent: {
     backgroundColor: '#fff',

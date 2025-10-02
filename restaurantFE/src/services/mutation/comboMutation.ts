@@ -1,25 +1,25 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   GetCombos,
   GetComboById,
   CreateCombo,
   UpdateCombo,
   DeleteCombo,
-} from "../api/comboApi";
-import { Combo } from "@/types/comboTypes";
-import { useDispatch } from "react-redux";
-import { AppDispatch } from "@/lib/reduxStore/store";
-import { hideLoader, showLoader } from "@/lib/reduxStore/loaderSlice";
+} from '../api/comboApi';
+import { Combo } from '@/types/comboTypes';
+import { useDispatch } from 'react-redux';
+import { AppDispatch } from '@/lib/reduxStore/store';
+import { hideLoader, showLoader } from '@/lib/reduxStore/loaderSlice';
 
-export const useGetCombos = () =>
-  useQuery<Combo[]>({
-    queryKey: ["combos"],
-    queryFn: GetCombos,
+export const useGetCombos = (page?: number | undefined) =>
+  useQuery<{ next: string | null; results: Combo[]; count: number }>({
+    queryKey: ['combos', page],
+    queryFn: () => GetCombos(page),
   });
 
 export const useGetComboById = (id: string) =>
   useQuery({
-    queryKey: ["combos", id],
+    queryKey: ['combos', id],
     queryFn: () => GetComboById(id),
     staleTime: 0,
   });
@@ -31,7 +31,7 @@ export function useCreateCombo(
   const dispatch = useDispatch<AppDispatch>();
 
   return useMutation({
-    mutationKey: ["create-combo"],
+    mutationKey: ['create-combo'],
     mutationFn: (data: any) => {
       dispatch(showLoader());
       return CreateCombo(data);
@@ -83,7 +83,7 @@ export function useDeleteCombo(
     },
     onSuccess: (data) => {
       if (onSuccess) onSuccess(data);
-      queryClient.invalidateQueries({ queryKey: ["combos"] });
+      queryClient.invalidateQueries({ queryKey: ['combos'] });
     },
     onError: (error) => {
       dispatch(hideLoader());

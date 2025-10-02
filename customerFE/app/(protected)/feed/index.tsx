@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef } from 'react';
 import {
   StyleSheet,
   View,
@@ -10,9 +10,9 @@ import {
   TouchableWithoutFeedback,
   RefreshControl,
   ActivityIndicator,
-} from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { router } from "expo-router";
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { router } from 'expo-router';
 import {
   Card,
   Button,
@@ -21,9 +21,9 @@ import {
   TextInput,
   Text, // Explicitly import Text from react-native-paper if used as such, otherwise use from react-native
   useTheme,
-} from "react-native-paper";
+} from 'react-native-paper';
 
-import { i18n } from "@/app/_layout";
+import { i18n } from '@/app/_layout';
 import {
   useAddBookMark,
   useAddComment,
@@ -31,28 +31,30 @@ import {
   useGetPosts,
   useLikePost,
   useSharePost,
-} from "@/services/mutation/feedMutation";
-import { friendlyTime } from "@/utils/friendlyTimeUtil";
-import { useQueryClient } from "@tanstack/react-query";
-import { useGetNotifications } from "@/services/mutation/notificationMutation";
-import { useFocusEffect, useNavigation } from "@react-navigation/native";
-import { useAuth } from "@/context/auth";
-import { useGetUser } from "@/services/mutation/authMutation"; // Keep useGetUser as it's used for user avatar
-import { ThemedView } from "@/components/ThemedView";
+} from '@/services/mutation/feedMutation';
+import { friendlyTime } from '@/utils/friendlyTimeUtil';
+import { safeCount } from '@/utils/count';
+import { normalizeImageUrl } from '@/utils/imageUrl';
+import { useQueryClient } from '@tanstack/react-query';
+import { useGetNotifications } from '@/services/mutation/notificationMutation';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import { useAuth } from '@/context/auth';
+import { useGetUser } from '@/services/mutation/authMutation'; // Keep useGetUser as it's used for user avatar
+import { ThemedView } from '@/components/ThemedView';
 
 // Asset imports
-import AvatarImage from "@/assets/images/avatar.jpg";
-import LikeIcon from "@/assets/icons/like.svg";
-import LikedIcon from "@/assets/icons/liked.svg";
-import NotificationIcon from "@/assets/icons/notification_icon.svg";
-import CommentIcon from "@/assets/icons/comment.svg";
-import ShareIcon from "@/assets/icons/share.svg";
-import BookmarkIcon from "@/assets/icons/bookmark.svg";
-import BookmarkedIcon from "@/assets/icons/bookmarked.svg";
-import Toast from "react-native-toast-message";
-import * as WebBrowser from "expo-web-browser";
+import AvatarImage from '@/assets/images/avatar.jpg';
+import LikeIcon from '@/assets/icons/like.svg';
+import LikedIcon from '@/assets/icons/liked.svg';
+import NotificationIcon from '@/assets/icons/notification_icon.svg';
+import CommentIcon from '@/assets/icons/comment.svg';
+import ShareIcon from '@/assets/icons/share.svg';
+import BookmarkIcon from '@/assets/icons/bookmark.svg';
+import BookmarkedIcon from '@/assets/icons/bookmarked.svg';
+import Toast from 'react-native-toast-message';
+import * as WebBrowser from 'expo-web-browser';
 
-const { height: screenHeight, width: screenWidth } = Dimensions.get("window");
+const { height: screenHeight, width: screenWidth } = Dimensions.get('window');
 type WebShareParams = {
   title?: string;
   text?: string;
@@ -66,13 +68,13 @@ const FoodFeedScreen = () => {
   const { data: posts = [], isLoading, refetch: refetchPosts } = useGetPosts();
   const [refreshing, setRefreshing] = useState(false);
   const queryClient = useQueryClient();
-  const [newComment, setNewComment] = useState("");
+  const [newComment, setNewComment] = useState('');
   // const [visible, setVisible] = useState(false); // Removed: This state was unused
   const { mutateAsync: likePost } = useLikePost();
   const { mutateAsync: addComment } = useAddComment();
   const [selectedPost, setSelectedPost] = useState<any>(null);
   const [isCommentsVisible, setIsCommentsVisible] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState('');
   const [showBookmarks, setShowBookmarks] = useState(false);
   const overlayY = useRef(new Animated.Value(screenHeight)).current;
   const { mutateAsync: bookmarkPost } = useAddBookMark();
@@ -94,6 +96,30 @@ const FoodFeedScreen = () => {
   const { data: user, isLoading: isUserLoading } = useGetUser(
     userInfo?.id || userInfo?.user_id
   );
+
+  const updateCachedPost = (postId: string, updater: (post: any) => any) => {
+    queryClient.setQueryData(['posts'], (oldData: any) => {
+      if (!Array.isArray(oldData)) {
+        return oldData;
+      }
+      return oldData.map((post: any) =>
+        post.id === postId ? updater(post) : post
+      );
+    });
+
+    queryClient.setQueryData(['bookMarkPosts'], (oldData: any) => {
+      if (!Array.isArray(oldData)) {
+        return oldData;
+      }
+      return oldData.map((post: any) =>
+        post.id === postId ? updater(post) : post
+      );
+    });
+
+    setSelectedPost((prev: any) =>
+      prev?.id === postId ? updater(prev) : prev
+    );
+  };
 
   const CustomIconButton = ({
     IconComponent,
@@ -145,7 +171,7 @@ const FoodFeedScreen = () => {
 
   const navigation = useNavigation();
   useEffect(() => {
-    const unsubscribe = navigation.addListener("tabPress" as any, () => {
+    const unsubscribe = navigation.addListener('tabPress' as any, () => {
       setShowBookmarks(false);
     });
     return unsubscribe;
@@ -166,146 +192,182 @@ const FoodFeedScreen = () => {
         await refetchPosts();
       }
     } catch (error) {
-      console.error(i18n.t("refresh_failed_error"), error);
+      console.error(i18n.t('refresh_failed_error'), error);
     } finally {
       setRefreshing(false);
     }
   };
 
   const handleLike = async (postId: string) => {
-    // Optimistic update for immediate UI feedback
-    queryClient.setQueryData(["posts"], (oldData: any) => {
-      return oldData.map((post: any) => {
-        if (post.id === postId) {
-          return {
-            ...post,
-            is_liked: !post.is_liked,
-            likes_count: post.is_liked
-              ? post.likes_count - 1
-              : post.likes_count + 1,
-          };
-        }
-        return post;
-      });
-    });
+    const toggleLike = (post: any) => {
+      const likeValue = Number(post.likes_count ?? 0);
+      return {
+        ...post,
+        is_liked: !post.is_liked,
+        likes_count: post.is_liked ? Math.max(0, likeValue - 1) : likeValue + 1,
+      };
+    };
+
+    updateCachedPost(postId, toggleLike);
 
     try {
       await likePost(postId);
-      // Refetch to ensure data consistency
-      await refetchPosts();
+      void refetchPosts();
     } catch (error) {
-      // Revert on error
-      queryClient.setQueryData(["posts"], (oldData: any) => {
-        return oldData.map((post: any) => {
-          if (post.id === postId) {
-            return {
-              ...post,
-              is_liked: !post.is_liked,
-              likes_count: post.is_liked
-                ? post.likes_count + 1
-                : post.likes_count - 1,
-            };
-          }
-          return post;
-        });
-      });
+      updateCachedPost(postId, toggleLike);
       Toast.show({
-        type: "error",
-        text1: i18n.t("like_failed_toast_title"),
-        text2: i18n.t("could_not_like_post_toast_message"),
+        type: 'error',
+        text1: i18n.t('like_failed_toast_title'),
+        text2: i18n.t('could_not_like_post_toast_message'),
       });
     }
   };
 
   const addCommentToPost = async (postId: string) => {
-    const commentText = newComment;
-    setNewComment("");
+    const commentText = newComment.trim();
+    if (!commentText) {
+      return;
+    }
+
+    const optimisticComment = {
+      id: `temp-${Date.now()}`,
+      text: commentText,
+      created_at: new Date().toISOString(),
+      user: {
+        full_name: userInfo?.full_name || user?.full_name || '',
+        image: user?.image,
+      },
+    };
+
+    const previousPosts = queryClient.getQueryData(['posts']);
+    const previousBookmarks = queryClient.getQueryData(['bookMarkPosts']);
+    const previousSelectedPost = selectedPost;
+
+    setNewComment('');
+    updateCachedPost(postId, (post: any) => ({
+      ...post,
+      comments: [...(post.comments || []), optimisticComment],
+    }));
+    requestAnimationFrame(() => {
+      commentsListRef.current?.scrollToEnd({ animated: true });
+    });
+
     try {
       await addComment({ post: postId, text: commentText });
-      queryClient.invalidateQueries({ queryKey: ["posts"] });
-      // Scroll to bottom after adding comment
-      setTimeout(() => {
-        commentsListRef.current?.scrollToEnd({ animated: true });
-      }, 100);
+      queryClient.invalidateQueries({ queryKey: ['posts'] });
+      queryClient.invalidateQueries({ queryKey: ['bookMarkPosts'] });
     } catch (error) {
+      queryClient.setQueryData(['posts'], previousPosts);
+      queryClient.setQueryData(['bookMarkPosts'], previousBookmarks);
+      setSelectedPost(previousSelectedPost);
       setNewComment(commentText);
       Toast.show({
-        type: "error",
-        text1: i18n.t("comment_failed_toast_title"),
-        text2: i18n.t("could_not_add_comment_toast_message"),
+        type: 'error',
+        text1: i18n.t('comment_failed_toast_title'),
+        text2: i18n.t('could_not_add_comment_toast_message'),
       });
     }
   };
 
   const handleShare = async (post: any) => {
-    try {
-      const deepLink = `myapp://feed/${post.id}`;
-      const webLink = `https://alphafeed.com/post/${post.id}`;
-      const downloadLink = "https://alphafeed.com/download";
-      const imageUrl = post.image?.replace("http://", "https://") || webLink;
+    let shareIncremented = false;
+    const increaseShareCount = () => {
+      updateCachedPost(post.id, (item: any) => {
+        const shareValue = safeCount(item.shares_count);
+        return {
+          ...item,
+          shares_count: shareValue + 1,
+        };
+      });
+      shareIncremented = true;
+    };
 
-      if (Platform.OS === "web") {
+    const decreaseShareCount = () => {
+      if (!shareIncremented) {
+        return;
+      }
+      updateCachedPost(post.id, (item: any) => {
+        const shareValue = safeCount(item.shares_count);
+        return {
+          ...item,
+          shares_count: Math.max(0, shareValue - 1),
+        };
+      });
+      shareIncremented = false;
+    };
+
+    try {
+      const deepLink = `minmincustomer://feed/${post.id}`;
+      const webLink = `https://customer.feed-intel.com/post/${post.id}`;
+      const downloadLink = 'https://customer.feed-intel.com/download';
+      const imageUrl = normalizeImageUrl(post.image) || webLink;
+
+      if (Platform.OS === 'web') {
         // Web sharing logic
         const shareData: WebShareParams = {
-          title: post.caption || i18n.t("check_out_this_post_share_title"),
-          text: `${post.caption}\n\n${i18n.t("shared_via_app_text")}`,
+          title: post.caption || i18n.t('check_out_this_post_share_title'),
+          text: `${post.caption}\n\n${i18n.t('shared_via_app_text')}`,
           url: webLink,
         };
 
         if (navigator.share) {
           await navigator.share(shareData);
+          increaseShareCount();
           await sharePost(post.id);
         } else if (navigator.clipboard) {
           await navigator.clipboard.writeText(`${shareData.text}\n${webLink}`);
           Toast.show({
-            type: "success",
-            text1: i18n.t("link_copied_toast_title"),
-            text2: i18n.t("post_link_copied_toast_message"),
+            type: 'success',
+            text1: i18n.t('link_copied_toast_title'),
+            text2: i18n.t('post_link_copied_toast_message'),
           });
+          increaseShareCount();
           await sharePost(post.id);
         }
       } else {
         // Mobile sharing logic
         const shareOptions = {
-          title: i18n.t("share_post_share_title"),
+          title: i18n.t('share_post_share_title'),
           message: `${post.caption}\n\n${i18n.t(
-            "get_the_app_share_message"
+            'get_the_app_share_message'
           )}: ${downloadLink}`,
           url: imageUrl,
         };
 
-        if (Platform.OS === "ios") {
+        if (Platform.OS === 'ios') {
           // iOS-specific share with fallback
           try {
             // Try native share first
-            if (Platform.OS === "ios") {
-              const { default: RNShare } = await import("react-native-share");
+            if (Platform.OS === 'ios') {
+              const { default: RNShare } = await import('react-native-share');
               const result = await RNShare.open(shareOptions);
               if (result) {
+                increaseShareCount();
                 await sharePost(post.id);
               }
             }
           } catch (error) {
             // Fallback to web browser on iOS if native share fails
             await WebBrowser.openBrowserAsync(webLink);
+            increaseShareCount();
             await sharePost(post.id);
           }
         } else {
           // Android share
-          const { default: RNShare } = await import("react-native-share");
+          const { default: RNShare } = await import('react-native-share');
           await RNShare.open(shareOptions);
+          increaseShareCount();
           await sharePost(post.id);
         }
       }
-
-      queryClient.invalidateQueries({ queryKey: ["posts"] });
     } catch (error: any) {
-      if (!error.message.includes("User did not share")) {
-        console.error(i18n.t("share_error_console_message"), error);
+      decreaseShareCount();
+      if (!error?.message?.includes('User did not share')) {
+        console.error(i18n.t('share_error_console_message'), error);
         Toast.show({
-          type: "error",
-          text1: i18n.t("share_failed_toast_title"),
-          text2: i18n.t("could_not_share_post_toast_message"),
+          type: 'error',
+          text1: i18n.t('share_failed_toast_title'),
+          text2: i18n.t('could_not_share_post_toast_message'),
         });
       }
     }
@@ -314,7 +376,63 @@ const FoodFeedScreen = () => {
   const openCommentsModal = (post: any) => {
     setSelectedPost(post);
     setIsCommentsVisible(true);
-    setNewComment(""); // Reset comment input when opening
+    setNewComment(''); // Reset comment input when opening
+  };
+
+  const handleBookmarkToggle = async (post: any) => {
+    const wasBookmarked = post.is_bookmarked;
+    const postId = post.id;
+    const previousPosts = queryClient.getQueryData(['posts']);
+    const previousBookmarks = queryClient.getQueryData(['bookMarkPosts']);
+    const previousSelectedPost = selectedPost;
+
+    queryClient.setQueryData(['posts'], (oldData: any) => {
+      if (!Array.isArray(oldData)) {
+        return oldData;
+      }
+      return oldData.map((item: any) =>
+        item.id === postId
+          ? { ...item, is_bookmarked: !item.is_bookmarked }
+          : item
+      );
+    });
+
+    queryClient.setQueryData(['bookMarkPosts'], (oldData: any) => {
+      if (!Array.isArray(oldData)) {
+        return oldData;
+      }
+      if (wasBookmarked) {
+        return oldData.filter((item: any) => item.id !== postId);
+      }
+
+      const updatedPost = { ...post, is_bookmarked: true };
+      const exists = oldData.some((item: any) => item.id === postId);
+      if (exists) {
+        return oldData.map((item: any) =>
+          item.id === postId ? updatedPost : item
+        );
+      }
+      return [updatedPost, ...oldData];
+    });
+
+    setSelectedPost((prev) =>
+      prev?.id === postId
+        ? { ...prev, is_bookmarked: !prev.is_bookmarked }
+        : prev
+    );
+
+    try {
+      await bookmarkPost(postId);
+    } catch (error) {
+      queryClient.setQueryData(['posts'], previousPosts);
+      queryClient.setQueryData(['bookMarkPosts'], previousBookmarks);
+      setSelectedPost(previousSelectedPost);
+      Toast.show({
+        type: 'error',
+        text1: i18n.t('bookmark_failed_toast_title'),
+        text2: i18n.t('could_not_bookmark_post_toast_message'),
+      });
+    }
   };
 
   const closeComments = () => {
@@ -334,11 +452,11 @@ const FoodFeedScreen = () => {
               <TouchableOpacity
                 style={styles.profileMenuContent}
                 onPress={() => {
-                  router.push("/(protected)/profile");
+                  router.push('/(protected)/profile');
                   // setVisible(false); // Removed as visible state is unused
                 }}
                 accessible
-                accessibilityLabel={i18n.t("view_profile_accessibility_label")}
+                accessibilityLabel={i18n.t('view_profile_accessibility_label')}
               >
                 {/* Conditionally render ActivityIndicator while user image is loading */}
                 {isUserLoading ? (
@@ -349,7 +467,7 @@ const FoodFeedScreen = () => {
                 ) : user?.image ? (
                   <Avatar.Image
                     size={32}
-                    source={{ uri: user.image?.replace("http://", "https://") }}
+                    source={{ uri: normalizeImageUrl(user.image) }}
                   />
                 ) : (
                   <Avatar.Image size={32} source={AvatarImage} />
@@ -357,29 +475,29 @@ const FoodFeedScreen = () => {
               </TouchableOpacity>
             </View>
             <TextInput
-              placeholder={i18n.t("search_posts_placeholder")}
+              placeholder={i18n.t('search_posts_placeholder')}
               value={searchQuery}
               onChangeText={setSearchQuery}
               style={styles.searchInput}
-              theme={{ roundness: 24, colors: { primary: "#EE8429" } }}
+              theme={{ roundness: 24, colors: { primary: '#EE8429' } }}
               underlineColor="transparent" // Removes Android's default underline
               activeUnderlineColor="transparent" // Removes Android's default underline
               cursorColor="#EE8429" // Sets the cursor color
             />
             <View style={styles.headerButtons}>
               <TouchableOpacity
-                onPress={() => router.push("/(protected)/notification")}
+                onPress={() => router.push('/(protected)/notification')}
                 accessible
                 accessibilityLabel={i18n.t(
-                  "view_notifications_accessibility_label"
+                  'view_notifications_accessibility_label'
                 )}
               >
                 <View>
-                  <NotificationIcon width={24} height={24} fill={"#2E18149E"} />
+                  <NotificationIcon width={24} height={24} fill={'#2E18149E'} />
                   {notifications && notifications.unread_count > 0 && (
                     <Badge style={styles.badge}>
                       {notifications.unread_count > 99
-                        ? "99+"
+                        ? '99+'
                         : notifications.unread_count}
                     </Badge>
                   )}
@@ -394,13 +512,13 @@ const FoodFeedScreen = () => {
             <View style={styles.loadingContainer}>
               <ActivityIndicator size="large" color={theme.colors.primary} />
               <Text style={styles.loadingText}>
-                {i18n.t("loading_posts_text")}
+                {i18n.t('loading_posts_text')}
               </Text>
             </View>
           ) : (
             <FlatList
               data={filteredPosts}
-              style={{ backgroundColor: "#FDFDFC" }}
+              style={{ backgroundColor: '#FDFDFC' }}
               keyExtractor={(item) => item.id.toString()}
               renderItem={({ item }) => (
                 <View style={styles.postCard}>
@@ -413,7 +531,7 @@ const FoodFeedScreen = () => {
                       <TouchableOpacity
                         onPress={() => {
                           router.push({
-                            pathname: "/restaurant-profile",
+                            pathname: '/restaurant-profile',
                             params: { id: item.tenant_id },
                           });
                         }}
@@ -434,7 +552,7 @@ const FoodFeedScreen = () => {
                   />
 
                   <Card.Cover
-                    source={{ uri: item.image?.replace("http://", "https://") }}
+                    source={{ uri: normalizeImageUrl(item.image) }}
                     style={styles.postImage}
                     theme={{ roundness: 0 }}
                   />
@@ -450,7 +568,7 @@ const FoodFeedScreen = () => {
                           onPress={() => handleLike(item.id)}
                         />
                         <Text style={styles.actionText}>
-                          {item.likes_count}
+                          {safeCount(item.likes_count)}
                         </Text>
                       </View>
 
@@ -461,7 +579,7 @@ const FoodFeedScreen = () => {
                           onPress={() => openCommentsModal(item)}
                         />
                         <Text style={styles.actionText}>
-                          {item.comments.length}
+                          {safeCount(item.comments?.length ?? 0)}
                         </Text>
                       </View>
 
@@ -472,7 +590,7 @@ const FoodFeedScreen = () => {
                           onPress={() => handleShare(item)}
                         />
                         <Text style={styles.actionText}>
-                          {item.shares_count}
+                          {safeCount(item.shares_count)}
                         </Text>
                       </View>
 
@@ -487,13 +605,7 @@ const FoodFeedScreen = () => {
                           <BookmarkedIcon width={22} height={22} fill="#666" />
                         }
                         isActive={item.is_bookmarked}
-                        onPress={async () => {
-                          await bookmarkPost(item.id);
-                          queryClient.invalidateQueries({
-                            queryKey: ["posts"],
-                          });
-                          refetch();
-                        }}
+                        onPress={() => handleBookmarkToggle(item)}
                       />
                     </View>
 
@@ -507,7 +619,7 @@ const FoodFeedScreen = () => {
                           onPress={() => openCommentsModal(item)}
                         >
                           <Text style={styles.moreLink}>
-                            {i18n.t("more_link")}
+                            {i18n.t('more_link')}
                           </Text>
                         </TouchableOpacity>
                       )}
@@ -522,7 +634,7 @@ const FoodFeedScreen = () => {
                 <RefreshControl
                   refreshing={refreshing}
                   onRefresh={handleRefresh}
-                  colors={["#96B76E"]}
+                  colors={['#96B76E']}
                   progressBackgroundColor="#ffffff"
                 />
               }
@@ -548,7 +660,7 @@ const FoodFeedScreen = () => {
               </View>
               <View style={styles.commentsHeader}>
                 <Text style={styles.commentsTitle}>
-                  {i18n.t("comments_modal_title")}
+                  {i18n.t('comments_modal_title')}
                 </Text>
                 <TouchableOpacity
                   style={styles.closeButton}
@@ -587,7 +699,7 @@ const FoodFeedScreen = () => {
                       size={32}
                       source={{
                         uri:
-                          item?.user?.image?.replace("http://", "https://") ||
+                          normalizeImageUrl(item?.user?.image) ||
                           `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(
                             item?.user.full_name
                           )}`,
@@ -611,7 +723,7 @@ const FoodFeedScreen = () => {
                 contentContainerStyle={styles.commentsContentContainer}
                 ListEmptyComponent={
                   <Text style={styles.noCommentsText}>
-                    {i18n.t("no_comments_text")}
+                    {i18n.t('no_comments_text')}
                   </Text>
                 }
                 scrollEventThrottle={16}
@@ -624,25 +736,23 @@ const FoodFeedScreen = () => {
                   size={32}
                   source={{
                     uri:
-                      user?.image?.replace("http://", "https://") ||
+                      normalizeImageUrl(user?.image) ||
                       `https://api.dicebear.com/7.x/initials/svg?seed=You`,
                   }}
                   style={styles.inputAvatar}
                 />
                 <TextInput
                   mode="flat"
-                  placeholder={i18n.t("add_comment_placeholder")}
+                  placeholder={i18n.t('add_comment_placeholder')}
                   value={newComment}
-                  onChangeText={(text) =>
-                    setNewComment(text.replace(/\s+/g, " ").trim())
-                  }
+                  onChangeText={(text) => setNewComment(text)}
                   style={styles.commentInput}
                   dense
                   underlineColor="transparent"
                   activeUnderlineColor="transparent"
                   cursorColor="#96B76E"
                   theme={{
-                    colors: { primary: "#96B76E", placeholder: "#666" },
+                    colors: { primary: '#96B76E', placeholder: '#666' },
                     roundness: 20,
                   }}
                 />
@@ -653,11 +763,11 @@ const FoodFeedScreen = () => {
                   labelStyle={[
                     styles.postButton,
                     {
-                      color: newComment.trim() ? "#6200ee" : "#ccc",
+                      color: newComment.trim() ? '#6200ee' : '#ccc',
                     },
                   ]}
                 >
-                  {i18n.t("post_comment_button")}
+                  {i18n.t('post_comment_button')}
                 </Button>
               </View>
             </Animated.View>
@@ -671,27 +781,27 @@ const FoodFeedScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#FDFDFC",
+    backgroundColor: '#FDFDFC',
   },
   safeArea: {
-    backgroundColor: "#FDFDFC",
+    backgroundColor: '#FDFDFC',
     flex: 1,
   },
   appbarContainer: {
     ...Platform.select({
       web: {
         maxWidth: 800,
-        width: "100%",
-        alignSelf: "center",
+        width: '100%',
+        alignSelf: 'center',
       },
     }),
   },
   appbar: {
-    backgroundColor: "#FDFFFA",
+    backgroundColor: '#FDFFFA',
     // elevation: 2, // Commented out as it's not present in the original code
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
     // shadowOpacity: 0.1, // Commented out
     // shadowRadius: 4, // Commented out
     // shadowOffset: { width: 0, height: 2 }, // Commented out
@@ -700,13 +810,13 @@ const styles = StyleSheet.create({
     paddingRight: 16,
   },
   contentContainer: {
-    backgroundColor: "#FDFDFC",
+    backgroundColor: '#FDFDFC',
     flex: 1,
     ...Platform.select({
       web: {
         maxWidth: 800,
-        width: "100%",
-        alignSelf: "center",
+        width: '100%',
+        alignSelf: 'center',
       },
     }),
   },
@@ -714,24 +824,24 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     ...Platform.select({
       web: {
-        minHeight: "100%",
+        minHeight: '100%',
       },
     }),
   },
   postCard: {
     // marginVertical: 8, // Commented out
-    marginHorizontal: Platform.OS === "web" ? 20 : 12,
+    marginHorizontal: Platform.OS === 'web' ? 20 : 12,
     // borderRadius: 12, // Commented out
-    backgroundColor: "#FDFFFA",
-    overflow: "hidden",
+    backgroundColor: '#FDFFFA',
+    overflow: 'hidden',
     borderBottomWidth: 1,
-    borderColor: "#E0E0E0",
+    borderColor: '#E0E0E0',
     ...Platform.select({
       web: {
         // boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
         maxWidth: 800,
-        width: "90%",
-        alignSelf: "center",
+        width: '90%',
+        alignSelf: 'center',
       },
       default: {
         height: screenHeight * 0.6,
@@ -741,12 +851,12 @@ const styles = StyleSheet.create({
   avatar: {
     marginRight: 8,
     borderWidth: 1,
-    borderColor: "#e0e0e0",
-    backgroundColor: "#f0f0f0",
+    borderColor: '#e0e0e0',
+    backgroundColor: '#f0f0f0',
   },
   postImage: {
     height: screenHeight * 0.36,
-    width: "100%",
+    width: '100%',
     borderRadius: 8,
   },
   content: {
@@ -755,13 +865,13 @@ const styles = StyleSheet.create({
     paddingBottom: 24,
   },
   postActions: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     marginBottom: 8,
   },
   actionItem: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     marginRight: 15,
   },
   iconButton: {
@@ -774,61 +884,61 @@ const styles = StyleSheet.create({
   actionText: {
     marginLeft: 0,
     fontSize: 15,
-    fontWeight: "700",
-    color: "#22281B",
+    fontWeight: '700',
+    color: '#22281B',
   },
   captionContainer: {
-    position: "relative",
+    position: 'relative',
     top: 0,
-    textOverflow: "ellipsis",
+    textOverflow: 'ellipsis',
   },
   caption: {
     fontSize: 15,
     lineHeight: 20,
-    color: "#22281B",
-    textOverflow: "ellipsis",
-    fontWeight: "500",
+    color: '#22281B',
+    textOverflow: 'ellipsis',
+    fontWeight: '500',
   },
   userName: {
-    fontWeight: "600",
+    fontWeight: '600',
     fontSize: 14,
-    color: "#000",
+    color: '#000',
   },
   subtitle: {
     fontSize: 12,
-    color: "#757575",
+    color: '#757575',
   },
   tagsContainer: {
-    flexDirection: "row",
-    flexWrap: "wrap",
+    flexDirection: 'row',
+    flexWrap: 'wrap',
     paddingBottom: 8,
   },
   tag: {
-    color: "#6200ee",
+    color: '#6200ee',
     marginRight: 8,
     fontSize: 14,
   },
   overlayContainer: {
-    position: "absolute",
+    position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: "rgba(0, 0, 0, 0.8)",
-    justifyContent: "flex-end",
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    justifyContent: 'flex-end',
     zIndex: 1000,
   },
   backdrop: {
     flex: 1,
   },
   menuItem: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingVertical: 8,
     paddingHorizontal: 16,
   },
   menuContent: {
-    backgroundColor: "#ffffff",
+    backgroundColor: '#ffffff',
     borderRadius: 8,
     paddingVertical: 8,
     // ...Platform.select({
@@ -842,51 +952,51 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   profileMenuContent: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 12,
   },
   profileMenuText: {
     fontSize: 14,
-    color: "#333",
+    color: '#333',
   },
   dragHandleContainer: {
-    alignItems: "center",
+    alignItems: 'center',
     paddingVertical: 8,
   },
   dragHandle: {
     width: 40,
     height: 4,
-    backgroundColor: "#ddd",
+    backgroundColor: '#ddd',
     borderRadius: 2,
   },
   commentsHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: "#eee",
+    borderBottomColor: '#eee',
   },
   commentsTitle: {
     fontSize: 20,
-    fontWeight: "600",
-    color: "#333",
+    fontWeight: '600',
+    color: '#333',
   },
   closeButton: {
     padding: 8,
   },
   closeButtonText: {
     fontSize: 18,
-    color: "#666",
+    color: '#666',
   },
   commentsPanel: {
-    backgroundColor: "#ffffff",
+    backgroundColor: '#ffffff',
     height: screenHeight * 0.8,
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
     paddingHorizontal: 16,
-    overflow: "hidden",
+    overflow: 'hidden',
     // ...Platform.select({
     //   web: {
     //     maxWidth: 600,
@@ -904,20 +1014,20 @@ const styles = StyleSheet.create({
     paddingTop: 8,
   },
   commentItem: {
-    flexDirection: "row",
-    alignItems: "flex-start",
+    flexDirection: 'row',
+    alignItems: 'flex-start',
     paddingVertical: 12,
     marginBottom: 8,
   },
   fullCaptionContainer: {
-    flexDirection: "row",
+    flexDirection: 'row',
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: "#eee",
+    borderBottomColor: '#eee',
   },
   captionAvatar: {
     marginRight: 12,
-    backgroundColor: "#f0f0f0",
+    backgroundColor: '#f0f0f0',
   },
   captionTextContainer: {
     flex: 1,
@@ -925,116 +1035,116 @@ const styles = StyleSheet.create({
   fullCaption: {
     fontSize: 14,
     lineHeight: 20,
-    color: "#333",
+    color: '#333',
   },
   captionTime: {
     fontSize: 12,
-    color: "#666",
+    color: '#666',
     marginTop: 4,
   },
   commentAvatar: {
     marginRight: 12,
-    backgroundColor: "#f0f0f0",
+    backgroundColor: '#f0f0f0',
   },
   commentContent: {
     flex: 1,
   },
   commentHeader: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     marginBottom: 4,
   },
   headerButtons: {
-    flexDirection: "row",
+    flexDirection: 'row',
     gap: 12,
-    alignItems: "center",
+    alignItems: 'center',
   },
   commentUser: {
-    fontWeight: "600",
+    fontWeight: '600',
     marginRight: 8,
     fontSize: 14,
-    color: "#333",
+    color: '#333',
   },
   commentTime: {
     fontSize: 12,
-    color: "#666",
+    color: '#666',
   },
   commentText: {
     fontSize: 14,
     lineHeight: 20,
-    color: "#333",
+    color: '#333',
   },
   notificationIcon: {
-    backgroundColor: "#f5f5f5",
+    backgroundColor: '#f5f5f5',
   },
   badge: {
-    position: "absolute",
+    position: 'absolute',
     top: -5,
     right: -5,
     zIndex: 1,
-    backgroundColor: "#ff4040",
+    backgroundColor: '#ff4040',
     borderRadius: 10,
     minWidth: 18,
     minHeight: 18,
-    justifyContent: "center",
-    alignItems: "center",
-    color: "#ffffff",
+    justifyContent: 'center',
+    alignItems: 'center',
+    color: '#ffffff',
     fontSize: 10,
   },
   modalCommentInputContainer: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingVertical: 16,
     borderTopWidth: 1,
-    borderTopColor: "#eee",
+    borderTopColor: '#eee',
   },
   inputAvatar: {
     marginRight: 12,
-    backgroundColor: "#f0f0f0",
+    backgroundColor: '#f0f0f0',
   },
   commentInput: {
     flex: 1,
     height: 40,
-    backgroundColor: "#f5f5f5",
+    backgroundColor: '#f5f5f5',
     borderRadius: 20,
     paddingHorizontal: 20,
   },
   postButton: {
-    fontWeight: "600",
+    fontWeight: '600',
     marginLeft: 8,
     fontSize: 14,
   },
   noCommentsText: {
-    textAlign: "center",
-    color: "#666",
+    textAlign: 'center',
+    color: '#666',
     paddingVertical: 24,
     fontSize: 14,
   },
   searchInput: {
     flex: 1,
     marginRight: 16,
-    backgroundColor: "#f5f5f5",
-    fontFamily: "Outfit",
+    backgroundColor: '#f5f5f5',
+    fontFamily: 'Outfit',
     borderRadius: 24,
   },
   moreLink: {
-    color: "#96B76E",
+    color: '#96B76E',
     marginTop: 4,
-    alignSelf: "flex-end",
+    alignSelf: 'flex-end',
     fontSize: 14,
   },
   menuOverlay: {
-    position: Platform.OS === "web" ? "fixed" : "absolute",
+    position: Platform.OS === 'web' ? 'fixed' : 'absolute',
     top: 0,
     left: 0,
-    right: Platform.OS === "web" ? 310 : 0,
+    right: Platform.OS === 'web' ? 310 : 0,
     bottom: 0,
-    justifyContent: "flex-start",
-    alignItems: "flex-end",
+    justifyContent: 'flex-start',
+    alignItems: 'flex-end',
     zIndex: 1000,
   },
   customMenu: {
-    backgroundColor: "#ffffff",
+    backgroundColor: '#ffffff',
     borderRadius: 12,
     // marginTop: 60,
     marginRight: 10,
@@ -1050,20 +1160,20 @@ const styles = StyleSheet.create({
   },
   menuItemText: {
     fontSize: 16,
-    color: "#333333",
+    color: '#333333',
     paddingVertical: 12,
     paddingHorizontal: 16,
   },
   // New styles for ActivityIndicator
   loadingContainer: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
+    justifyContent: 'center',
+    alignItems: 'center',
     paddingVertical: 20,
   },
   loadingText: {
     marginTop: 10,
-    color: "#666",
+    color: '#666',
     fontSize: 16,
   },
 });

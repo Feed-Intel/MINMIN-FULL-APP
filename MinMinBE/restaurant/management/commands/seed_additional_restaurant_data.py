@@ -133,7 +133,8 @@ class Command(BaseCommand):
                     defaults={
                         'is_fast_table': fake.boolean(),
                         'is_delivery_table': fake.boolean(),
-                        'is_inside_table': fake.boolean()
+                        'is_inside_table': fake.boolean(),
+                        'is_active': fake.boolean()
                     }
                 )
 
@@ -214,7 +215,7 @@ class Command(BaseCommand):
                     defaults={
                         'description': fake.sentence(),
                         'tags': [fake.word() for _ in range(3)],
-                        'category': random.choice(categories),
+                        'categories': random.sample(categories, k=random.randint(1, len(categories))),
                         'price': round(random.uniform(5, 100), 2),
                         'is_side': fake.boolean(),
                         'image': image_path  # Add generated image path

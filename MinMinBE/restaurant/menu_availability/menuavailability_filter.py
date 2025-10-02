@@ -15,14 +15,15 @@ class MenuAvailabilityFilter(filters.FilterSet):
     min_price = filters.NumberFilter(field_name='menu_item__price', lookup_expr='gte')
     max_price = filters.NumberFilter(field_name='menu_item__price', lookup_expr='lte')
     # New category and tag filters
-    category = filters.CharFilter(method='filter_category')
+    categories = filters.CharFilter(method='filter_categories')
+    category = filters.CharFilter(method='filter_categories')
     tags = filters.CharFilter(method='filter_tags')
 
     class Meta:
         model = MenuAvailability
         fields = [
             'search', 'branch', 'menu_item', 'is_available', 'special_notes',
-            'start_date', 'end_date', 'min_price', 'max_price', 'category', 'tags'
+            'start_date', 'end_date', 'min_price', 'max_price', 'categories', 'category', 'tags'
         ]
 
     def filter_search(self, queryset, name, value):
@@ -32,12 +33,12 @@ class MenuAvailabilityFilter(filters.FilterSet):
             & Q(is_available=True)
         )
 
-    def filter_category(self, queryset, name, value):
+    def filter_categories(self, queryset, name, value):
         # Split comma-separated categories and create OR conditions
-        categories = [cat.strip() for cat in value.split(',')]
+        categories = [cat.strip() for cat in value.split(',') if cat.strip()]
         q_objects = Q()
         for cat in categories:
-            q_objects |= Q(menu_item__category__icontains=cat)
+            q_objects |= Q(menu_item__categories__icontains=cat)
         return queryset.filter(q_objects)
 
     def filter_tags(self, queryset, name, value):

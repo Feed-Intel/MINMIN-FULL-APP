@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   ScrollView,
   StyleSheet,
@@ -7,39 +7,40 @@ import {
   View,
   Image,
   TextInput,
-  Modal,
   Platform,
   Alert,
-} from "react-native";
+} from 'react-native';
 import {
   Button,
   Text,
   Card,
   Dialog,
   Portal,
-  Icon,
   Switch,
   Menu,
-} from "react-native-paper";
-import { router } from "expo-router";
-import { useQueryClient } from "@tanstack/react-query";
-import { useDispatch } from "react-redux";
-import * as MediaLibrary from "expo-media-library";
-import * as FileSystem from "expo-file-system";
+} from 'react-native-paper';
+import { useQueryClient } from '@tanstack/react-query';
+import { useDispatch } from 'react-redux';
+import * as MediaLibrary from 'expo-media-library';
+import * as FileSystem from 'expo-file-system';
 
 import {
   useCreateTable,
   useDeleteTable,
   useGetTables,
   useUpdateTable,
-} from "@/services/mutation/tableMutation";
-import { hideLoader, showLoader } from "@/lib/reduxStore/loaderSlice";
-import Pencil from "@/assets/icons/Pencil.svg";
-import Delete from "@/assets/icons/Delete.svg";
-import Download from "@/assets/icons/Download.svg";
-import { Branch } from "@/types/branchType";
-import { useGetBranches } from "@/services/mutation/branchMutation";
-import Toast from "react-native-toast-message";
+} from '@/services/mutation/tableMutation';
+import { hideLoader, showLoader } from '@/lib/reduxStore/loaderSlice';
+import Pencil from '@/assets/icons/Pencil.svg';
+import Delete from '@/assets/icons/Delete.svg';
+import Download from '@/assets/icons/Download.svg';
+import { Branch } from '@/types/branchType';
+import { useGetBranches } from '@/services/mutation/branchMutation';
+import Toast from 'react-native-toast-message';
+import { useRestaurantIdentity } from '@/hooks/useRestaurantIdentity';
+import BranchSelector from '@/components/BranchSelector';
+import Pagination from '@/components/Pagination';
+import { Table } from '@/types/tableTypes';
 
 interface TableStates {
   [key: string]: {
@@ -51,59 +52,60 @@ interface TableStates {
 }
 
 // Dropdown component
-const YesNoDropdown = ({
-  value,
-  onChange,
-}: {
-  value: boolean;
-  onChange: (val: boolean) => void;
-}) => {
-  const [visible, setVisible] = useState(false);
+// const YesNoDropdown = ({
+//   value,
+//   onChange,
+// }: {
+//   value: boolean;
+//   onChange: (val: boolean) => void;
+// }) => {
+//   const [visible, setVisible] = useState(false);
 
-  return (
-    <Menu
-      visible={visible}
-      onDismiss={() => setVisible(false)}
-      anchor={
-        <Button
-          mode="outlined"
-          onPress={() => setVisible(true)}
-          style={styles.dropdownBtn}
-          labelStyle={{ color: "#333", fontSize: 14 }}
-          contentStyle={{ flexDirection: "row-reverse" }} // moves arrow to the right
-          icon={() => (
-            <Icon
-              source={visible ? "chevron-up" : "chevron-down"} // toggle up/down
-              size={18}
-              color="#333"
-            />
-          )}
-        >
-          {value ? "yes" : "no"}
-        </Button>
-      }
-    >
-      <Menu.Item
-        onPress={() => {
-          onChange(true);
-          setVisible(false);
-        }}
-        title="yes"
-      />
-      <Menu.Item
-        onPress={() => {
-          onChange(false);
-          setVisible(false);
-        }}
-        title="no"
-      />
-    </Menu>
-  );
-};
+//   return (
+//     <Menu
+//       visible={visible}
+//       onDismiss={() => setVisible(false)}
+//       anchor={
+//         <Button
+//           mode="outlined"
+//           onPress={() => setVisible(true)}
+//           style={styles.dropdownBtn}
+//           labelStyle={{ color: "#333", fontSize: 14 }}
+//           contentStyle={{ flexDirection: "row-reverse" }} // moves arrow to the right
+//           icon={() => (
+//             <Icon
+//               source={visible ? "chevron-up" : "chevron-down"} // toggle up/down
+//               size={18}
+//               color="#333"
+//             />
+//           )}
+//         >
+//           {value ? "yes" : "no"}
+//         </Button>
+//       }
+//     >
+//       <Menu.Item
+//         onPress={() => {
+//           onChange(true);
+//           setVisible(false);
+//         }}
+//         title="yes"
+//       />
+//       <Menu.Item
+//         onPress={() => {
+//           onChange(false);
+//           setVisible(false);
+//         }}
+//         title="no"
+//       />
+//     </Menu>
+//   );
+// };
 
 const ManageTables: React.FC = () => {
   const { width }: { width: number } = useWindowDimensions();
-  const { data: tables = [] } = useGetTables();
+  const [currentPage, setCurrentPage] = useState(1);
+  const { data: tables } = useGetTables(currentPage);
   const { mutateAsync: tableDelete } = useDeleteTable();
   const queryClient = useQueryClient();
   const dispatch = useDispatch();
@@ -111,20 +113,32 @@ const ManageTables: React.FC = () => {
   const [showDialog, setShowDialog] = React.useState<boolean>(false);
   const [tableID, setTableID] = React.useState<string | null>(null);
   const [addTableModalVisible, setAddTableModalVisible] = useState(false);
-  const { data: branches = [] } = useGetBranches();
-  const [tableStates, setTableStates] = useState<TableStates>(
-    tables.reduce((acc: TableStates, table: any) => {
-      acc[table.id] = {
-        isFast: table.is_fast_table,
-        isDelivery: table.is_delivery_table,
-        isInside: table.is_inside_table,
-        isActive: true,
-      };
-      return acc;
-    }, {} as TableStates)
+  const { data: branches } = useGetBranches();
+  const { isRestaurant, isBranch, branchId } = useRestaurantIdentity();
+  const [tableStates, setTableStates] = useState<TableStates>({});
+  const [selectedBranch, setSelectedBranch] = useState<string | null>(
+    isBranch ? branchId ?? null : null
   );
+  const [searchTerm, setSearchTerm] = useState<string>();
+  const updateTable = useUpdateTable();
   const [table, setTable] = useState<{} | null>(null);
   const isSmallScreen: boolean = width < 768;
+
+  useEffect(() => {
+    if (!tables) return;
+    setTableStates((prevStates) => {
+      const nextStates: TableStates = { ...prevStates };
+      tables.results.forEach((tbl: any) => {
+        nextStates[tbl.id] = nextStates[tbl.id] ?? {
+          isFast: tbl.is_fast_table,
+          isDelivery: tbl.is_delivery_table,
+          isInside: tbl.is_inside_table,
+          isActive: tbl.is_active,
+        };
+      });
+      return nextStates;
+    });
+  }, [tables]);
 
   const handleDeleteTable = async (): Promise<void> => {
     setTableID(null);
@@ -133,31 +147,65 @@ const ManageTables: React.FC = () => {
     try {
       if (tableID) {
         await tableDelete(tableID);
-        queryClient.invalidateQueries({ queryKey: ["tables"] });
+        queryClient.invalidateQueries({ queryKey: ['tables'] });
       }
     } catch (error) {
-      console.error("Error deleting table:", error);
+      console.error('Error deleting table:', error);
     } finally {
       dispatch(hideLoader());
     }
   };
 
-  const handleToggleSwitch = (
-    tableId: string,
+  const handleToggleSwitch = async (
+    table: Table,
     key: keyof TableStates[string],
     value?: boolean
-  ): void => {
+  ): Promise<void> => {
     setTableStates((prevStates: TableStates) => ({
       ...prevStates,
-      [tableId]: {
-        ...prevStates[tableId],
-        [key]: value !== undefined ? value : !prevStates[tableId][key],
+      [table.id!]: {
+        ...prevStates[table.id!],
+        [key]: value !== undefined ? value : !prevStates[table.id!][key],
       },
     }));
+    await updateTable.mutateAsync({
+      ...table,
+      branch: typeof table.branch == 'object' ? table.branch.id : '',
+      is_active: value,
+    });
+    queryClient.invalidateQueries({ queryKey: ['tables', currentPage] });
   };
 
+  const filteredTables = useMemo(() => {
+    if (!tables?.results) return [];
+
+    if (!searchTerm && !selectedBranch) return tables.results;
+
+    if (searchTerm && selectedBranch) {
+      return tables?.results.filter((tbl) => {
+        const branchValue =
+          typeof tbl.branch === 'object' ? tbl.branch?.id : tbl.branch;
+        return (
+          branchValue === selectedBranch && tbl.table_code?.includes(searchTerm)
+        );
+      });
+    }
+    if (searchTerm) {
+      return tables?.results.filter((tbl) => {
+        return tbl.table_code?.includes(searchTerm);
+      });
+    }
+    if (selectedBranch) {
+      return tables?.results.filter((tbl) => {
+        const branchValue =
+          typeof tbl.branch === 'object' ? tbl.branch?.id : tbl.branch;
+        return branchValue === selectedBranch;
+      });
+    }
+  }, [searchTerm, selectedBranch, tables]);
+
   const downloadQRCode = async (imageUrl: string) => {
-    if (Platform.OS === "web") {
+    if (Platform.OS === 'web') {
       // Fetch the image as a Blob
       try {
         const response = await fetch(imageUrl);
@@ -165,9 +213,9 @@ const ManageTables: React.FC = () => {
         const url = window.URL.createObjectURL(blob);
 
         // Create a hidden download link
-        const link = document.createElement("a");
+        const link = document.createElement('a');
         link.href = url;
-        link.download = "table_qr_code.png"; // Set file name
+        link.download = 'table_qr_code.png'; // Set file name
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -175,14 +223,14 @@ const ManageTables: React.FC = () => {
         // Release the object URL
         window.URL.revokeObjectURL(url);
       } catch (error) {
-        console.error("Download failed:", error);
-        alert("Failed to download QR Code.");
+        console.error('Download failed:', error);
+        alert('Failed to download QR Code.');
       }
     } else {
       try {
         const { status } = await MediaLibrary.requestPermissionsAsync();
-        if (status !== "granted") {
-          Alert.alert("Permission Denied", "Storage permission is required.");
+        if (status !== 'granted') {
+          Alert.alert('Permission Denied', 'Storage permission is required.');
           return;
         }
 
@@ -190,9 +238,9 @@ const ManageTables: React.FC = () => {
         const { uri } = await FileSystem.downloadAsync(imageUrl, fileUri);
 
         await MediaLibrary.saveToLibraryAsync(uri);
-        Alert.alert("Success", "QR Code saved to gallery!");
+        Alert.alert('Success', 'QR Code saved to gallery!');
       } catch (error) {
-        Alert.alert("Error", "Failed to download QR Code.");
+        Alert.alert('Error', 'Failed to download QR Code.');
       }
     }
   };
@@ -207,6 +255,12 @@ const ManageTables: React.FC = () => {
                 Table
               </Text>
             </View>
+            <BranchSelector
+              selectedBranch={selectedBranch}
+              onChange={setSelectedBranch}
+              includeAllOption={isRestaurant}
+              style={styles.branchSelector}
+            />
 
             {/* Search Bar */}
             <View style={styles.searchBarContainer}>
@@ -214,12 +268,14 @@ const ManageTables: React.FC = () => {
                 placeholder="search by Item location or table number"
                 style={styles.searchBar}
                 placeholderTextColor="#999"
+                value={searchTerm}
+                onChangeText={(text: string) => setSearchTerm(text)}
               />
               <Button
                 mode="contained"
                 onPress={() => setAddTableModalVisible(true)}
                 style={styles.addButton}
-                labelStyle={{ fontSize: 14, color: "#fff" }}
+                labelStyle={{ fontSize: 14, color: '#fff' }}
               >
                 + Add table
               </Button>
@@ -229,33 +285,27 @@ const ManageTables: React.FC = () => {
             <ScrollView horizontal={isSmallScreen}>
               <View style={styles.dataTable}>
                 <View style={styles.dataTableHeader}>
-                  {[
-                    "Branch",
-                    "Table ID",
-                    "Fast",
-                    "Delivery",
-                    "Inside",
-                    "QR",
-                    "Actions",
-                  ].map((title, index) => (
-                    <Text
-                      key={index}
-                      style={[
-                        styles.headerCell,
-                        {
-                          flex: COLUMN_WIDTHS[index],
-                          textAlign: index === 0 ? "left" : "center",
-                          position: "relative",
-                          left: index === 0 ? 20 : 0,
-                        },
-                      ]}
-                    >
-                      {title}
-                    </Text>
-                  ))}
+                  {['Branch', 'Table ID', 'QR', 'Actions'].map(
+                    (title, index) => (
+                      <Text
+                        key={index}
+                        style={[
+                          styles.headerCell,
+                          {
+                            flex: COLUMN_WIDTHS[index],
+                            textAlign: index === 0 ? 'left' : 'center',
+                            position: 'relative',
+                            left: index === 0 ? 20 : 0,
+                          },
+                        ]}
+                      >
+                        {title}
+                      </Text>
+                    )
+                  )}
                 </View>
 
-                {tables.map((table: any) => (
+                {filteredTables.map((table: any) => (
                   <View key={table.id} style={styles.row}>
                     {/* Branch */}
                     <Text
@@ -263,71 +313,42 @@ const ManageTables: React.FC = () => {
                         styles.cell,
                         {
                           flex: COLUMN_WIDTHS[0],
-                          textAlign: "left",
+                          textAlign: 'left',
                           paddingLeft: 10,
-                          position: "relative",
+                          position: 'relative',
                           left: 20,
                         },
                       ]}
                     >
-                      {typeof table.branch === "string"
+                      {typeof table.branch === 'string'
                         ? table.branch
                         : table.branch?.address}
                     </Text>
 
                     <Text style={[styles.cell, { flex: COLUMN_WIDTHS[1] }]}>
-                      {table.table_code || "N/A"}
-                    </Text>
-
-                    <Text style={[styles.cell, { flex: COLUMN_WIDTHS[2] }]}>
-                      <YesNoDropdown
-                        value={tableStates[table.id]?.isFast}
-                        onChange={(val: boolean) =>
-                          handleToggleSwitch(table.id, "isFast", val)
-                        }
-                      />
-                    </Text>
-
-                    {/* Delivery table */}
-                    <Text style={[styles.cell, { flex: COLUMN_WIDTHS[3] }]}>
-                      <YesNoDropdown
-                        value={tableStates[table.id]?.isDelivery}
-                        onChange={(val: boolean) =>
-                          handleToggleSwitch(table.id, "isDelivery", val)
-                        }
-                      />
-                    </Text>
-
-                    {/* Inside table */}
-                    <Text style={[styles.cell, { flex: COLUMN_WIDTHS[4] }]}>
-                      <YesNoDropdown
-                        value={tableStates[table.id]?.isInside}
-                        onChange={(val: boolean) =>
-                          handleToggleSwitch(table.id, "isInside", val)
-                        }
-                      />
+                      {table.table_code || 'N/A'}
                     </Text>
 
                     {/* QR Code */}
-                    <Text style={[styles.cell, { flex: COLUMN_WIDTHS[5] }]}>
+                    <Text style={[styles.cell, { flex: COLUMN_WIDTHS[2] }]}>
                       <Image
                         source={{
                           uri: table.qr_code
                             ? process.env.EXPO_PUBLIC_IMAGE_PATH +
                               table.qr_code.qr_code_url
-                            : "https://placehold.co/50x50/e0e0e0/000000?text=QR",
+                            : 'https://placehold.co/50x50/e0e0e0/000000?text=QR',
                         }}
                         style={styles.qrCodeImage}
                       />
                     </Text>
 
                     {/* Actions */}
-                    <Text style={[styles.cell, { flex: COLUMN_WIDTHS[6] }]}>
+                    <Text style={[styles.cell, { flex: COLUMN_WIDTHS[3] }]}>
                       <View style={styles.actionContainer}>
                         <Switch
-                          value={tableStates[table.id]?.isActive}
+                          value={tableStates[table.id]?.isActive ?? true}
                           onValueChange={(val) =>
-                            handleToggleSwitch(table.id, "isActive", val)
+                            handleToggleSwitch(table, 'isActive', val)
                           }
                           color="#91B275"
                         />
@@ -335,7 +356,10 @@ const ManageTables: React.FC = () => {
                           onPress={() =>
                             setTable({
                               id: table.id,
-                              branch: (table.branch as Branch).id!,
+                              branch:
+                                typeof table.branch === 'object'
+                                  ? (table.branch as Branch).id
+                                  : (table.branch as string),
                               is_fast_table: table.is_fast_table,
                               is_delivery_table: table.is_delivery_table,
                               is_inside_table: table.is_inside_table,
@@ -366,6 +390,11 @@ const ManageTables: React.FC = () => {
                     </Text>
                   </View>
                 ))}
+                <Pagination
+                  totalPages={Math.round(tables?.count! / 10) || 0}
+                  currentPage={currentPage}
+                  onPageChange={setCurrentPage}
+                />
               </View>
             </ScrollView>
 
@@ -374,26 +403,26 @@ const ManageTables: React.FC = () => {
               <Dialog
                 visible={showDialog}
                 onDismiss={() => setShowDialog(false)}
-                style={[styles.dialog, { width: "50%", alignSelf: "center" }]}
+                style={[styles.dialog, { width: '50%', alignSelf: 'center' }]}
               >
-                <Dialog.Title style={{ color: "#000" }}>
+                <Dialog.Title style={{ color: '#000' }}>
                   Confirm Deletion
                 </Dialog.Title>
                 <Dialog.Content>
-                  <Text style={{ color: "#000" }}>
+                  <Text style={{ color: '#000' }}>
                     Are you sure you want to delete this table?
                   </Text>
                 </Dialog.Content>
                 <Dialog.Actions>
                   <Button
                     onPress={() => setShowDialog(false)}
-                    labelStyle={{ color: "#000" }}
+                    labelStyle={{ color: '#000' }}
                   >
                     Cancel
                   </Button>
                   <Button
                     onPress={handleDeleteTable}
-                    labelStyle={{ color: "#ff0000" }}
+                    labelStyle={{ color: '#ff0000' }}
                   >
                     Delete
                   </Button>
@@ -404,28 +433,35 @@ const ManageTables: React.FC = () => {
         </Card>
       </ScrollView>
       <AddTableModal
-        branches={branches as Branch[]}
+        branches={branches?.results as Branch[]}
         visible={addTableModalVisible}
         onClose={() => setAddTableModalVisible(false)}
+        defaultBranchId={
+          selectedBranch && selectedBranch !== 'all'
+            ? selectedBranch
+            : branchId ?? (branches?.results as Branch[])[0]?.id
+        }
+        lockBranch={isBranch}
       />
       {table && (
         <EditTableModal
-          branches={branches as Branch[]}
+          branches={branches?.results as Branch[]}
           table={table as any}
           visible={Boolean(table)}
           onClose={() => setTable(null)}
+          lockBranch={isBranch}
         />
       )}
     </View>
   );
 };
 
-const COLUMN_WIDTHS = [1, 1, 1, 1, 1, 1, 1.5];
+const COLUMN_WIDTHS = [1, 1, 1, 1.5];
 
 const rootStyles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#EFF4EB",
+    backgroundColor: '#EFF4EB',
   },
 });
 
@@ -436,93 +472,96 @@ const styles = StyleSheet.create({
   },
   card: {
     borderRadius: 12,
-    backgroundColor: "#EFF4EB",
-    borderColor: "transparent",
+    backgroundColor: '#EFF4EB',
+    borderColor: 'transparent',
   },
   headerRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: 20,
   },
+  branchSelector: {
+    marginBottom: 16,
+  },
   title: {
-    fontWeight: "600",
-    color: "#333",
+    fontWeight: '600',
+    color: '#333',
   },
   addButton: {
-    backgroundColor: "#91B275",
+    backgroundColor: '#91B275',
     borderRadius: 20,
     paddingHorizontal: 16,
   },
   searchBarContainer: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     marginBottom: 20,
     gap: 30,
   },
   searchBar: {
     borderWidth: 1,
-    borderColor: "#ddd",
+    borderColor: '#ddd',
     borderRadius: 8,
     paddingHorizontal: 15,
     paddingVertical: 10,
     fontSize: 16,
-    color: "#333",
-    backgroundColor: "#91B27517",
+    color: '#333',
+    backgroundColor: '#91B27517',
     flex: 1,
   },
   dataTable: {
     minWidth: 700,
   },
   dataTableHeader: {
-    flexDirection: "row",
-    backgroundColor: "#EFF4EB",
+    flexDirection: 'row',
+    backgroundColor: '#EFF4EB',
     borderBottomWidth: 1,
-    borderBottomColor: "#eee",
+    borderBottomColor: '#eee',
   },
   headerCell: {
     flex: 1,
-    textAlign: "center",
-    fontWeight: "bold",
-    color: "#4A4A4A",
+    textAlign: 'center',
+    fontWeight: 'bold',
+    color: '#4A4A4A',
     paddingVertical: 10,
   },
   row: {
-    flexDirection: "row",
+    flexDirection: 'row',
     minHeight: 55,
   },
   cell: {
     flex: 1,
-    textAlign: "center",
-    color: "#40392B",
+    textAlign: 'center',
+    color: '#40392B',
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: "#eee",
+    borderBottomColor: '#eee',
   },
   dropdownBtn: {
-    backgroundColor: "#91B27517",
+    backgroundColor: '#91B27517',
     borderRadius: 6,
     minWidth: 60,
-    justifyContent: "center",
+    justifyContent: 'center',
     borderWidth: 1.5,
-    borderColor: "#6483490F",
+    borderColor: '#6483490F',
   },
   qrCodeImage: {
     width: 40,
     height: 40,
     borderRadius: 4,
-    alignSelf: "center",
+    alignSelf: 'center',
   },
   actionContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     width: 130,
-    alignSelf: "center",
+    alignSelf: 'center',
   },
   dialog: {
     borderRadius: 12,
-    backgroundColor: "#fff",
+    backgroundColor: '#fff',
   },
 });
 
@@ -532,10 +571,18 @@ type AddTableModalProps = {
   branches: Branch[];
   visible: boolean;
   onClose: () => void;
+  defaultBranchId?: string | null;
+  lockBranch?: boolean;
 };
 
-function AddTableModal({ branches, visible, onClose }: AddTableModalProps) {
-  const [branch, setBranch] = useState<string>("");
+function AddTableModal({
+  branches,
+  visible,
+  onClose,
+  defaultBranchId,
+  lockBranch = false,
+}: AddTableModalProps) {
+  const [branch, setBranch] = useState<string>('');
   const [menuVisible, setMenuVisible] = useState(false);
   const [isFastTable, setIsFastTable] = useState(false);
   const [isDeliveryTable, setIsDeliveryTable] = useState(false);
@@ -544,61 +591,75 @@ function AddTableModal({ branches, visible, onClose }: AddTableModalProps) {
   const { mutateAsync: onAdd } = useCreateTable();
   const queryClient = useQueryClient();
 
+  useEffect(() => {
+    if (visible) {
+      const fallbackBranch = defaultBranchId ?? branches[0]?.id ?? '';
+      setBranch(fallbackBranch);
+      setIsFastTable(false);
+      setIsDeliveryTable(false);
+      setIsInsideTable(false);
+    }
+  }, [visible, defaultBranchId, branches]);
+
+  const branchLabel = branch
+    ? branches.find((b: any) => b.id === branch)?.address ?? 'Branch'
+    : 'Branch';
+
   return (
     <Portal>
       <Dialog visible={visible} onDismiss={onClose} style={stylesModal.dialog}>
         <Dialog.Content>
           <ScrollView>
-            {/* Branch Dropdown */}
             <View style={stylesModal.container}>
-              <Menu
-                visible={menuVisible}
-                onDismiss={() => setMenuVisible(false)}
-                anchor={
-                  <Button
-                    mode="outlined"
-                    style={stylesModal.dropdownBtn}
-                    labelStyle={{
-                      color: "#333",
-                      fontSize: 14,
-                      width: "100%",
-                      textAlign: "left",
-                    }}
-                    onPress={() => setMenuVisible(true)}
-                    contentStyle={{
-                      flexDirection: "row-reverse",
-                      width: "100%",
-                    }}
-                    icon={menuVisible ? "chevron-up" : "chevron-down"}
-                  >
-                    {branch
-                      ? branches.find((b: any) => b.id === branch)?.address
-                      : "Branch"}
-                  </Button>
-                }
-                contentStyle={[stylesModal.menuContainer, { width: "100%" }]} // custom menu style
-                style={{ alignSelf: "stretch" }} // Make it align with the anchor width
-                anchorPosition="bottom"
-              >
-                {branches.length > 0 ? (
-                  branches.map((b: any) => (
-                    <Menu.Item
-                      key={b.id}
-                      onPress={() => {
-                        setBranch(b.id);
-                        setMenuVisible(false);
+              {lockBranch ? (
+                <Text style={stylesModal.readonlyBranch}>{branchLabel}</Text>
+              ) : (
+                <Menu
+                  visible={menuVisible}
+                  onDismiss={() => setMenuVisible(false)}
+                  anchor={
+                    <Button
+                      mode="outlined"
+                      style={stylesModal.dropdownBtn}
+                      labelStyle={{
+                        color: '#333',
+                        fontSize: 14,
+                        width: '100%',
+                        textAlign: 'left',
                       }}
-                      title={b.address}
-                      titleStyle={stylesModal.menuItem}
-                    />
-                  ))
-                ) : (
-                  <Menu.Item title="No branches available" disabled />
-                )}
-              </Menu>
+                      onPress={() => setMenuVisible(true)}
+                      contentStyle={{
+                        flexDirection: 'row-reverse',
+                        width: '100%',
+                      }}
+                      icon={menuVisible ? 'chevron-up' : 'chevron-down'}
+                    >
+                      {branchLabel}
+                    </Button>
+                  }
+                  contentStyle={[stylesModal.menuContainer, { width: '100%' }]}
+                  style={{ alignSelf: 'stretch' }}
+                  anchorPosition="bottom"
+                >
+                  {branches.length > 0 ? (
+                    branches.map((b: any) => (
+                      <Menu.Item
+                        key={b.id}
+                        onPress={() => {
+                          setBranch(b.id);
+                          setMenuVisible(false);
+                        }}
+                        title={b.address}
+                        titleStyle={stylesModal.menuItem}
+                      />
+                    ))
+                  ) : (
+                    <Menu.Item title="No branches available" disabled />
+                  )}
+                </Menu>
+              )}
             </View>
 
-            {/* Toggles */}
             <View style={stylesModal.toggleRow}>
               <Text style={stylesModal.toggleLabel}>Fast Table</Text>
               <Switch
@@ -632,25 +693,26 @@ function AddTableModal({ branches, visible, onClose }: AddTableModalProps) {
           <Button
             mode="contained"
             style={styles.addButton}
-            labelStyle={{ color: "#fff" }}
+            labelStyle={{ color: '#fff' }}
             onPress={async () => {
-              if (branch) {
-                await onAdd({
-                  branch,
-                  is_fast_table: isFastTable,
-                  is_delivery_table: isDeliveryTable,
-                  is_inside_table: isInsideTable,
-                });
-                queryClient.invalidateQueries({ queryKey: ["tables"] });
-                queryClient.invalidateQueries({ queryKey: ["qrCode"] });
-                onClose();
-              } else {
+              if (!branch) {
                 Toast.show({
-                  type: "error",
-                  text1: "Error",
-                  text2: "Branch is required.",
+                  type: 'error',
+                  text1: 'Error',
+                  text2: 'Branch is required.',
                 });
+                return;
               }
+
+              await onAdd({
+                branch,
+                is_fast_table: isFastTable,
+                is_delivery_table: isDeliveryTable,
+                is_inside_table: isInsideTable,
+              });
+              queryClient.invalidateQueries({ queryKey: ['tables'] });
+              queryClient.invalidateQueries({ queryKey: ['qrCode'] });
+              onClose();
             }}
           >
             + Add Table
@@ -672,6 +734,7 @@ interface EditTableModalProps {
   };
   visible: boolean;
   onClose: () => void;
+  lockBranch?: boolean;
 }
 
 function EditTableModal({
@@ -679,6 +742,7 @@ function EditTableModal({
   table,
   visible,
   onClose,
+  lockBranch = false,
 }: EditTableModalProps) {
   const [branch, setBranch] = useState<string>(table.branch);
   const [menuVisible, setMenuVisible] = useState(false);
@@ -691,60 +755,65 @@ function EditTableModal({
   const { mutateAsync: onUpdate } = useUpdateTable();
   const queryClient = useQueryClient();
 
+  const branchLabel = branch
+    ? branches.find((b: any) => b.id === branch)?.address ?? 'Branch'
+    : 'Branch';
+
   return (
     <Portal>
       <Dialog visible={visible} onDismiss={onClose} style={stylesModal.dialog}>
         <Dialog.Content>
           <ScrollView>
             <View style={stylesModal.container}>
-              <Menu
-                visible={menuVisible}
-                onDismiss={() => setMenuVisible(false)}
-                anchor={
-                  <Button
-                    mode="outlined"
-                    style={stylesModal.dropdownBtn}
-                    labelStyle={{
-                      color: "#333",
-                      fontSize: 14,
-                      width: "100%",
-                      textAlign: "left",
-                    }}
-                    onPress={() => setMenuVisible(true)}
-                    contentStyle={{
-                      flexDirection: "row-reverse",
-                      width: "100%",
-                    }}
-                    icon={menuVisible ? "chevron-up" : "chevron-down"}
-                  >
-                    {branch
-                      ? branches.find((b: any) => b.id === branch)?.address
-                      : "Branch"}
-                  </Button>
-                }
-                contentStyle={[stylesModal.menuContainer, { width: "100%" }]} // custom menu style
-                style={{ alignSelf: "stretch" }} // Make it align with the anchor width
-                anchorPosition="bottom"
-              >
-                {branches.length > 0 ? (
-                  branches.map((b: any) => (
-                    <Menu.Item
-                      key={b.id}
-                      onPress={() => {
-                        setBranch(b.id);
-                        setMenuVisible(false);
+              {lockBranch ? (
+                <Text style={stylesModal.readonlyBranch}>{branchLabel}</Text>
+              ) : (
+                <Menu
+                  visible={menuVisible}
+                  onDismiss={() => setMenuVisible(false)}
+                  anchor={
+                    <Button
+                      mode="outlined"
+                      style={stylesModal.dropdownBtn}
+                      labelStyle={{
+                        color: '#333',
+                        fontSize: 14,
+                        width: '100%',
+                        textAlign: 'left',
                       }}
-                      title={b.address}
-                      titleStyle={stylesModal.menuItem}
-                    />
-                  ))
-                ) : (
-                  <Menu.Item title="No branches available" disabled />
-                )}
-              </Menu>
+                      onPress={() => setMenuVisible(true)}
+                      contentStyle={{
+                        flexDirection: 'row-reverse',
+                        width: '100%',
+                      }}
+                      icon={menuVisible ? 'chevron-up' : 'chevron-down'}
+                    >
+                      {branchLabel}
+                    </Button>
+                  }
+                  contentStyle={[stylesModal.menuContainer, { width: '100%' }]}
+                  style={{ alignSelf: 'stretch' }}
+                  anchorPosition="bottom"
+                >
+                  {branches.length > 0 ? (
+                    branches.map((b: any) => (
+                      <Menu.Item
+                        key={b.id}
+                        onPress={() => {
+                          setBranch(b.id);
+                          setMenuVisible(false);
+                        }}
+                        title={b.address}
+                        titleStyle={stylesModal.menuItem}
+                      />
+                    ))
+                  ) : (
+                    <Menu.Item title="No branches available" disabled />
+                  )}
+                </Menu>
+              )}
             </View>
 
-            {/* Toggles */}
             <View style={stylesModal.toggleRow}>
               <Text style={stylesModal.toggleLabel}>Fast Table</Text>
               <Switch
@@ -778,7 +847,7 @@ function EditTableModal({
           <Button
             mode="contained"
             style={styles.addButton}
-            labelStyle={{ color: "#fff" }}
+            labelStyle={{ color: '#fff' }}
             onPress={async () => {
               await onUpdate({
                 id: table.id,
@@ -787,8 +856,8 @@ function EditTableModal({
                 is_delivery_table: isDeliveryTable,
                 is_inside_table: isInsideTable,
               });
-              queryClient.invalidateQueries({ queryKey: ["tables"] });
-              queryClient.invalidateQueries({ queryKey: ["qrCode"] });
+              queryClient.invalidateQueries({ queryKey: ['tables'] });
+              queryClient.invalidateQueries({ queryKey: ['qrCode'] });
               onClose();
             }}
           >
@@ -802,43 +871,51 @@ function EditTableModal({
 
 const stylesModal = StyleSheet.create({
   dialog: {
-    backgroundColor: "#EFF4EB",
-    width: "40%",
-    alignSelf: "center",
+    backgroundColor: '#EFF4EB',
+    width: '40%',
+    alignSelf: 'center',
     borderRadius: 12,
   },
   menuItem: {
-    color: "#333",
+    color: '#333',
     fontSize: 14,
   },
   container: {
     marginBottom: 24,
   },
   dropdownBtn: {
-    backgroundColor: "#f5f9f5",
+    backgroundColor: '#f5f9f5',
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: "#ccc",
-    justifyContent: "space-between",
-    width: "100%",
+    borderColor: '#ccc',
+    justifyContent: 'space-between',
+    width: '100%',
+  },
+  readonlyBranch: {
+    backgroundColor: '#f5f9f5',
+    borderRadius: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    color: '#333',
+    marginBottom: 16,
   },
   menuContainer: {
-    backgroundColor: "#fff",
+    backgroundColor: '#fff',
     borderRadius: 8,
     paddingVertical: 5,
   },
   toggleRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginVertical: 12,
   },
   toggleLabel: {
     fontSize: 16,
-    color: "#333",
+    color: '#333',
   },
   addButton: {
-    backgroundColor: "#91B275",
+    backgroundColor: '#91B275',
     borderRadius: 30,
   },
 });

@@ -55,6 +55,8 @@ class NotificationViewSet(ModelViewSet):
         Custom action to mark a notification as read.
         """
         notification = Notification.objects.filter(id=pk, customer=request.user).first()
+        if request.user.user_type == 'admin':
+            notification = Notification.objects.filter(id=pk).first()
         if notification is None:
             return Response({"error": "Notification not found."}, status=404)
 

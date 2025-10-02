@@ -3,6 +3,7 @@ from restaurant.tenant.models import Tenant
 from django.core.exceptions import ValidationError
 from restaurant.branch.models import Branch
 from customer.order.models import Order
+from accounts.models import User
 import uuid
 
 class Coupon(models.Model):
@@ -24,6 +25,15 @@ class Coupon(models.Model):
     class Meta:
         db_table = 'coupon'
         verbose_name_plural = 'coupons'
+
+class CouponUsage(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    coupon = models.ForeignKey(Coupon, on_delete=models.CASCADE, related_name="usages")
+    customer = models.ForeignKey(User, on_delete=models.CASCADE, related_name="coupon_usages")
+    used_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ("coupon", "customer")  # ensures one use per customer
 
 
 class Discount(models.Model):

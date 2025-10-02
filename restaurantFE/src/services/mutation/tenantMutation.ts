@@ -8,7 +8,7 @@ import {
 } from "../api/tenantApi";
 
 export const useDashboardData = (params?: {
-  period?: 'today' | 'month' | 'year';
+  period?: "today" | "month" | "year" | "custom";
   start_date?: string;
   end_date?: string;
   branch_id?: string;
@@ -23,9 +23,8 @@ export const useDashboardData = (params?: {
 export const useTopMenuItems = (params?: {
   start_date?: string;
   end_date?: string;
-  // branch_id?: string;
+  branch_id?: string;
 }) => {
-  console.log(params);
   return useQuery({
     queryKey: ["topMenuItems", params],
     queryFn: () => GetTopMenuItems(params),
@@ -33,10 +32,11 @@ export const useTopMenuItems = (params?: {
   });
 };
 
-export const useGetTenantProfile = (id: string) =>
+export const useGetTenantProfile = (id?: string) =>
   useQuery({
-    queryKey: ["tenantProfile"],
-    queryFn: () => GetTenantProfile(id),
+    queryKey: ["tenantProfile", id],
+    queryFn: () => GetTenantProfile(id!),
+    enabled: Boolean(id),
     staleTime: 0,
   });
 

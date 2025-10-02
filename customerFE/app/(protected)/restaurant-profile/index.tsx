@@ -16,6 +16,7 @@ import RestaurantCard from "@/components/ui/RestaurantCard";
 import { useSearchMenuAvailabilities } from "@/services/mutation/menuMutation";
 import ReviewCard from "@/components/ui/ReviewCard";
 import { i18n } from "@/app/_layout";
+import { normalizeImageUrl } from "@/utils/imageUrl";
 
 const RestaurantProfile = () => {
   const [activeTab, setActiveTab] = useState<"branches" | "posts" | "reviews">(
@@ -86,9 +87,9 @@ const RestaurantProfile = () => {
         name: branch.tenant.restaurant_name,
         address: branch.address,
         distanceKm: branch.distance_km || 0,
-        sampleDishes: branch.menuItems.map((uri: string) =>
-          uri.replace("http://", "https://")
-        ),
+        sampleDishes: branch.menuItems
+          .map((uri: string) => normalizeImageUrl(uri) || uri)
+          .filter(Boolean),
         posts: branch.tenant.posts,
         feedbacks: branch.tenant.feedbacks,
       }));
@@ -152,9 +153,9 @@ const RestaurantProfile = () => {
       {/* Restaurant Image - Placeholder */}
       <Image
         source={{
-          uri: restaurantData.image
-            ? restaurantData.image.replace("http://", "https://")
-            : "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=1200",
+          uri:
+            normalizeImageUrl(restaurantData.image) ||
+            "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=1200",
         }}
         style={styles.restaurantImage}
       />
@@ -290,7 +291,7 @@ const RestaurantProfile = () => {
                 >
                   <Image
                     source={{
-                      uri: item.image.replace("http://", "https://"),
+                      uri: normalizeImageUrl(item.image),
                     }}
                     style={[
                       styles.photoItem,

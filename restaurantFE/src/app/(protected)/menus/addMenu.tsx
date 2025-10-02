@@ -1,35 +1,55 @@
-import React, { useState } from "react";
-import { StyleSheet, Image, View, useWindowDimensions, ScrollView } from "react-native";
-import { 
-  Text, 
-  Button, 
-  TextInput, 
-  Switch, 
-  IconButton, 
-  Portal, 
+import React, { useState } from 'react';
+import {
+  StyleSheet,
+  Image,
+  View,
+  useWindowDimensions,
+  ScrollView,
+} from 'react-native';
+import {
+  Text,
+  Button,
+  TextInput,
+  Switch,
+  Portal,
   Dialog,
-  Menu 
-} from "react-native-paper";
-import Toast from "react-native-toast-message";
-import * as ImagePicker from "expo-image-picker";
-import { useCreateMenu } from "@/services/mutation/menuMutation";
-import { useQueryClient } from "@tanstack/react-query";
-import { base64ToBlob } from "@/util/imageUtils";
+  Chip,
+  Checkbox,
+  List,
+} from 'react-native-paper';
+import Toast from 'react-native-toast-message';
+import * as ImagePicker from 'expo-image-picker';
+import { useCreateMenu } from '@/services/mutation/menuMutation';
+import { useQueryClient } from '@tanstack/react-query';
+import { base64ToBlob } from '@/util/imageUtils';
+import ModalHeader from '@/components/ModalHeader';
 
 interface AddMenuDialogProps {
   visible: boolean;
   onClose: () => void;
 }
 
-export default function AddMenuDialog({ visible, onClose }: AddMenuDialogProps) {
+type MenuFormState = {
+  name: string;
+  description: string;
+  categories: string[];
+  price: string;
+  is_side: boolean;
+  image: { uri: string; name: string; type: string };
+};
+
+export default function AddMenuDialog({
+  visible,
+  onClose,
+}: AddMenuDialogProps) {
   const { width } = useWindowDimensions();
-  const [menuData, setMenuData] = useState({
-    name: "",
-    description: "",
-    category: "",
-    price: "",
+  const [menuData, setMenuData] = useState<MenuFormState>({
+    name: '',
+    description: '',
+    categories: [],
+    price: '',
     is_side: false,
-    image: { uri: "", name: "", type: "" },
+    image: { uri: '', name: '', type: '' },
   });
   const [categoryMenuVisible, setCategoryMenuVisible] = useState(false);
 
@@ -39,18 +59,31 @@ export default function AddMenuDialog({ visible, onClose }: AddMenuDialogProps) 
   const queryClient = useQueryClient();
   const { mutateAsync: createMenu, isPending } = useCreateMenu();
 
-  const categories = ["Appetizer", "Breakfast", "Lunch", "Dinner"];
+  const categories = ['Appetizer', 'Breakfast', 'Lunch', 'Dinner'];
 
-  const handleInputChange = (field: string, value: string | boolean) => {
+  const handleInputChange = <K extends keyof MenuFormState>(
+    field: K,
+    value: MenuFormState[K]
+  ) => {
     setMenuData((prevData) => ({
       ...prevData,
       [field]: value,
     }));
   };
 
+  const toggleCategory = (category: string) => {
+    setMenuData((prevData) => {
+      const exists = prevData.categories.includes(category);
+      const categories = exists
+        ? prevData.categories.filter((item) => item !== category)
+        : [...prevData.categories, category];
+      return { ...prevData, categories };
+    });
+  };
+
   const pickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ["images"],
+      mediaTypes: ['images'],
       allowsEditing: true,
       quality: 1,
     });
@@ -60,8 +93,8 @@ export default function AddMenuDialog({ visible, onClose }: AddMenuDialogProps) 
         ...menuData,
         image: {
           uri: result.assets[0].uri,
-          name: result.assets[0].fileName || "image.jpg",
-          type: result.assets[0].type || "image/jpeg",
+          name: result.assets[0].fileName || 'image.jpg',
+          type: result.assets[0].type || 'image/jpeg',
         },
       });
     }
@@ -70,34 +103,46 @@ export default function AddMenuDialog({ visible, onClose }: AddMenuDialogProps) 
   const handleSave = async () => {
     if (!menuData.name || !menuData.image.uri) {
       Toast.show({
-        type: "error",
-        text1: "Error",
-        text2: "Please provide a name and select an image",
+        type: 'error',
+        text1: 'Error',
+        text2: 'Please provide a name and select an image',
+      });
+      return;
+    }
+
+    if (menuData.categories.length === 0) {
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Please select at least one category',
       });
       return;
     }
 
     const formData = new FormData();
-    Object.entries(menuData).forEach(([key, value]) => {
-      if (key !== "image" && typeof value === "string")
-        formData.append(key, value);
-    });
+    formData.append('name', menuData.name);
+    formData.append('description', menuData.description);
+    formData.append('price', menuData.price);
+    formData.append('is_side', String(menuData.is_side));
+    formData.append('categories', JSON.stringify(menuData.categories));
+
     const base64Data = menuData.image.uri;
-    const contentType = menuData.image.type;
-    const imageName = Date.now() + "." + menuData.image.name?.split(".")[1];
+    const contentType = menuData.image.type || 'image/jpeg';
+    const extension = menuData.image.name?.split('.').pop() || 'jpg';
+    const imageName = `${Date.now()}.${extension}`;
 
     const blob = base64ToBlob(base64Data, contentType);
     formData.append(
-      "image",
+      'image',
       new File([blob], imageName, { type: contentType })
     );
 
     await createMenu(formData);
-    queryClient.invalidateQueries({ queryKey: ["menus"] });
+    queryClient.invalidateQueries({ queryKey: ['menus'] });
     Toast.show({
-      type: "success",
-      text1: "Success",
-      text2: "Menu added successfully!",
+      type: 'success',
+      text1: 'Success',
+      text2: 'Menu added successfully!',
     });
     onClose();
   };
@@ -105,13 +150,15 @@ export default function AddMenuDialog({ visible, onClose }: AddMenuDialogProps) 
   return (
     <Portal>
       <Dialog visible={visible} onDismiss={onClose} style={styles.dialog}>
-        <Dialog.Title style={{ fontSize: 15, fontWeight: '400', color: '#2E191466', textAlign: 'center' }}>Add Menu Item</Dialog.Title>
+        <Dialog.Title>
+          <ModalHeader title="Add Menu Item" onClose={onClose} />
+        </Dialog.Title>
         <Dialog.Content>
           <ScrollView>
             <TextInput
               placeholder="Name"
               value={menuData.name}
-              onChangeText={(text) => handleInputChange("name", text)}
+              onChangeText={(text) => handleInputChange('name', text)}
               mode="outlined"
               style={styles.input}
               outlineStyle={{
@@ -128,7 +175,7 @@ export default function AddMenuDialog({ visible, onClose }: AddMenuDialogProps) 
             <TextInput
               placeholder="Description"
               value={menuData.description}
-              onChangeText={(text) => handleInputChange("description", text)}
+              onChangeText={(text) => handleInputChange('description', text)}
               mode="outlined"
               multiline
               numberOfLines={isSmallScreen ? 3 : 8}
@@ -144,57 +191,89 @@ export default function AddMenuDialog({ visible, onClose }: AddMenuDialogProps) 
               }}
             />
 
-            {/* Updated Category Dropdown */}
+            {/* Category Selector */}
             <View style={styles.dropdownContainer}>
-              <Menu
-                visible={categoryMenuVisible}
-                onDismiss={() => setCategoryMenuVisible(false)}
-                anchor={
-                  <Button
-                    mode="outlined"
-                    style={styles.dropdownButton}
-                    labelStyle={{
-                      color: "#333",
-                      fontSize: 14,
-                      width: "100%",
-                      textAlign: "left",
-                    }}
-                    onPress={() => setCategoryMenuVisible(true)}
-                    contentStyle={{
-                      flexDirection: "row-reverse",
-                      width: "100%",
-                    }}
-                    icon={categoryMenuVisible ? "chevron-up" : "chevron-down"}
-                  >
-                    {menuData.category || "Select Category"}
-                  </Button>
-                }
-                contentStyle={[styles.menuContent, { width: "100%" }]}
-                style={{ alignSelf: "stretch" }}
-                anchorPosition="bottom"
+              <Button
+                mode="outlined"
+                style={styles.dropdownButton}
+                labelStyle={{
+                  color: '#333',
+                  fontSize: 14,
+                  width: '100%',
+                  textAlign: 'left',
+                }}
+                onPress={() => setCategoryMenuVisible((prev) => !prev)}
+                contentStyle={{
+                  flexDirection: 'row-reverse',
+                  width: '100%',
+                }}
+                icon={categoryMenuVisible ? 'chevron-up' : 'chevron-down'}
               >
-                {categories.length > 0 ? (
-                  categories.map((category) => (
-                    <Menu.Item
-                      key={category}
-                      onPress={() => {
-                        handleInputChange("category", category);
-                        setCategoryMenuVisible(false);
-                      }}
-                      title={category}
-                      titleStyle={styles.menuItem}
-                    />
-                  ))
-                ) : (
-                  <Menu.Item title="No categories available" disabled />
-                )}
-              </Menu>
+                {menuData.categories.length > 0
+                  ? menuData.categories.join(', ')
+                  : 'Select Categories'}
+              </Button>
+
+              {categoryMenuVisible && (
+                <View style={styles.categoryOptionsCard}>
+                  <List.Section>
+                    {categories.map((category) => {
+                      const selected = menuData.categories.includes(category);
+                      return (
+                        <List.Item
+                          key={category}
+                          title={category}
+                          onPress={() => toggleCategory(category)}
+                          titleStyle={styles.categoryOptionText}
+                          left={() => (
+                            <Checkbox
+                              status={selected ? 'checked' : 'unchecked'}
+                              onPress={() => toggleCategory(category)}
+                            />
+                          )}
+                        />
+                      );
+                    })}
+                  </List.Section>
+
+                  <View style={styles.categoryActionsRow}>
+                    <Button
+                      mode="text"
+                      onPress={() => setCategoryMenuVisible(false)}
+                      labelStyle={styles.categoryActionLabel}
+                    >
+                      Done
+                    </Button>
+                  </View>
+                </View>
+              )}
             </View>
+
+            {menuData.categories.length > 0 && (
+              <View style={styles.selectedCategoriesContainer}>
+                {menuData.categories.map((category) => (
+                  <Chip
+                    key={category}
+                    mode="outlined"
+                    onClose={() => toggleCategory(category)}
+                    style={styles.categoryChip}
+                    textStyle={styles.categoryChipText}
+                  >
+                    {category}
+                  </Chip>
+                ))}
+              </View>
+            )}
 
             <TextInput
               placeholder="Price"
               value={menuData.price}
-              onChangeText={(text) => handleInputChange("price", text)}
+              onChangeText={(text) => {
+                const cleaned = text
+                  .replace(/[^0-9.]/g, '') // remove non-digits and extra chars
+                  .replace(/(\..*)\./g, '$1');
+                handleInputChange('price', cleaned);
+              }}
               mode="outlined"
               keyboardType="numeric"
               style={styles.input}
@@ -213,19 +292,20 @@ export default function AddMenuDialog({ visible, onClose }: AddMenuDialogProps) 
               onPress={pickImage}
               mode="outlined"
               style={styles.button}
-              icon={menuData.image.uri ? "image-edit" : "image-plus"}
+              icon={menuData.image.uri ? 'image-edit' : 'image-plus'}
               labelStyle={{
                 fontSize: 14,
                 fontWeight: '400',
                 color: '#40392B',
               }}
             >
-              {menuData.image.uri ? "Change Image" : "Pick an Image"}
+              {menuData.image.uri ? 'Change Image' : 'Pick an Image'}
             </Button>
 
             {menuData.image.uri && (
               <Image
                 source={{ uri: menuData.image.uri }}
+                resizeMode="cover"
                 style={[
                   styles.imagePreview,
                   {
@@ -237,13 +317,16 @@ export default function AddMenuDialog({ visible, onClose }: AddMenuDialogProps) 
             )}
 
             <View style={[styles.switchRow, { gap: isSmallScreen ? 8 : 16 }]}>
-              <Text variant={isSmallScreen ? "bodyMedium" : "bodyLarge"} style={styles.switchText}>
+              <Text
+                variant={isSmallScreen ? 'bodyMedium' : 'bodyLarge'}
+                style={styles.switchText}
+              >
                 Is Side Item
               </Text>
               <Switch
                 value={menuData.is_side}
-                onValueChange={(value) => handleInputChange("is_side", value)}
-                trackColor={{ false: "gray", true: "#96B76E" }}
+                onValueChange={(value) => handleInputChange('is_side', value)}
+                trackColor={{ false: 'gray', true: '#96B76E' }}
                 thumbColor="#fff"
               />
             </View>
@@ -269,9 +352,9 @@ export default function AddMenuDialog({ visible, onClose }: AddMenuDialogProps) 
 
 const styles = StyleSheet.create({
   dialog: {
-    backgroundColor: "#EFF4EB",
-    width: "40%",
-    alignSelf: "center",
+    backgroundColor: '#EFF4EB',
+    width: '40%',
+    alignSelf: 'center',
     borderRadius: 12,
   },
   input: {
@@ -298,15 +381,14 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
   },
   imagePreview: {
-    alignSelf: "center",
+    alignSelf: 'center',
     marginBottom: 10,
     borderRadius: 8,
-    resizeMode: "cover",
   },
   switchRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",  
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     marginBottom: 16,
     paddingVertical: 8,
   },
@@ -332,10 +414,38 @@ const styles = StyleSheet.create({
     borderColor: '#E0E0E0',
     borderRadius: 4,
   },
-  menuContent: {
-    backgroundColor: '#fff',
+  categoryOptionsCard: {
+    marginTop: 8,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    borderRadius: 8,
+    backgroundColor: '#FFFFFF',
+    paddingVertical: 4,
   },
-  menuItem: {
+  categoryOptionText: {
     fontSize: 14,
+    color: '#40392B',
+  },
+  categoryActionsRow: {
+    alignItems: 'flex-end',
+    paddingHorizontal: 8,
+    paddingTop: 4,
+  },
+  categoryActionLabel: {
+    fontSize: 14,
+  },
+  selectedCategoriesContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginBottom: 12,
+  },
+  categoryChip: {
+    marginRight: 8,
+    marginBottom: 8,
+    borderColor: '#91B275',
+    backgroundColor: '#EBF1E6',
+  },
+  categoryChipText: {
+    color: '#40392B',
   },
 });

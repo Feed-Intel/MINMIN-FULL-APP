@@ -40,6 +40,7 @@ export default function MenuAvailability() {
   const [snackbarMessage, setSnackbarMessage] = useState("");
   const [selectedBranch, setSelectedBranch] = useState<Branch | null>(null);
   const theme = useTheme();
+
   const colorScheme = useColorScheme();
 
   // Screen size breakpoints
@@ -311,6 +312,82 @@ const MenuAvailabilityScreen: React.FC<MenuAvailabilityScreenProps> = ({
   colorScheme,
 }) => {
   const theme = useTheme();
+
+  const renderMenuItem = ({ item }: { item: MenuType }) => {
+    const categories = Array.isArray(item.categories) && item.categories.length
+      ? item.categories
+      : item.category
+      ? [item.category]
+      : [];
+
+    return (
+      <Card style={styles.menuCard}>
+        <Card.Content>
+          <View style={styles.menuHeader}>
+            {item.image ? (
+              <Image
+                source={{ uri: item.image }}
+                style={styles.menuImage}
+              />
+            ) : (
+              <View style={[styles.menuImage, styles.imagePlaceholder]}>
+                <MaterialCommunityIcons
+                  name="image-off"
+                  size={32}
+                  color={theme.colors.outline}
+                />
+              </View>
+            )}
+            <View style={styles.menuInfo}>
+              <Text style={styles.menuName}>{item.name}</Text>
+              <Text style={styles.menuPrice}>${item.price}</Text>
+              <View style={styles.chipContainer}>
+                {categories.length > 0 ? (
+                  categories.map((category) => (
+                    <Chip key={category} style={styles.categoryChip}>
+                      {category}
+                    </Chip>
+                  ))
+                ) : (
+                  <Chip style={styles.categoryChip}>—</Chip>
+                )}
+                {item.is_side && (
+                  <Chip
+                    style={styles.sideChip}
+                    textStyle={styles.sideChipText}
+                  >
+                    Side Dish
+                  </Chip>
+                )}
+              </View>
+            </View>
+          </View>
+
+          <Text style={styles.menuDescription} numberOfLines={2}>
+            {item.description}
+          </Text>
+
+          <Divider style={styles.divider} />
+
+          <View style={styles.availabilityContainer}>
+            <Text style={styles.availabilityLabel}>
+              {getAvailabilityStatus(branch.id!, item.id!)
+                ? "Currently Available"
+                : "Not Available"}
+            </Text>
+            <Switch
+              value={getAvailabilityStatus(branch.id!, item.id!)}
+              disabled={isToggleLoading}
+              onValueChange={(value) =>
+                handleToggle(branch.id!, item.id!, value)
+              }
+              color={theme.colors.primary}
+            />
+          </View>
+        </Card.Content>
+      </Card>
+    );
+  };
   const [searchTerm, setSearchTerm] = useState("");
 
   const filteredMenus = menus.filter(
@@ -533,65 +610,7 @@ const MenuAvailabilityScreen: React.FC<MenuAvailabilityScreenProps> = ({
         data={filteredMenus}
         contentContainerStyle={styles.menuList}
         keyExtractor={(item) => item.id!}
-        renderItem={({ item }) => (
-          <Card style={styles.menuCard}>
-            <Card.Content>
-              <View style={styles.menuHeader}>
-                {item.image ? (
-                  <Image
-                    source={{ uri: item.image }}
-                    style={styles.menuImage}
-                  />
-                ) : (
-                  <View style={[styles.menuImage, styles.imagePlaceholder]}>
-                    <MaterialCommunityIcons
-                      name="image-off"
-                      size={32}
-                      color={theme.colors.outline}
-                    />
-                  </View>
-                )}
-                <View style={styles.menuInfo}>
-                  <Text style={styles.menuName}>{item.name}</Text>
-                  <Text style={styles.menuPrice}>${item.price}</Text>
-                  <View style={styles.chipContainer}>
-                    <Chip style={styles.categoryChip}>{item.category}</Chip>
-                    {item.is_side && (
-                      <Chip
-                        style={styles.sideChip}
-                        textStyle={styles.sideChipText}
-                      >
-                        Side Dish
-                      </Chip>
-                    )}
-                  </View>
-                </View>
-              </View>
-
-              <Text style={styles.menuDescription} numberOfLines={2}>
-                {item.description}
-              </Text>
-
-              <Divider style={styles.divider} />
-
-              <View style={styles.availabilityContainer}>
-                <Text style={styles.availabilityLabel}>
-                  {getAvailabilityStatus(branch.id!, item.id!)
-                    ? "Currently Available"
-                    : "Not Available"}
-                </Text>
-                <Switch
-                  value={getAvailabilityStatus(branch.id!, item.id!)}
-                  disabled={isToggleLoading}
-                  onValueChange={(value) =>
-                    handleToggle(branch.id!, item.id!, value)
-                  }
-                  color={theme.colors.primary}
-                />
-              </View>
-            </Card.Content>
-          </Card>
-        )}
+        renderItem={renderMenuItem}
       />
 
       <Snackbar

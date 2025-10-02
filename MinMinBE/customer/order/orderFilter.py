@@ -1,24 +1,31 @@
 from django_filters import rest_framework as filters
+
 from .models import Order, OrderItem
 
+
 class OrderFilter(filters.FilterSet):
-    tenant = filters.UUIDFilter(field_name='tenant')  # Exact match for tenant
-    branch = filters.UUIDFilter(field_name='branch')  # Exact match for branch
-    # print(field_name='branch')
-    print(tenant)
-    table = filters.UUIDFilter(field_name='table')    # Exact match for table
-    customer = filters.UUIDFilter(field_name='customer')  # Exact match for customer
-    status = filters.ChoiceFilter(choices=Order.STATUS_TYPE_CHOICES)  # Filter by status
-    min_total_price = filters.NumberFilter(field_name='total_price', lookup_expr='gte')  # Min price
-    max_total_price = filters.NumberFilter(field_name='total_price', lookup_expr='lte')  # Max price
-    start_date = filters.DateTimeFilter(field_name='created_at', lookup_expr='gte')  # Created after
-    end_date = filters.DateTimeFilter(field_name='created_at', lookup_expr='lte')    # Created before
+    tenant = filters.UUIDFilter(field_name="tenant_id")
+    branch = filters.UUIDFilter(field_name="branch_id")
+    table = filters.UUIDFilter(field_name="table_id")
+    customer = filters.UUIDFilter(field_name="customer_id")
+    status = filters.ChoiceFilter(field_name="status", choices=Order.STATUS_TYPE_CHOICES)
+    min_total_price = filters.NumberFilter(field_name="total_price", lookup_expr="gte")
+    max_total_price = filters.NumberFilter(field_name="total_price", lookup_expr="lte")
+    start_date = filters.DateFilter(field_name="created_at", lookup_expr="date__gte")
+    end_date = filters.DateFilter(field_name="created_at", lookup_expr="date__lte")
 
     class Meta:
         model = Order
         fields = [
-            'tenant_id', 'branch', 'table_id', 'customer_id', 'status', 
-            'min_total_price', 'max_total_price', 'start_date', 'end_date'
+            "tenant",
+            "branch",
+            "table",
+            "customer",
+            "status",
+            "min_total_price",
+            "max_total_price",
+            "start_date",
+            "end_date",
         ]
 
 

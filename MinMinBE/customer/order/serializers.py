@@ -53,10 +53,17 @@ class OrderSerializer(serializers.ModelSerializer):
                 branch=branch,
                 is_delivery_table=True
             ).first()
-            
+
             if not table:
-                delivery_table_serializer = TableSerializer(data={'branch': branch.id, 'is_delivery_table': True})
-                delivery_table_serializer.is_valid()
+                delivery_table_serializer = TableSerializer(
+                    data={
+                        'branch': branch.id,
+                        'is_delivery_table': True,
+                        'is_fast_table': False,
+                        'is_inside_table': False,
+                    }
+                )
+                delivery_table_serializer.is_valid(raise_exception=True)
                 table = delivery_table_serializer.save()
 
         # Create order with determined table
@@ -126,7 +133,8 @@ class OrderSerializer(serializers.ModelSerializer):
         return {
             'id': obj.customer.id,
             'email': obj.customer.email,
-            'full_name': obj.customer.full_name
+            'full_name': obj.customer.full_name,
+            'phone':obj.customer.phone
         }
     
     def get_customer_name(self, obj):
@@ -154,5 +162,4 @@ class OrderSerializer(serializers.ModelSerializer):
         representation['customer_phone'] = self.get_customer_phone(instance)
         representation['customer_tinNo'] = instance.customer_tinNo
         return representation
-
 

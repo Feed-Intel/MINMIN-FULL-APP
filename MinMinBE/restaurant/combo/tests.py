@@ -23,7 +23,7 @@ class ComboViewTest(APITestCase):
             tenant=self.tenant,
             description='Delicious breakfast',
             tags=['Breakfast'],
-            category='Fast Food',
+            categories=['Fast Food'],
             price=10.00
         )
         self.combo = Combo.objects.create(
@@ -71,7 +71,7 @@ class ComboViewTest(APITestCase):
             tenant=self.tenant,
             description='Delicious breakfast',
             tags=['Breakfast'],
-            category='Fast Food',
+            categories=['Fast Food'],
             price=10.00
         )
         payload = {
@@ -106,5 +106,4 @@ class ComboViewTest(APITestCase):
         response = self.client.delete(f"/api/v1/combo/{self.combo.id}/")
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertEqual(Combo.objects.count(), 0)
-
 

@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback, useEffect } from "react";
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import {
   View,
   FlatList,
@@ -7,37 +7,38 @@ import {
   TouchableOpacity,
   Dimensions,
   ScrollView,
-} from "react-native";
+} from 'react-native';
 import {
   Searchbar,
   Card,
   Text,
   ActivityIndicator,
   Button,
-} from "react-native-paper";
-import debounce from "lodash.debounce";
-import { useGetMenuAvailabilities } from "@/services/mutation/menuMutation";
-import MenuItemModal from "@/components/ui/menuModal";
-import { SafeAreaView } from "react-native-safe-area-context";
+} from 'react-native-paper';
+import debounce from 'lodash.debounce';
+import { useGetMenuAvailabilities } from '@/services/mutation/menuMutation';
+import MenuItemModal from '@/components/ui/menuModal';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import RestaurantCard, {
   RestaurantCards,
-} from "@/components/ui/RestaurantCard";
-import { router } from "expo-router";
-import { useDispatch, useSelector } from "react-redux";
-import { addToCart, updateQuantity } from "@/lib/reduxStore/cartSlice";
-import Toast from "react-native-toast-message";
-import { RootState } from "@/lib/reduxStore/store";
-import { i18n } from "@/app/_layout";
+} from '@/components/ui/RestaurantCard';
+import { router } from 'expo-router';
+import { useDispatch, useSelector } from 'react-redux';
+import { addToCart, updateQuantity } from '@/lib/reduxStore/cartSlice';
+import Toast from 'react-native-toast-message';
+import { RootState } from '@/lib/reduxStore/store';
+import { i18n } from '@/app/_layout';
+import { normalizeImageUrl } from '@/utils/imageUrl';
 
-const { width } = Dimensions.get("window");
+const { width } = Dimensions.get('window');
 
 const RestaurantSearch: React.FC = () => {
   // --- UI state
-  const [searchQuery, setSearchQuery] = useState("");
-  const [debouncedQuery, setDebouncedQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedQuery, setDebouncedQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<
-    "Dishes" | "Restaurants"
-  >("Dishes");
+    'Dishes' | 'Restaurants'
+  >('Dishes');
   const [selectedMenu, setSelectedMenu] = useState<{
     menuItem: any;
     restaurantId: any;
@@ -77,7 +78,7 @@ const RestaurantSearch: React.FC = () => {
 
   // --- Single-pass categorization (O(n), populates sampleDishes properly)
   const categorizedResults = useMemo(() => {
-    const lowerQuery = (debouncedQuery || "").toLowerCase();
+    const lowerQuery = (debouncedQuery || '').toLowerCase();
     const restaurantsMap = new Map<string | number, any>();
     const branchesMap = new Map<string | number, any>();
     const dishes: any[] = [];
@@ -89,20 +90,20 @@ const RestaurantSearch: React.FC = () => {
       const branchId = branch.id;
       const tenantId = tenant.id;
 
-      const restaurantName = tenant.restaurant_name || "";
-      const branchAddress = branch.address || "";
+      const restaurantName = tenant.restaurant_name || '';
+      const branchAddress = branch.address || '';
 
       const matchesRestaurant = restaurantName
         .toLowerCase()
         .includes(lowerQuery);
-      const matchesDish = (menu_item.name || "")
+      const matchesDish = (menu_item.name || '')
         .toLowerCase()
         .includes(lowerQuery);
       const matchesBranch = branchAddress.toLowerCase().includes(lowerQuery);
 
       // collect dishes
       if (
-        lowerQuery === "" ||
+        lowerQuery === '' ||
         matchesDish ||
         matchesRestaurant ||
         matchesBranch
@@ -149,12 +150,14 @@ const RestaurantSearch: React.FC = () => {
       const restObj = restaurantsMap.get(tenantId);
       if (restObj && restObj.sampleDishes.length < 3 && menu_item.image) {
         restObj.sampleDishes.push(
-          menu_item.image.replace("http://", "https://")
+          normalizeImageUrl(menu_item.image) || menu_item.image
         );
       }
       const brObj = branchesMap.get(branchId);
       if (brObj && brObj.sampleDishes.length < 3 && menu_item.image) {
-        brObj.sampleDishes.push(menu_item.image.replace("http://", "https://"));
+        brObj.sampleDishes.push(
+          normalizeImageUrl(menu_item.image) || menu_item.image
+        );
       }
     }
 
@@ -177,11 +180,11 @@ const RestaurantSearch: React.FC = () => {
           cart.branchId !== branch.id
         ) {
           Toast.show({
-            type: "error",
+            type: 'error',
             text1: i18n.t(
-              "cannot_add_items_different_restaurants_branches_toast"
+              'cannot_add_items_different_restaurants_branches_toast'
             ),
-            text2: i18n.t("add_to_cart_error_message"),
+            text2: i18n.t('add_to_cart_error_message'),
           });
           return;
         }
@@ -209,9 +212,9 @@ const RestaurantSearch: React.FC = () => {
             },
             restaurantId: branch.tenant.id,
             branchId: branch.id,
-            tableId: "",
-            paymentAPIKEY: branch.tenant.CHAPA_API_KEY || "",
-            paymentPUBLICKEY: branch.tenant.CHAPA_PUBLIC_KEY || "",
+            tableId: '',
+            paymentAPIKEY: branch.tenant.CHAPA_API_KEY || '',
+            paymentPUBLICKEY: branch.tenant.CHAPA_PUBLIC_KEY || '',
             tax: branch.tenant.tax || 0,
             serviceCharge: branch.tenant.service_charge || 0,
           })
@@ -219,8 +222,8 @@ const RestaurantSearch: React.FC = () => {
       }
 
       Toast.show({
-        type: "success",
-        text1: i18n.t("item_added_to_cart_toast", { itemName: menu_item.name }),
+        type: 'success',
+        text1: i18n.t('item_added_to_cart_toast', { itemName: menu_item.name }),
       });
     },
     [cart, dispatch]
@@ -253,9 +256,9 @@ const RestaurantSearch: React.FC = () => {
             </Text>
 
             <View style={styles.priceRow}>
-              <Text>{i18n.t("price_label")}: </Text>
+              <Text>{i18n.t('price_label')}: </Text>
               <Text style={styles.dishPrice}>
-                {item.menu_item.price} {i18n.t("currency_unit")}
+                {item.menu_item.price} {i18n.t('currency_unit')}
               </Text>
             </View>
 
@@ -267,14 +270,14 @@ const RestaurantSearch: React.FC = () => {
                 style={styles.orderButton}
                 onPress={() => handleOrderNow(item)}
               >
-                {i18n.t("order_now_button")}
+                {i18n.t('order_now_button')}
               </Button>
             </Card.Actions>
           </View>
 
           <Image
             source={{
-              uri: item.menu_item.image?.replace("http://", "https://"),
+              uri: normalizeImageUrl(item.menu_item.image),
             }}
             style={styles.dishImage}
           />
@@ -299,15 +302,15 @@ const RestaurantSearch: React.FC = () => {
       {/* Top bar / search */}
       <View style={styles.topBar}>
         <Searchbar
-          placeholder={i18n.t("search_dish_restaurant_placeholder")}
+          placeholder={i18n.t('search_dish_restaurant_placeholder')}
           value={searchQuery}
           onChangeText={handleSearchChange}
           style={styles.customSearchbar}
           icon="magnify"
           clearIcon="close"
           onIconPress={() => {
-            setSearchQuery("");
-            setDebouncedQuery("");
+            setSearchQuery('');
+            setDebouncedQuery('');
           }}
         />
 
@@ -315,34 +318,34 @@ const RestaurantSearch: React.FC = () => {
           <TouchableOpacity
             style={[
               styles.tabButton,
-              selectedCategory === "Dishes" && styles.activeTabButton,
+              selectedCategory === 'Dishes' && styles.activeTabButton,
             ]}
-            onPress={() => setSelectedCategory("Dishes")}
+            onPress={() => setSelectedCategory('Dishes')}
           >
             <Text
               style={[
                 styles.tabText,
-                selectedCategory === "Dishes" && styles.activeTabText,
+                selectedCategory === 'Dishes' && styles.activeTabText,
               ]}
             >
-              {i18n.t("dishes_tab")}
+              {i18n.t('dishes_tab')}
             </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             style={[
               styles.tabButton,
-              selectedCategory === "Restaurants" && styles.activeTabButton,
+              selectedCategory === 'Restaurants' && styles.activeTabButton,
             ]}
-            onPress={() => setSelectedCategory("Restaurants")}
+            onPress={() => setSelectedCategory('Restaurants')}
           >
             <Text
               style={[
                 styles.tabText,
-                selectedCategory === "Restaurants" && styles.activeTabText,
+                selectedCategory === 'Restaurants' && styles.activeTabText,
               ]}
             >
-              {i18n.t("restaurants_tab")}
+              {i18n.t('restaurants_tab')}
             </Text>
           </TouchableOpacity>
         </View>
@@ -355,17 +358,17 @@ const RestaurantSearch: React.FC = () => {
         </View>
       ) : error ? (
         <Text style={styles.message}>
-          {i18n.t("failed_to_load_results_message")}
+          {i18n.t('failed_to_load_results_message')}
         </Text>
       ) : (
         <>
           {/* DISHES TAB */}
-          {selectedCategory === "Dishes" && (
+          {selectedCategory === 'Dishes' && (
             <FlatList
               ListHeaderComponent={
                 <View style={styles.sectionHeader}>
                   <Text style={styles.sectionTitle}>
-                    {i18n.t("dishes_tab")}
+                    {i18n.t('dishes_tab')}
                   </Text>
                   {categorizedResults.dishes.length > 0 && (
                     <TouchableOpacity
@@ -373,8 +376,8 @@ const RestaurantSearch: React.FC = () => {
                     >
                       <Text style={styles.seeAllText}>
                         {showAllDishes
-                          ? i18n.t("see_less_button")
-                          : i18n.t("see_all_button")}
+                          ? i18n.t('see_less_button')
+                          : i18n.t('see_all_button')}
                       </Text>
                     </TouchableOpacity>
                   )}
@@ -389,7 +392,7 @@ const RestaurantSearch: React.FC = () => {
               contentContainerStyle={styles.listContent}
               ListEmptyComponent={
                 <Text style={styles.message}>
-                  {i18n.t("no_dishes_found_for_search", { searchQuery })}
+                  {i18n.t('no_dishes_found_for_search', { searchQuery })}
                 </Text>
               }
               ListFooterComponent={
@@ -403,10 +406,10 @@ const RestaurantSearch: React.FC = () => {
           )}
 
           {/* RESTAURANTS TAB */}
-          {selectedCategory === "Restaurants" && (
+          {selectedCategory === 'Restaurants' && (
             <FlatList
               ListHeaderComponent={
-                searchQuery !== "" ? (
+                searchQuery !== '' ? (
                   <ScrollView
                     horizontal
                     contentContainerStyle={styles.listContentTop}
@@ -429,8 +432,8 @@ const RestaurantSearch: React.FC = () => {
                                   restaurantId: item.tenant_id,
                                   branchId: JSON.stringify(item),
                                   rating: item.average_rating || 0,
-                                  tableId: "null",
-                                  from: "/(protected)/search",
+                                  tableId: 'null',
+                                  from: '/(protected)/search',
                                 },
                               })
                             }
@@ -439,7 +442,7 @@ const RestaurantSearch: React.FC = () => {
                       ))
                     ) : (
                       <Text style={styles.message}>
-                        {i18n.t("no_restaurants_found_for_query_message", {
+                        {i18n.t('no_restaurants_found_for_search', {
                           searchQuery,
                         })}
                       </Text>
@@ -458,10 +461,10 @@ const RestaurantSearch: React.FC = () => {
               ListEmptyComponent={
                 <Text style={styles.message}>
                   {Boolean(searchQuery)
-                    ? i18n.t("no_restaurants_found_for_query_message", {
+                    ? i18n.t('no_restaurants_found_for_search', {
                         searchQuery,
                       })
-                    : i18n.t("no_restaurants_found_message")}
+                    : i18n.t('no_restaurants_found')}
                 </Text>
               }
               keyboardShouldPersistTaps="handled"
@@ -469,10 +472,10 @@ const RestaurantSearch: React.FC = () => {
           )}
 
           {/* default hint when nothing typed and no data */}
-          {debouncedQuery === "" && data.length === 0 && !isLoading && (
+          {debouncedQuery === '' && data.length === 0 && !isLoading && (
             <View style={styles.centered}>
               <Text style={styles.message}>
-                {i18n.t("start_typing_to_search_message")}
+                {i18n.t('start_typing_to_search_message')}
               </Text>
             </View>
           )}
@@ -499,104 +502,104 @@ const RestaurantSearch: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#FDFDFC" },
+  container: { flex: 1, backgroundColor: '#FDFDFC' },
   topBar: {
     paddingHorizontal: 16,
     paddingTop: 10,
-    backgroundColor: "#fff",
+    backgroundColor: '#fff',
     paddingBottom: 10,
   },
   customSearchbar: {
     borderRadius: 25,
-    backgroundColor: "#e0e0e0",
+    backgroundColor: '#e0e0e0',
     height: 50,
     marginBottom: 10,
   },
   tabContainer: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-    overflow: "hidden",
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    overflow: 'hidden',
     marginTop: 10,
     padding: 3,
   },
-  tabButton: { flex: 1, paddingVertical: 10, alignItems: "center" },
-  activeTabButton: { borderBottomWidth: 2, borderBottomColor: "#ccc" },
-  tabText: { fontSize: 14, fontWeight: "600", color: "#888" },
-  activeTabText: { color: "#333" },
-  centered: { flex: 1, justifyContent: "center", alignItems: "center" },
-  message: { textAlign: "center", marginTop: 20, fontSize: 16, color: "#777" },
+  tabButton: { flex: 1, paddingVertical: 10, alignItems: 'center' },
+  activeTabButton: { borderBottomWidth: 2, borderBottomColor: '#ccc' },
+  tabText: { fontSize: 14, fontWeight: '600', color: '#888' },
+  activeTabText: { color: '#333' },
+  centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  message: { textAlign: 'center', marginTop: 20, fontSize: 16, color: '#777' },
   sectionHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginTop: 20,
     marginBottom: 10,
     paddingHorizontal: 16,
   },
-  sectionTitle: { fontSize: 20, fontWeight: "bold", color: "#333" },
-  seeAllText: { color: "#546D36", fontSize: 14, fontWeight: "600" },
+  sectionTitle: { fontSize: 20, fontWeight: 'bold', color: '#333' },
+  seeAllText: { color: '#546D36', fontSize: 14, fontWeight: '600' },
   listContentTop: { paddingVertical: 10, gap: 7 },
   listContent: { paddingBottom: 100, paddingHorizontal: 16, gap: 7 },
   dishCard: {
     marginVertical: 8,
-    overflow: "hidden",
-    flexDirection: "column",
-    backgroundColor: "#fff",
+    overflow: 'hidden',
+    flexDirection: 'column',
+    backgroundColor: '#fff',
     borderBottomWidth: 1,
-    borderColor: "#E0E0E0",
+    borderColor: '#E0E0E0',
   },
   dishContent: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     padding: 12,
     paddingBottom: 0,
   },
   dishTextContainer: { marginRight: 10 },
-  dishTitle: { fontSize: 18, fontWeight: "bold" },
-  dishPrice: { fontSize: 15, fontWeight: "bold", color: "#333" },
+  dishTitle: { fontSize: 18, fontWeight: 'bold' },
+  dishPrice: { fontSize: 15, fontWeight: 'bold', color: '#333' },
   priceRow: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 3,
     marginTop: 10,
   },
-  dishRestaurantName: { fontSize: 13, color: "#555" },
-  dishImage: { width: 163, height: 110, borderRadius: 8, resizeMode: "cover" },
+  dishRestaurantName: { fontSize: 13, color: '#555' },
+  dishImage: { width: 163, height: 110, borderRadius: 8, resizeMode: 'cover' },
   dishCardActions: {
-    justifyContent: "flex-start",
-    alignSelf: "flex-start",
+    justifyContent: 'flex-start',
+    alignSelf: 'flex-start',
     marginLeft: -20,
   },
   orderButton: {
     borderRadius: 20,
     height: 28,
     width: 110,
-    backgroundColor: "#96B76E",
-    alignContent: "center",
-    justifyContent: "center",
+    backgroundColor: '#96B76E',
+    alignContent: 'center',
+    justifyContent: 'center',
   },
-  orderButtonContent: { height: 38, alignSelf: "center" },
-  orderButtonLabel: { fontSize: 12, color: "#000" },
+  orderButtonContent: { height: 38, alignSelf: 'center' },
+  orderButtonLabel: { fontSize: 12, color: '#000' },
   restaurantFullCard: {
     marginVertical: 8,
     borderRadius: 10,
-    backgroundColor: "#fff",
+    backgroundColor: '#fff',
     padding: 15,
   },
   restaurantHeader: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     marginBottom: 8,
   },
   restaurantIcon: { marginRight: 8 },
   restaurantTitleRating: { flex: 1 },
-  restaurantCardTitle: { fontSize: 18, fontWeight: "bold", marginBottom: 2 },
-  restaurantRatingContainer: { flexDirection: "row", alignItems: "center" },
-  restaurantRatingText: { fontSize: 13, color: "#666", marginLeft: 5 },
-  restaurantLocation: { fontSize: 13, color: "#888", marginBottom: 10 },
+  restaurantCardTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 2 },
+  restaurantRatingContainer: { flexDirection: 'row', alignItems: 'center' },
+  restaurantRatingText: { fontSize: 13, color: '#666', marginLeft: 5 },
+  restaurantLocation: { fontSize: 13, color: '#888', marginBottom: 10 },
   restaurantDishPreviews: {
-    flexDirection: "row",
+    flexDirection: 'row',
     marginTop: 10,
     marginBottom: 15,
   },
@@ -605,10 +608,10 @@ const styles = StyleSheet.create({
     height: 80,
     borderRadius: 8,
     marginRight: 10,
-    resizeMode: "cover",
+    resizeMode: 'cover',
   },
-  viewOnMapButton: { marginTop: 10, alignSelf: "flex-start" },
-  viewOnMapButtonLabel: { color: "#6200ee", fontSize: 14 },
+  viewOnMapButton: { marginTop: 10, alignSelf: 'flex-start' },
+  viewOnMapButtonLabel: { color: '#6200ee', fontSize: 14 },
 });
 
 export default RestaurantSearch;

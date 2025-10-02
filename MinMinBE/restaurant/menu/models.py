@@ -35,7 +35,7 @@ class Menu(models.Model):
     tenant = models.ForeignKey(Tenant, on_delete=models.CASCADE, related_name='menus')
     description = models.TextField()
     tags = models.JSONField(default=list)
-    category = models.CharField(max_length=255)
+    categories = models.JSONField(default=list)
     price = models.DecimalField(max_digits=10, decimal_places=2)
     is_side = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -68,6 +68,23 @@ class Menu(models.Model):
         if reviews.exists():
             return round(reviews.aggregate(models.Avg('overall_rating'))['overall_rating__avg'], 2)
         return None
+
+    @property
+    def category(self):
+        """Backward-compatible accessor for the first category."""
+        if isinstance(self.categories, list) and self.categories:
+            return self.categories[0]
+        return None
+
+    @category.setter
+    def category(self, value):
+        """Allow legacy assignments to map into the new categories list."""
+        if value is None:
+            self.categories = []
+        elif isinstance(value, (list, tuple)):
+            self.categories = list(value)
+        else:
+            self.categories = [str(value)]
     
     def __str__(self):
         return self.name

@@ -16,6 +16,7 @@ from restaurant.table.models import Table
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 from core.cache import CachedModelViewSet
+from accounts.utils import get_user_branch, get_user_tenant
 
 class BranchPagination(PageNumberPagination):
     page_size = 10
@@ -30,23 +31,33 @@ class BranchView(CachedModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        
 
-        # This part of get_queryset correctly uses Django GIS functions
         user_location = redis_client.get(str(user.id))
         if user.user_type == 'customer':
-            base_qs = Branch.objects.prefetch_related('tables','branch_menu_availabilities')
+            base_qs = Branch.objects.prefetch_related('tables', 'branch_menu_availabilities')
             if user_location:
                 latitude_str, longitude_str = user_location.split(',')
-                if latitude_str !='null' and longitude_str !='null':
+                if latitude_str != 'null' and longitude_str != 'null':
                     latitude = float(latitude_str)
                     longitude = float(longitude_str)
-                    user_location = Point(longitude, latitude, srid=4326)    
-                    base_qs = base_qs.annotate(distance=Distance('location', user_location)).order_by('distance')
-                return base_qs
+                    user_point = Point(longitude, latitude, srid=4326)
+                    base_qs = base_qs.annotate(distance=Distance('location', user_point)).order_by('distance')
+            return base_qs
 
-        # Fallback: no user location available, just return base queryset
-        return Branch.objects.filter(tenant__admin=user).prefetch_related('tables','branch_menu_availabilities')
+        queryset = Branch.objects.select_related('tenant').prefetch_related('tables', 'branch_menu_availabilities')
+
+        if user.user_type == 'admin':
+            return queryset
+
+        if user.user_type == 'restaurant':
+            tenant = get_user_tenant(user)
+            return queryset.filter(tenant=tenant) if tenant else queryset.none()
+
+        if user.user_type == 'branch':
+            branch = get_user_branch(user)
+            return queryset.filter(pk=branch.pk) if branch else queryset.none()
+
+        return queryset.none()
 
     @action(detail=False, methods=['post'], url_path='call_waiter', permission_classes=[IsAuthenticated])
     def call_waiter(self, request):

@@ -25,6 +25,7 @@ import { RootState } from "@/lib/reduxStore/store";
 import { useGetMenu } from "@/services/mutation/menuMutation";
 import { StarRating } from "../stars/ratingStars";
 import { TextInput } from "react-native";
+import { normalizeImageUrl } from "@/utils/imageUrl";
 
 type Dish = {
   id: string;
@@ -33,7 +34,8 @@ type Dish = {
   price: string;
   image: string;
   tags: string[];
-  category: string;
+  categories: string[];
+  category?: string;
   is_side: boolean;
   average_rating?: number;
 };
@@ -65,6 +67,13 @@ export const DishRow = ({
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [showFullDescription, setShowFullDescription] = useState(false);
   const scaleValue = new Animated.Value(0);
+
+  const categoryList =
+    item.categories && item.categories.length
+      ? item.categories
+      : item.category
+      ? [item.category]
+      : [];
 
   const closeModal = () => {
     setShowFullDescription(false);
@@ -200,7 +209,7 @@ export const DishRow = ({
       >
         <Image
           style={styles.image}
-          source={{ uri: item.image?.replace("http://", "https://") }}
+          source={{ uri: normalizeImageUrl(item.image) }}
         />
         <View style={styles.detailsContainer}>
           <Text style={styles.name}>{item.name}</Text>
@@ -267,7 +276,7 @@ export const DishRow = ({
                   <View style={styles.modalHeader}>
                     <Image
                       source={{
-                        uri: item.image?.replace("http://", "https://"),
+                        uri: normalizeImageUrl(item.image),
                       }}
                       style={styles.modalImage}
                     />

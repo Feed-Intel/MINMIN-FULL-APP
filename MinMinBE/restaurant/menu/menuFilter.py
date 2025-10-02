@@ -25,7 +25,8 @@ from .models import Menu
 class MenuFilter(filters.FilterSet):
     search = filters.CharFilter(method='filter_search')
     tags = filters.CharFilter(method='filter_tags')  # Custom method for tags
-    category = filters.CharFilter(method='filter_category')  # Custom method for category
+    categories = filters.CharFilter(method='filter_categories')  # Custom method for categories
+    category = filters.CharFilter(method='filter_categories')  # Backwards-compatible alias
     min_price = filters.NumberFilter(field_name='price', lookup_expr='gte')
     max_price = filters.NumberFilter(field_name='price', lookup_expr='lte')
     is_side = filters.BooleanFilter()
@@ -34,7 +35,7 @@ class MenuFilter(filters.FilterSet):
 
     class Meta:
         model = Menu
-        fields = ['search', 'tags', 'category', 'min_price', 'max_price', 'is_side', 'start_date', 'end_date']
+        fields = ['search', 'tags', 'categories', 'category', 'min_price', 'max_price', 'is_side', 'start_date', 'end_date']
 
     def filter_search(self, queryset, name, value):
         return queryset.filter(
@@ -49,10 +50,10 @@ class MenuFilter(filters.FilterSet):
             q_objects |= Q(tags__icontains=tag)
         return queryset.filter(q_objects)
 
-    def filter_category(self, queryset, name, value):
+    def filter_categories(self, queryset, name, value):
         # Split comma-separated categories and create OR conditions
-        categories = [cat.strip() for cat in value.split(',')]
+        categories = [cat.strip() for cat in value.split(',') if cat.strip()]
         q_objects = Q()
         for cat in categories:
-            q_objects |= Q(category__icontains=cat)
+            q_objects |= Q(categories__icontains=cat)
         return queryset.filter(q_objects)

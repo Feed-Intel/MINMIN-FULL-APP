@@ -20,7 +20,7 @@ class OrderViewSetTest(APITestCase):
             tenant=self.tenant,
             description='Delicious breakfast',
             tags=['Breakfast'],
-            category='Fast Food',
+            categories=['Fast Food'],
             price=10.00
         )
         self.order = Order.objects.create(

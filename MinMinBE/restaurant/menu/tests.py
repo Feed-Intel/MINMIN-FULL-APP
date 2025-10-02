@@ -31,7 +31,7 @@ class MenuViewSetTests(APITestCase):
             description="Test description",
             image=self.test_image,
             tags=json.dumps(["tag1", "tag2"]),
-            category="Main Course",
+            categories=["Main Course"],
             price=10.99,
             is_side=False
         )
@@ -68,7 +68,7 @@ class MenuViewSetTests(APITestCase):
             "image": test_image,
             "description": "New description",
             "tags": json.dumps(["tag3", "tag4"]),
-            "category": "Dessert",
+            "categories": json.dumps(["Dessert", "Vegan"]),
             "price": 5.99,
             "is_side": True
         }

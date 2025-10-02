@@ -1,69 +1,69 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useMemo } from 'react';
 import {
   ScrollView,
   StyleSheet,
   Image,
   View,
-  useWindowDimensions,
   TouchableOpacity,
-} from "react-native";
+} from 'react-native';
 import {
   Text,
   Button,
   DataTable,
-  Card,
   Portal,
   Dialog,
-  Paragraph,
-  Icon,
   Searchbar,
   Checkbox,
   Chip,
   Modal,
-  TextInput,
-  Divider,
-  Switch,
   ActivityIndicator,
   Snackbar,
-} from "react-native-paper";
-import { router } from "expo-router";
+  Paragraph,
+} from 'react-native-paper';
+import { router } from 'expo-router';
 import {
   useDeleteMenu,
   useGetMenus,
   useUpdateMenuAvailability,
   useGetMenuAvailabilities,
-} from "@/services/mutation/menuMutation";
-import { useQueryClient } from "@tanstack/react-query";
-import { useDispatch } from "react-redux";
-import { AppDispatch } from "@/lib/reduxStore/store";
-import { hideLoader, showLoader } from "@/lib/reduxStore/loaderSlice";
-import { useGetCombos } from "@/services/mutation/comboMutation";
-import { useGetBranches } from "@/services/mutation/branchMutation";
-import AddMenuModal from "./addMenu";
-import AddComboModal from "../combos/addCombo";
-import EditMenuDialog from "./[menuId]";
-import EditComboDialog from "../combos/[comboId]";
+} from '@/services/mutation/menuMutation';
+import { useQueryClient } from '@tanstack/react-query';
+import { useDispatch } from 'react-redux';
+import { AppDispatch } from '@/lib/reduxStore/store';
+import { hideLoader, showLoader } from '@/lib/reduxStore/loaderSlice';
+import { useGetCombos } from '@/services/mutation/comboMutation';
+import BranchSelector from '@/components/BranchSelector';
+import { useRestaurantIdentity } from '@/hooks/useRestaurantIdentity';
+import AddMenuModal from './addMenu';
+import AddComboModal from '../combos/addCombo';
+import EditMenuDialog from './[menuId]';
+import EditComboDialog from '../combos/[comboId]';
+import Pagination from '@/components/Pagination';
 
-const CATEGORIES = ["All", "Main course", "Pasta", "Dessert", "Drinks"];
-const TAGS = ["Best Paired With", "Alternative", "Customer Favorite"];
+const DEFAULT_CATEGORIES = ['Main course', 'Pasta', 'Dessert', 'Drinks'];
+// const TAGS = ["Best Paired With", "Alternative", "Customer Favorite"];
 
 export default function Menus() {
-  const { width } = useWindowDimensions();
-  const { data: menus, isLoading: isMenusLoading } = useGetMenus();
+  // const { width } = useWindowDimensions();
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const { data: menus, isLoading: isMenusLoading } = useGetMenus(currentPage);
   const { data: combos, isLoading: isCombosLoading } = useGetCombos();
-  const { data: branches } = useGetBranches();
+  // const { data: branches } = useGetBranches();
   const { mutateAsync: menuDelete } = useDeleteMenu();
   const { mutateAsync: updateAvailability } = useUpdateMenuAvailability();
   const { data: availabilityData } = useGetMenuAvailabilities();
+  const { isRestaurant, isBranch, branchId } = useRestaurantIdentity();
 
   const queryClient = useQueryClient();
   const [showDialog, setShowDialog] = React.useState(false);
   const [menuID, setMenuID] = React.useState<string | null>(null);
   const dispatch = useDispatch<AppDispatch>();
-  const [activeTab, setActiveTab] = useState<"all" | "combos">("all");
-  const [selectedBranch, setSelectedBranch] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'all' | 'combos'>('all');
+  const [selectedBranch, setSelectedBranch] = useState<string | null>(
+    isBranch ? branchId ?? null : null
+  );
   const [snackbarVisible, setSnackbarVisible] = useState(false);
-  const [snackbarMessage, setSnackbarMessage] = useState("");
+  const [snackbarMessage, setSnackbarMessage] = useState('');
 
   // Modal states
   const [showAddMenuModal, setShowAddMenuModal] = useState(false);
@@ -73,42 +73,60 @@ export default function Menus() {
   const [showRelatedModal, setShowRelatedModal] = useState(false);
   const [currentMenuItem, setCurrentMenuItem] = useState<any>(null);
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
-  const [tag, setTag] = useState("");
+  const [tag, setTag] = useState('');
 
   // Separate state for main table and modal
-  const [mainSearchQuery, setMainSearchQuery] = useState("");
-  const [mainSelectedCategory, setMainSelectedCategory] = useState("All");
-  const [combosSearchQuery, setCombosSearchQuery] = useState("");
-  const [modalSearchQuery, setModalSearchQuery] = useState("");
-  const [modalSelectedCategory, setModalSelectedCategory] = useState("All");
+  const [mainSearchQuery, setMainSearchQuery] = useState('');
+  const [mainSelectedCategory, setMainSelectedCategory] = useState('All');
+  const [combosSearchQuery, setCombosSearchQuery] = useState('');
+  const [modalSearchQuery, setModalSearchQuery] = useState('');
+  const [modalSelectedCategory, setModalSelectedCategory] = useState('All');
 
   // Edit dialog states
   const [showEditMenuDialog, setShowEditMenuDialog] = useState(false);
   const [showEditComboDialog, setShowEditComboDialog] = useState(false);
   const [selectedItem, setSelectedItem] = useState<any>(null);
 
-  // Set default branch
-  useEffect(() => {
-    if (branches && branches.length > 0 && !selectedBranch) {
-      setSelectedBranch(branches?.[0].id!);
+  const getMenuCategories = (menu: any): string[] => {
+    if (Array.isArray(menu?.categories) && menu.categories.length) {
+      return menu.categories;
     }
-  }, [branches]);
+    if (Array.isArray(menu?.category) && menu.category.length) {
+      return menu.category.filter((value: any) => typeof value === 'string');
+    }
+    if (typeof menu?.category === 'string' && menu.category) {
+      return [menu.category];
+    }
+    return [];
+  };
+
+  const categoryOptions = useMemo(() => {
+    const set = new Set<string>(DEFAULT_CATEGORIES);
+    menus?.results.forEach((menuItem) => {
+      getMenuCategories(menuItem).forEach((category) => {
+        if (category) {
+          set.add(category);
+        }
+      });
+    });
+    return ['All', ...Array.from(set).sort((a, b) => a.localeCompare(b))];
+  }, [menus]);
 
   const handleDeleteMenu = async () => {
     setMenuID(null);
     setShowDialog(false);
     dispatch(showLoader());
     await menuDelete(menuID!);
-    queryClient.invalidateQueries({ queryKey: ["menus"] });
+    queryClient.invalidateQueries({ queryKey: ['menus'] });
     dispatch(hideLoader());
   };
 
   const openRelatedModal = (menu: any) => {
     setCurrentMenuItem(menu);
-    setModalSearchQuery("");
-    setModalSelectedCategory("All");
+    setModalSearchQuery('');
+    setModalSelectedCategory('All');
     setSelectedItems([]);
-    setTag("");
+    setTag('');
     setShowRelatedModal(true);
   };
 
@@ -123,7 +141,7 @@ export default function Menus() {
   const handleAddRelatedItems = () => {
     setShowRelatedModal(false);
     router.push({
-      pathname: "/(protected)/menus/addRelatedItem",
+      pathname: '/(protected)/menus/addRelatedItem',
       params: {
         menuItem: currentMenuItem.id,
         relatedItems: JSON.stringify(selectedItems),
@@ -132,20 +150,57 @@ export default function Menus() {
     });
   };
 
+  const branchFilteredMenus = useMemo(() => {
+    if (!menus?.results) return [] as typeof menus;
+    if (!selectedBranch || selectedBranch === 'all') return menus.results;
+
+    if (!availabilityData?.results) return menus.results;
+
+    return menus.results.filter((menu) =>
+      availabilityData.results.some((avail) => {
+        const branchValue =
+          typeof avail.branch === 'object' ? avail.branch?.id : avail.branch;
+        const menuValue =
+          typeof avail.menu_item === 'object'
+            ? avail.menu_item?.id
+            : avail.menu_item;
+
+        return branchValue === selectedBranch && menuValue === menu.id;
+      })
+    );
+  }, [menus, selectedBranch, availabilityData]);
+
   // Filter menus for main table
-  const filteredMenus = menus?.filter(
-    (menu) =>
-      (mainSelectedCategory === "All" ||
-        menu.category === mainSelectedCategory) &&
+  const filteredMenus = branchFilteredMenus?.filter((menu) => {
+    const categories = getMenuCategories(menu);
+    const matchesCategory =
+      mainSelectedCategory === 'All' ||
+      categories.includes(mainSelectedCategory);
+    const categoryText = categories.join(' ');
+
+    return (
+      matchesCategory &&
       (menu.name.toLowerCase().includes(mainSearchQuery.toLowerCase()) ||
-        menu.category.toLowerCase().includes(mainSearchQuery.toLowerCase()))
-  );
+        categoryText.toLowerCase().includes(mainSearchQuery.toLowerCase()))
+    );
+  });
+
+  const branchFilteredCombos = useMemo(() => {
+    if (!combos?.results) return [] as typeof combos;
+    if (!selectedBranch || selectedBranch === 'all') return combos.results;
+
+    return combos.results.filter((combo) => {
+      const branchValue =
+        typeof combo.branch === 'object' ? combo.branch?.id : combo.branch;
+      return branchValue === selectedBranch;
+    });
+  }, [combos?.results, selectedBranch]);
 
   // Filter combos for combos tab
-  const filteredCombos = combos?.filter(
+  const filteredCombos = branchFilteredCombos?.filter(
     (combo) =>
       combo.name.toLowerCase().includes(combosSearchQuery.toLowerCase()) ||
-      (typeof combo.branch === "object"
+      (typeof combo.branch === 'object'
         ? combo.branch?.address
             ?.toLowerCase()
             .includes(combosSearchQuery.toLowerCase())
@@ -153,24 +208,32 @@ export default function Menus() {
   );
 
   // Filter menus for modal
-  const modalFilteredMenus = menus?.filter(
-    (menu) =>
-      menu.id !== currentMenuItem?.id &&
-      (modalSelectedCategory === "All" ||
-        menu.category === modalSelectedCategory) &&
+  const modalFilteredMenus = branchFilteredMenus?.filter((menu) => {
+    if (menu.id === currentMenuItem?.id) {
+      return false;
+    }
+    const categories = getMenuCategories(menu);
+    const matchesCategory =
+      modalSelectedCategory === 'All' ||
+      categories.includes(modalSelectedCategory);
+    const categoryText = categories.join(' ');
+
+    return (
+      matchesCategory &&
       (menu.name.toLowerCase().includes(modalSearchQuery.toLowerCase()) ||
-        menu.category.toLowerCase().includes(modalSearchQuery.toLowerCase()))
-  );
+        categoryText.toLowerCase().includes(modalSearchQuery.toLowerCase()))
+    );
+  });
 
   // Get availability status for a menu item
   const getAvailabilityStatus = (menuId: string) => {
-    if (!selectedBranch) return false;
+    if (!selectedBranch || selectedBranch === 'all') return false;
 
     const availability = availabilityData?.results.find(
       (avail) =>
-        (typeof avail.branch === "object" ? avail.branch.id : avail.branch) ===
+        (typeof avail.branch === 'object' ? avail.branch.id : avail.branch) ===
           selectedBranch &&
-        (typeof avail.menu_item === "object"
+        (typeof avail.menu_item === 'object'
           ? avail.menu_item.id
           : avail.menu_item) === menuId
     );
@@ -180,7 +243,7 @@ export default function Menus() {
 
   // Toggle menu availability
   const toggleAvailability = async (menuId: string, isAvailable: boolean) => {
-    if (!selectedBranch) return;
+    if (!selectedBranch || selectedBranch === 'all') return;
 
     try {
       await updateAvailability({
@@ -191,14 +254,14 @@ export default function Menus() {
 
       setSnackbarMessage(
         isAvailable
-          ? "Menu item is now available"
-          : "Menu item is now unavailable"
+          ? 'Menu item is now available'
+          : 'Menu item is now unavailable'
       );
       setSnackbarVisible(true);
 
-      queryClient.invalidateQueries({ queryKey: ["menuAvailabilities"] });
+      queryClient.invalidateQueries({ queryKey: ['menuAvailabilities'] });
     } catch (error) {
-      setSnackbarMessage("Failed to update availability");
+      setSnackbarMessage('Failed to update availability');
       setSnackbarVisible(true);
     }
   };
@@ -209,16 +272,22 @@ export default function Menus() {
         <Text variant="headlineSmall" style={styles.title}>
           Menus
         </Text>
+        <BranchSelector
+          selectedBranch={selectedBranch}
+          onChange={setSelectedBranch}
+          includeAllOption={isRestaurant}
+          style={styles.branchSelector}
+        />
         <View style={styles.searchContainer}>
           <Searchbar
             placeholder={
-              activeTab === "all"
-                ? "Search by Item name or Category"
-                : "Search by Combo name or Branch"
+              activeTab === 'all'
+                ? 'Search by Item name or Category'
+                : 'Search by Combo name or Branch'
             }
-            value={activeTab === "all" ? mainSearchQuery : combosSearchQuery}
+            value={activeTab === 'all' ? mainSearchQuery : combosSearchQuery}
             onChangeText={(text) =>
-              activeTab === "all"
+              activeTab === 'all'
                 ? setMainSearchQuery(text)
                 : setCombosSearchQuery(text)
             }
@@ -229,14 +298,14 @@ export default function Menus() {
           <Button
             mode="contained"
             onPress={() =>
-              activeTab === "all"
+              activeTab === 'all'
                 ? setShowAddMenuModal(true)
                 : setShowAddComboModal(true)
             }
             style={styles.addButton}
             labelStyle={styles.addButtonLabel}
           >
-            + Add {activeTab === "all" ? "Item" : "Combo"}
+            + Add {activeTab === 'all' ? 'Item' : 'Combo'}
           </Button>
         </View>
       </View>
@@ -247,7 +316,7 @@ export default function Menus() {
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.categoryContainer}
       >
-        {CATEGORIES.map((category) => (
+        {categoryOptions.map((category) => (
           <Chip
             key={category}
             mode="outlined"
@@ -272,13 +341,13 @@ export default function Menus() {
       <View style={styles.tabContainer}>
         <View style={styles.tabGroup}>
           <TouchableOpacity
-            style={[styles.tabButton, activeTab === "all" && styles.activeTab]}
-            onPress={() => setActiveTab("all")}
+            style={[styles.tabButton, activeTab === 'all' && styles.activeTab]}
+            onPress={() => setActiveTab('all')}
           >
             <Text
               style={[
                 styles.tabLabel,
-                activeTab === "all" && styles.activeTabLabel,
+                activeTab === 'all' && styles.activeTabLabel,
               ]}
             >
               All items
@@ -287,14 +356,14 @@ export default function Menus() {
           <TouchableOpacity
             style={[
               styles.tabButton,
-              activeTab === "combos" && styles.activeTab,
+              activeTab === 'combos' && styles.activeTab,
             ]}
-            onPress={() => setActiveTab("combos")}
+            onPress={() => setActiveTab('combos')}
           >
             <Text
               style={[
                 styles.tabLabel,
-                activeTab === "combos" && styles.activeTabLabel,
+                activeTab === 'combos' && styles.activeTabLabel,
               ]}
             >
               Combos
@@ -314,80 +383,160 @@ export default function Menus() {
       )}
 
       {/* Menu Items Table */}
-      {activeTab === "all" && !isMenusLoading && (
+      {activeTab === 'all' && !isMenusLoading && (
         <View style={styles.card}>
           <DataTable>
             <DataTable.Header style={styles.tableHeader}>
               <DataTable.Title style={styles.imageHeader}>
-                {" "}
+                {' '}
                 <Text style={styles.tableTitle}>Image</Text>
               </DataTable.Title>
               <DataTable.Title>
-                {" "}
+                {' '}
                 <Text style={styles.tableTitle}>Name</Text>
               </DataTable.Title>
               <DataTable.Title>
-                {" "}
+                {' '}
                 <Text style={styles.tableTitle}>Category</Text>
               </DataTable.Title>
               <DataTable.Title>
-                {" "}
+                {' '}
                 <Text style={styles.tableTitle}>Price</Text>
               </DataTable.Title>
               <DataTable.Title>
-                {" "}
+                {' '}
                 <Text style={styles.tableTitle}>Related items</Text>
               </DataTable.Title>
               <DataTable.Title>
-                {" "}
+                {' '}
                 <Text style={styles.tableTitle}>Actions</Text>
               </DataTable.Title>
             </DataTable.Header>
 
-            {filteredMenus?.map((menu) => (
-              <DataTable.Row key={menu.id} style={styles.tableRow}>
-                <DataTable.Cell style={styles.imageCell}>
-                  <Image
-                    source={{ uri: menu.image }}
-                    style={styles.menuImage}
-                  />
+            {filteredMenus?.map((menu) => {
+              const categories = getMenuCategories(menu);
+              const categoriesLabel = categories.length
+                ? categories.join(', ')
+                : '—';
+
+              return (
+                <DataTable.Row key={menu.id} style={styles.tableRow}>
+                  <DataTable.Cell style={styles.imageCell}>
+                    <Image
+                      source={{ uri: menu.image }}
+                      style={styles.menuImage}
+                    />
+                  </DataTable.Cell>
+                  <DataTable.Cell>
+                    <Text style={styles.menuName}>{menu.name}</Text>
+                  </DataTable.Cell>
+                  <DataTable.Cell>
+                    <Text style={styles.categoryTag}>{categoriesLabel}</Text>
+                  </DataTable.Cell>
+                  <DataTable.Cell>
+                    <Text style={styles.menuPrice}>${menu.price}</Text>
+                  </DataTable.Cell>
+                  <DataTable.Cell>
+                    <Button
+                      mode="outlined"
+                      onPress={() => openRelatedModal(menu)}
+                      style={styles.relatedButton}
+                      labelStyle={styles.relatedButtonLabel}
+                    >
+                      + Related item
+                    </Button>
+                  </DataTable.Cell>
+                  <DataTable.Cell>
+                    <View style={styles.actionsContainer}>
+                      <Button
+                        mode="text"
+                        onPress={() => {
+                          setSelectedItem(menu);
+                          setShowEditMenuDialog(true);
+                        }}
+                        icon="pencil-outline"
+                        contentStyle={styles.deleteButtonContent}
+                        labelStyle={styles.deleteButtonLabel}
+                        style={styles.actionButton}
+                      />
+                      <Button
+                        mode="text"
+                        onPress={() => {
+                          setMenuID(menu.id!);
+                          setShowDialog(true);
+                        }}
+                        contentStyle={styles.deleteButtonContent}
+                        labelStyle={styles.deleteButtonLabel}
+                        icon="delete-outline"
+                        style={styles.actionButton}
+                      />
+                    </View>
+                  </DataTable.Cell>
+                </DataTable.Row>
+              );
+            })}
+          </DataTable>
+        </View>
+      )}
+
+      {/* Combos Table */}
+      {activeTab === 'combos' && !isCombosLoading && (
+        <View style={styles.card}>
+          <DataTable>
+            <DataTable.Header style={styles.tableHeader}>
+              <DataTable.Title>
+                {' '}
+                <Text style={styles.tableTitle}>Name</Text>
+              </DataTable.Title>
+              <DataTable.Title>
+                {' '}
+                <Text style={styles.tableTitle}>Branch</Text>
+              </DataTable.Title>
+              <DataTable.Title>
+                {' '}
+                <Text style={styles.tableTitle}>Price</Text>
+              </DataTable.Title>
+              <DataTable.Title>
+                {' '}
+                <Text style={styles.tableTitle}>Custom</Text>
+              </DataTable.Title>
+              <DataTable.Title>
+                {' '}
+                <Text style={styles.tableTitle}>Actions</Text>
+              </DataTable.Title>
+            </DataTable.Header>
+
+            {filteredCombos?.map((combo) => (
+              <DataTable.Row key={combo.id}>
+                <DataTable.Cell>
+                  <Text style={styles.menuName}>{combo.name}</Text>
                 </DataTable.Cell>
                 <DataTable.Cell>
-                  <Text style={styles.menuName}>{menu.name}</Text>
+                  <Text style={styles.branchName}>
+                    {typeof combo.branch === 'object'
+                      ? combo.branch.address
+                      : combo.branch}
+                  </Text>
                 </DataTable.Cell>
                 <DataTable.Cell>
-                  <Text style={styles.categoryTag}>{menu.category}</Text>
+                  <Text style={styles.menuPrice}>${combo.combo_price}</Text>
                 </DataTable.Cell>
                 <DataTable.Cell>
-                  <Text style={styles.menuPrice}>${menu.price}</Text>
-                </DataTable.Cell>
-                <DataTable.Cell>
-                  <Button
+                  <Chip
                     mode="outlined"
-                    onPress={() => openRelatedModal(menu)}
-                    style={styles.relatedButton}
-                    labelStyle={styles.relatedButtonLabel}
+                    style={styles.customChip}
+                    textStyle={styles.customChipText}
                   >
-                    + Related item
-                  </Button>
+                    {combo.is_custom ? 'Yes' : 'No'}
+                  </Chip>
                 </DataTable.Cell>
                 <DataTable.Cell>
                   <View style={styles.actionsContainer}>
-                    <View style={styles.toggleContainer}>
-                      <Switch
-                        value={getAvailabilityStatus(menu.id!)}
-                        onValueChange={(value) =>
-                          toggleAvailability(menu.id!, value)
-                        }
-                        color="#91B275"
-                        disabled={!selectedBranch}
-                      />
-                    </View>
                     <Button
                       mode="text"
                       onPress={() => {
-                        setSelectedItem(menu);
-                        setShowEditMenuDialog(true);
+                        setSelectedItem(combo);
+                        setShowEditComboDialog(true);
                       }}
                       icon="pencil-outline"
                       contentStyle={styles.deleteButtonContent}
@@ -397,7 +546,7 @@ export default function Menus() {
                     <Button
                       mode="text"
                       onPress={() => {
-                        setMenuID(menu.id!);
+                        setMenuID(combo.id!);
                         setShowDialog(true);
                       }}
                       contentStyle={styles.deleteButtonContent}
@@ -412,94 +561,21 @@ export default function Menus() {
           </DataTable>
         </View>
       )}
-
-      {/* Combos Table */}
-      {activeTab === "combos" && !isCombosLoading && (
-        <View style={styles.card}>
-          <DataTable>
-            <DataTable.Header style={styles.tableHeader}>
-              <DataTable.Title>
-                {" "}
-                <Text style={styles.tableTitle}>Name</Text>
-              </DataTable.Title>
-              <DataTable.Title>
-                {" "}
-                <Text style={styles.tableTitle}>Branch</Text>
-              </DataTable.Title>
-              <DataTable.Title>
-                {" "}
-                <Text style={styles.tableTitle}>Price</Text>
-              </DataTable.Title>
-              <DataTable.Title>
-                {" "}
-                <Text style={styles.tableTitle}>Custom</Text>
-              </DataTable.Title>
-              <DataTable.Title>
-                {" "}
-                <Text style={styles.tableTitle}>Actions</Text>
-              </DataTable.Title>
-            </DataTable.Header>
-
-            {filteredCombos?.map((combo) => (
-              <DataTable.Row key={combo.id}>
-                <DataTable.Cell>
-                  <Text style={styles.menuName}>{combo.name}</Text>
-                </DataTable.Cell>
-                <DataTable.Cell>
-                  <Text style={styles.branchName}>
-                    {typeof combo.branch === "object"
-                      ? combo.branch.address
-                      : combo.branch}
-                  </Text>
-                </DataTable.Cell>
-                <DataTable.Cell>
-                  <Text style={styles.menuPrice}>${combo.combo_price}</Text>
-                </DataTable.Cell>
-                <DataTable.Cell>
-                  <Chip
-                    mode="outlined"
-                    style={styles.customChip}
-                    textStyle={styles.customChipText}
-                  >
-                    {combo.is_custom ? "Yes" : "No"}
-                  </Chip>
-                </DataTable.Cell>
-                <DataTable.Cell>
-                  <View style={styles.actionsContainer}>
-                    <Button
-                      mode="text"
-                      onPress={() => {
-                        setSelectedItem(combo);
-                        setShowEditComboDialog(true);
-                      }}
-                      style={styles.actionButton}
-                    >
-                      <Icon source="pencil" size={20} color="#007AFF" />
-                    </Button>
-                    <Button
-                      mode="text"
-                      onPress={() => {
-                        setMenuID(combo.id!);
-                        setShowDialog(true);
-                      }}
-                      style={styles.actionButton}
-                    >
-                      <Icon source="delete" size={20} color="#FF3B30" />
-                    </Button>
-                  </View>
-                </DataTable.Cell>
-              </DataTable.Row>
-            ))}
-          </DataTable>
-        </View>
-      )}
-
+      <Pagination
+        totalPages={
+          Math.round(
+            activeTab == 'all' ? menus?.count! / 10 : combos?.count! / 10
+          ) || 0
+        }
+        currentPage={currentPage}
+        onPageChange={setCurrentPage}
+      />
       {/* Add Menu Modal */}
       <AddMenuModal
         visible={showAddMenuModal}
         onClose={() => {
           setShowAddMenuModal(false);
-          queryClient.invalidateQueries({ queryKey: ["menus"] });
+          queryClient.invalidateQueries({ queryKey: ['menus'] });
         }}
       />
 
@@ -508,7 +584,7 @@ export default function Menus() {
         visible={showAddComboModal}
         onClose={() => {
           setShowAddComboModal(false);
-          queryClient.invalidateQueries({ queryKey: ["combos"] });
+          queryClient.invalidateQueries({ queryKey: ['combos'] });
         }}
       />
 
@@ -533,7 +609,7 @@ export default function Menus() {
                 value={modalSearchQuery}
                 style={styles.searchBar}
                 inputStyle={styles.inputStyle}
-                placeholderTextColor={"#2E191466"}
+                placeholderTextColor={'#2E191466'}
               />
             </View>
 
@@ -542,7 +618,7 @@ export default function Menus() {
               showsHorizontalScrollIndicator={false}
               style={styles.categoryContainer}
             >
-              {CATEGORIES.map((category) => (
+              {categoryOptions.map((category) => (
                 <Chip
                   key={category}
                   mode="outlined"
@@ -565,27 +641,34 @@ export default function Menus() {
             </ScrollView>
 
             <ScrollView style={styles.itemsContainer}>
-              {modalFilteredMenus?.map((menu) => (
-                <View key={menu.id} style={styles.itemRow}>
-                  <Checkbox.Android
-                    status={
-                      selectedItems.includes(menu.id || "")
-                        ? "checked"
-                        : "unchecked"
-                    }
-                    onPress={() => toggleItemSelection(menu.id || "")}
-                  />
-                  <Image
-                    source={{ uri: menu.image }}
-                    style={styles.itemImage}
-                  />
-                  <View style={styles.itemDetails}>
-                    <Text style={styles.itemName}>{menu.name}</Text>
-                    <Text style={styles.categoryText}>{menu.category}</Text>
+              {modalFilteredMenus?.map((menu) => {
+                const categories = getMenuCategories(menu);
+                const categoriesLabel = categories.length
+                  ? categories.join(', ')
+                  : '—';
+
+                return (
+                  <View key={menu.id} style={styles.itemRow}>
+                    <Checkbox.Android
+                      status={
+                        selectedItems.includes(menu.id || '')
+                          ? 'checked'
+                          : 'unchecked'
+                      }
+                      onPress={() => toggleItemSelection(menu.id || '')}
+                    />
+                    <Image
+                      source={{ uri: menu.image }}
+                      style={styles.itemImage}
+                    />
+                    <View style={styles.itemDetails}>
+                      <Text style={styles.itemName}>{menu.name}</Text>
+                      <Text style={styles.categoryText}>{categoriesLabel}</Text>
+                    </View>
+                    <Text style={styles.itemPrice}>${menu.price}</Text>
                   </View>
-                  <Text style={styles.itemPrice}>${menu.price}</Text>
-                </View>
-              ))}
+                );
+              })}
             </ScrollView>
           </View>
           <View style={styles.modalFooter}>
@@ -596,7 +679,7 @@ export default function Menus() {
                 icon="plus"
                 textColor="#fff"
                 style={styles.addItemButton}
-                labelStyle={{ color: "#fff", fontWeight: "600", fontSize: 17 }}
+                labelStyle={{ color: '#fff', fontWeight: '600', fontSize: 17 }}
                 disabled={selectedItems.length === 0 || !tag}
               >
                 Add Item
@@ -616,17 +699,24 @@ export default function Menus() {
           onDismiss={() => setShowDialog(false)}
           style={styles.dialog}
         >
-          <Dialog.Title>Confirm Delete</Dialog.Title>
+          <Dialog.Title style={{ color: '#000' }}>Confirm Delete</Dialog.Title>
           <Dialog.Content>
-            <Paragraph>
-              Are you sure you want to delete this{" "}
-              {activeTab === "all" ? "menu item" : "combo"}? This action cannot
+            <Paragraph style={{ color: '#000' }}>
+              Are you sure you want to delete this{' '}
+              {activeTab === 'all' ? 'menu item' : 'combo'}? This action cannot
               be undone.
             </Paragraph>
           </Dialog.Content>
           <Dialog.Actions>
-            <Button onPress={() => setShowDialog(false)}>Cancel</Button>
-            <Button onPress={handleDeleteMenu}>Delete</Button>
+            <Button
+              onPress={() => setShowDialog(false)}
+              labelStyle={{ color: '#000' }}
+            >
+              Cancel
+            </Button>
+            <Button onPress={handleDeleteMenu} labelStyle={{ color: 'red' }}>
+              Delete
+            </Button>
           </Dialog.Actions>
         </Dialog>
       </Portal>
@@ -645,7 +735,7 @@ export default function Menus() {
         menu={selectedItem}
         onClose={() => {
           setShowEditMenuDialog(false);
-          queryClient.invalidateQueries({ queryKey: ["menus"] });
+          queryClient.invalidateQueries({ queryKey: ['menus'] });
         }}
       />
 
@@ -654,7 +744,7 @@ export default function Menus() {
         combo={selectedItem}
         onClose={() => {
           setShowEditComboDialog(false);
-          queryClient.invalidateQueries({ queryKey: ["combos"] });
+          queryClient.invalidateQueries({ queryKey: ['combos'] });
         }}
       />
     </ScrollView>
@@ -664,134 +754,137 @@ export default function Menus() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#EFF4EB",
+    backgroundColor: '#EFF4EB',
     padding: 16,
   },
   header: {
     marginBottom: 16,
   },
   title: {
-    fontWeight: "600",
-    color: "#22281B",
+    fontWeight: '600',
+    color: '#22281B',
     marginBottom: 12,
   },
+  branchSelector: {
+    marginBottom: 16,
+  },
   branchContainer: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     marginBottom: 16,
   },
   branchLabel: {
-    color: "#5F7A3D",
-    fontWeight: "500",
+    color: '#5F7A3D',
+    fontWeight: '500',
     marginRight: 12,
   },
   branchChips: {
-    flexDirection: "row",
+    flexDirection: 'row',
     gap: 8,
-    flexWrap: "wrap",
+    flexWrap: 'wrap',
   },
   branchChip: {
     borderRadius: 100,
-    backgroundColor: "#91B27517",
-    borderColor: "#91B275",
+    backgroundColor: '#91B27517',
+    borderColor: '#91B275',
     borderWidth: 0,
     height: 32,
   },
   selectedBranchChip: {
-    backgroundColor: "#96B76E",
+    backgroundColor: '#96B76E',
   },
   branchChipText: {
-    color: "#5F7A3D",
+    color: '#5F7A3D',
     fontSize: 12,
-    fontWeight: "500",
+    fontWeight: '500',
   },
   selectedBranchChipText: {
-    color: "#FFFFFF",
+    color: '#FFFFFF',
   },
   searchContainer: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 12,
   },
   searchBar: {
     flex: 1,
-    backgroundColor: "#91B27517",
+    backgroundColor: '#91B27517',
     borderRadius: 100,
     height: 40,
     elevation: 0,
   },
   searchInput: {
-    color: "#22281B",
+    color: '#22281B',
     fontSize: 14,
     minHeight: 40,
     paddingBottom: 0,
     paddingTop: 0,
   },
   addButton: {
-    backgroundColor: "#91B275",
+    backgroundColor: '#91B275',
     borderRadius: 100,
     height: 40,
   },
   addButtonLabel: {
-    color: "#FFFFFF",
-    fontWeight: "500",
+    color: '#FFFFFF',
+    fontWeight: '500',
     fontSize: 14,
   },
   categoryContainer: {
-    flexDirection: "row",
+    flexDirection: 'row',
     gap: 8,
     marginBottom: 16,
     paddingVertical: 4,
   },
   categoryChip: {
     borderRadius: 100,
-    backgroundColor: "#91B27517",
-    borderColor: "#91B275",
+    backgroundColor: '#91B27517',
+    borderColor: '#91B275',
     borderWidth: 0,
     height: 32,
   },
   selectedCategoryChip: {
-    backgroundColor: "#96B76E",
+    backgroundColor: '#96B76E',
   },
   categoryChipText: {
-    color: "#5F7A3D",
+    color: '#5F7A3D',
     fontSize: 12,
-    fontWeight: "500",
+    fontWeight: '500',
   },
   selectedCategoryChipText: {
-    color: "#FFFFFF",
+    color: '#FFFFFF',
   },
   tabContainer: {
-    borderColor: "#5E6E4933",
+    borderColor: '#5E6E4933',
     borderBottomWidth: 1,
   },
   tabGroup: {
-    flexDirection: "row",
-    justifyContent: "flex-start",
-    alignItems: "flex-start",
+    flexDirection: 'row',
+    justifyContent: 'flex-start',
+    alignItems: 'flex-start',
     borderRadius: 6,
     padding: 2,
   },
   tabButton: {
-    flexDirection: "row",
-    alignItems: "flex-start",
+    flexDirection: 'row',
+    alignItems: 'flex-start',
     paddingVertical: 8,
     paddingHorizontal: 16,
   },
   activeTab: {
     borderBottomWidth: 1,
-    borderBottomColor: "#96B76E",
+    borderBottomColor: '#96B76E',
   },
   tabLabel: {
-    color: "#8D8D8D",
+    color: '#8D8D8D',
     fontSize: 14,
-    fontWeight: "500",
+    fontWeight: '500',
   },
   activeTabLabel: {
-    color: "#96B76E",
+    color: '#96B76E',
   },
   card: {
-    backgroundColor: "#EFF4EB",
+    backgroundColor: '#EFF4EB',
     borderRadius: 12,
     paddingHorizontal: 16,
     marginBottom: 24,
@@ -801,23 +894,23 @@ const styles = StyleSheet.create({
   },
   tableHeader: {
     borderBottomWidth: 1.5,
-    borderBottomColor: "#20291933",
+    borderBottomColor: '#20291933',
   },
   imageHeader: {
     width: 60,
   },
   tableTitle: {
-    fontWeight: "500",
-    color: "#4A4A4A",
+    fontWeight: '500',
+    color: '#4A4A4A',
     fontSize: 13,
   },
   tableRow: {
     borderBottomWidth: 1.5,
-    borderBottomColor: "#20291933",
+    borderBottomColor: '#20291933',
   },
   imageCell: {
     width: 62,
-    justifyContent: "flex-start",
+    justifyContent: 'flex-start',
   },
   menuImage: {
     width: 61,
@@ -825,49 +918,49 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   menuName: {
-    fontWeight: "500",
-    color: "#22281B",
+    fontWeight: '500',
+    color: '#22281B',
     fontSize: 17,
   },
   branchName: {
-    color: "#5F7A3D",
+    color: '#5F7A3D',
     fontSize: 17,
   },
   categoryTag: {
-    color: "#40392B",
+    color: '#40392B',
     fontSize: 17,
   },
   customChip: {
-    backgroundColor: "#E9F0F7",
-    borderColor: "#7591B2",
+    backgroundColor: '#E9F0F7',
+    borderColor: '#7591B2',
     height: 24,
   },
   customChipText: {
-    color: "#3D5F7A",
+    color: '#3D5F7A',
     fontSize: 12,
   },
   menuPrice: {
-    fontWeight: "500",
-    color: "#22281B",
+    fontWeight: '500',
+    color: '#22281B',
     fontSize: 17,
   },
   relatedButton: {
-    borderColor: "#6E504933",
+    borderColor: '#6E504933',
     borderWidth: 1.5,
     borderRadius: 16,
     height: 36,
-    justifyContent: "center",
+    justifyContent: 'center',
   },
   relatedButtonLabel: {
-    color: "#281D1B",
+    color: '#281D1B',
     fontSize: 15,
-    fontWeight: "500",
-    alignSelf: "center",
+    fontWeight: '500',
+    alignSelf: 'center',
   },
   actionsContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     gap: 16,
   },
   actionButton: {
@@ -875,29 +968,29 @@ const styles = StyleSheet.create({
     padding: 0,
   },
   deleteButtonContent: {
-    justifyContent: "center",
-    alignItems: "center",
-    alignSelf: "center",
-    backgroundColor: "#91B275",
+    justifyContent: 'center',
+    alignItems: 'center',
+    alignSelf: 'center',
+    backgroundColor: '#91B275',
     borderRadius: 50,
     width: 25,
     height: 25,
   },
   deleteButtonLabel: {
-    color: "#fff",
-    fontWeight: "500",
+    color: '#fff',
+    fontWeight: '500',
     marginHorizontal: 10,
   },
   toggleContainer: {
     marginLeft: 4,
   },
   modalContainer: {
-    backgroundColor: "#EBF1E6",
+    backgroundColor: '#EBF1E6',
     borderRadius: 13,
-    width: "90%",
-    maxWidth: 300,
-    alignSelf: "center",
-    maxHeight: "80%",
+    width: '90%',
+    maxWidth: 700,
+    alignSelf: 'center',
+    maxHeight: '80%',
   },
   modalContent: {
     padding: 16,
@@ -906,29 +999,29 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   modalHeaderText: {
-    fontWeight: "600",
-    color: "#2E191466",
+    fontWeight: '600',
+    color: '#2E191466',
     fontSize: 16,
   },
   inputStyle: {
-    color: "#2E191466",
+    color: '#2E191466',
     fontSize: 15,
-    fontWeight: "400",
+    fontWeight: '400',
   },
   itemsContainer: {
     maxHeight: 300,
     marginBottom: 16,
     borderWidth: 0,
-    borderColor: "#e0e0e0",
+    borderColor: '#e0e0e0',
     borderRadius: 8,
     padding: 8,
   },
   itemRow: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     padding: 8,
     borderBottomWidth: 1,
-    borderBottomColor: "#f0f0f0",
+    borderBottomColor: '#f0f0f0',
   },
   itemImage: {
     width: 40,
@@ -940,47 +1033,49 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   itemName: {
-    fontWeight: "500",
-    color: "#22281B",
+    fontWeight: '500',
+    color: '#22281B',
   },
   categoryText: {
-    color: "#5F7A3D",
+    color: '#5F7A3D',
     fontSize: 12,
   },
   itemPrice: {
-    fontWeight: "500",
-    color: "#22281B",
+    fontWeight: '500',
+    color: '#22281B',
   },
   modalFooter: {
     padding: 16,
-    backgroundColor: "#F9FFF4",
+    backgroundColor: '#F9FFF4',
     borderBottomRightRadius: 13,
     borderBottomLeftRadius: 13,
   },
   footerActions: {
-    flexDirection: "column",
-    justifyContent: "space-between",
-    alignItems: "center",
+    flexDirection: 'column',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   addItemButton: {
-    backgroundColor: "#91B275",
+    backgroundColor: '#91B275',
     borderRadius: 100,
     height: 36,
-    width: "100%",
+    width: '100%',
   },
   selectedItemsText: {
     marginTop: 6,
     fontSize: 15,
-    fontWeight: "400",
-    color: "#2E191466",
+    fontWeight: '400',
+    color: '#2E191466',
   },
   dialog: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: '#EFF4EB',
     borderRadius: 12,
     padding: 16,
+    maxWidth: 700,
+    alignSelf: 'center',
   },
   snackbar: {
-    backgroundColor: "#91B275",
+    backgroundColor: '#91B275',
     margin: 16,
     borderRadius: 8,
   },
