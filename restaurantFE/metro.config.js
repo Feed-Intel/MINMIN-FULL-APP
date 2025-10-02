@@ -1,36 +1,34 @@
-const fs = require("fs");
-const path = require("path");
 const { getDefaultConfig } = require("expo/metro-config");
 
 const projectRoot = __dirname;
 const config = getDefaultConfig(projectRoot);
 
-function resolveThemePath() {
-  try {
-    return path.dirname(
-      require.resolve("@minmin/theme/package.json", { paths: [projectRoot] })
-    );
-  } catch (error) {
-    const fallback = path.resolve(projectRoot, "../packages/theme");
-    return fs.existsSync(fallback) ? fallback : null;
-  }
-}
+// function resolveThemePath() {
+//   try {
+//     return path.dirname(
+//       require.resolve("@minmin/theme/package.json", { paths: [projectRoot] })
+//     );
+//   } catch (error) {
+//     const fallback = path.resolve(projectRoot, "../packages/theme");
+//     return fs.existsSync(fallback) ? fallback : null;
+//   }
+// }
 
-const themePath = resolveThemePath();
+// const themePath = resolveThemePath();
 
-if (themePath) {
-  config.watchFolders = Array.from(
-    new Set([...(config.watchFolders || []), themePath])
-  );
-  config.resolver = {
-    ...config.resolver,
-    extraNodeModules: {
-      ...(config.resolver.extraNodeModules || {}),
-      '@minmin/theme': themePath,
-    },
-    unstable_enableSymlinks: true,
-  };
-}
+// if (themePath) {
+//   config.watchFolders = Array.from(
+//     new Set([...(config.watchFolders || []), themePath])
+//   );
+//   config.resolver = {
+//     ...config.resolver,
+//     extraNodeModules: {
+//       ...(config.resolver.extraNodeModules || {}),
+//       '@minmin/theme': themePath,
+//     },
+//     unstable_enableSymlinks: true,
+//   };
+// }
 
 config.transformer = {
   ...config.transformer,
