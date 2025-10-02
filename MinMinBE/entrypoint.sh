@@ -1,6 +1,8 @@
 #!/bin/sh
 set -e
 
+mkdir -p /app/media/images || true
+
 if [ -n "$DATABASE_URL" ]; then
   echo "Waiting for Postgres..."
   # pg_isready does not understand the "postgis" scheme, so replace it
