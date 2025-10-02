@@ -66,7 +66,9 @@ const Sidebar: React.FC = () => {
     : links;
 
   // State to manage the active link
-  const [activeLink, setActiveLink] = useState<string>('/(protected)/tables'); // Default active to Tables, as per image
+  const [activeLink, setActiveLink] = useState<string>(
+    '/(protected)/dashboard'
+  ); // Default active to Tables, as per image
 
   // Get the current pathname using usePathname hook
   const currentPathname = usePathname();

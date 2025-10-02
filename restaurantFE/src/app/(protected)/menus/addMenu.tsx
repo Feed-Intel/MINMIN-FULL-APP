@@ -1,5 +1,11 @@
-import React, { useState } from "react";
-import { StyleSheet, Image, View, useWindowDimensions, ScrollView } from "react-native";
+import React, { useState } from 'react';
+import {
+  StyleSheet,
+  Image,
+  View,
+  useWindowDimensions,
+  ScrollView,
+} from 'react-native';
 import {
   Text,
   Button,
@@ -10,13 +16,13 @@ import {
   Chip,
   Checkbox,
   List,
-} from "react-native-paper";
-import Toast from "react-native-toast-message";
-import * as ImagePicker from "expo-image-picker";
-import { useCreateMenu } from "@/services/mutation/menuMutation";
-import { useQueryClient } from "@tanstack/react-query";
-import { base64ToBlob } from "@/util/imageUtils";
-import ModalHeader from "@/components/ModalHeader";
+} from 'react-native-paper';
+import Toast from 'react-native-toast-message';
+import * as ImagePicker from 'expo-image-picker';
+import { useCreateMenu } from '@/services/mutation/menuMutation';
+import { useQueryClient } from '@tanstack/react-query';
+import { base64ToBlob } from '@/util/imageUtils';
+import ModalHeader from '@/components/ModalHeader';
 
 interface AddMenuDialogProps {
   visible: boolean;
@@ -32,15 +38,18 @@ type MenuFormState = {
   image: { uri: string; name: string; type: string };
 };
 
-export default function AddMenuDialog({ visible, onClose }: AddMenuDialogProps) {
+export default function AddMenuDialog({
+  visible,
+  onClose,
+}: AddMenuDialogProps) {
   const { width } = useWindowDimensions();
   const [menuData, setMenuData] = useState<MenuFormState>({
-    name: "",
-    description: "",
+    name: '',
+    description: '',
     categories: [],
-    price: "",
+    price: '',
     is_side: false,
-    image: { uri: "", name: "", type: "" },
+    image: { uri: '', name: '', type: '' },
   });
   const [categoryMenuVisible, setCategoryMenuVisible] = useState(false);
 
@@ -50,7 +59,7 @@ export default function AddMenuDialog({ visible, onClose }: AddMenuDialogProps) 
   const queryClient = useQueryClient();
   const { mutateAsync: createMenu, isPending } = useCreateMenu();
 
-  const categories = ["Appetizer", "Breakfast", "Lunch", "Dinner"];
+  const categories = ['Appetizer', 'Breakfast', 'Lunch', 'Dinner'];
 
   const handleInputChange = <K extends keyof MenuFormState>(
     field: K,
@@ -74,7 +83,7 @@ export default function AddMenuDialog({ visible, onClose }: AddMenuDialogProps) 
 
   const pickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ["images"],
+      mediaTypes: ['images'],
       allowsEditing: true,
       quality: 1,
     });
@@ -84,8 +93,8 @@ export default function AddMenuDialog({ visible, onClose }: AddMenuDialogProps) 
         ...menuData,
         image: {
           uri: result.assets[0].uri,
-          name: result.assets[0].fileName || "image.jpg",
-          type: result.assets[0].type || "image/jpeg",
+          name: result.assets[0].fileName || 'image.jpg',
+          type: result.assets[0].type || 'image/jpeg',
         },
       });
     }
@@ -94,46 +103,46 @@ export default function AddMenuDialog({ visible, onClose }: AddMenuDialogProps) 
   const handleSave = async () => {
     if (!menuData.name || !menuData.image.uri) {
       Toast.show({
-        type: "error",
-        text1: "Error",
-        text2: "Please provide a name and select an image",
+        type: 'error',
+        text1: 'Error',
+        text2: 'Please provide a name and select an image',
       });
       return;
     }
 
     if (menuData.categories.length === 0) {
       Toast.show({
-        type: "error",
-        text1: "Error",
-        text2: "Please select at least one category",
+        type: 'error',
+        text1: 'Error',
+        text2: 'Please select at least one category',
       });
       return;
     }
 
     const formData = new FormData();
-    formData.append("name", menuData.name);
-    formData.append("description", menuData.description);
-    formData.append("price", menuData.price);
-    formData.append("is_side", String(menuData.is_side));
-    formData.append("categories", JSON.stringify(menuData.categories));
+    formData.append('name', menuData.name);
+    formData.append('description', menuData.description);
+    formData.append('price', menuData.price);
+    formData.append('is_side', String(menuData.is_side));
+    formData.append('categories', JSON.stringify(menuData.categories));
 
     const base64Data = menuData.image.uri;
-    const contentType = menuData.image.type || "image/jpeg";
-    const extension = menuData.image.name?.split(".").pop() || "jpg";
+    const contentType = menuData.image.type || 'image/jpeg';
+    const extension = menuData.image.name?.split('.').pop() || 'jpg';
     const imageName = `${Date.now()}.${extension}`;
 
     const blob = base64ToBlob(base64Data, contentType);
     formData.append(
-      "image",
+      'image',
       new File([blob], imageName, { type: contentType })
     );
 
     await createMenu(formData);
-    queryClient.invalidateQueries({ queryKey: ["menus"] });
+    queryClient.invalidateQueries({ queryKey: ['menus'] });
     Toast.show({
-      type: "success",
-      text1: "Success",
-      text2: "Menu added successfully!",
+      type: 'success',
+      text1: 'Success',
+      text2: 'Menu added successfully!',
     });
     onClose();
   };
@@ -149,7 +158,7 @@ export default function AddMenuDialog({ visible, onClose }: AddMenuDialogProps) 
             <TextInput
               placeholder="Name"
               value={menuData.name}
-              onChangeText={(text) => handleInputChange("name", text)}
+              onChangeText={(text) => handleInputChange('name', text)}
               mode="outlined"
               style={styles.input}
               outlineStyle={{
@@ -166,7 +175,7 @@ export default function AddMenuDialog({ visible, onClose }: AddMenuDialogProps) 
             <TextInput
               placeholder="Description"
               value={menuData.description}
-              onChangeText={(text) => handleInputChange("description", text)}
+              onChangeText={(text) => handleInputChange('description', text)}
               mode="outlined"
               multiline
               numberOfLines={isSmallScreen ? 3 : 8}
@@ -188,21 +197,21 @@ export default function AddMenuDialog({ visible, onClose }: AddMenuDialogProps) 
                 mode="outlined"
                 style={styles.dropdownButton}
                 labelStyle={{
-                  color: "#333",
+                  color: '#333',
                   fontSize: 14,
-                  width: "100%",
-                  textAlign: "left",
+                  width: '100%',
+                  textAlign: 'left',
                 }}
                 onPress={() => setCategoryMenuVisible((prev) => !prev)}
                 contentStyle={{
-                  flexDirection: "row-reverse",
-                  width: "100%",
+                  flexDirection: 'row-reverse',
+                  width: '100%',
                 }}
-                icon={categoryMenuVisible ? "chevron-up" : "chevron-down"}
+                icon={categoryMenuVisible ? 'chevron-up' : 'chevron-down'}
               >
                 {menuData.categories.length > 0
-                  ? menuData.categories.join(", ")
-                  : "Select Categories"}
+                  ? menuData.categories.join(', ')
+                  : 'Select Categories'}
               </Button>
 
               {categoryMenuVisible && (
@@ -218,7 +227,7 @@ export default function AddMenuDialog({ visible, onClose }: AddMenuDialogProps) 
                           titleStyle={styles.categoryOptionText}
                           left={() => (
                             <Checkbox
-                              status={selected ? "checked" : "unchecked"}
+                              status={selected ? 'checked' : 'unchecked'}
                               onPress={() => toggleCategory(category)}
                             />
                           )}
@@ -259,7 +268,12 @@ export default function AddMenuDialog({ visible, onClose }: AddMenuDialogProps) 
             <TextInput
               placeholder="Price"
               value={menuData.price}
-              onChangeText={(text) => handleInputChange("price", text)}
+              onChangeText={(text) => {
+                const cleaned = text
+                  .replace(/[^0-9.]/g, '') // remove non-digits and extra chars
+                  .replace(/(\..*)\./g, '$1');
+                handleInputChange('price', cleaned);
+              }}
               mode="outlined"
               keyboardType="numeric"
               style={styles.input}
@@ -278,14 +292,14 @@ export default function AddMenuDialog({ visible, onClose }: AddMenuDialogProps) 
               onPress={pickImage}
               mode="outlined"
               style={styles.button}
-              icon={menuData.image.uri ? "image-edit" : "image-plus"}
+              icon={menuData.image.uri ? 'image-edit' : 'image-plus'}
               labelStyle={{
                 fontSize: 14,
                 fontWeight: '400',
                 color: '#40392B',
               }}
             >
-              {menuData.image.uri ? "Change Image" : "Pick an Image"}
+              {menuData.image.uri ? 'Change Image' : 'Pick an Image'}
             </Button>
 
             {menuData.image.uri && (
@@ -303,13 +317,16 @@ export default function AddMenuDialog({ visible, onClose }: AddMenuDialogProps) 
             )}
 
             <View style={[styles.switchRow, { gap: isSmallScreen ? 8 : 16 }]}>
-              <Text variant={isSmallScreen ? "bodyMedium" : "bodyLarge"} style={styles.switchText}>
+              <Text
+                variant={isSmallScreen ? 'bodyMedium' : 'bodyLarge'}
+                style={styles.switchText}
+              >
                 Is Side Item
               </Text>
               <Switch
                 value={menuData.is_side}
-                onValueChange={(value) => handleInputChange("is_side", value)}
-                trackColor={{ false: "gray", true: "#96B76E" }}
+                onValueChange={(value) => handleInputChange('is_side', value)}
+                trackColor={{ false: 'gray', true: '#96B76E' }}
                 thumbColor="#fff"
               />
             </View>
@@ -335,9 +352,9 @@ export default function AddMenuDialog({ visible, onClose }: AddMenuDialogProps) 
 
 const styles = StyleSheet.create({
   dialog: {
-    backgroundColor: "#EFF4EB",
-    width: "40%",
-    alignSelf: "center",
+    backgroundColor: '#EFF4EB',
+    width: '40%',
+    alignSelf: 'center',
     borderRadius: 12,
   },
   input: {
@@ -364,14 +381,14 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
   },
   imagePreview: {
-    alignSelf: "center",
+    alignSelf: 'center',
     marginBottom: 10,
     borderRadius: 8,
   },
   switchRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",  
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     marginBottom: 16,
     paddingVertical: 8,
   },

@@ -1,5 +1,5 @@
 from django.utils import timezone
-from restaurant.discount.models import DiscountRule, Coupon
+from restaurant.discount.models import DiscountRule, Coupon, CouponUsage
 
 def calculate_discount(order, coupon=None):
     items = order.items.all()
@@ -11,46 +11,89 @@ def calculate_discount(order, coupon=None):
     order_total = float(order.calculate_total())
     return calculate_discount_from_data(order.tenant, items_data, coupon, order_total)
 
-def calculate_discount_from_data(tenant, items_data, coupon, order_total,branch=None):
-    discount_amount = 0.0
+def calculate_discount_from_data(tenant, items_data, coupon, order_total, customer=None, branch=None):
+    now = timezone.now()
     total_items = sum(item['quantity'] for item in items_data)
-    if branch is None:
-        discounts = DiscountRule.objects.filter(tenant=tenant,discount_id__valid_from__lte=timezone.now(),discount_id__valid_until__gte=timezone.now())
-    else:
-        discounts = DiscountRule.objects.filter(tenant=tenant,discount_id__branch=branch,discount_id__valid_from__lte=timezone.now(),discount_id__valid_until__gte=timezone.now())
-    coupons = Coupon.objects.filter(tenant=tenant,discount_code=coupon,valid_from__lte=timezone.now(),valid_until__gte=timezone.now(),is_valid=True)
-    if coupons.exists():
-        firstCoupon = coupons.first()
-        discount_amount +=   order_total * float(firstCoupon.discount_amount)/100 if firstCoupon.is_percentage else float(firstCoupon.discount_amount)
-        firstCoupon.is_valid = False
-        firstCoupon.save()
+
+    # --- Candidate Discounts ---
+    discounts = DiscountRule.objects.filter(
+        tenant=tenant,
+        discount_id__valid_from__lte=now,
+        discount_id__valid_until__gte=now
+    )
+    if branch:
+        discounts = discounts.filter(discount_id__branch=branch)
+
+    # --- Candidate Coupons ---
+    coupon_discount = 0.0
+    if coupon:
+        coupons = Coupon.objects.filter(
+            tenant=tenant,
+            discount_code=coupon,
+            valid_from__lte=now,
+            valid_until__gte=now,
+            is_valid=True
+        )
+        if coupons.exists():
+            c = coupons.first()
+
+            if not CouponUsage.objects.filter(coupon=c, customer=customer).exists():
+                if c.is_percentage:
+                    coupon_discount = order_total * (float(c.discount_amount) / 100)
+                else:
+                    coupon_discount = float(c.discount_amount)
+
+                if not c.discount_code.upper().startswith("WELCOME"):
+                    c.is_valid = False
+                    c.save()
+
+                # Record usage
+                if customer:
+                    CouponUsage.objects.create(coupon=c, customer_id=customer)
+
+    # --- Apply Discounts (stackable) ---
+    discount_amount = 0.0
     for discount in discounts:
         rules = discount.discount_id.discount_discount_rules.all()
         for rule in rules:
-            if rule.min_items and (len(items_data) >= rule.min_items or total_items >= rule.min_items) and not(not discount.discount_id.is_stackable and discount_amount > 0):
-                if rule.is_percentage:
-                    discount_amount += order_total * (float(rule.max_discount_amount)) / 100
-                else:
+            if discount.discount_id.type == 'volume':
+                if rule.min_items and total_items >= rule.min_items:
+                    if rule.is_percentage:
+                        discount_amount += order_total * (float(rule.max_discount_amount) / 100)
+                    else:
+                        discount_amount += min(order_total, float(rule.max_discount_amount))
+
+            elif discount.discount_id.type == 'combo':
+                if rule.combo_size and total_items >= rule.combo_size:
                     discount_amount += min(order_total, float(rule.max_discount_amount))
 
-            elif discount.discount_id.type == 'combo' and not(not discount.discount_id.is_stackable and discount_amount > 0):
-                if rule.combo_size and len(items_data) >= rule.combo_size:
-                    discount_amount += min(order_total, float(rule.max_discount_amount))
-
-            elif discount.discount_id.type == 'bogo' and not(not discount.discount_id.is_stackable and discount_amount > 0):
-                applicable_items = [item for item in items_data if str(item['menu_item']) in rule.applicable_items]
-                if applicable_items and len(applicable_items) >= rule.buy_quantity:
+            elif discount.discount_id.type == 'bogo':
+                applicable_items = [
+                    (item, i)
+                    for item in items_data
+                    for i in range(item['quantity'])
+                    if str(item['menu_item']) in rule.applicable_items
+                ]
+                if len(applicable_items) >= rule.buy_quantity:
                     free_items = (len(applicable_items) // rule.buy_quantity) * rule.get_quantity
-                    discount_amount += sum(item['price'] * item['quantity'] for item in applicable_items[:free_items])
+                    discount_amount += sum(item['price'] for item, _ in applicable_items[:free_items])
 
-            elif discount.discount_id.type == 'freeItem' and not(not discount.discount_id.is_stackable and discount_amount > 0):
-                applicable_items = [item for item in items_data if str(item['menu_item']) in rule.applicable_items]
-                excluded_items = [item for item in items_data if str(item['menu_item']) in rule.excluded_items]
-                if applicable_items and len(applicable_items) >= rule.buy_quantity:
+            elif discount.discount_id.type == 'freeItem':
+                applicable_items = [
+                    (item, i)
+                    for item in items_data
+                    for i in range(item['quantity'])
+                    if str(item['menu_item']) in rule.applicable_items
+                ]
+                if len(applicable_items) >= rule.buy_quantity:
                     free_items = (len(applicable_items) // rule.buy_quantity) * rule.get_quantity
-                    discount_amount += sum(item['price'] * item['quantity'] for item in excluded_items[:free_items])
+                    discount_amount += sum(item['price'] for item, _ in applicable_items[:free_items])
 
-    return min(discount_amount, order_total)
+    # --- Best Discount ---
+    best_discount = max(coupon_discount, discount_amount)
+    return min(best_discount, order_total)
+
+
 
 
 from decimal import Decimal

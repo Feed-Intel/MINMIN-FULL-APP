@@ -40,6 +40,7 @@ import Toast from 'react-native-toast-message';
 import { useRestaurantIdentity } from '@/hooks/useRestaurantIdentity';
 import BranchSelector from '@/components/BranchSelector';
 import Pagination from '@/components/Pagination';
+import { Table } from '@/types/tableTypes';
 
 interface TableStates {
   [key: string]: {
@@ -118,6 +119,8 @@ const ManageTables: React.FC = () => {
   const [selectedBranch, setSelectedBranch] = useState<string | null>(
     isBranch ? branchId ?? null : null
   );
+  const [searchTerm, setSearchTerm] = useState<string>();
+  const updateTable = useUpdateTable();
   const [table, setTable] = useState<{} | null>(null);
   const isSmallScreen: boolean = width < 768;
 
@@ -137,17 +140,6 @@ const ManageTables: React.FC = () => {
     });
   }, [tables]);
 
-  const displayedTables = useMemo(() => {
-    if (!tables?.results) return [] as typeof tables;
-    if (!selectedBranch || selectedBranch === 'all') return tables.results;
-
-    return tables.results.filter((tbl: any) => {
-      const branchValue =
-        typeof tbl.branch === 'object' ? tbl.branch?.id : tbl.branch;
-      return branchValue === selectedBranch;
-    });
-  }, [tables, selectedBranch]);
-
   const handleDeleteTable = async (): Promise<void> => {
     setTableID(null);
     setShowDialog(false);
@@ -164,19 +156,53 @@ const ManageTables: React.FC = () => {
     }
   };
 
-  const handleToggleSwitch = (
-    tableId: string,
+  const handleToggleSwitch = async (
+    table: Table,
     key: keyof TableStates[string],
     value?: boolean
-  ): void => {
+  ): Promise<void> => {
     setTableStates((prevStates: TableStates) => ({
       ...prevStates,
-      [tableId]: {
-        ...prevStates[tableId],
-        [key]: value !== undefined ? value : !prevStates[tableId][key],
+      [table.id!]: {
+        ...prevStates[table.id!],
+        [key]: value !== undefined ? value : !prevStates[table.id!][key],
       },
     }));
+    await updateTable.mutateAsync({
+      ...table,
+      branch: typeof table.branch == 'object' ? table.branch.id : '',
+      is_active: value,
+    });
+    queryClient.invalidateQueries({ queryKey: ['tables', currentPage] });
   };
+
+  const filteredTables = useMemo(() => {
+    if (!tables?.results) return [];
+
+    if (!searchTerm && !selectedBranch) return tables.results;
+
+    if (searchTerm && selectedBranch) {
+      return tables?.results.filter((tbl) => {
+        const branchValue =
+          typeof tbl.branch === 'object' ? tbl.branch?.id : tbl.branch;
+        return (
+          branchValue === selectedBranch && tbl.table_code?.includes(searchTerm)
+        );
+      });
+    }
+    if (searchTerm) {
+      return tables?.results.filter((tbl) => {
+        return tbl.table_code?.includes(searchTerm);
+      });
+    }
+    if (selectedBranch) {
+      return tables?.results.filter((tbl) => {
+        const branchValue =
+          typeof tbl.branch === 'object' ? tbl.branch?.id : tbl.branch;
+        return branchValue === selectedBranch;
+      });
+    }
+  }, [searchTerm, selectedBranch, tables]);
 
   const downloadQRCode = async (imageUrl: string) => {
     if (Platform.OS === 'web') {
@@ -242,6 +268,8 @@ const ManageTables: React.FC = () => {
                 placeholder="search by Item location or table number"
                 style={styles.searchBar}
                 placeholderTextColor="#999"
+                value={searchTerm}
+                onChangeText={(text: string) => setSearchTerm(text)}
               />
               <Button
                 mode="contained"
@@ -277,7 +305,7 @@ const ManageTables: React.FC = () => {
                   )}
                 </View>
 
-                {displayedTables.map((table: any) => (
+                {filteredTables.map((table: any) => (
                   <View key={table.id} style={styles.row}>
                     {/* Branch */}
                     <Text
@@ -320,7 +348,7 @@ const ManageTables: React.FC = () => {
                         <Switch
                           value={tableStates[table.id]?.isActive ?? true}
                           onValueChange={(val) =>
-                            handleToggleSwitch(table.id, 'isActive', val)
+                            handleToggleSwitch(table, 'isActive', val)
                           }
                           color="#91B275"
                         />

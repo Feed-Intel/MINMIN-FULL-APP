@@ -699,17 +699,24 @@ export default function Menus() {
           onDismiss={() => setShowDialog(false)}
           style={styles.dialog}
         >
-          <Dialog.Title>Confirm Delete</Dialog.Title>
+          <Dialog.Title style={{ color: '#000' }}>Confirm Delete</Dialog.Title>
           <Dialog.Content>
-            <Paragraph>
+            <Paragraph style={{ color: '#000' }}>
               Are you sure you want to delete this{' '}
               {activeTab === 'all' ? 'menu item' : 'combo'}? This action cannot
               be undone.
             </Paragraph>
           </Dialog.Content>
           <Dialog.Actions>
-            <Button onPress={() => setShowDialog(false)}>Cancel</Button>
-            <Button onPress={handleDeleteMenu}>Delete</Button>
+            <Button
+              onPress={() => setShowDialog(false)}
+              labelStyle={{ color: '#000' }}
+            >
+              Cancel
+            </Button>
+            <Button onPress={handleDeleteMenu} labelStyle={{ color: 'red' }}>
+              Delete
+            </Button>
           </Dialog.Actions>
         </Dialog>
       </Portal>
@@ -1061,9 +1068,11 @@ const styles = StyleSheet.create({
     color: '#2E191466',
   },
   dialog: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#EFF4EB',
     borderRadius: 12,
     padding: 16,
+    maxWidth: 700,
+    alignSelf: 'center',
   },
   snackbar: {
     backgroundColor: '#91B275',

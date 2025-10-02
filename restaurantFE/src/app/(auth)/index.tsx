@@ -76,27 +76,6 @@ const LoginScreen = () => {
 
   return (
     <Animated.View style={[styles.container, { opacity: logoAnimation }]}>
-      {/* Logo Animation */}
-      <Animated.Image
-        source={{
-          uri: 'https://example.com/restaurant-logo.png', // Replace with your logo URL
-        }}
-        style={[
-          styles.logo,
-          {
-            transform: [
-              {
-                scale: logoAnimation.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [0.5, 1],
-                }),
-              },
-            ],
-          },
-        ]}
-        resizeMode="contain"
-      />
-
       {/* Title Card */}
       <Card style={styles.card}>
         <Card.Content>
@@ -160,11 +139,6 @@ const styles = StyleSheet.create({
     padding: 16,
     paddingTop: 0,
     backgroundColor: '#EFF4EB', // Light theme background
-  },
-  logo: {
-    width: 120,
-    height: 120,
-    marginBottom: 24,
   },
   card: {
     width: '100%',

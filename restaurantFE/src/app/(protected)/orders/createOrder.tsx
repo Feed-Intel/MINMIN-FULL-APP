@@ -80,7 +80,7 @@ export default function CreateOrder() {
 
   const categoryOptions = useMemo(() => {
     const set = new Set<string>(DEFAULT_CATEGORIES);
-    menus?.forEach((menuItem) => {
+    menus?.results?.forEach((menuItem) => {
       getMenuCategories(menuItem).forEach((category) => {
         if (category) {
           set.add(category);
@@ -91,12 +91,12 @@ export default function CreateOrder() {
   }, [menus]);
 
   const branchFilteredMenus = useMemo(() => {
-    if (!menus) return [] as unknown as typeof menus;
-    if (!selectedBranch || selectedBranch === 'all') return menus;
+    if (!menus?.results) return [] as unknown as typeof menus;
+    if (!selectedBranch || selectedBranch === 'all') return menus.results;
 
-    if (!availabilityData?.results) return menus;
+    if (!availabilityData?.results) return menus.results;
 
-    return menus.filter((menu) =>
+    return menus.results.filter((menu) =>
       availabilityData.results.some((avail) => {
         const branchValue =
           typeof avail.branch === 'object' ? avail.branch?.id : avail.branch;
@@ -112,9 +112,9 @@ export default function CreateOrder() {
 
   const branchFilteredCombos = useMemo(() => {
     if (!combos) return [] as unknown as typeof combos;
-    if (!selectedBranch || selectedBranch === 'all') return combos;
+    if (!selectedBranch || selectedBranch === 'all') return combos.results;
 
-    return combos.filter((combo) => {
+    return combos.results.filter((combo) => {
       const branchValue =
         typeof combo.branch === 'object' ? combo.branch?.id : combo.branch;
       return branchValue === selectedBranch;

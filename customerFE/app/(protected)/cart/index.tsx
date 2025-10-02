@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef } from 'react';
 import {
   Alert, // Keep Alert for now, but note that it should ideally be replaced with custom UI or Toast
   ScrollView,
@@ -7,23 +7,23 @@ import {
   Platform,
   Animated,
   Image,
-} from "react-native";
-import { IconButton, Button, Card, Text, Appbar } from "react-native-paper";
-import { useDispatch } from "react-redux";
-import { RootState } from "@/lib/reduxStore/store";
+} from 'react-native';
+import { IconButton, Button, Card, Text, Appbar } from 'react-native-paper';
+import { useDispatch } from 'react-redux';
+import { RootState } from '@/lib/reduxStore/store';
 import {
   setRedeemAmount,
   updateQuantity,
   setDiscount,
-} from "@/lib/reduxStore/cartSlice";
-import { router } from "expo-router";
-import { useAppSelector } from "@/lib/reduxStore/hooks";
-import { useCheckDiscount } from "@/services/mutation/discountMutation";
-import { ThemedView } from "@/components/ThemedView";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { i18n } from "@/app/_layout";
-import { useBottomTabOverflow } from "@/components/ui/TabBarBackground";
-import { normalizeImageUrl } from "@/utils/imageUrl";
+} from '@/lib/reduxStore/cartSlice';
+import { router } from 'expo-router';
+import { useAppSelector } from '@/lib/reduxStore/hooks';
+import { useCheckDiscount } from '@/services/mutation/discountMutation';
+import { ThemedView } from '@/components/ThemedView';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { i18n } from '@/app/_layout';
+import { useBottomTabOverflow } from '@/components/ui/TabBarBackground';
+import { normalizeImageUrl } from '@/utils/imageUrl';
 
 export default function CartScreen() {
   const headerAnimation = useRef(new Animated.Value(0)).current;
@@ -75,8 +75,10 @@ export default function CartScreen() {
   );
   const [isProcessing, setIsProcessing] = useState(false);
   const checkoutButtonText = isProcessing
-    ? i18n.t("checking_discount_button")
-    : `${i18n.t("checkout_button")} • ${subtotal.toFixed(2)} ${i18n.t("currency_unit")}`;
+    ? i18n.t('checking_discount_button')
+    : `${i18n.t('checkout_button')} • ${subtotal.toFixed(2)} ${i18n.t(
+        'currency_unit'
+      )}`;
   // const checkDiscount = useCheckDiscount();
 
   useEffect(() => {
@@ -102,7 +104,7 @@ export default function CartScreen() {
   const handleCheckout = async () => {
     if (!branch) {
       // Replaced Alert.alert with i18n.t
-      Alert.alert(i18n.t("error_toast_title"), i18n.t("select_branch_error"));
+      Alert.alert(i18n.t('error_toast_title'), i18n.t('select_branch_error'));
       return;
     }
 
@@ -110,10 +112,10 @@ export default function CartScreen() {
 
     try {
       router.push({
-        pathname: "/checkOut",
+        pathname: '/checkOut',
       });
     } catch (error) {
-      console.error("Discount check error:", error);
+      console.error('Discount check error:', error);
     } finally {
       setIsProcessing(false);
     }
@@ -140,7 +142,7 @@ export default function CartScreen() {
         >
           <Appbar.Header style={styles.appbar}>
             <Appbar.Content
-              title={i18n.t("your_bowl_title")} // Replaced hardcoded string
+              title={i18n.t('your_bowl_title')} // Replaced hardcoded string
               titleStyle={styles.appbarTitle}
             />
           </Appbar.Header>
@@ -165,7 +167,7 @@ export default function CartScreen() {
           {cartItems.length === 0 ? (
             <View style={styles.emptyContainer}>
               <Text style={styles.emptyCartText}>
-                {i18n.t("your_bowl_empty")} {/* Replaced hardcoded string */}
+                {i18n.t('your_bowl_empty')} {/* Replaced hardcoded string */}
               </Text>
             </View>
           ) : (
@@ -210,7 +212,7 @@ export default function CartScreen() {
                             />
                           </View>
                           <Text style={styles.dishPrice}>
-                            {dish.price.toFixed(2)} {i18n.t("currency_unit")}{" "}
+                            {dish.price.toFixed(2)} {i18n.t('currency_unit')}{' '}
                             {/* Replaced hardcoded string */}
                           </Text>
                         </View>
@@ -223,36 +225,35 @@ export default function CartScreen() {
           )}
         </Animated.View>
         {cartItems.length > 0 && (
-          <View style={[styles.fixedBottomContainer, { paddingBottom: bottom }]}>
+          <View
+            style={[styles.fixedBottomContainer, { paddingBottom: bottom }]}
+          >
             <View style={styles.summaryCard}>
               <View style={styles.summaryRow}>
                 <Text style={styles.summaryLabel}>
-                  {i18n.t("subtotal_label")}{" "}
-                  {/* Replaced hardcoded string */}
+                  {i18n.t('subtotal_label')} {/* Replaced hardcoded string */}
                 </Text>
                 <Text style={styles.summaryValue}>
-                  {subtotal.toFixed(2)} {i18n.t("currency_unit")}{" "}
+                  {subtotal.toFixed(2)} {i18n.t('currency_unit')}{' '}
                   {/* Replaced hardcoded string */}
                 </Text>
               </View>
               <View style={styles.summaryRow}>
                 <Text style={styles.summaryLabel}>
-                  {i18n.t("discount_label")}{" "}
-                  {/* Replaced hardcoded string */}
+                  {i18n.t('discount_label')} {/* Replaced hardcoded string */}
                 </Text>
                 <Text style={styles.discountValue}>
-                  - {discount.toFixed(2)} {i18n.t("currency_unit")}{" "}
+                  - {discount.toFixed(2)} {i18n.t('currency_unit')}{' '}
                   {/* Replaced hardcoded string */}
                 </Text>
               </View>
               <View style={styles.summaryRow}>
                 <Text variant="titleMedium" style={styles.totalLabel}>
-                  {i18n.t("total_label")} {/* Replaced hardcoded string */}
+                  {i18n.t('total_label')} {/* Replaced hardcoded string */}
                 </Text>
                 <Text variant="titleMedium" style={styles.totalValue}>
-                  {Math.max(subtotal - discount, 0).toFixed(2)}{" "}
-                  {i18n.t("currency_unit")}{" "}
-                  {/* Replaced hardcoded string */}
+                  {Math.max(subtotal - discount, 0).toFixed(2)}{' '}
+                  {i18n.t('currency_unit')} {/* Replaced hardcoded string */}
                 </Text>
               </View>
             </View>
@@ -265,14 +266,14 @@ export default function CartScreen() {
               contentStyle={styles.buttonContent}
               labelStyle={{
                 fontSize: 17,
-                color: "#22281B",
-                fontWeight: "bold",
+                color: '#22281B',
+                fontWeight: 'bold',
               }}
-              theme={{ colors: { primary: "#9AC26B" } }}
+              theme={{ colors: { primary: '#9AC26B' } }}
               accessible
               accessibilityRole="button"
               accessibilityLabel={checkoutButtonText}
-              accessibilityHint={i18n.t("proceed_to_payment_button")}
+              accessibilityHint={i18n.t('proceed_to_payment_button')}
             >
               {checkoutButtonText}
             </Button>
@@ -286,7 +287,7 @@ export default function CartScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#FDFDFC",
+    backgroundColor: '#FDFDFC',
   },
   safeArea: {
     flex: 1,
@@ -295,8 +296,8 @@ const styles = StyleSheet.create({
     ...Platform.select({
       web: {
         maxWidth: 800,
-        width: "100%",
-        alignSelf: "center",
+        width: '100%',
+        alignSelf: 'center',
       },
     }),
   },
@@ -305,47 +306,47 @@ const styles = StyleSheet.create({
     borderRadius: 25,
   },
   appbar: {
-    backgroundColor: "#FDFDFC",
+    backgroundColor: '#FDFDFC',
   },
   appbarTitle: {
-    fontWeight: "700",
+    fontWeight: '700',
     fontSize: 16,
-    color: "#333",
-    alignSelf: "center",
+    color: '#333',
+    alignSelf: 'center',
   },
   contentContainer: {
     flex: 1,
     ...Platform.select({
       web: {
         maxWidth: 800,
-        width: "100%",
-        alignSelf: "center",
+        width: '100%',
+        alignSelf: 'center',
       },
     }),
   },
   emptyContainer: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   emptyCartText: {
     fontSize: 16,
-    color: "#666",
+    color: '#666',
   },
   scrollContainer: {
     flex: 1,
   },
   scrollView: {
     flex: 1,
-    backgroundColor: "#FDFDFC",
+    backgroundColor: '#FDFDFC',
   },
   scrollContent: {
-    padding: Platform.OS === "web" ? 10 : 6,
+    padding: Platform.OS === 'web' ? 10 : 6,
     paddingBottom: 16,
   },
   card: {
     marginBottom: 6,
-    backgroundColor: "#FDFDFC",
+    backgroundColor: '#FDFDFC',
     borderRadius: 12,
     ...Platform.select({
       web: {
@@ -354,8 +355,8 @@ const styles = StyleSheet.create({
     }),
   },
   cardContent: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   cardImage: {
     width: 100,
@@ -369,28 +370,28 @@ const styles = StyleSheet.create({
     marginRight: 6,
   },
   dishName: {
-    color: "#333",
-    fontWeight: "bold",
+    color: '#333',
+    fontWeight: 'bold',
     marginBottom: 4,
   },
   dishPrice: {
-    color: "#333",
-    fontWeight: "bold",
+    color: '#333',
+    fontWeight: 'bold',
     marginBottom: 8,
   },
   priceContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginTop: 4,
   },
   quantityContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     borderWidth: 1,
     borderRadius: 20,
-    borderColor: "#E0E0E0",
+    borderColor: '#E0E0E0',
     height: 36, // Reduced height
     paddingHorizontal: 0, // Reduced padding
   },
@@ -401,20 +402,20 @@ const styles = StyleSheet.create({
   },
   quantityText: {
     fontSize: 16,
-    fontWeight: "500",
-    color: "#333",
+    fontWeight: '500',
+    color: '#333',
     marginHorizontal: 8,
     minWidth: 24, // Reduced width
-    textAlign: "center",
+    textAlign: 'center',
   },
   fixedBottomContainer: {
-    backgroundColor: "#FDFDFC",
+    backgroundColor: '#FDFDFC',
     padding: 16,
     borderTopWidth: 1,
-    borderTopColor: "#eee",
+    borderTopColor: '#eee',
   },
   summaryCard: {
-    backgroundColor: "#FDFDFC",
+    backgroundColor: '#FDFDFC',
     borderRadius: 12,
     ...Platform.select({
       web: {
@@ -423,32 +424,32 @@ const styles = StyleSheet.create({
     }),
   },
   summaryRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     marginVertical: 8,
   },
   summaryLabel: {
-    color: "#666",
+    color: '#666',
     fontSize: 14,
   },
   summaryValue: {
-    color: "#333",
+    color: '#333',
     fontSize: 14,
-    fontWeight: "500",
+    fontWeight: '500',
   },
   discountValue: {
-    color: "#388e3c",
+    color: '#388e3c',
     fontSize: 14,
-    fontWeight: "500",
+    fontWeight: '500',
   },
   totalLabel: {
-    color: "#333",
-    fontWeight: "bold",
+    color: '#333',
+    fontWeight: 'bold',
     fontSize: 16,
   },
   totalValue: {
-    color: "#333",
-    fontWeight: "bold",
+    color: '#333',
+    fontWeight: 'bold',
     fontSize: 16,
   },
   checkoutButton: {
@@ -456,14 +457,15 @@ const styles = StyleSheet.create({
     borderRadius: 30,
     width: 353,
     height: 50,
-    alignSelf: "center",
-    alignContent: "center",
-    justifyContent: "center",
+    alignSelf: 'center',
+    alignContent: 'center',
+    justifyContent: 'center',
     ...Platform.select({
       web: {
         maxWidth: 353,
-        width: "100%",
-        alignSelf: "center",
+        width: '100%',
+        alignSelf: 'center',
+        marginBottom: 20,
       },
     }),
   },
