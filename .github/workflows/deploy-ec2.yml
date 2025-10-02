@@ -157,7 +157,7 @@ jobs:
           else
             echo "Verified pull access to $IMAGE"
           fi
-          docker logout ghcr.io
+          # docker logout ghcr.io
 
       - name: Verify required files exist in workspace
         run: |
