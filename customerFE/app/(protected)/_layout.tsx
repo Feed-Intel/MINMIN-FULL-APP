@@ -1,26 +1,26 @@
-import React, { useEffect } from "react";
-import { Tabs } from "expo-router";
-import FeedIcon from "@/assets/icons/feed.svg";
-import FeedSelectedIcon from "@/assets/icons/selectedFeed.svg";
-import SearchIcon from "@/assets/icons/search.svg";
-import SearchSelectedIcon from "@/assets/icons/selectedSearch.svg";
-import ScanIcon from "@/assets/icons/scan.svg";
-import BowlIcon from "@/assets/icons/bowl.svg";
-import BowlSelectedIcon from "@/assets/icons/selectedBowl.svg";
-import OrdersIcon from "@/assets/icons/orders.svg";
-import OrdersSelectedIcon from "@/assets/icons/selectedOrders.svg";
-import { Platform } from "react-native";
-import { useWebSockets } from "@/hooks/useWebSockets";
-import { HapticTab } from "@/components/HapticTab";
-import { Colors } from "@/constants/Colors";
-import TabBarBackground from "@/components/ui/TabBarBackground";
-import { useAppSelector } from "@/lib/reduxStore/hooks";
-import { usePushNotifications } from "@/hooks/usePushNotification";
-import { useUpdateProfile } from "@/services/mutation/authMutation";
-import { useAuth } from "@/context/auth";
-import { useSelector } from "react-redux";
-import { RootState } from "@/lib/reduxStore/store";
-import { i18n } from "@/app/_layout";
+import React, { useEffect } from 'react';
+import { Tabs } from 'expo-router';
+import FeedIcon from '@/assets/icons/feed.svg';
+import FeedSelectedIcon from '@/assets/icons/selectedFeed.svg';
+import SearchIcon from '@/assets/icons/search.svg';
+import SearchSelectedIcon from '@/assets/icons/selectedSearch.svg';
+import ScanIcon from '@/assets/icons/scan.svg';
+import BowlIcon from '@/assets/icons/bowl.svg';
+import BowlSelectedIcon from '@/assets/icons/selectedBowl.svg';
+import OrdersIcon from '@/assets/icons/orders.svg';
+import OrdersSelectedIcon from '@/assets/icons/selectedOrders.svg';
+import { Platform } from 'react-native';
+import { useWebSockets } from '@/hooks/useWebSockets';
+import { HapticTab } from '@/components/HapticTab';
+import { Colors } from '@/constants/Colors';
+import TabBarBackground from '@/components/ui/TabBarBackground';
+import { useAppSelector } from '@/lib/reduxStore/hooks';
+import { usePushNotifications } from '@/hooks/usePushNotification';
+import { useUpdateProfile } from '@/services/mutation/authMutation';
+import { useAuth } from '@/context/auth';
+import { useSelector } from 'react-redux';
+import { RootState } from '@/lib/reduxStore/store';
+import { i18n } from '@/app/_layout';
 
 export default function ProtectedLayout() {
   useWebSockets();
@@ -33,7 +33,6 @@ export default function ProtectedLayout() {
   );
 
   useEffect(() => {
-    console.log(currentLocale);
     if (currentLocale) {
       i18n.locale = currentLocale;
     }
@@ -42,22 +41,22 @@ export default function ProtectedLayout() {
   useEffect(() => {
     if (Boolean(expoPushToken?.data)) {
       const formData = new FormData();
-      formData.append("id", userInfo?.id ? userInfo?.id! : userInfo?.user_id!);
-      formData.append("push_token", expoPushToken?.data!);
-      if (Boolean(location?.longitude) && location?.longitude != "null") {
-        formData.append("lng", location?.longitude!);
-        formData.append("lat", location?.latitude!);
+      formData.append('id', userInfo?.id ? userInfo?.id! : userInfo?.user_id!);
+      formData.append('push_token', expoPushToken?.data!);
+      if (Boolean(location?.longitude) && location?.longitude != 'null') {
+        formData.append('lng', location?.longitude!);
+        formData.append('lat', location?.latitude!);
       }
       updateUser(formData);
     } else if (
       Boolean(location?.longitude) &&
-      location?.latitude != "null" &&
+      location?.latitude != 'null' &&
       userInfo?.id
     ) {
       const formData = new FormData();
-      formData.append("id", userInfo?.id ? userInfo?.id! : userInfo?.user_id!);
-      formData.append("lng", location?.longitude!);
-      formData.append("lat", location?.latitude!);
+      formData.append('id', userInfo?.id ? userInfo?.id! : userInfo?.user_id!);
+      formData.append('lng', location?.longitude!);
+      formData.append('lat', location?.latitude!);
       updateUser(formData);
     }
   }, [expoPushToken, location]);
@@ -75,7 +74,7 @@ export default function ProtectedLayout() {
         tabBarShowLabel: false,
         tabBarStyle: Platform.select({
           ios: {
-            position: "absolute",
+            position: 'absolute',
             borderTopWidth: 0,
           },
           default: {},
@@ -86,7 +85,7 @@ export default function ProtectedLayout() {
       <Tabs.Screen
         name="feed/index"
         options={{
-          title: "Feed",
+          title: 'Feed',
           tabBarIcon: ({ focused, color }) =>
             focused ? (
               <FeedSelectedIcon width={24} height={24} />
@@ -100,7 +99,7 @@ export default function ProtectedLayout() {
       <Tabs.Screen
         name="search/index"
         options={{
-          title: "Search",
+          title: 'Search',
           tabBarIcon: ({ focused, color }) =>
             focused ? (
               <SearchSelectedIcon width={24} height={24} fill={color} />
@@ -114,7 +113,7 @@ export default function ProtectedLayout() {
       <Tabs.Screen
         name="camera/index"
         options={{
-          title: "Scan",
+          title: 'Scan',
           tabBarIcon: ({ focused, color }) => (
             // focused?
             <ScanIcon width={24} height={25} fill={color} />
@@ -134,7 +133,7 @@ export default function ProtectedLayout() {
       <Tabs.Screen
         name="cart/index"
         options={{
-          title: "Cart",
+          title: 'Cart',
           tabBarIcon: ({ focused, color }) =>
             focused ? (
               <BowlSelectedIcon width={24} height={24} fill={color} />
@@ -149,7 +148,7 @@ export default function ProtectedLayout() {
       <Tabs.Screen
         name="orderHistory/index"
         options={{
-          title: "Order History",
+          title: 'Order History',
           tabBarIcon: ({ focused, color }) =>
             focused ? (
               <OrdersSelectedIcon width={24} height={24} fill={color} />
@@ -176,21 +175,21 @@ export default function ProtectedLayout() {
       {/* <Tabs.Screen name="camera/scanner/index" options={{ href: null }} /> */}
       <Tabs.Screen
         name="notification/index"
-        options={{ title: "Notifications", href: null }}
+        options={{ title: 'Notifications', href: null }}
       />
       <Tabs.Screen
         name="saved-posts/index"
-        options={{ title: "Saved Posts", href: null }}
+        options={{ title: 'Saved Posts', href: null }}
       />
       <Tabs.Screen
         name="profile/index"
-        options={{ title: "Profile", href: null }}
+        options={{ title: 'Profile', href: null }}
       />
       <Tabs.Screen name="profile/WebPageView" options={{ href: null }} />
       {/* <Tabs.Screen name="home/index" options={{ title: "Home", href: null }} /> */}
       <Tabs.Screen
         name="orderHistory/feedback"
-        options={{ title: "Feedback", href: null }}
+        options={{ title: 'Feedback', href: null }}
       />
       {/* <Tabs.Screen
         name="payment/index"
@@ -198,11 +197,11 @@ export default function ProtectedLayout() {
       /> */}
       <Tabs.Screen
         name="payment/paymentSuccess"
-        options={{ title: "Payment Success", href: null }}
+        options={{ title: 'Payment Success', href: null }}
       />
       <Tabs.Screen
         name="payment/[paymentID]"
-        options={{ title: "Payment Webview", href: null }}
+        options={{ title: 'Payment Webview', href: null }}
       />
       <Tabs.Screen name="restaurant-profile/feed" options={{ href: null }} />
     </Tabs>
