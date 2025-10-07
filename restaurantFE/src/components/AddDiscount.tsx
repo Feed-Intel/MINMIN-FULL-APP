@@ -1,6 +1,5 @@
 import dayjs from 'dayjs';
 import DatePicker from '@/components/DatePicker';
-import { Branch } from '@/types/branchType';
 import { useEffect, useMemo, useState } from 'react';
 import {
   useCreateDiscount,
@@ -29,6 +28,12 @@ import { useRestaurantIdentity } from '@/hooks/useRestaurantIdentity';
 import { useGetMenus } from '@/services/mutation/menuMutation';
 import MenuItemSelectorModal from './MenuItemSelectorModal';
 import ModalHeader from './ModalHeader';
+import {
+  DropdownInputProps,
+  MultiSelectDropdown,
+  Option,
+} from 'react-native-paper-dropdown';
+import { Branch } from '@/types/branchType';
 
 const TYPEOPTIONS = [
   { label: 'Volume', value: 'volume' },
@@ -53,15 +58,17 @@ const ruleDefaultState = {
 type AddDiscountModalProps = {
   branches: Branch[];
   visible: boolean;
+  currentPage: number;
   onClose: () => void;
 };
 
 export default function AddDiscountModal({
   branches,
   visible,
+  currentPage,
   onClose,
 }: AddDiscountModalProps) {
-  const [branch, setBranch] = useState<string>('');
+  const [selectedBranches, setSelectedBranches] = useState<string[]>([]);
   const [applyToAllBranches, setApplyToAllBranches] = useState(true);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -74,8 +81,6 @@ export default function AddDiscountModal({
   const [showFromPicker, setShowFromPicker] = useState(false);
   const [valid_until, setValidUntil] = useState<Date | undefined>(undefined);
   const [showUntilPicker, setShowUntilPicker] = useState(false);
-
-  const [showMenu, setShowMenu] = useState(false);
   const [ruleFormValues, setRuleFormValues] = useState(ruleDefaultState);
   const [ruleErrors, setRuleErrors] = useState<{ [key: string]: string }>({});
   const [applicableSelectorVisible, setApplicableSelectorVisible] =
@@ -96,7 +101,7 @@ export default function AddDiscountModal({
   useEffect(() => {
     if (visible) {
       setApplyToAllBranches(!isBranch);
-      setBranch(defaultBranchId);
+      // setBranch(defaultBranchId);
     }
   }, [visible, isBranch, defaultBranchId]);
 
@@ -115,8 +120,8 @@ export default function AddDiscountModal({
   }, [type]);
 
   const resetForms = () => {
-    setBranch('');
-    setApplyToAllBranches(true);
+    setSelectedBranches([]);
+    setApplyToAllBranches(false);
     setName('');
     setDescription('');
     setType('');
@@ -131,7 +136,7 @@ export default function AddDiscountModal({
   };
 
   const validateForm = () => {
-    if (!applyToAllBranches && !branch) {
+    if (!applyToAllBranches && selectedBranches.length !== 0) {
       Toast.show({
         type: 'error',
         text1: 'Branch selection is required.',
@@ -334,8 +339,8 @@ export default function AddDiscountModal({
 
     try {
       const discountPayload: any = {
-        branch: branch,
-        all_branch: applyToAllBranches,
+        branches: selectedBranches,
+        is_global: applyToAllBranches,
         name: name,
         description: description,
         type: type,
@@ -347,7 +352,9 @@ export default function AddDiscountModal({
       };
 
       const newDiscount: any = await onAdd(discountPayload);
-      await queryClient.invalidateQueries({ queryKey: ['discounts'] });
+      await queryClient.invalidateQueries({
+        queryKey: ['discounts', currentPage],
+      });
 
       if (newDiscount?.id) {
         await createDiscountRule(buildRulePayload(newDiscount.id));
@@ -372,7 +379,7 @@ export default function AddDiscountModal({
     }
 
     const names = ids
-      .map((id) => menus.find((mn) => mn.id === id)?.name)
+      .map((id) => menus?.results.find((mn) => mn.id === id)?.name)
       .filter(Boolean) as string[];
 
     if (!names.length) {
@@ -424,7 +431,7 @@ export default function AddDiscountModal({
                 marginBottom: 15,
               }}
             >
-              <Text style={{ color: '#40392B' }}>Apply to all branches</Text>
+              <Text style={{ color: '#40392B' }}>Is Global</Text>
               <Switch
                 value={applyToAllBranches}
                 onValueChange={setApplyToAllBranches}
@@ -435,63 +442,44 @@ export default function AddDiscountModal({
             {!applyToAllBranches && (
               <>
                 <Text style={stylesModal.fieldLabel}>Branch</Text>
-                {isBranch ? (
-                  <Text style={stylesModal.readonlyBranch}>
-                    {branches.find((b: any) => b.id === defaultBranchId)
-                      ?.address ?? 'Assigned Branch'}
-                  </Text>
-                ) : (
-                  <Menu
-                    visible={showMenu}
-                    onDismiss={() => setShowMenu(false)}
-                    anchor={
-                      <Button
-                        mode="outlined"
-                        style={stylesModal.dropdownBtn}
-                        labelStyle={{
-                          color: branch === '' ? '#aaa' : '#333',
-                          fontSize: 14,
-                          width: '100%',
-                          textAlign: 'left',
-                          marginLeft: 0,
-                        }}
-                        onPress={() => setShowMenu(true)}
-                        contentStyle={{
-                          flexDirection: 'row-reverse',
-                          width: '100%',
-                          paddingLeft: 10,
-                        }}
-                        icon={showMenu ? 'chevron-up' : 'chevron-down'}
-                      >
-                        {branch
-                          ? branches.find((b: any) => b.id === branch)?.address
-                          : 'Branch'}
-                      </Button>
-                    }
-                    contentStyle={[
-                      stylesModal.menuContainer,
-                      { width: '100%' },
-                    ]}
-                    style={{ alignSelf: 'stretch' }}
-                    anchorPosition="bottom"
-                  >
-                    {branches.length > 0 ? (
-                      branches.map((b: any) => (
-                        <Menu.Item
-                          key={b.id}
-                          onPress={() => {
-                            setBranch(b.id!);
-                            setShowMenu(false);
-                          }}
-                          title={b.address}
-                          titleStyle={stylesModal.menuItem}
-                        />
-                      ))
-                    ) : (
-                      <Menu.Item title="No branches available" disabled />
-                    )}
-                  </Menu>
-                )}
+                <MultiSelectDropdown
+                  label="Select Branches"
+                  placeholder="Select Branches"
+                  options={
+                    (branches.map((br) => ({
+                      label: br.address,
+                      value: br.id!,
+                    })) as Option[]) || []
+                  }
+                  value={selectedBranches || []}
+                  onSelect={(values) => setSelectedBranches(values)}
+                  menuContentStyle={{
+                    backgroundColor: '#fff',
+                  }}
+                  CustomMenuHeader={() => <Text>{''}</Text>}
+                  CustomMultiSelectDropdownInput={({
+                    placeholder,
+                    selectedLabel,
+                    rightIcon,
+                  }: DropdownInputProps) => (
+                    <PaperTextInput
+                      mode="outlined"
+                      placeholder={placeholder}
+                      placeholderTextColor={'#202B1866'}
+                      value={selectedLabel}
+                      style={{
+                        backgroundColor: '#50693A17',
+                        maxHeight: 50,
+                      }}
+                      contentStyle={{
+                        borderColor: '#ccc',
+                      }}
+                      textColor={'#000'}
+                      right={rightIcon}
+                      outlineColor="#ccc"
+                    />
+                  )}
+                />
               </>
             )}
 
@@ -500,7 +488,7 @@ export default function AddDiscountModal({
               placeholder="Name"
               value={name}
               onChangeText={setName}
-              style={stylesModal.input}
+              style={{ ...stylesModal.input, marginTop: 15 }}
               placeholderTextColor="#999"
             />
 

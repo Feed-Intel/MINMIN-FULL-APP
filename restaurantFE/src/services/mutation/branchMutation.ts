@@ -11,10 +11,10 @@ import { useDispatch } from 'react-redux';
 import { AppDispatch } from '@/lib/reduxStore/store';
 import { hideLoader, showLoader } from '@/lib/reduxStore/loaderSlice';
 
-export const useGetBranches = (page?: number | undefined) =>
+export const useGetBranches = (page?: number | undefined, noPage?: boolean) =>
   useQuery<{ next: string | null; results: Branch[]; count: number }>({
     queryKey: ['branches', page],
-    queryFn: () => GetBranches(page),
+    queryFn: () => GetBranches(page, noPage),
     staleTime: 0,
   });
 

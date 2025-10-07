@@ -58,6 +58,18 @@ class BranchView(CachedModelViewSet):
             return queryset.filter(pk=branch.pk) if branch else queryset.none()
 
         return queryset.none()
+    
+    def get_paginated_response(self, data):
+        # If 'nopage' query param is set, return unpaginated data
+        if self.request.query_params.get('nopage') == '1':
+            return Response(data)
+        return super().get_paginated_response(data)
+
+    def paginate_queryset(self, queryset):
+        # If 'nopage' query param is set, skip pagination
+        if self.request.query_params.get('nopage') == '1':
+            return None
+        return super().paginate_queryset(queryset)
 
     @action(detail=False, methods=['post'], url_path='call_waiter', permission_classes=[IsAuthenticated])
     def call_waiter(self, request):

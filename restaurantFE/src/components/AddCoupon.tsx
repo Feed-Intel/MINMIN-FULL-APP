@@ -1,27 +1,43 @@
-import dayjs from "dayjs";
-import DatePicker from "@/components/DatePicker";
-import { useState } from "react";
-import { useCreateCoupon } from "@/services/mutation/discountMutation";
-import { useQueryClient } from "@tanstack/react-query";
-import Toast from "react-native-toast-message";
-import { Button, Dialog, Portal, Switch } from "react-native-paper";
-import { ScrollView, View, TextInput, Text, StyleSheet } from "react-native";
+import dayjs from 'dayjs';
+import DatePicker from '@/components/DatePicker';
+import { useState } from 'react';
+import { useCreateCoupon } from '@/services/mutation/discountMutation';
+import { useQueryClient } from '@tanstack/react-query';
+import Toast from 'react-native-toast-message';
+import {
+  Button,
+  Dialog,
+  Portal,
+  Switch,
+  TextInput as PaperTextInput,
+} from 'react-native-paper';
+import { ScrollView, View, TextInput, Text, StyleSheet } from 'react-native';
+import {
+  DropdownInputProps,
+  MultiSelectDropdown,
+  Option,
+} from 'react-native-paper-dropdown';
+import { Branch } from '@/types/branchType';
 
 type AddCouponProps = {
   visible: boolean;
   setVisible: (bool: boolean) => void;
+  branches: Branch[];
 };
 
 export default function AddCouponModal({
   visible,
   setVisible,
+  branches,
 }: AddCouponProps) {
-  const [discountCode, setDiscountCode] = useState("");
-  const [discountAmount, setDiscountAmount] = useState("");
+  const [discountCode, setDiscountCode] = useState('');
+  const [discountAmount, setDiscountAmount] = useState('');
   const [showFromPicker, setShowFromPicker] = useState(false);
   const [validFrom, setValidFrom] = useState<Date>(new Date());
   const [showUntilPicker, setShowUntilPicker] = useState(false);
   const [isPercentage, setIsPercentage] = useState(false);
+  const [isGlobal, setIsGlobal] = useState(false);
+  const [selectedBranches, setSelectedBranches] = useState<string[]>([]);
   const [validUntil, setValidUntil] = useState<Date>(
     new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
   );
@@ -29,33 +45,32 @@ export default function AddCouponModal({
   const queryClient = useQueryClient();
 
   const validateForm = () => {
-    // Validate Name
     if (!discountCode?.trim()) {
       Toast.show({
-        type: "error",
-        text1: "Discount Code is required.",
+        type: 'error',
+        text1: 'Discount Code is required.',
       });
       return false;
     } else if (discountCode.trim().length < 3) {
       Toast.show({
-        type: "error",
-        text1: "Discount Code must be at least 3 characters long.",
+        type: 'error',
+        text1: 'Discount Code must be at least 3 characters long.',
       });
       return false;
     }
 
     // Validate Valid From/Until Dates
     if (!validFrom) {
-      Toast.show({ type: "error", text1: "Valid From date is required." });
+      Toast.show({ type: 'error', text1: 'Valid From date is required.' });
       return false;
     }
     if (!validUntil) {
-      Toast.show({ type: "error", text1: "Valid Until date is required." });
+      Toast.show({ type: 'error', text1: 'Valid Until date is required.' });
       return false;
     } else if (dayjs(validUntil).isBefore(validFrom)) {
       Toast.show({
-        type: "error",
-        text1: "Valid Until must be after Valid From.",
+        type: 'error',
+        text1: 'Valid Until must be after Valid From.',
       });
       return false;
     }
@@ -82,13 +97,71 @@ export default function AddCouponModal({
 
             <View
               style={{
-                flexDirection: "row",
-                justifyContent: "space-between",
-                alignItems: "center",
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                alignItems: 'center',
                 marginBottom: 15,
               }}
             >
-              <Text style={{ color: "#40392B" }}>Is Percentage</Text>
+              <Text style={{ color: '#40392B' }}>Is Global</Text>
+              <Switch
+                value={isGlobal}
+                onValueChange={setIsGlobal}
+                color="#91B275"
+              />
+            </View>
+            {!isGlobal && (
+              <>
+                <Text style={stylesModal.fieldLabel}>Branch</Text>
+                <MultiSelectDropdown
+                  label="Select Branches"
+                  placeholder="Select Branches"
+                  options={
+                    (branches.map((br) => ({
+                      label: br.address,
+                      value: br.id!,
+                    })) as Option[]) || []
+                  }
+                  value={selectedBranches || []}
+                  onSelect={(values) => setSelectedBranches(values)}
+                  menuContentStyle={{
+                    backgroundColor: '#fff',
+                  }}
+                  CustomMenuHeader={() => <Text>{''}</Text>}
+                  CustomMultiSelectDropdownInput={({
+                    placeholder,
+                    selectedLabel,
+                    rightIcon,
+                  }: DropdownInputProps) => (
+                    <PaperTextInput
+                      mode="outlined"
+                      placeholder={placeholder}
+                      placeholderTextColor={'#202B1866'}
+                      value={selectedLabel}
+                      style={{
+                        backgroundColor: '#50693A17',
+                        maxHeight: 50,
+                      }}
+                      contentStyle={{
+                        borderColor: '#ccc',
+                      }}
+                      textColor={'#000'}
+                      right={rightIcon}
+                      outlineColor="#ccc"
+                    />
+                  )}
+                />
+              </>
+            )}
+            <View
+              style={{
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: 15,
+              }}
+            >
+              <Text style={{ color: '#40392B' }}>Is Percentage</Text>
               <Switch
                 value={isPercentage}
                 onValueChange={setIsPercentage}
@@ -106,8 +179,8 @@ export default function AddCouponModal({
 
             <View
               style={{
-                flexDirection: "row",
-                alignItems: "center",
+                flexDirection: 'row',
+                alignItems: 'center',
                 gap: 15,
               }}
             >
@@ -117,16 +190,16 @@ export default function AddCouponModal({
                   mode="outlined"
                   style={stylesModal.dateButton}
                   labelStyle={{
-                    color: "#22281B",
+                    color: '#22281B',
                     fontSize: 14,
-                    fontWeight: "500",
+                    fontWeight: '500',
                   }}
-                  icon={"chevron-down"}
+                  icon={'chevron-down'}
                 >
-                  Valid From:{" "}
+                  Valid From:{' '}
                   {validFrom
-                    ? dayjs(validFrom).format("YYYY-MM-DD")
-                    : "Not Set"}
+                    ? dayjs(validFrom).format('YYYY-MM-DD')
+                    : 'Not Set'}
                 </Button>
                 <DatePicker
                   dateFilterVisible={showFromPicker}
@@ -141,19 +214,19 @@ export default function AddCouponModal({
                   mode="outlined"
                   style={stylesModal.dateButton}
                   labelStyle={{
-                    color: "#22281B",
+                    color: '#22281B',
                     fontSize: 14,
-                    fontWeight: "500",
+                    fontWeight: '500',
                   }}
                   contentStyle={{
-                    flexDirection: "row-reverse",
+                    flexDirection: 'row-reverse',
                   }}
-                  icon={"chevron-down"}
+                  icon={'chevron-down'}
                 >
-                  Valid Until:{" "}
+                  Valid Until:{' '}
                   {validUntil
-                    ? dayjs(validUntil).format("YYYY-MM-DD")
-                    : "Not Set"}
+                    ? dayjs(validUntil).format('YYYY-MM-DD')
+                    : 'Not Set'}
                 </Button>
                 <DatePicker
                   dateFilterVisible={showUntilPicker}
@@ -170,9 +243,9 @@ export default function AddCouponModal({
           <Button
             mode="contained"
             style={stylesModal.addButton}
-            labelStyle={{ color: "#fff" }}
+            labelStyle={{ color: '#fff' }}
             contentStyle={{
-              flexDirection: "row-reverse",
+              flexDirection: 'row-reverse',
             }}
             onPress={async () => {
               if (validateForm()) {
@@ -180,10 +253,12 @@ export default function AddCouponModal({
                   discount_code: discountCode,
                   discount_amount: discountAmount,
                   is_percentage: isPercentage,
+                  is_global: isGlobal,
+                  branches: selectedBranches,
                   valid_from: validFrom,
                   valid_until: validUntil,
                 });
-                queryClient.invalidateQueries({ queryKey: ["coupons"] });
+                await queryClient.invalidateQueries({ queryKey: ['coupons'] });
                 setVisible(false);
               }
             }}
@@ -198,60 +273,66 @@ export default function AddCouponModal({
 
 const stylesModal = StyleSheet.create({
   dialog: {
-    backgroundColor: "#EFF4EB",
-    width: "40%",
-    alignSelf: "center",
+    backgroundColor: '#EFF4EB',
+    width: '40%',
+    alignSelf: 'center',
     borderRadius: 12,
   },
   menuItem: {
-    color: "#333",
+    color: '#333',
     fontSize: 14,
   },
   container: {
     marginBottom: 24,
   },
+  fieldLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#40392B',
+    marginBottom: 6,
+  },
   dropdownBtn: {
-    backgroundColor: "#50693A17",
+    backgroundColor: '#50693A17',
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: "#ccc",
-    justifyContent: "space-between",
-    width: "100%",
+    borderColor: '#ccc',
+    justifyContent: 'space-between',
+    width: '100%',
     marginBottom: 15,
   },
   input: {
-    backgroundColor: "#50693A17",
+    backgroundColor: '#50693A17',
     borderRadius: 6,
     paddingVertical: 12,
     paddingHorizontal: 10,
     marginBottom: 15,
     fontSize: 15,
-    color: "#333",
+    color: '#333',
   },
   menuContainer: {
-    backgroundColor: "#fff",
+    backgroundColor: '#fff',
     borderRadius: 8,
     paddingVertical: 5,
   },
   toggleRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginVertical: 12,
   },
   toggleLabel: {
     fontSize: 16,
-    color: "#333",
+    color: '#333',
   },
   addButton: {
-    backgroundColor: "#91B275",
+    backgroundColor: '#91B275',
     borderRadius: 30,
   },
   dateButton: {
     marginBottom: 16,
-    backgroundColor: "#070D020A",
+    backgroundColor: '#070D020A',
     borderRadius: 10,
-    borderColor: "#5E6E4933",
+    borderColor: '#5E6E4933',
     flex: 1,
   },
 });

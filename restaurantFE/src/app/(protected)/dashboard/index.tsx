@@ -1,13 +1,25 @@
 // src/components/Dashboard.tsx
 import React, { useEffect, useMemo, useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Dimensions, ActivityIndicator, Platform } from 'react-native';
+import {
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  StyleSheet,
+  Dimensions,
+  ActivityIndicator,
+  Platform,
+} from 'react-native';
 import { LineChart, BarChart } from 'react-native-chart-kit';
 import { Calendar } from 'react-native-calendars';
 import { Ionicons } from '@expo/vector-icons';
 import moment from 'moment';
 import { Portal, Dialog, Button, Menu } from 'react-native-paper';
 
-import { useDashboardData, useTopMenuItems } from '@/services/mutation/tenantMutation';
+import {
+  useDashboardData,
+  useTopMenuItems,
+} from '@/services/mutation/tenantMutation';
 import { useGetBranches } from '@/services/mutation/branchMutation';
 import { useRestaurantIdentity } from '@/hooks/useRestaurantIdentity';
 
@@ -69,7 +81,9 @@ const DEFAULT_METRICS: MetricDefinition[] = [
     formatValue: (value) => formatCurrency(value),
     getSubtitle: (data) =>
       data?.revenue_change !== undefined
-        ? `${data.revenue_change > 0 ? '+' : ''}${data.revenue_change}% vs prior` 
+        ? `${data.revenue_change > 0 ? '+' : ''}${
+            data.revenue_change
+          }% vs prior`
         : undefined,
   },
   {
@@ -107,7 +121,9 @@ const DEFAULT_METRICS: MetricDefinition[] = [
 ];
 
 const Dashboard = () => {
-  const [selectedTab, setSelectedTab] = useState<'today' | 'month' | 'year'>('today');
+  const [selectedTab, setSelectedTab] = useState<'today' | 'month' | 'year'>(
+    'today'
+  );
   const [dateFilterVisible, setDateFilterVisible] = useState(false);
   const [startDate, setStartDate] = useState<string | null>(null);
   const [endDate, setEndDate] = useState<string | null>(null);
@@ -129,7 +145,7 @@ const Dashboard = () => {
   useEffect(() => {
     if (isRestaurant) {
       // Reset selection if the currently selected branch is no longer available
-      const hasSelectedBranch = branches?.some(
+      const hasSelectedBranch = branches?.results?.some(
         (branch) => branch.id === selectedBranch
       );
 
@@ -167,40 +183,43 @@ const Dashboard = () => {
   }, [branchQueryParam, endDate, selectedTab, startDate]);
 
   const topMenuParams = useMemo(() => {
-    const params: Record<string, string> = startDate && endDate
-      ? { start_date: startDate, end_date: endDate }
-      : {
-          start_date: moment().format('YYYY-MM-DD'),
-          end_date: moment().format('YYYY-MM-DD'),
-        };
+    const params: Record<string, string> =
+      startDate && endDate
+        ? { start_date: startDate, end_date: endDate }
+        : {
+            start_date: moment().format('YYYY-MM-DD'),
+            end_date: moment().format('YYYY-MM-DD'),
+          };
 
     if (branchQueryParam) params.branch_id = branchQueryParam;
     return params;
   }, [branchQueryParam, startDate, endDate]);
 
   // Fetch data based on selected tab or date range
-  const { 
-    data: dashboardData, 
-    isLoading: isDashboardLoading, 
+  const {
+    data: dashboardData,
+    isLoading: isDashboardLoading,
     isError: isDashboardError,
-    refetch: refetchDashboard
+    refetch: refetchDashboard,
   } = useDashboardData(dashboardParams);
 
-  const { 
+  const {
     data: topItemsData,
     isLoading: isTopItemsLoading,
-    isError: isTopItemsError
+    isError: isTopItemsError,
   } = useTopMenuItems(topMenuParams);
 
   const selectedBranchLabel = useMemo(() => {
     if (isBranch) {
-      const branch = branches?.find((item) => item.id === branchId);
+      const branch = branches?.results?.find((item) => item.id === branchId);
       return branch?.address ?? 'My Branch';
     }
 
     if (isRestaurant) {
       if (selectedBranch === 'all') return 'All Branches';
-      const branch = branches?.find((item) => item.id === selectedBranch);
+      const branch = branches?.results?.find(
+        (item) => item.id === selectedBranch
+      );
       return branch?.address ?? 'Selected Branch';
     }
 
@@ -214,18 +233,22 @@ const Dashboard = () => {
     return {
       revenueData: {
         labels: dashboardData.chart_data?.labels || [],
-        datasets: [{
-          data: dashboardData.chart_data?.data || [],
-          color: (opacity = 1) => `rgba(76, 175, 80, ${opacity})`,
-          strokeWidth: 2
-        }]
+        datasets: [
+          {
+            data: dashboardData.chart_data?.data || [],
+            color: (opacity = 1) => `rgba(76, 175, 80, ${opacity})`,
+            strokeWidth: 2,
+          },
+        ],
       },
       itemsData: {
         labels: topItemsData?.map((item: any) => item.name) || ['Loading...'],
-        datasets: [{
-          data: topItemsData?.map((item: any) => item.count) || [0]
-        }]
-      }
+        datasets: [
+          {
+            data: topItemsData?.map((item: any) => item.count) || [0],
+          },
+        ],
+      },
     };
   };
 
@@ -249,7 +272,9 @@ const Dashboard = () => {
             ? `${metric.value ?? 0}%`
             : formatNumber(metric.value ?? metric.amount ?? 0)),
         subtitle: metric.subtitle || metric.description,
-        icon: (metric.icon as keyof typeof Ionicons.glyphMap) || 'stats-chart-outline',
+        icon:
+          (metric.icon as keyof typeof Ionicons.glyphMap) ||
+          'stats-chart-outline',
         iconColor: metric.iconColor || metric.icon_color || '#91B275',
         rawValue: metric.value ?? metric.amount,
       }));
@@ -297,7 +322,7 @@ const Dashboard = () => {
     textDayHeaderFontWeight: '300',
     textDayFontSize: 14,
     textMonthFontSize: 16,
-    textDayHeaderFontSize: 14
+    textDayHeaderFontSize: 14,
   };
 
   const handleDayPress = (day: any) => {
@@ -316,28 +341,28 @@ const Dashboard = () => {
 
   const getMarkedDates = () => {
     let markedDates = {};
-    
+
     if (startDate) {
       markedDates[startDate] = {
         startingDay: true,
         color: '#4CAF50',
-        textColor: 'white'
+        textColor: 'white',
       };
     }
-    
+
     if (endDate) {
       markedDates[endDate] = {
         endingDay: true,
         color: '#4CAF50',
-        textColor: 'white'
+        textColor: 'white',
       };
-      
+
       let current = moment(startDate).add(1, 'day');
       while (current.isBefore(moment(endDate))) {
         const dateStr = current.format('YYYY-MM-DD');
         markedDates[dateStr] = {
           color: '#A5D6A7',
-          textColor: 'black'
+          textColor: 'black',
         };
         current.add(1, 'day');
       }
@@ -345,10 +370,10 @@ const Dashboard = () => {
       markedDates[startDate] = {
         selected: true,
         color: '#4CAF50',
-        textColor: 'white'
+        textColor: 'white',
       };
     }
-    
+
     return markedDates;
   };
 
@@ -381,7 +406,7 @@ const Dashboard = () => {
       <View style={styles.errorContainer}>
         <Ionicons name="alert-circle" size={48} color="#FF5252" />
         <Text style={styles.errorText}>Error loading dashboard data</Text>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.retryButton}
           onPress={() => {
             refetchDashboard();
@@ -394,7 +419,10 @@ const Dashboard = () => {
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={styles.contentContainer}
+    >
       {/* Header */}
       <View style={styles.headerRow}>
         <Text style={styles.title}>Dashboard</Text>
@@ -420,7 +448,7 @@ const Dashboard = () => {
               }}
               title="All Branches"
             />
-            {branches?.map((branch) => (
+            {branches?.results?.map((branch) => (
               <Menu.Item
                 key={branch.id}
                 onPress={() => {
@@ -448,9 +476,16 @@ const Dashboard = () => {
             setEndDate(null);
           }}
         >
-          <Text style={[styles.tabText, selectedTab === 'today' && styles.activeTabText]}>Today</Text>
+          <Text
+            style={[
+              styles.tabText,
+              selectedTab === 'today' && styles.activeTabText,
+            ]}
+          >
+            Today
+          </Text>
         </TouchableOpacity>
-        
+
         <TouchableOpacity
           style={[styles.tab, selectedTab === 'month' && styles.activeTab]}
           onPress={() => {
@@ -459,9 +494,16 @@ const Dashboard = () => {
             setEndDate(null);
           }}
         >
-          <Text style={[styles.tabText, selectedTab === 'month' && styles.activeTabText]}>This Month</Text>
+          <Text
+            style={[
+              styles.tabText,
+              selectedTab === 'month' && styles.activeTabText,
+            ]}
+          >
+            This Month
+          </Text>
         </TouchableOpacity>
-        
+
         <TouchableOpacity
           style={[styles.tab, selectedTab === 'year' && styles.activeTab]}
           onPress={() => {
@@ -470,7 +512,14 @@ const Dashboard = () => {
             setEndDate(null);
           }}
         >
-          <Text style={[styles.tabText, selectedTab === 'year' && styles.activeTabText]}>This Year</Text>
+          <Text
+            style={[
+              styles.tabText,
+              selectedTab === 'year' && styles.activeTabText,
+            ]}
+          >
+            This Year
+          </Text>
         </TouchableOpacity>
       </View>
 
@@ -501,15 +550,17 @@ const Dashboard = () => {
       </View>
 
       {/* Date Filter */}
-      <TouchableOpacity 
-        style={styles.dateFilter} 
+      <TouchableOpacity
+        style={styles.dateFilter}
         onPress={() => setDateFilterVisible(true)}
       >
         <View style={styles.dateFilterInner}>
           <Ionicons name="calendar" size={20} color="#222C169E" />
           <Text style={styles.dateFilterText}>
-            {startDate && endDate 
-              ? `${moment(startDate).format('MMM D')} - ${moment(endDate).format('MMM D, YYYY')}`
+            {startDate && endDate
+              ? `${moment(startDate).format('MMM D')} - ${moment(
+                  endDate
+                ).format('MMM D, YYYY')}`
               : 'Date Filter'}
           </Text>
         </View>
@@ -526,16 +577,20 @@ const Dashboard = () => {
               <Ionicons name="ellipsis-vertical" size={16} color="#888" />
             </TouchableOpacity>
           </View>
-          
+
           <View style={styles.revenueContainer}>
-            <Text style={styles.revenueValue}>{primaryMetric?.value ?? 'ETB 0'}</Text>
+            <Text style={styles.revenueValue}>
+              {primaryMetric?.value ?? 'ETB 0'}
+            </Text>
             <Text style={styles.revenueChange}>
               {dashboardData?.revenue_change !== undefined
-                ? `${dashboardData.revenue_change > 0 ? '+' : ''}${dashboardData.revenue_change}%`
+                ? `${dashboardData.revenue_change > 0 ? '+' : ''}${
+                    dashboardData.revenue_change
+                  }%`
                 : 'N/A'}
             </Text>
           </View>
-          
+
           <LineChart
             data={chartData.revenueData}
             width={screenWidth * 0.38}
@@ -543,11 +598,11 @@ const Dashboard = () => {
             withDots={false}
             withVerticalLines={false}
             chartConfig={{
-              backgroundGradientFrom: "#546D3617",
-              backgroundGradientTo: "#546D3617",
-              fillShadowGradientFrom: "#96B76E",
+              backgroundGradientFrom: '#546D3617',
+              backgroundGradientTo: '#546D3617',
+              fillShadowGradientFrom: '#96B76E',
               fillShadowGradientFromOpacity: 0.5,
-              fillShadowGradientTo: "#96B76E",
+              fillShadowGradientTo: '#96B76E',
               fillShadowGradientToOpacity: 0,
               decimalPlaces: 0,
               color: (opacity = 1) => `rgba(76, 175, 80, ${opacity})`,
@@ -565,11 +620,13 @@ const Dashboard = () => {
               <Ionicons name="ellipsis-vertical" size={16} color="#888" />
             </TouchableOpacity>
           </View>
-          
+
           <Text style={styles.subtitle}>
-            {topItemsData?.length ? `Top item: ${topItemsData[0].name}` : 'No data available'}
+            {topItemsData?.length
+              ? `Top item: ${topItemsData[0].name}`
+              : 'No data available'}
           </Text>
-          
+
           <BarChart
             data={chartData.itemsData}
             width={screenWidth * 0.37}
@@ -578,19 +635,19 @@ const Dashboard = () => {
             showValuesOnTopOfBars
             withHorizontalLabels={false}
             chartConfig={{
-              backgroundGradientFrom: "#546D3617",
-              backgroundGradientTo: "#546D3617",
-              fillShadowGradientFrom: "#96B76E",
+              backgroundGradientFrom: '#546D3617',
+              backgroundGradientTo: '#546D3617',
+              fillShadowGradientFrom: '#96B76E',
               fillShadowGradientFromOpacity: 0,
-              fillShadowGradientTo: "#96B76E",
+              fillShadowGradientTo: '#96B76E',
               fillShadowGradientToOpacity: 0,
               decimalPlaces: 0,
               color: (opacity = 1) => `rgba(76, 175, 80, ${opacity})`,
               labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
               barPercentage: 0.6,
               propsForBackgroundLines: {
-                strokeDasharray: ""
-              }
+                strokeDasharray: '',
+              },
             }}
             style={styles.chartStyle}
             verticalLabelRotation={0}
@@ -600,12 +657,14 @@ const Dashboard = () => {
 
       {/* Calendar Dialog */}
       <Portal>
-        <Dialog 
-          visible={dateFilterVisible} 
+        <Dialog
+          visible={dateFilterVisible}
           onDismiss={() => setDateFilterVisible(false)}
           style={styles.dialog}
         >
-          <Dialog.Title style={styles.dialogTitle}>Select Date Range</Dialog.Title>
+          <Dialog.Title style={styles.dialogTitle}>
+            Select Date Range
+          </Dialog.Title>
           <Dialog.Content>
             <Calendar
               theme={calendarTheme}
@@ -618,21 +677,21 @@ const Dashboard = () => {
             />
           </Dialog.Content>
           <Dialog.Actions style={styles.dialogActions}>
-            <Button 
+            <Button
               onPress={resetDateRange}
               textColor="#4CAF50"
               style={styles.dialogButton}
             >
               Reset
             </Button>
-            <Button 
+            <Button
               onPress={() => setDateFilterVisible(false)}
               textColor="#FF5252"
               style={styles.dialogButton}
             >
               Cancel
             </Button>
-            <Button 
+            <Button
               onPress={applyDateRange}
               textColor="#4CAF50"
               style={styles.dialogButton}
@@ -648,23 +707,23 @@ const Dashboard = () => {
 };
 
 const styles = StyleSheet.create({
-  container: { 
-    flex: 1, 
-    backgroundColor: '#EFF4EB' 
+  container: {
+    flex: 1,
+    backgroundColor: '#EFF4EB',
   },
   contentContainer: {
     padding: 16,
   },
-  headerRow: { 
-    flexDirection: 'row', 
-    justifyContent: 'space-between', 
+  headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16
+    marginBottom: 16,
   },
-  title: { 
-    fontSize: 22, 
-    fontWeight: 'bold', 
-    color: '#21281B' 
+  title: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#21281B',
   },
   branchSelector: {
     flexDirection: 'row',
@@ -692,41 +751,41 @@ const styles = StyleSheet.create({
     marginRight: 6,
     fontWeight: '500',
   },
-  tabsContainer: { 
-    flexDirection: 'row', 
+  tabsContainer: {
+    flexDirection: 'row',
     marginBottom: 16,
     justifyContent: 'flex-start',
     borderBottomWidth: 1,
     borderColor: '#5E6E4933',
   },
-  tab: { 
+  tab: {
     paddingVertical: 8,
     paddingHorizontal: 16,
-    marginRight: 8
+    marginRight: 8,
   },
-  activeTab: { 
+  activeTab: {
     borderBottomWidth: 2,
-    borderColor: '#668442', 
+    borderColor: '#668442',
   },
-  tabText: { 
-    color: '#222C169E', 
-    fontSize: 14 
+  tabText: {
+    color: '#222C169E',
+    fontSize: 14,
   },
-  activeTabText: { 
+  activeTabText: {
     color: '#668442',
-    fontWeight: '500' 
+    fontWeight: '500',
   },
-  cardsRow: { 
-    flexDirection: 'row', 
-    flexWrap: 'wrap', 
+  cardsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
     justifyContent: 'space-between',
-    marginBottom: 16
+    marginBottom: 16,
   },
-  card: { 
-    backgroundColor: '#5A6E4933', 
-    width: '23.5%', 
-    marginBottom: 16, 
-    padding: 16, 
+  card: {
+    backgroundColor: '#5A6E4933',
+    width: '23.5%',
+    marginBottom: 16,
+    padding: 16,
     borderRadius: 12,
     borderColor: '#5E6E4933',
     borderWidth: 1,
@@ -735,23 +794,23 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8
+    marginBottom: 8,
   },
-  cardTitle: { 
-    fontSize: 17, 
+  cardTitle: {
+    fontSize: 17,
     color: '#21281B',
-    fontWeight: '500'
+    fontWeight: '500',
   },
   cardSubtitle: {
     fontSize: 12,
     color: '#4A4A4A',
     marginBottom: 6,
   },
-  cardValue: { 
-    fontSize: 34, 
-    fontWeight: 'bold', 
+  cardValue: {
+    fontSize: 34,
+    fontWeight: 'bold',
     color: '#21281B',
-    marginTop: 4
+    marginTop: 4,
   },
   metricValueRow: {
     flexDirection: 'row',
@@ -774,18 +833,18 @@ const styles = StyleSheet.create({
   },
   dateFilterInner: {
     flexDirection: 'row',
-    alignItems: 'center'
+    alignItems: 'center',
   },
   dateFilterText: {
     fontSize: 16,
     fontWeight: 'bold',
     color: '#21281B',
-    marginLeft: 8
+    marginLeft: 8,
   },
   chartsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 16
+    marginBottom: 16,
   },
   chartCard: {
     backgroundColor: '#546D3617',
@@ -806,32 +865,32 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8
+    marginBottom: 8,
   },
   chartTitle: {
     fontSize: 17,
     fontWeight: 'bold',
-    color: '#21281B'
+    color: '#21281B',
   },
   revenueContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16
+    marginBottom: 16,
   },
   revenueValue: {
     fontSize: 34,
     fontWeight: 'bold',
     color: '#21281B',
-    marginRight: 8
+    marginRight: 8,
   },
   revenueChange: {
     fontSize: 14,
-    color: '#FF5252'
+    color: '#FF5252',
   },
   subtitle: {
     fontSize: 12,
     color: '#666',
-    marginBottom: 16
+    marginBottom: 16,
   },
   chartStyle: {
     borderRadius: 8,

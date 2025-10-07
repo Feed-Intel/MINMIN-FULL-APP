@@ -251,7 +251,9 @@ export default function Branches() {
         onClose={() => setShowAddDialog(false)}
         onSuccess={() => {
           setShowAddDialog(false);
-          queryClient.invalidateQueries({ queryKey: ['branches'] });
+          queryClient.invalidateQueries({
+            queryKey: ['branches', currentPage],
+          });
         }}
       />
 

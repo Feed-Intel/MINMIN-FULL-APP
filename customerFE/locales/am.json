@@ -214,6 +214,7 @@
   "no_dishes_found_for_search": "ለ \"{{searchQuery}}\" ምንም ምግቦች አልተገኙም",
   "no_restaurants_found_for_search": "ለ \"{{searchQuery}}\" ምንም ምግብ ቤቶች አልተገኙም",
   "no_restaurants_found": "ምንም ምግብ ቤቶች አልተገኙም",
+  "no_orders_found":"ምንም ትዕዛዝዎች አልተገኙም",
   "start_typing_to_search_message": "ምግብ ቤቶችን ወይም ምግቦችን ለመፈለግ መተየብ ይጀምሩ!",
   "failed_to_load_results_message": "ውጤቶችን መጫን አልተሳካም።",
   "branch_information_section_title": "የቅርንጫፍ መረጃ",

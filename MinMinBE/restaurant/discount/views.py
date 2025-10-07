@@ -35,15 +35,15 @@ class DiscountViewSet(CachedModelViewSet):
     def get_queryset(self):
         user = self.request.user
         if user.user_type == 'admin':
-            return Discount.objects.select_related('tenant', 'branch')
+            return Discount.objects.prefetch_related('branches', 'tenant')
 
         if user.user_type == 'restaurant':
             tenant = get_user_tenant(user)
-            return Discount.objects.filter(tenant=tenant).select_related('tenant', 'branch') if tenant else Discount.objects.none()
+            return Discount.objects.filter(tenant=tenant).prefetch_related('branches', 'tenant') if tenant else Discount.objects.none()
 
         if user.user_type == 'branch':
             branch = get_user_branch(user)
-            return Discount.objects.filter(branch=branch).select_related('tenant', 'branch') if branch else Discount.objects.none()
+            return Discount.objects.filter(branch=branch).prefetch_related('branches', 'tenant') if branch else Discount.objects.none()
 
         return Discount.objects.none()
     @action(detail=False, methods=['post'],url_path='apply-discount')
@@ -133,6 +133,18 @@ class DiscountRuleViewSet(CachedModelViewSet):
             return DiscountRule.objects.filter(tenant=branch.tenant).select_related('discount_id')
 
         return DiscountRule.objects.none()
+    
+    def get_paginated_response(self, data):
+        # If 'nopage' query param is set, return unpaginated data
+        if self.request.query_params.get('nopage') == '1':
+            return Response(data)
+        return super().get_paginated_response(data)
+
+    def paginate_queryset(self, queryset):
+        # If 'nopage' query param is set, skip pagination
+        if self.request.query_params.get('nopage') == '1':
+            return None
+        return super().paginate_queryset(queryset)
     @action(detail=True, methods=['get'])
     def discount_applications(self, request, pk=None):
         """
@@ -190,7 +202,9 @@ class CouponViewSet(CachedModelViewSet):
             raise PermissionDenied("Associated tenant not found for user")
 
         branch = get_user_branch(self.request.user)
-        return serializer.save(tenant=tenant, branch=branch)
+        coupon = serializer.save(tenant=tenant)
+        if branch and not coupon.is_global:
+            coupon.branches.add(branch)
     
     def perform_update(self, serializer):
         tenant = get_user_tenant(self.request.user)
@@ -198,7 +212,9 @@ class CouponViewSet(CachedModelViewSet):
             raise PermissionDenied("Associated tenant not found for user")
 
         branch = get_user_branch(self.request.user)
-        return serializer.save(tenant=tenant, branch=branch)
+        coupon = serializer.save(tenant=tenant)
+        if branch and not coupon.is_global:
+            coupon.branches.add(branch)
         
 
     def get_queryset(self):

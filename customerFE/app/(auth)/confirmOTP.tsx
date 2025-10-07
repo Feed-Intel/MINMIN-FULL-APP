@@ -1,34 +1,36 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef } from 'react';
 import {
   StyleSheet,
   Animated,
   Platform,
   Image,
   View, // Added View for Toast.show
-} from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { OtpInput } from "react-native-otp-entry";
-import { Text, Button } from "react-native-paper";
-import { router } from "expo-router";
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { OtpInput } from 'react-native-otp-entry';
+import { Text, Button } from 'react-native-paper';
+import { router } from 'expo-router';
 import {
   useConfirmOTP,
   useResetPassword,
-} from "@/services/mutation/authMutation";
-import { tokenStorage } from "@/utils/cache";
-import { jwtDecode } from "jwt-decode";
-import { COOKIE_NAME, REFRESH_COOKIE_NAME } from "@/utils/constants";
-import { useAuth } from "@/context/auth";
-import { ThemedView } from "@/components/ThemedView";
-import Toast from "react-native-toast-message"; // Import Toast
+  useVerifyOTP,
+} from '@/services/mutation/authMutation';
+import { tokenStorage } from '@/utils/cache';
+import { jwtDecode } from 'jwt-decode';
+import { COOKIE_NAME, REFRESH_COOKIE_NAME } from '@/utils/constants';
+import { useAuth } from '@/context/auth';
+import { ThemedView } from '@/components/ThemedView';
+import Toast from 'react-native-toast-message'; // Import Toast
 
-import { i18n } from "@/app/_layout";
+import { i18n } from '@/app/_layout';
 
 const ConfirmOTPScreen = () => {
   const logoAnimation = useRef(new Animated.Value(0)).current;
   const formAnimation = useRef(new Animated.Value(0)).current;
-  const [OTP, setOTPText] = React.useState("");
-  const { user, setUser } = useAuth();
+  const [OTP, setOTPText] = React.useState('');
+  const { user, setUser, handleNativeTokens } = useAuth();
   const { mutate: checkOTPFn, isPending } = useConfirmOTP();
+  const { mutate: verifyOTPFn, isPending: isPendingVerify } = useVerifyOTP();
   const { mutate: ResetPasswordFn, isPending: resetPasswordIsPending } =
     useResetPassword();
 
@@ -53,28 +55,30 @@ const ConfirmOTPScreen = () => {
     if (!OTP) {
       // Replaced alert() with Toast.show() and i18n.t()
       Toast.show({
-        type: "error",
-        text1: i18n.t("error_toast_title"),
-        text2: i18n.t("please_enter_otp_alert"),
+        type: 'error',
+        text1: i18n.t('error_toast_title'),
+        text2: i18n.t('please_enter_otp_alert'),
       });
       return;
     }
-    checkOTPFn(data, {
-      onSuccess: async (data: any) => {
-        await tokenStorage.setItem(COOKIE_NAME, data.access_token);
-        await tokenStorage.setItem(REFRESH_COOKIE_NAME, data.refresh_token);
-        const decoded = jwtDecode<{
-          user_id: string;
-          email: string;
-        }>(data.access_token);
-        setUser({ id: decoded.user_id, email: decoded.email });
-        if (user?.isPasswordReset) {
-          router.replace("/(auth)/resetPassword");
-        } else {
-          router.replace("/(protected)/feed");
-        }
-      },
-    });
+    if (user?.isPasswordReset) {
+      checkOTPFn(data, {
+        onSuccess: () => {
+          setUser({ email: user.email, otp: OTP });
+          router.replace('/(auth)/resetPassword');
+        },
+      });
+    } else {
+      verifyOTPFn(data, {
+        onSuccess: async (data: any) => {
+          handleNativeTokens({
+            accessToken: data.access_token,
+            refreshToken: data.refresh_token,
+          });
+          router.replace('/(protected)/feed');
+        },
+      });
+    }
   };
 
   const sendOTPAgain = () => {
@@ -100,7 +104,7 @@ const ConfirmOTPScreen = () => {
             },
           ]}
         >
-          <Image source={require("@/assets/images/minmin-green.png")} />
+          <Image source={require('@/assets/images/minmin-green.png')} />
         </Animated.View>
 
         <Animated.View
@@ -120,10 +124,10 @@ const ConfirmOTPScreen = () => {
           ]}
         >
           <Text variant="titleLarge" style={styles.titleText}>
-            {i18n.t("otp_verification_title")} {/* Replaced hardcoded string */}
+            {i18n.t('otp_verification_title')} {/* Replaced hardcoded string */}
           </Text>
           <Text variant="bodyLarge" style={styles.subtitleText}>
-            {i18n.t("otp_subtitle")} {/* Replaced hardcoded string */}
+            {i18n.t('otp_subtitle')} {/* Replaced hardcoded string */}
           </Text>
 
           <OtpInput
@@ -144,9 +148,9 @@ const ConfirmOTPScreen = () => {
             loading={isPending}
             style={styles.button}
             contentStyle={styles.buttonContent}
-            theme={{ colors: { primary: "#96B76E" } }}
+            theme={{ colors: { primary: '#96B76E' } }}
           >
-            {i18n.t("verify_otp_button")} {/* Replaced hardcoded string */}
+            {i18n.t('verify_otp_button')} {/* Replaced hardcoded string */}
           </Button>
 
           <Button
@@ -154,9 +158,9 @@ const ConfirmOTPScreen = () => {
             onPress={sendOTPAgain}
             loading={resetPasswordIsPending}
             style={styles.resendButton}
-            theme={{ colors: { primary: "#96B76E" } }}
+            theme={{ colors: { primary: '#96B76E' } }}
           >
-            {i18n.t("send_otp_again_button")} {/* Replaced hardcoded string */}
+            {i18n.t('send_otp_again_button')} {/* Replaced hardcoded string */}
           </Button>
         </Animated.View>
       </SafeAreaView>
@@ -167,29 +171,29 @@ const ConfirmOTPScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: "center",
-    paddingHorizontal: Platform.OS === "web" ? 20 : 16,
+    justifyContent: 'center',
+    paddingHorizontal: Platform.OS === 'web' ? 20 : 16,
     paddingVertical: 20,
-    backgroundColor: "#FDFDFC",
+    backgroundColor: '#FDFDFC',
   },
   logoContainer: {
-    alignItems: "center",
-    marginBottom: Platform.OS === "web" ? 40 : 30,
+    alignItems: 'center',
+    marginBottom: Platform.OS === 'web' ? 40 : 30,
   },
   logoText: {
-    fontSize: Platform.OS === "web" ? 48 : 36,
-    fontWeight: "700",
-    color: "#6200ee",
+    fontSize: Platform.OS === 'web' ? 48 : 36,
+    fontWeight: '700',
+    color: '#6200ee',
     letterSpacing: 1,
   },
   formContainer: {
-    padding: Platform.OS === "web" ? 24 : 20,
+    padding: Platform.OS === 'web' ? 24 : 20,
     ...Platform.select({
       web: {
         maxWidth: 400,
-        width: "100%",
-        alignSelf: "center",
-        boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+        width: '100%',
+        alignSelf: 'center',
+        boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
       },
       default: {
         marginHorizontal: 8,
@@ -197,44 +201,44 @@ const styles = StyleSheet.create({
     }),
   },
   titleText: {
-    textAlign: "center",
+    textAlign: 'center',
     marginBottom: 8,
-    fontWeight: "700",
-    color: "#333",
+    fontWeight: '700',
+    color: '#333',
   },
   subtitleText: {
-    textAlign: "center",
+    textAlign: 'center',
     marginBottom: 20,
-    color: "#666",
+    color: '#666',
   },
   otpContainer: {
     marginBottom: 12,
-    marginHorizontal: "auto",
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
+    marginHorizontal: 'auto',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
     ...Platform.select({
       web: {
         maxWidth: 320,
-        width: "100%",
-        alignSelf: "center",
+        width: '100%',
+        alignSelf: 'center',
       },
     }),
   },
   pinCodeStyle: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
+    justifyContent: 'center',
+    alignItems: 'center',
     borderRadius: 8,
     minHeight: 48,
     minWidth: 48,
     marginHorizontal: 4,
     borderWidth: 1,
-    borderColor: "#ccc",
-    backgroundColor: "#fff",
+    borderColor: '#ccc',
+    backgroundColor: '#fff',
   },
   textStyle: {
-    color: "#333",
+    color: '#333',
     fontSize: 16,
   },
   button: {
@@ -244,8 +248,8 @@ const styles = StyleSheet.create({
     ...Platform.select({
       web: {
         maxWidth: 320,
-        width: "100%",
-        alignSelf: "center",
+        width: '100%',
+        alignSelf: 'center',
       },
     }),
   },
@@ -258,8 +262,8 @@ const styles = StyleSheet.create({
     ...Platform.select({
       web: {
         maxWidth: 320,
-        width: "100%",
-        alignSelf: "center",
+        width: '100%',
+        alignSelf: 'center',
       },
     }),
   },

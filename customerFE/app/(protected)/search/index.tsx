@@ -76,7 +76,6 @@ const RestaurantSearch: React.FC = () => {
     error,
   } = useGetMenuAvailabilities(debouncedQuery);
 
-  // --- Single-pass categorization (O(n), populates sampleDishes properly)
   const categorizedResults = useMemo(() => {
     const lowerQuery = (debouncedQuery || '').toLowerCase();
     const restaurantsMap = new Map<string | number, any>();

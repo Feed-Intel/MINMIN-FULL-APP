@@ -1,21 +1,21 @@
-import * as WebBrowser from "expo-web-browser";
-import * as React from "react";
+import * as WebBrowser from 'expo-web-browser';
+import * as React from 'react';
 // import * as AppleAuthentication from "expo-apple-authentication";
-import { tokenStorage } from "@/utils/cache";
-import { BASE_URL, COOKIE_NAME, REFRESH_COOKIE_NAME } from "@/utils/constants";
-import { AuthUser } from "@/utils/middleware";
+import { tokenStorage } from '@/utils/cache';
+import { BASE_URL, COOKIE_NAME, REFRESH_COOKIE_NAME } from '@/utils/constants';
+import { AuthUser } from '@/utils/middleware';
 import {
   AuthError,
   AuthRequestConfig,
   DiscoveryDocument,
   makeRedirectUri,
   useAuthRequest,
-} from "expo-auth-session";
-import { router } from "expo-router";
-import { jwtDecode, JwtPayload } from "jwt-decode";
-import { Platform } from "react-native";
-import Toast from "react-native-toast-message";
-import { Login as ApiLogin } from "@/services/api/authApi";
+} from 'expo-auth-session';
+import { router } from 'expo-router';
+import { jwtDecode, JwtPayload } from 'jwt-decode';
+import { Platform } from 'react-native';
+import Toast from 'react-native-toast-message';
+import { Login as ApiLogin } from '@/services/api/authApi';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -32,21 +32,25 @@ const AuthContext = React.createContext({
   fetchWithAuth: (url: string, options: RequestInit) =>
     Promise.resolve(new Response()),
   setUser: (user: AuthUser) => {},
+  handleNativeTokens: (tokens: {
+    accessToken: string;
+    refreshToken: string;
+  }) => {},
   isLoading: false,
   error: null as AuthError | null,
 });
 
 const config: AuthRequestConfig = {
-  clientId: "google",
-  scopes: ["openid", "profile", "email"],
+  clientId: 'google',
+  scopes: ['openid', 'profile', 'email'],
   redirectUri: makeRedirectUri(),
 };
 
 const facebookConfig: AuthRequestConfig = {
-  clientId: "facebook",
-  scopes: ["email", "public_profile"],
+  clientId: 'facebook',
+  scopes: ['email', 'public_profile'],
   redirectUri: makeRedirectUri(),
-  responseType: "token",
+  responseType: 'token',
 };
 
 const discovery: DiscoveryDocument = {
@@ -68,7 +72,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     useAuthRequest(facebookConfig, facebookDiscovery);
   const [isLoading, setIsLoading] = React.useState(false);
   const [error, setError] = React.useState<AuthError | null>(null);
-  const isWeb = Platform.OS === "web";
+  const isWeb = Platform.OS === 'web';
   const refreshInProgressRef = React.useRef(false);
 
   React.useEffect(() => {
@@ -106,14 +110,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 setRefreshToken(storedRefreshToken);
               }
               setUser({ id: decoded.user_id });
-              router.replace("/(protected)/feed");
+              router.replace('/(protected)/feed');
             } else if (storedRefreshToken) {
               // Access token expired, but we have a refresh token
               setRefreshToken(storedRefreshToken);
               await refreshAccessToken(storedRefreshToken);
             }
           } catch (e) {
-            console.error("Errsor decoding stored token:", e);
+            console.error('Errsor decoding stored token:', e);
 
             // Try to refresh using the refresh token
             if (storedRefreshToken) {
@@ -129,10 +133,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           await refreshAccessToken(storedRefreshToken);
         } else {
           //("User is not authenticated");
-          router.replace("/(auth)");
+          router.replace('/(auth)');
         }
       } catch (error) {
-        console.error("Error restoring session:", error);
+        console.error('Error restoring session:', error);
       } finally {
         setIsLoading(false);
       }
@@ -159,26 +163,26 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
       // For native: Use the refresh token
       if (!currentRefreshToken) {
-        console.error("No refresh token available");
+        console.error('No refresh token available');
         signOut();
         return null;
       }
 
       //("Using refresh token to get new tokens");
       const refreshResponse = await fetch(`${BASE_URL}/api/auth/refresh`, {
-        method: "POST",
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          platform: "native",
+          platform: 'native',
           refreshToken: currentRefreshToken,
         }),
       });
 
       if (!refreshResponse.ok) {
         const errorData = await refreshResponse.json();
-        console.error("Token refresh failed:", errorData);
+        console.error('Token refresh failed:', errorData);
 
         // If refresh fails due to expired token, sign out
         if (refreshResponse.status === 401) {
@@ -207,7 +211,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         const hasRequiredFields = decoded && (decoded as any).user_id;
 
         if (!hasRequiredFields) {
-          console.warn("Refreshed token is missing some user fields:", decoded);
+          console.warn('Refreshed token is missing some user fields:', decoded);
         }
 
         setUser({ id: decoded.user_id });
@@ -215,7 +219,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
       return newAccessToken; // Return the new access token
     } catch (error) {
-      console.error("Error refreshing token:", error);
+      console.error('Error refreshing token:', error);
       // If there's an error refreshing, we should sign out
       signOut();
       return null;
@@ -249,7 +253,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const handleFacebookResponse = async () => {
-    if (facebookResponse?.type === "success") {
+    if (facebookResponse?.type === 'success') {
       try {
         setIsLoading(true);
         // Extract the authorization code from the response
@@ -260,11 +264,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         // We include both the code and platform information
         // The platform info helps our server handle web vs native differently
         const formData = new FormData();
-        formData.append("code", code);
+        formData.append('code', code);
 
         // Add platform information for the backend to handle appropriately
         if (isWeb) {
-          formData.append("platform", "web");
+          formData.append('platform', 'web');
         }
 
         // Get the code verifier from the request object
@@ -282,26 +286,26 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         const tokenResponse = await fetch(
           `${BASE_URL}/api/auth/facebook/token`,
           {
-            method: "POST",
+            method: 'POST',
             body: formData,
-            credentials: isWeb ? "include" : "same-origin", // Include cookies for web
+            credentials: isWeb ? 'include' : 'same-origin', // Include cookies for web
           }
         );
         const tokens = await tokenResponse.json();
         await handleNativeTokens(tokens);
-        router.replace("/(protected)/feed");
+        router.replace('/(protected)/feed');
       } catch (e) {
         Toast.show({
-          type: "error",
-          text1: "Error Handling Request",
-          text2: "An error occurred while handling the request",
+          type: 'error',
+          text1: 'Error Handling Request',
+          text2: 'An error occurred while handling the request',
         });
       } finally {
         setIsLoading(false);
       }
-    } else if (response?.type === "cancel") {
-      alert("Sign in cancelled");
-    } else if (response?.type === "error") {
+    } else if (response?.type === 'cancel') {
+      alert('Sign in cancelled');
+    } else if (response?.type === 'error') {
       setError(response?.error as AuthError);
     }
   };
@@ -309,7 +313,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   async function handleResponse() {
     // This function is called when Google redirects back to our app
     // The response contains the authorization code that we'll exchange for tokens
-    if (response?.type === "success") {
+    if (response?.type === 'success') {
       try {
         setIsLoading(true);
         // Extract the authorization code from the response
@@ -320,19 +324,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         // We include both the code and platform information
         // The platform info helps our server handle web vs native differently
         const formData = new FormData();
-        formData.append("code", code);
+        formData.append('code', code);
 
         // Add platform information for the backend to handle appropriately
         if (isWeb) {
-          formData.append("platform", "web");
+          formData.append('platform', 'web');
         }
 
         // Get the code verifier from the request object
         // This is the same verifier that was used to generate the code challenge
         if (request?.codeVerifier) {
-          formData.append("code_verifier", request.codeVerifier);
+          formData.append('code_verifier', request.codeVerifier);
         } else {
-          console.warn("No code verifier found in request object");
+          console.warn('No code verifier found in request object');
         }
 
         // Send the authorization code to our token endpoint
@@ -340,9 +344,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         // For web: credentials are included to handle cookies
         // For native: we'll receive the tokens directly in the response
         const tokenResponse = await fetch(`${BASE_URL}/api/auth/token`, {
-          method: "POST",
+          method: 'POST',
           body: formData,
-          credentials: isWeb ? "include" : "same-origin", // Include cookies for web
+          credentials: isWeb ? 'include' : 'same-origin', // Include cookies for web
         });
 
         // For native: The server returns both tokens in the response
@@ -350,19 +354,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         const tokens = await tokenResponse.json();
         await handleNativeTokens(tokens);
 
-        router.replace("/(protected)/feed");
+        router.replace('/(protected)/feed');
       } catch (e) {
         Toast.show({
-          type: "error",
-          text1: "Error Handling Request",
-          text2: "An error occurred while handling the request",
+          type: 'error',
+          text1: 'Error Handling Request',
+          text2: 'An error occurred while handling the request',
         });
       } finally {
         setIsLoading(false);
       }
-    } else if (response?.type === "cancel") {
-      alert("Sign in cancelled");
-    } else if (response?.type === "error") {
+    } else if (response?.type === 'cancel') {
+      alert('Sign in cancelled');
+    } else if (response?.type === 'error') {
       setError(response?.error as AuthError);
     }
   }
@@ -372,7 +376,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       // For web: Include credentials to send cookies
       const response = await fetch(url, {
         ...options,
-        credentials: "include",
+        credentials: 'include',
       });
 
       // If the response indicates an authentication error, try to refresh the token
@@ -386,7 +390,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         if (user) {
           return fetch(url, {
             ...options,
-            credentials: "include",
+            credentials: 'include',
           });
         }
       }
@@ -436,27 +440,27 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       const data = await ApiLogin({
         email: email.trim().toLowerCase(),
         password,
-        remember_me: rememberMe ? "true" : "false",
+        remember_me: rememberMe ? 'true' : 'false',
       } as any);
 
       // Backend returns access_token and refresh_token
       const accessToken = data?.access_token;
       const refreshToken = data?.refresh_token;
       if (!accessToken || !refreshToken) {
-        throw new Error("Invalid response from server");
+        throw new Error('Invalid response from server');
       }
 
       await handleNativeTokens({ accessToken, refreshToken });
-      router.replace("/(protected)/feed");
+      router.replace('/(protected)/feed');
     } catch (e: any) {
       const message =
-        typeof e === "string"
+        typeof e === 'string'
           ? e
           : e?.response?.data?.error || e?.response?.data?.detail || e?.message;
       Toast.show({
-        type: "error",
-        text1: "Login Error",
-        text2: message || "Login failed. Please try again.",
+        type: 'error',
+        text1: 'Login Error',
+        text2: message || 'Login failed. Please try again.',
       });
     } finally {
       setIsLoading(false);
@@ -496,11 +500,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       // For web: Call logout endpoint to clear the cookie
       try {
         await fetch(`${BASE_URL}/api/auth/logout`, {
-          method: "POST",
-          credentials: "include",
+          method: 'POST',
+          credentials: 'include',
         });
       } catch (error) {
-        console.error("Error during web logout:", error);
+        console.error('Error during web logout:', error);
       }
     }
     await tokenStorage?.removeItem(COOKIE_NAME);
@@ -520,6 +524,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         signInWithEmail,
         signOut,
         setUser,
+        handleNativeTokens,
         isLoading,
         error,
         fetchWithAuth,
@@ -533,7 +538,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 export const useAuth = () => {
   const context = React.useContext(AuthContext);
   if (!context) {
-    throw new Error("useAuth must be used within an AuthProvider");
+    throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
 };

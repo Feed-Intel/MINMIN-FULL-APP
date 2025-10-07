@@ -1,5 +1,7 @@
 from django.utils import timezone
+from django.db.models import Q
 from restaurant.discount.models import DiscountRule, Coupon, CouponUsage
+from restaurant.tenant.models import Tenant
 
 def calculate_discount(order, coupon=None):
     items = order.items.all()
@@ -17,26 +19,30 @@ def calculate_discount_from_data(tenant, items_data, coupon, order_total, custom
 
     # --- Candidate Discounts ---
     discounts = DiscountRule.objects.filter(
-        tenant=tenant,
-        discount_id__valid_from__lte=now,
-        discount_id__valid_until__gte=now
+        tenant=tenant
+    ).filter(
+        Q(discount_id__valid_from__lte=now)|Q(discount_id__valid_from__isnull=True),
+        Q(discount_id__valid_until__gte=now)|Q(discount_id__valid_until__isnull=True)
     )
     if branch:
-        discounts = discounts.filter(discount_id__branch=branch)
-
+        discounts = discounts.filter(Q(discount_id__branches=branch)|Q(discount_id__is_global=True))
     # --- Candidate Coupons ---
+    print(discounts)
     coupon_discount = 0.0
     if coupon:
         coupons = Coupon.objects.filter(
-            tenant=tenant,
+            tenant=Tenant.objects.get(id=tenant),
             discount_code=coupon,
-            valid_from__lte=now,
-            valid_until__gte=now,
             is_valid=True
+        ).filter(
+            Q(valid_from__lte=now) | Q(valid_from__isnull=True),
+            Q(valid_until__gte=now) | Q(valid_until__isnull=True)
         )
         if coupons.exists():
+            if branch:
+                coupons = coupons.filter(Q(branches=branch)|Q(is_global=True))
             c = coupons.first()
-
+            
             if not CouponUsage.objects.filter(coupon=c, customer=customer).exists():
                 if c.is_percentage:
                     coupon_discount = order_total * (float(c.discount_amount) / 100)
@@ -74,7 +80,7 @@ def calculate_discount_from_data(tenant, items_data, coupon, order_total, custom
                     for i in range(item['quantity'])
                     if str(item['menu_item']) in rule.applicable_items
                 ]
-                if len(applicable_items) >= rule.buy_quantity:
+                if type(rule.buy_quantity) == 'int' and len(applicable_items) >= rule.buy_quantity:
                     free_items = (len(applicable_items) // rule.buy_quantity) * rule.get_quantity
                     discount_amount += sum(item['price'] for item, _ in applicable_items[:free_items])
 
@@ -85,7 +91,7 @@ def calculate_discount_from_data(tenant, items_data, coupon, order_total, custom
                     for i in range(item['quantity'])
                     if str(item['menu_item']) in rule.applicable_items
                 ]
-                if len(applicable_items) >= rule.buy_quantity:
+                if type(rule.buy_quantity) == 'int' and len(applicable_items) >= rule.buy_quantity:
                     free_items = (len(applicable_items) // rule.buy_quantity) * rule.get_quantity
                     discount_amount += sum(item['price'] for item, _ in applicable_items[:free_items])
 

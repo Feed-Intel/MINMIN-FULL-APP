@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from '@tanstack/react-query';
 import {
   ChangePassword,
   ConfirmOTP,
@@ -9,14 +9,15 @@ import {
   ResetPassword,
   SignUp,
   UpdateProfile,
-} from "../api/authApi";
+  VerifyOTP,
+} from '../api/authApi';
 
 export const useLogin = (
   onSuccess?: (data: any) => void,
   onError?: (error: any) => void
 ) =>
   useMutation({
-    mutationKey: ["login"],
+    mutationKey: ['login'],
     mutationFn: Login,
     onSuccess: onSuccess,
     onError: onError,
@@ -27,7 +28,7 @@ export const useSignUp = (
   onError?: (error: any) => void
 ) =>
   useMutation({
-    mutationKey: ["signUp"],
+    mutationKey: ['signUp'],
     mutationFn: SignUp,
     onSuccess: onSuccess,
     onError: onError,
@@ -38,7 +39,7 @@ export const useGoogleLogin = (
   onError?: (error: any) => void
 ) =>
   useMutation({
-    mutationKey: ["google-login"],
+    mutationKey: ['google-login'],
     mutationFn: GoogleOAuthLogin,
     onSuccess: onSuccess,
     onError: onError,
@@ -49,7 +50,7 @@ export const useFacebookLogin = (
   onError?: (error: any) => void
 ) =>
   useMutation({
-    mutationKey: ["facebook-login"],
+    mutationKey: ['facebook-login'],
     mutationFn: FacebookOAuthLogin,
     onSuccess: onSuccess,
     onError: onError,
@@ -60,8 +61,19 @@ export const useConfirmOTP = (
   onError?: (error: any) => void
 ) =>
   useMutation({
-    mutationKey: ["confirmOTP"],
+    mutationKey: ['confirmOTP'],
     mutationFn: ConfirmOTP,
+    onSuccess: onSuccess,
+    onError: onError,
+  });
+
+export const useVerifyOTP = (
+  onSuccess?: (data: any) => void,
+  onError?: (error: any) => void
+) =>
+  useMutation({
+    mutationKey: ['verifyOTP'],
+    mutationFn: VerifyOTP,
     onSuccess: onSuccess,
     onError: onError,
   });
@@ -70,7 +82,7 @@ export const useUpdateProfile = (
   onError?: (error: any) => void
 ) =>
   useMutation({
-    mutationKey: ["updateProfile"],
+    mutationKey: ['updateProfile'],
     mutationFn: UpdateProfile,
     onSuccess: onSuccess,
     onError: onError,
@@ -80,7 +92,7 @@ export const useResetPassword = (
   onError?: (error: any) => void
 ) =>
   useMutation({
-    mutationKey: ["resetPassword"],
+    mutationKey: ['resetPassword'],
     mutationFn: ResetPassword,
     onSuccess: onSuccess,
     onError: onError,
@@ -91,7 +103,7 @@ export const useUpdatePassword = (
   onError?: (error: any) => void
 ) =>
   useMutation({
-    mutationKey: ["changePassword"],
+    mutationKey: ['changePassword'],
     mutationFn: ChangePassword,
     onSuccess,
     onError,
@@ -99,7 +111,7 @@ export const useUpdatePassword = (
 
 export const useGetUser = (id?: string) =>
   useQuery({
-    queryKey: ["getUser", id],
+    queryKey: ['getUser', id],
     queryFn: () => GetUser(id),
     refetchInterval: 30000,
     enabled: !!id,

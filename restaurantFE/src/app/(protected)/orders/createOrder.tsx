@@ -35,6 +35,7 @@ import {
   addToCart,
   setRemarks,
   updateQuantity,
+  setCustomerInfo,
 } from '@/lib/reduxStore/cartSlice';
 
 const DEFAULT_CATEGORIES = ['Main course', 'Pasta', 'Dessert', 'Drinks'];
@@ -64,6 +65,19 @@ export default function CreateOrder() {
     acc[item.id] = item.quantity;
     return acc;
   }, {} as Record<string, number>);
+
+  // const [orderData, setOrderData] = useState({
+  //   tenant: tenantId,
+  //   branch: branchId,
+  //   table: '',
+  //   coupon: '',
+  //   items: cart.items.map((item: any) => ({
+  //     menu_item: item.id,
+  //     quantity: newQuantities[item.id] || 1,
+  //     price: item.price,
+  //     remarks: remarks[item.id],
+  //   })),
+  // });
 
   const getMenuCategories = (menu: any): string[] => {
     if (Array.isArray(menu?.categories) && menu.categories.length) {
@@ -201,9 +215,32 @@ export default function CreateOrder() {
 
       {/* Customer Info */}
       <View style={styles.row}>
-        <TextInput placeholder="Contact number" style={styles.input} />
-        <TextInput placeholder="Customer name" style={styles.input} />
-        <TextInput placeholder="TIN number" style={styles.input} />
+        <TextInput
+          placeholder="Contact number"
+          style={styles.input}
+          keyboardType="phone-pad"
+          value={cart.contactNumber}
+          onChangeText={(text) => {
+            const cleaned = text.replace(/[^0-9.]/g, '');
+            dispatch(setCustomerInfo({ contactNumber: cleaned }));
+          }}
+        />
+        <TextInput
+          placeholder="Customer name"
+          value={cart.customerName}
+          style={styles.input}
+          onChangeText={(text) => {
+            dispatch(setCustomerInfo({ customerName: text }));
+          }}
+        />
+        <TextInput
+          placeholder="TIN number"
+          style={styles.input}
+          value={cart.tinNumber}
+          onChangeText={(text) => {
+            dispatch(setCustomerInfo({ tinNumber: text }));
+          }}
+        />
       </View>
 
       {/* Filters */}
