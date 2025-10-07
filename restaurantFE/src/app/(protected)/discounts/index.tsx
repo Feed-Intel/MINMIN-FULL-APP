@@ -36,7 +36,7 @@ const ManageDiscounts: React.FC = () => {
   const [currentPage, setCurrentPage] = useState<number>(1);
   const { data: discounts } = useDiscounts(currentPage);
   const { data: coupons } = useGetCoupons(currentPage);
-  const { data: branches } = useGetBranches();
+  const { data: branches } = useGetBranches(undefined, true);
   const { data: discountRules = [] } = useDiscountRules();
   const { mutateAsync: discountDelete } = useDeleteDiscount();
   const { mutateAsync: couponDelete } = useDeleteCoupon();
@@ -445,6 +445,7 @@ const ManageDiscounts: React.FC = () => {
       <AddDiscountModal
         branches={(branches?.results as Branch[]) || []}
         visible={addDiscountModalVisible}
+        currentPage={currentPage}
         onClose={() => setAddDiscountModalVisible(false)}
       />
       {discount && (
@@ -453,6 +454,7 @@ const ManageDiscounts: React.FC = () => {
           discount={discount}
           discountRule={selectedDiscountRule}
           visible={editDiscountModalVisible}
+          currentPage={currentPage}
           onClose={() => {
             setEditDiscountModalVisible(false);
             setDiscount(null);
@@ -462,11 +464,13 @@ const ManageDiscounts: React.FC = () => {
       )}
       <AddCouponModal
         visible={addCouponModalVisible}
+        branches={branches?.results || []}
         setVisible={setAddCouponModalVisible}
       />
       {coupon && (
         <EditCouponModal
           visible={editCouponModalVisible}
+          branches={branches?.results || []}
           onClose={() => {
             setEditCouponModalVisible(false);
             setCoupon(null);

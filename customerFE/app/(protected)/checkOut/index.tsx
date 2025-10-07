@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect } from 'react';
 import {
   ScrollView,
   Modal,
@@ -8,9 +8,9 @@ import {
   View,
   Animated,
   KeyboardAvoidingView,
-} from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { RelativePathString, router } from "expo-router";
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { RelativePathString, router } from 'expo-router';
 import {
   Appbar,
   Card,
@@ -18,39 +18,39 @@ import {
   List,
   RadioButton,
   Text,
-} from "react-native-paper";
-import { TextInput } from "react-native"; // Using react-native's TextInput for placeholder styling
-import { MaterialIcons } from "@expo/vector-icons";
-import { useCreateOrder } from "@/services/mutation/orderMutation";
-import { useCheckDiscount } from "@/services/mutation/discountMutation";
+} from 'react-native-paper';
+import { TextInput } from 'react-native'; // Using react-native's TextInput for placeholder styling
+import { MaterialIcons } from '@expo/vector-icons';
+import { useCreateOrder } from '@/services/mutation/orderMutation';
+import { useCheckDiscount } from '@/services/mutation/discountMutation';
 import {
   clearCart,
   setDiscount,
   setTransactionId,
-} from "@/lib/reduxStore/cartSlice";
-import { useDispatch } from "react-redux";
-import { useAppSelector } from "@/lib/reduxStore/hooks";
-import { generateTransactionID } from "@/utils/transactionIDGenerator";
-import { initializePayment } from "@/utils/chapaPaymentRequest";
-import { useGetUser } from "@/services/mutation/authMutation";
-import { useCreatePayment } from "@/services/mutation/paymentMutation";
-import { useAuth } from "@/context/auth";
-import { ThemedView } from "@/components/ThemedView";
-import { useLocalSearchParams } from "expo-router";
-import { i18n } from "@/app/_layout";
+} from '@/lib/reduxStore/cartSlice';
+import { useDispatch } from 'react-redux';
+import { useAppSelector } from '@/lib/reduxStore/hooks';
+import { generateTransactionID } from '@/utils/transactionIDGenerator';
+import { initializePayment } from '@/utils/chapaPaymentRequest';
+import { useGetUser } from '@/services/mutation/authMutation';
+import { useCreatePayment } from '@/services/mutation/paymentMutation';
+import { useAuth } from '@/context/auth';
+import { ThemedView } from '@/components/ThemedView';
+import { useLocalSearchParams } from 'expo-router';
+import { i18n } from '@/app/_layout';
 
 export default function CheckoutScreen() {
   const headerAnimation = useRef(new Animated.Value(0)).current;
   const contentAnimation = useRef(new Animated.Value(0)).current;
   const discount = useAppSelector((state) => state.cart.discount);
-  const [discountCode, setDiscountCode] = useState("");
+  const [discountCode, setDiscountCode] = useState('');
   const cartItems = useAppSelector((state) => state.cart.items);
-  const [orderId] = useState(""); // This is not being set, consider if it's needed or can be removed
+  const [orderId] = useState(''); // This is not being set, consider if it's needed or can be removed
   const redeem_amount = useAppSelector((state) => state.cart.redeemAmount);
   const [total, setTotal] = useState(0); // This state isn't directly used for final calculation in render, consider removing or using it
-  const [discountInput, setDiscountInput] = useState("");
+  const [discountInput, setDiscountInput] = useState('');
   const [showDiscountModal, setShowDiscountModal] = useState(false);
-  const [discountResponse, setDiscountResponse] = useState(""); // This is not being used to display response, consider removing or implementing
+  const [discountResponse, setDiscountResponse] = useState(''); // This is not being used to display response, consider removing or implementing
   const remarks = useAppSelector((state) => state.cart.remarks);
   const paymentAPI = useAppSelector((state) => state.cart.paymentAPIKEY);
   const paymentPublicKey = useAppSelector(
@@ -58,7 +58,7 @@ export default function CheckoutScreen() {
   );
   const taxRate = useAppSelector((state) => state.cart.tax);
   const serviceChargeRate = useAppSelector((state) => state.cart.serviceCharge);
-  const [paymentMethod, setPaymentMethod] = useState("cash");
+  const [paymentMethod, setPaymentMethod] = useState('cash');
   const branch = useAppSelector((state) => state.cart.branchId);
   const restaurant = useAppSelector((state) => state.cart.restaurantId);
   const table = useAppSelector((state) => state.cart.tableId);
@@ -70,7 +70,7 @@ export default function CheckoutScreen() {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const dispatch = useDispatch();
   const updTable =
-    table === null || table === undefined || table === "null" ? "" : table;
+    table === null || table === undefined || table === 'null' ? '' : table;
   const newQuantities = cartItems.reduce((acc: any, item: any) => {
     acc[item.id] = item.quantity;
     return acc;
@@ -84,7 +84,7 @@ export default function CheckoutScreen() {
   const tax = subtotal * (taxRate! / 100);
   const serviceCharge = subtotal * (serviceChargeRate! / 100);
   const params = useLocalSearchParams();
-  const previousScreen = params.from as "cart" | "restaurant" | undefined;
+  const previousScreen = params.from as 'cart' | 'restaurant' | undefined;
   const restaurantId = params.restaurantId as string;
   const branchs = params.branchId as string;
   const menus = params.menus as string;
@@ -104,6 +104,26 @@ export default function CheckoutScreen() {
         useNativeDriver: true,
       }),
     ]).start();
+    async function checkDiscountFN() {
+      const itemsData = cartItems.map((item: any) => ({
+        menu_item: item.id,
+        quantity: newQuantities[item.id] || 0,
+        price: item.price,
+      }));
+
+      const discountResponse = await checkDiscount.mutateAsync({
+        tenant: restaurant,
+        branch: branch,
+        coupon: undefined,
+        items: itemsData,
+      });
+      const discountValue = discountResponse.discount_amount || 0;
+      setTempDiscount(discountValue);
+      dispatch(setDiscount(discountValue));
+      setTotal(subtotal - discountValue);
+    }
+
+    checkDiscountFN();
   }, [headerAnimation, contentAnimation]);
 
   const handleApplyDiscount = async () => {
@@ -123,10 +143,9 @@ export default function CheckoutScreen() {
       const discountValue = discountResponse.discount_amount || 0;
       setTempDiscount(discountValue);
       dispatch(setDiscount(discountValue));
-      setTotal(subtotal - discountValue); // Update total state
+      setTotal(subtotal - discountValue);
     } catch (error) {
-      console.error("Error applying discount:", error);
-      // Optionally show a toast or alert for discount application failure
+      console.error('Error applying discount:', error);
     }
   };
 
@@ -146,14 +165,14 @@ export default function CheckoutScreen() {
       })),
     };
     const transactionID = generateTransactionID();
-    if (paymentMethod === "cash") {
+    if (paymentMethod === 'cash') {
       createOrder.mutate(orderData, {
         onSuccess: (data: any) => {
           setShowSuccessModal(true);
           createPayment(
             {
               order: data.id,
-              payment_method: "cash",
+              payment_method: 'cash',
               amount_paid: (
                 subtotal +
                 serviceCharge +
@@ -172,8 +191,8 @@ export default function CheckoutScreen() {
         },
         onError: () => {
           Alert.alert(
-            i18n.t("error_toast_title"),
-            i18n.t("failed_to_place_order_alert")
+            i18n.t('error_toast_title'),
+            i18n.t('failed_to_place_order_alert')
           ); // Replaced hardcoded string
         },
       });
@@ -183,9 +202,9 @@ export default function CheckoutScreen() {
         user,
         subtotal + serviceCharge + tax - (tempDiscount + redeem_amount),
         transactionID,
-        paymentAPI?.toString() || ""
+        paymentAPI?.toString() || ''
       );
-      const indexOfLast = paymentDetail.data.checkout_url.lastIndexOf("/");
+      const indexOfLast = paymentDetail.data.checkout_url.lastIndexOf('/');
       const paymentID = paymentDetail.data.checkout_url.substring(
         indexOfLast + 1
       );
@@ -215,24 +234,24 @@ export default function CheckoutScreen() {
           <Appbar.Header style={styles.appbar}>
             <Appbar.BackAction
               onPress={() => {
-                if (previousScreen === "restaurant") {
+                if (previousScreen === 'restaurant') {
                   router.push({
-                    pathname: "/(protected)/restaurant/(branch)",
+                    pathname: '/(protected)/restaurant/(branch)',
                     params: {
                       restaurantId,
                       branchId: JSON.stringify(branchs),
                       tableId,
                       menus: menus,
-                      from: "/(protected)/checkOut",
+                      from: '/(protected)/checkOut',
                     },
                   });
                 } else {
-                  router.push("/(protected)/cart");
+                  router.push('/(protected)/cart');
                 }
               }}
             />
             <Appbar.Content
-              title={i18n.t("order_summary_title")} // Replaced hardcoded string
+              title={i18n.t('order_summary_title')} // Replaced hardcoded string
               titleStyle={styles.appbarTitle}
             />
           </Appbar.Header>
@@ -256,7 +275,7 @@ export default function CheckoutScreen() {
         >
           <KeyboardAvoidingView
             style={styles.keyboardAvoidingContainer}
-            behavior={Platform.OS === "ios" ? "padding" : "height"}
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           >
             <ScrollView
               style={styles.scrollView}
@@ -265,12 +284,12 @@ export default function CheckoutScreen() {
             >
               <View style={styles.card}>
                 <Card.Title
-                  title={i18n.t("order_summary_title")} // Replaced hardcoded string
+                  title={i18n.t('order_summary_title')} // Replaced hardcoded string
                   titleStyle={styles.cardTitle}
                 />
                 <View style={styles.discountContainer}>
                   <TextInput
-                    placeholder={i18n.t("discount_code_placeholder")} // Replaced hardcoded string
+                    placeholder={i18n.t('discount_code_placeholder')} // Replaced hardcoded string
                     value={discountCode}
                     onChangeText={setDiscountCode}
                     style={styles.discountInput}
@@ -280,10 +299,10 @@ export default function CheckoutScreen() {
                     mode="contained"
                     onPress={handleApplyDiscount}
                     style={styles.applyButton}
-                    theme={{ colors: { primary: "#9AC26B" } }}
-                    labelStyle={{ fontSize: 14, color: "#000" }}
+                    theme={{ colors: { primary: '#9AC26B' } }}
+                    labelStyle={{ fontSize: 14, color: '#000' }}
                   >
-                    {i18n.t("apply_button")} {/* Replaced hardcoded string */}
+                    {i18n.t('apply_button')} {/* Replaced hardcoded string */}
                   </Button>
                 </View>
                 {cartItems.map((item: any, index: any) => (
@@ -299,7 +318,7 @@ export default function CheckoutScreen() {
                     {remarks[item.id] && (
                       <View style={styles.remarkContainer}>
                         <Text style={styles.remarkLabel}>
-                          {i18n.t("remark_label")}
+                          {i18n.t('remark_label')}
                         </Text>
                         <Text style={styles.remarkText}>
                           {remarks[item.id]}
@@ -310,7 +329,7 @@ export default function CheckoutScreen() {
                 ))}
                 <View style={styles.summaryRow}>
                   <List.Subheader style={styles.itemName}>
-                    {i18n.t("tax_label")} ({taxRate}%)
+                    {i18n.t('tax_label')} ({taxRate}%)
                   </List.Subheader>
                   <List.Subheader style={styles.itemPrice}>
                     {tax.toFixed(2)}
@@ -318,7 +337,7 @@ export default function CheckoutScreen() {
                 </View>
                 <View style={styles.summaryRow}>
                   <List.Subheader style={styles.itemName}>
-                    {i18n.t("service_charge_label")} ({serviceChargeRate}%)
+                    {i18n.t('service_charge_label')} ({serviceChargeRate}%)
                   </List.Subheader>
                   <List.Subheader style={styles.itemPrice}>
                     {serviceCharge.toFixed(2)}
@@ -326,7 +345,7 @@ export default function CheckoutScreen() {
                 </View>
                 <View style={styles.summaryRow}>
                   <List.Subheader style={styles.itemName}>
-                    {i18n.t("subtotal_label")} {/* Replaced hardcoded string */}
+                    {i18n.t('subtotal_label')} {/* Replaced hardcoded string */}
                   </List.Subheader>
                   <List.Subheader style={styles.itemPrice}>
                     {subtotal.toFixed(2)}
@@ -334,7 +353,7 @@ export default function CheckoutScreen() {
                 </View>
                 <View style={styles.summaryRow}>
                   <List.Subheader style={styles.itemName}>
-                    {i18n.t("discount_label")} {/* Replaced hardcoded string */}
+                    {i18n.t('discount_label')} {/* Replaced hardcoded string */}
                   </List.Subheader>
                   <List.Subheader style={styles.itemPrice}>
                     -{tempDiscount.toFixed(2)}
@@ -342,7 +361,7 @@ export default function CheckoutScreen() {
                 </View>
                 <View style={styles.summaryRow}>
                   <List.Subheader style={styles.itemName}>
-                    {i18n.t("redeem_amount_label")}{" "}
+                    {i18n.t('redeem_amount_label')}{' '}
                     {/* Replaced hardcoded string */}
                   </List.Subheader>
                   <List.Subheader style={styles.discountValue}>
@@ -351,11 +370,11 @@ export default function CheckoutScreen() {
                 </View>
                 <View style={styles.summaryRow}>
                   <List.Subheader style={styles.boldText}>
-                    {i18n.t("total_label")} {/* Replaced hardcoded string */}
+                    {i18n.t('total_label')} {/* Replaced hardcoded string */}
                   </List.Subheader>
                   <List.Subheader style={styles.boldText}>
-                    {(subtotal + serviceCharge + tax - tempDiscount).toFixed(2)}{" "}
-                    {i18n.t("currency_unit")} {/* Replaced hardcoded string */}
+                    {(subtotal + serviceCharge + tax - tempDiscount).toFixed(2)}{' '}
+                    {i18n.t('currency_unit')} {/* Replaced hardcoded string */}
                   </List.Subheader>
                 </View>
               </View>
@@ -363,7 +382,7 @@ export default function CheckoutScreen() {
             <View style={styles.fixedBottom}>
               <View style={styles.paymentCard}>
                 <Card.Title
-                  title={i18n.t("payment_method_title")} // Replaced hardcoded string
+                  title={i18n.t('payment_method_title')} // Replaced hardcoded string
                   titleStyle={styles.cardTitle}
                 />
                 <RadioButton.Group
@@ -371,38 +390,38 @@ export default function CheckoutScreen() {
                   value={paymentMethod}
                 >
                   <RadioButton.Item
-                    label={i18n.t("cash_payment_method")} // Replaced hardcoded string
+                    label={i18n.t('cash_payment_method')} // Replaced hardcoded string
                     value="cash"
                     color="#9AC26B"
                     rippleColor="#9AC26B"
                     uncheckedColor="#9AC26B"
                     labelStyle={{
                       fontSize: 17,
-                      color: "#222C169E",
+                      color: '#222C169E',
                       opacity: 0.9,
                     }}
                     style={{ marginBottom: -14, marginTop: -14 }}
                   />
                   <RadioButton.Item
-                    label={i18n.t("chapa_payment_method")} // Replaced hardcoded string
+                    label={i18n.t('chapa_payment_method')} // Replaced hardcoded string
                     value="chapa"
                     color="#9AC26B"
                     rippleColor="#9AC26B"
                     uncheckedColor="#9AC26B"
                     labelStyle={{
                       fontSize: 17,
-                      color: "#222C169E",
+                      color: '#222C169E',
                       opacity: 0.9,
                     }}
                   />
                 </RadioButton.Group>
               </View>
 
-              {Platform.OS === "web" && paymentMethod === "chapa" && (
+              {Platform.OS === 'web' && paymentMethod === 'chapa' && (
                 <form
                   method="POST"
                   action="https://api.chapa.co/v1/hosted/pay"
-                  style={{ margin: "0 auto", minWidth: 353 }}
+                  style={{ margin: '0 auto', minWidth: 353 }}
                 >
                   <input
                     type="hidden"
@@ -427,28 +446,28 @@ export default function CheckoutScreen() {
                   <input
                     type="hidden"
                     name="currency"
-                    value={i18n.t("currency_unit")} // Replaced hardcoded string
+                    value={i18n.t('currency_unit')} // Replaced hardcoded string
                   />
                   <input type="hidden" name="email" value={user.email} />
                   <input
                     type="hidden"
                     name="first_name"
-                    value={user?.full_name?.split(" ")[0] || ""}
+                    value={user?.full_name?.split(' ')[0] || ''}
                   />
                   <input
                     type="hidden"
                     name="last_name"
-                    value={user?.full_name?.split(" ")[1] || ""}
+                    value={user?.full_name?.split(' ')[1] || ''}
                   />
                   <input
                     type="hidden"
                     name="title"
-                    value={i18n.t("chapa_title")} // Replaced hardcoded string
+                    value={i18n.t('chapa_title')} // Replaced hardcoded string
                   />
                   <input
                     type="hidden"
                     name="description"
-                    value={i18n.t("chapa_description")} // Replaced hardcoded string
+                    value={i18n.t('chapa_description')} // Replaced hardcoded string
                   />
                   <input
                     type="hidden"
@@ -467,31 +486,31 @@ export default function CheckoutScreen() {
                       marginTop: 16,
                       marginBottom: 16,
                       borderRadius: 30,
-                      color: "#22281B",
+                      color: '#22281B',
                       height: 50,
                       width: 353,
-                      border: "none",
-                      fontWeight: "bold",
+                      border: 'none',
+                      fontWeight: 'bold',
                       fontSize: 17,
-                      display: "block",
-                      textAlign: "center",
-                      background: "#9AC26B",
+                      display: 'block',
+                      textAlign: 'center',
+                      background: '#9AC26B',
                       ...Platform.select({
                         web: {
                           maxWidth: 353,
-                          width: "100%",
-                          alignSelf: "center",
+                          width: '100%',
+                          alignSelf: 'center',
                         },
                       }),
                     }}
                   >
-                    {i18n.t("place_order_button")}{" "}
+                    {i18n.t('place_order_button')}{' '}
                     {/* Replaced hardcoded string */}
                   </button>
                 </form>
               )}
 
-              {!(Platform.OS === "web" && paymentMethod === "chapa") && (
+              {!(Platform.OS === 'web' && paymentMethod === 'chapa') && (
                 <Button
                   mode="contained"
                   onPress={handlePlaceOrder}
@@ -499,12 +518,12 @@ export default function CheckoutScreen() {
                   contentStyle={styles.buttonContent}
                   labelStyle={{
                     fontSize: 17,
-                    fontWeight: "bold",
-                    color: "#22281B",
+                    fontWeight: 'bold',
+                    color: '#22281B',
                   }}
-                  theme={{ colors: { primary: "#9AC26B" } }}
+                  theme={{ colors: { primary: '#9AC26B' } }}
                 >
-                  {i18n.t("place_order_button")}
+                  {i18n.t('place_order_button')}
                   {/* Replaced hardcoded string */}
                 </Button>
               )}
@@ -522,15 +541,15 @@ export default function CheckoutScreen() {
             <View style={styles.modalContent}>
               <MaterialIcons name="check-circle" size={64} color="#4CAF50" />
               <Text style={styles.modalTitle}>
-                {i18n.t("order_successful_modal_title")}{" "}
+                {i18n.t('order_successful_modal_title')}{' '}
                 {/* Replaced hardcoded string */}
               </Text>
               <Text style={styles.modalSubtitle}>
-                {i18n.t("order_successful_modal_subtitle")}{" "}
+                {i18n.t('order_successful_modal_subtitle')}{' '}
                 {/* Replaced hardcoded string */}
               </Text>
               <Text style={styles.modalItemsTitle}>
-                {i18n.t("ordered_items_modal_title")}{" "}
+                {i18n.t('ordered_items_modal_title')}{' '}
                 {/* Replaced hardcoded string */}
               </Text>
               {cartItems.map((item: any, index: any) => (
@@ -543,13 +562,13 @@ export default function CheckoutScreen() {
                 onPress={() => {
                   setShowSuccessModal(false);
                   router.push({
-                    pathname: "/(protected)/feed",
+                    pathname: '/(protected)/feed',
                   });
                 }}
                 style={styles.modalButton}
-                theme={{ colors: { primary: "#9AC26B" } }}
+                theme={{ colors: { primary: '#9AC26B' } }}
               >
-                {i18n.t("return_to_home_button")}{" "}
+                {i18n.t('return_to_home_button')}{' '}
                 {/* Replaced hardcoded string */}
               </Button>
             </View>
@@ -565,10 +584,10 @@ export default function CheckoutScreen() {
           <View style={styles.modalContainer}>
             <View style={styles.modalContent}>
               <Text style={styles.modalTitle}>
-                {i18n.t("apply_discount_modal_title")}
+                {i18n.t('apply_discount_modal_title')}
               </Text>
               <TextInput
-                placeholder={i18n.t("enter_discount_code_placeholder")}
+                placeholder={i18n.t('enter_discount_code_placeholder')}
                 value={discountInput}
                 onChangeText={setDiscountInput}
                 style={styles.modalInput}
@@ -578,9 +597,9 @@ export default function CheckoutScreen() {
                 mode="contained"
                 onPress={handleApplyDiscount}
                 style={styles.modalButton}
-                theme={{ colors: { primary: "#9AC26B" } }}
+                theme={{ colors: { primary: '#9AC26B' } }}
               >
-                {i18n.t("apply_discount_modal_button")}{" "}
+                {i18n.t('apply_discount_modal_button')}{' '}
                 {/* Replaced hardcoded string */}
               </Button>
               {discountResponse && (
@@ -593,7 +612,7 @@ export default function CheckoutScreen() {
                 onPress={() => {
                   setShowDiscountModal(false);
                   router.push({
-                    pathname: "/(protected)/payment" as RelativePathString,
+                    pathname: '/(protected)/payment' as RelativePathString,
                     params: {
                       cartItems: JSON.stringify(cartItems),
                       newQuantities: JSON.stringify(newQuantities),
@@ -605,9 +624,9 @@ export default function CheckoutScreen() {
                   });
                 }}
                 style={styles.modalButton}
-                theme={{ colors: { primary: "#9AC26B" } }}
+                theme={{ colors: { primary: '#9AC26B' } }}
               >
-                {i18n.t("proceed_to_payment_button")}{" "}
+                {i18n.t('proceed_to_payment_button')}{' '}
                 {/* Replaced hardcoded string */}
               </Button>
               <Button
@@ -615,7 +634,7 @@ export default function CheckoutScreen() {
                 onPress={() => {
                   setShowDiscountModal(false);
                   router.push({
-                    pathname: "/(protected)/payment" as RelativePathString,
+                    pathname: '/(protected)/payment' as RelativePathString,
                     params: {
                       cartItems: JSON.stringify(cartItems),
                       newQuantities: JSON.stringify(newQuantities),
@@ -630,9 +649,9 @@ export default function CheckoutScreen() {
                   });
                 }}
                 style={styles.modalButton}
-                theme={{ colors: { primary: "#9AC26B" } }}
+                theme={{ colors: { primary: '#9AC26B' } }}
               >
-                {i18n.t("pay_without_discount_button")}{" "}
+                {i18n.t('pay_without_discount_button')}{' '}
                 {/* Replaced hardcoded string */}
               </Button>
             </View>
@@ -646,7 +665,7 @@ export default function CheckoutScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#FDFDFC",
+    backgroundColor: '#FDFDFC',
   },
   safeArea: {
     flex: 1,
@@ -658,18 +677,18 @@ const styles = StyleSheet.create({
     ...Platform.select({
       web: {
         maxWidth: 800,
-        width: "100%",
-        alignSelf: "center",
+        width: '100%',
+        alignSelf: 'center',
       },
     }),
   },
   appbar: {
-    backgroundColor: "#FDFDFC",
+    backgroundColor: '#FDFDFC',
   },
   appbarTitle: {
-    fontWeight: "600",
-    color: "#333",
-    alignSelf: "center",
+    fontWeight: '600',
+    color: '#333',
+    alignSelf: 'center',
     marginLeft: -20,
   },
   contentContainer: {
@@ -677,8 +696,8 @@ const styles = StyleSheet.create({
     ...Platform.select({
       web: {
         maxWidth: 800,
-        width: "100%",
-        alignSelf: "center",
+        width: '100%',
+        alignSelf: 'center',
       },
     }),
   },
@@ -686,18 +705,18 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    padding: Platform.OS === "web" ? 5 : 3,
+    padding: Platform.OS === 'web' ? 5 : 3,
     paddingBottom: 20,
   },
   fixedBottom: {
     borderTopWidth: 1,
-    borderTopColor: "#eee",
+    borderTopColor: '#eee',
     padding: 16,
-    backgroundColor: "#FDFDFC",
+    backgroundColor: '#FDFDFC',
   },
   card: {
     marginBottom: 16,
-    backgroundColor: "#FDFDFC",
+    backgroundColor: '#FDFDFC',
     borderRadius: 12,
     ...Platform.select({
       web: {
@@ -710,86 +729,86 @@ const styles = StyleSheet.create({
     padding: 0,
   },
   cardTitle: {
-    fontWeight: "400",
+    fontWeight: '400',
     fontSize: 17,
-    color: "#333",
+    color: '#333',
   },
   discountContainer: {
-    flexDirection: "row",
+    flexDirection: 'row',
     marginVertical: 8,
     ...Platform.select({
       web: {
         maxWidth: 380,
-        width: "100%",
-        alignSelf: "center",
+        width: '100%',
+        alignSelf: 'center',
       },
     }),
   },
   discountInput: {
     flexGrow: 1,
     marginRight: 8,
-    backgroundColor: "#546D3617",
+    backgroundColor: '#546D3617',
     borderRadius: 40,
     paddingVertical: 8,
-    color: "gray",
+    color: 'gray',
     paddingHorizontal: 16,
   },
   applyButton: {
     borderRadius: 30,
   },
   summaryRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     margin: -4,
   },
   itemName: {
     fontSize: 17,
-    color: "#222C169E",
+    color: '#222C169E',
     opacity: 0.9,
   },
   itemPrice: {
     fontSize: 17,
-    color: "#222C169E",
+    color: '#222C169E',
     opacity: 0.9,
   },
   boldText: {
     fontSize: 18,
-    fontWeight: "600",
-    color: "#333",
+    fontWeight: '600',
+    color: '#333',
   },
   discountValue: {
     fontSize: 17,
-    color: "#388e3c",
+    color: '#388e3c',
   },
   remarkContainer: {
     padding: 10,
-    backgroundColor: "#f8f9fa",
+    backgroundColor: '#f8f9fa',
     borderRadius: 8,
     marginVertical: 4,
   },
   remarkLabel: {
     fontSize: 14,
-    fontWeight: "600",
-    color: "#333",
+    fontWeight: '600',
+    color: '#333',
   },
   remarkText: {
     fontSize: 14,
-    color: "#666",
+    color: '#666',
   },
   placeOrderButton: {
     marginTop: 16,
-    marginBottom: Platform.OS === "ios" ? 50 : 16,
+    marginBottom: Platform.OS === 'ios' ? 50 : 16,
     borderRadius: 30,
     width: 353,
     height: 50,
-    alignSelf: "center",
-    alignContent: "center",
-    justifyContent: "center",
+    alignSelf: 'center',
+    alignContent: 'center',
+    justifyContent: 'center',
     ...Platform.select({
       web: {
         maxWidth: 353,
-        width: "100%",
-        alignSelf: "center",
+        width: '100%',
+        alignSelf: 'center',
       },
     }),
   },
@@ -798,47 +817,47 @@ const styles = StyleSheet.create({
   },
   modalContainer: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
   modalContent: {
-    backgroundColor: "#FDFDFC",
+    backgroundColor: '#FDFDFC',
     borderRadius: 16,
     padding: 24,
     ...Platform.select({
       web: {
         maxWidth: 400,
-        width: "100%",
-        boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+        width: '100%',
+        boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
       },
       default: {
-        width: "90%",
+        width: '90%',
       },
     }),
   },
   modalTitle: {
     fontSize: 24,
-    fontWeight: "600",
-    color: "#333",
+    fontWeight: '600',
+    color: '#333',
     marginTop: 16,
-    textAlign: "center",
+    textAlign: 'center',
   },
   modalSubtitle: {
     fontSize: 16,
-    color: "#666",
+    color: '#666',
     marginTop: 8,
-    textAlign: "center",
+    textAlign: 'center',
   },
   modalItemsTitle: {
     fontSize: 18,
-    fontWeight: "600",
-    color: "#333",
+    fontWeight: '600',
+    color: '#333',
     marginTop: 16,
   },
   modalItem: {
     fontSize: 16,
-    color: "#333",
+    color: '#333',
     marginTop: 8,
   },
   modalButton: {
@@ -847,13 +866,13 @@ const styles = StyleSheet.create({
   },
   modalInput: {
     marginVertical: 12,
-    backgroundColor: "#fff",
-    color: "#9AC26B",
+    backgroundColor: '#fff',
+    color: '#9AC26B',
   },
   discountResponseText: {
     marginTop: 12,
-    color: "#4CAF50",
+    color: '#4CAF50',
     fontSize: 16,
-    textAlign: "center",
+    textAlign: 'center',
   },
 });

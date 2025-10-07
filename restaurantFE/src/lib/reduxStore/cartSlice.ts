@@ -24,6 +24,9 @@ type CartState = {
   tax?: number;
   serviceCharge?: number;
   error: string | null;
+  contactNumber: string;
+  customerName: string;
+  tinNumber: string;
 };
 
 const initialState: CartState = {
@@ -40,6 +43,9 @@ const initialState: CartState = {
   tax: 0,
   serviceCharge: 0,
   paymentAPIKEY: '',
+  contactNumber: '',
+  customerName: '',
+  tinNumber: '',
 };
 
 const cartSlice = createSlice({
@@ -95,6 +101,19 @@ const cartSlice = createSlice({
       state.paymentPUBLICKEY = paymentPUBLICKEY;
       state.tax = tax;
       state.serviceCharge = serviceCharge;
+    },
+    setCustomerInfo: (
+      state,
+      action: PayloadAction<{
+        customerName?: string;
+        contactNumber?: string;
+        tinNumber?: string;
+      }>
+    ) => {
+      state.customerName = action.payload.customerName || state.customerName;
+      state.contactNumber = action.payload.contactNumber || state.contactNumber;
+      state.tinNumber = action.payload.tinNumber || state.tinNumber;
+      return state;
     },
     updateQuantity: (
       state,
@@ -216,5 +235,6 @@ export const {
   setDiscount,
   setRedeemAmount,
   clearCartError,
+  setCustomerInfo,
 } = cartSlice.actions;
 export default cartSlice.reducer;

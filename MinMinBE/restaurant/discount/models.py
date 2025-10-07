@@ -9,7 +9,8 @@ import uuid
 class Coupon(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     tenant = models.ForeignKey(Tenant, on_delete=models.CASCADE, null=True,related_name='tenant_coupons')
-    branch = models.ForeignKey(Branch, on_delete=models.CASCADE,null=True,related_name='branch_coupons')
+    is_global = models.BooleanField(default=False)
+    branches = models.ManyToManyField(Branch, blank=True, related_name='coupons')
     discount_code = models.CharField(max_length=255, null=True, blank=True)
     is_percentage = models.BooleanField(default=False)
     is_valid = models.BooleanField(default=True)
@@ -20,7 +21,7 @@ class Coupon(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return self.discount_code
+        return self.discount_code or "Unnamed Coupon"
 
     class Meta:
         db_table = 'coupon'
@@ -39,7 +40,8 @@ class CouponUsage(models.Model):
 class Discount(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     tenant = models.ForeignKey(Tenant, on_delete=models.CASCADE, null=True,related_name='tenant_discounts')
-    branch = models.ForeignKey(Branch, on_delete=models.CASCADE,null=True,related_name='branch_discounts')
+    is_global = models.BooleanField(default=False)
+    branches = models.ManyToManyField(Branch, blank=True, related_name='discounts')
     name = models.CharField(max_length=255, null=True, blank=True)
     description = models.TextField(null=True, blank=True)
     TYPE_CHOICES = [

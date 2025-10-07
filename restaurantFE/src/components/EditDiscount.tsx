@@ -1,14 +1,14 @@
-import dayjs from "dayjs";
-import DatePicker from "@/components/DatePicker";
-import { Branch } from "@/types/branchType";
-import { useEffect, useMemo, useState } from "react";
+import dayjs from 'dayjs';
+import DatePicker from '@/components/DatePicker';
+import { Branch } from '@/types/branchType';
+import { useEffect, useState } from 'react';
 import {
   useCreateDiscountRule,
   useUpdateDiscount,
   useUpdateDiscountRule,
-} from "@/services/mutation/discountMutation";
-import { useQueryClient } from "@tanstack/react-query";
-import Toast from "react-native-toast-message";
+} from '@/services/mutation/discountMutation';
+import { useQueryClient } from '@tanstack/react-query';
+import Toast from 'react-native-toast-message';
 import {
   Button,
   Dialog,
@@ -18,36 +18,42 @@ import {
   Switch,
   Text,
   TextInput as PaperTextInput,
-} from "react-native-paper";
+} from 'react-native-paper';
 import {
   ScrollView,
   View,
   TextInput,
   StyleSheet,
   TouchableOpacity,
-} from "react-native";
-import { useGetMenus } from "@/services/mutation/menuMutation";
-import MenuItemSelectorModal from "./MenuItemSelectorModal";
-import ModalHeader from "./ModalHeader";
+} from 'react-native';
+import { useGetMenus } from '@/services/mutation/menuMutation';
+import MenuItemSelectorModal from './MenuItemSelectorModal';
+import ModalHeader from './ModalHeader';
+import {
+  DropdownInputProps,
+  MultiSelectDropdown,
+} from 'react-native-paper-dropdown';
+import { useRestaurantIdentity } from '@/hooks/useRestaurantIdentity';
+import { current } from '@reduxjs/toolkit';
 
 const TYPEOPTIONS = [
-  { label: "Volume", value: "volume" },
-  { label: "Combo", value: "combo" },
-  { label: "BOGO", value: "bogo" },
-  { label: "Free Item", value: "freeItem" },
+  { label: 'Volume', value: 'volume' },
+  { label: 'Combo', value: 'combo' },
+  { label: 'BOGO', value: 'bogo' },
+  { label: 'Free Item', value: 'freeItem' },
 ];
 
 const ruleDefaultState = {
-  min_items: "",
-  max_items: "",
-  min_price: "",
+  min_items: '',
+  max_items: '',
+  min_price: '',
   applicable_items: [] as string[],
   excluded_items: [] as string[],
-  combo_size: "",
-  buy_quantity: "",
-  get_quantity: "",
+  combo_size: '',
+  buy_quantity: '',
+  get_quantity: '',
   is_percentage: false,
-  max_discount_amount: "",
+  max_discount_amount: '',
 };
 
 type EditDiscountModalProps = {
@@ -55,7 +61,13 @@ type EditDiscountModalProps = {
   discount: any;
   discountRule: any | null;
   visible: boolean;
+  currentPage: number;
   onClose: () => void;
+};
+
+export type Option = {
+  label: string;
+  value: string;
 };
 
 export default function EditDiscountModal({
@@ -63,9 +75,15 @@ export default function EditDiscountModal({
   discount,
   discountRule,
   visible,
+  currentPage,
   onClose,
 }: EditDiscountModalProps) {
-  const [branch, setBranch] = useState<string>(discount.branch?.id);
+  const [selectedBranches, setSelectedBranches] = useState<string[]>(
+    discount.branches?.map((br: any) => br.id)
+  );
+  const [applyToAllBranches, setApplyToAllBranches] = useState(
+    discount.is_global
+  );
   const [name, setName] = useState(discount.name);
   const [description, setDescription] = useState(discount.description);
   const [type, setType] = useState(discount.type);
@@ -76,20 +94,19 @@ export default function EditDiscountModal({
   );
   const [stackable, setStackable] = useState(discount.is_stackable);
   const [valid_from, setValidFrom] = useState<Date | undefined>(
-    new Date(discount.valid_from)
+    Boolean(discount.valid_from) ? new Date(discount.valid_from) : undefined
   );
   const [showFromPicker, setShowFromPicker] = useState(false);
   const [valid_until, setValidUntil] = useState<Date | undefined>(
-    new Date(discount.valid_until)
+    Boolean(discount.valid_until) ? new Date(discount.valid_until) : undefined
   );
   const [showUntilPicker, setShowUntilPicker] = useState(false);
-  const [showMenu, setShowMenu] = useState(false);
 
   const [ruleFormValues, setRuleFormValues] = useState({
     ...ruleDefaultState,
-    min_items: discountRule?.min_items?.toString() ?? "",
-    max_items: discountRule?.max_items?.toString() ?? "",
-    min_price: discountRule?.min_price?.toString() ?? "",
+    min_items: discountRule?.min_items?.toString() ?? '',
+    max_items: discountRule?.max_items?.toString() ?? '',
+    min_price: discountRule?.min_price?.toString() ?? '',
     applicable_items: Array.isArray(discountRule?.applicable_items)
       ? discountRule?.applicable_items
       : discountRule?.applicable_items
@@ -100,23 +117,23 @@ export default function EditDiscountModal({
       : discountRule?.excluded_items
       ? [discountRule.excluded_items]
       : [],
-    combo_size: discountRule?.combo_size?.toString() ?? "",
-    buy_quantity: discountRule?.buy_quantity?.toString() ?? "",
-    get_quantity: discountRule?.get_quantity?.toString() ?? "",
+    combo_size: discountRule?.combo_size?.toString() ?? '',
+    buy_quantity: discountRule?.buy_quantity?.toString() ?? '',
+    get_quantity: discountRule?.get_quantity?.toString() ?? '',
     is_percentage: Boolean(discountRule?.is_percentage),
-    max_discount_amount: discountRule?.max_discount_amount?.toString() ?? "",
+    max_discount_amount: discountRule?.max_discount_amount?.toString() ?? '',
   });
   const [ruleErrors, setRuleErrors] = useState<{ [key: string]: string }>({});
   const [applicableSelectorVisible, setApplicableSelectorVisible] =
     useState(false);
-  const [excludedSelectorVisible, setExcludedSelectorVisible] =
-    useState(false);
+  const [excludedSelectorVisible, setExcludedSelectorVisible] = useState(false);
 
   const { mutateAsync: updateDiscount } = useUpdateDiscount();
   const { mutateAsync: updateDiscountRule } = useUpdateDiscountRule();
   const { mutateAsync: createDiscountRule } = useCreateDiscountRule();
-  const { data: menus = [] } = useGetMenus();
+  const { data: menus } = useGetMenus();
   const queryClient = useQueryClient();
+  const { isBranch } = useRestaurantIdentity();
 
   useEffect(() => {
     if (!visible) {
@@ -132,11 +149,11 @@ export default function EditDiscountModal({
 
   const getMenuSummary = (ids: string[] = []) => {
     if (!ids?.length) {
-      return "";
+      return '';
     }
 
     const names = ids
-      .map((id) => menus.find((mn) => mn.id === id)?.name)
+      .map((id) => menus?.results.find((mn) => mn.id === id)?.name)
       .filter(Boolean) as string[];
 
     if (!names.length) {
@@ -144,10 +161,10 @@ export default function EditDiscountModal({
     }
 
     if (names.length <= 2) {
-      return names.join(", ");
+      return names.join(', ');
     }
 
-    return `${names.slice(0, 2).join(", ")} +${names.length - 2}`;
+    return `${names.slice(0, 2).join(', ')} +${names.length - 2}`;
   };
 
   const clearRuleError = (field: string) => {
@@ -159,57 +176,57 @@ export default function EditDiscountModal({
   };
 
   const validateForm = () => {
-    if (!branch) {
+    if (selectedBranches.length == 0 && !applyToAllBranches) {
       Toast.show({
-        type: "error",
-        text1: "Branch selection is required.",
-        text2: "Please select branch.",
+        type: 'error',
+        text1: 'Branch selection is required.',
+        text2: 'Please select branch.',
       });
       return false;
     }
 
     if (!name?.trim()) {
-      Toast.show({ type: "error", text1: "Name is required." });
+      Toast.show({ type: 'error', text1: 'Name is required.' });
       return false;
     }
 
     if (name.trim().length < 3) {
       Toast.show({
-        type: "error",
-        text1: "Name must be at least 3 characters long.",
+        type: 'error',
+        text1: 'Name must be at least 3 characters long.',
       });
       return false;
     }
 
     if (!type) {
-      Toast.show({ type: "error", text1: "Discount type is required." });
+      Toast.show({ type: 'error', text1: 'Discount type is required.' });
       return false;
     }
 
-    if (priority !== undefined && priority !== "") {
+    if (priority !== undefined && priority !== '') {
       if (isNaN(Number(priority)) || Number(priority) < 0) {
         Toast.show({
-          type: "error",
-          text1: "Priority must be a non-negative number.",
+          type: 'error',
+          text1: 'Priority must be a non-negative number.',
         });
         return false;
       }
     }
 
     if (!valid_from) {
-      Toast.show({ type: "error", text1: "Valid from date is required." });
+      Toast.show({ type: 'error', text1: 'Valid from date is required.' });
       return false;
     }
 
     if (!valid_until) {
-      Toast.show({ type: "error", text1: "Valid until date is required." });
+      Toast.show({ type: 'error', text1: 'Valid until date is required.' });
       return false;
     }
 
     if (valid_from && valid_until && dayjs(valid_until).isBefore(valid_from)) {
       Toast.show({
-        type: "error",
-        text1: "Valid until must be after valid from.",
+        type: 'error',
+        text1: 'Valid until must be after valid from.',
       });
       return false;
     }
@@ -222,33 +239,33 @@ export default function EditDiscountModal({
     value: string | boolean | string[]
   ) => {
     const normalizedValue =
-      key === "applicable_items" || key === "excluded_items"
+      key === 'applicable_items' || key === 'excluded_items'
         ? Array.isArray(value)
           ? value
-          : value == null || value === ""
+          : value == null || value === ''
           ? []
           : [value]
         : value;
 
     setRuleFormValues((prev) => {
-      if (key === "applicable_items") {
+      if (key === 'applicable_items') {
         const values = normalizedValue as string[];
         return {
           ...prev,
           applicable_items: values,
           excluded_items: (prev.excluded_items || []).filter(
-            (id) => !values.includes(id)
+            (id: any) => !values.includes(id)
           ),
         };
       }
 
-      if (key === "excluded_items") {
+      if (key === 'excluded_items') {
         const values = normalizedValue as string[];
         return {
           ...prev,
           excluded_items: values,
           applicable_items: (prev.applicable_items || []).filter(
-            (id) => !values.includes(id)
+            (id: any) => !values.includes(id)
           ),
         };
       }
@@ -261,44 +278,41 @@ export default function EditDiscountModal({
   };
 
   const handleApplicableApply = (ids: string[]) => {
-    handleRuleFormChange("applicable_items", ids);
-    clearRuleError("applicable_items");
+    handleRuleFormChange('applicable_items', ids);
+    clearRuleError('applicable_items');
   };
 
   const handleExcludedApply = (ids: string[]) => {
-    handleRuleFormChange("excluded_items", ids);
-    clearRuleError("excluded_items");
+    handleRuleFormChange('excluded_items', ids);
+    clearRuleError('excluded_items');
   };
 
   const validateRuleForm = () => {
     const errors: { [key: string]: string } = {};
 
     if (!type) {
-      errors.type = "Select a discount type before configuring rules.";
+      errors.type = 'Select a discount type before configuring rules.';
     }
 
     if (
-      type === "volume" &&
+      type === 'volume' &&
       (!ruleFormValues.min_items || isNaN(Number(ruleFormValues.min_items)))
     ) {
-      errors.min_items = "Min items must be a valid number.";
-    } else if (type === "volume" && Number(ruleFormValues.min_items) <= 0) {
-      errors.min_items = "Min items must be greater than 0.";
+      errors.min_items = 'Min items must be a valid number.';
+    } else if (type === 'volume' && Number(ruleFormValues.min_items) <= 0) {
+      errors.min_items = 'Min items must be greater than 0.';
     }
 
-    const requiresQuantity = type === "bogo" || type === "freeItem";
+    const requiresQuantity = type === 'bogo' || type === 'freeItem';
 
     if (
       requiresQuantity &&
       (!ruleFormValues.buy_quantity ||
         isNaN(Number(ruleFormValues.buy_quantity)))
     ) {
-      errors.buy_quantity = "Buy quantity must be a valid number.";
-    } else if (
-      requiresQuantity &&
-      Number(ruleFormValues.buy_quantity) <= 0
-    ) {
-      errors.buy_quantity = "Buy quantity must be greater than 0.";
+      errors.buy_quantity = 'Buy quantity must be a valid number.';
+    } else if (requiresQuantity && Number(ruleFormValues.buy_quantity) <= 0) {
+      errors.buy_quantity = 'Buy quantity must be greater than 0.';
     }
 
     if (
@@ -306,28 +320,24 @@ export default function EditDiscountModal({
       (!ruleFormValues.get_quantity ||
         isNaN(Number(ruleFormValues.get_quantity)))
     ) {
-      errors.get_quantity = "Get quantity must be a valid number.";
-    } else if (
-      requiresQuantity &&
-      Number(ruleFormValues.get_quantity) <= 0
-    ) {
-      errors.get_quantity = "Get quantity must be greater than 0.";
+      errors.get_quantity = 'Get quantity must be a valid number.';
+    } else if (requiresQuantity && Number(ruleFormValues.get_quantity) <= 0) {
+      errors.get_quantity = 'Get quantity must be greater than 0.';
     }
 
     if (
-      type !== "bogo" &&
-      type !== "freeItem" &&
+      type !== 'bogo' &&
+      type !== 'freeItem' &&
       (!ruleFormValues.max_discount_amount ||
         isNaN(Number(ruleFormValues.max_discount_amount)))
     ) {
       errors.max_discount_amount =
-        "Max discount amount must be a valid number.";
+        'Max discount amount must be a valid number.';
     } else if (
-      ruleFormValues.max_discount_amount !== "" &&
+      ruleFormValues.max_discount_amount !== '' &&
       Number(ruleFormValues.max_discount_amount) < 0
     ) {
-      errors.max_discount_amount =
-        "Max discount amount must be non-negative.";
+      errors.max_discount_amount = 'Max discount amount must be non-negative.';
     }
 
     if (
@@ -335,16 +345,16 @@ export default function EditDiscountModal({
       (!ruleFormValues.applicable_items ||
         ruleFormValues.applicable_items.length === 0)
     ) {
-      errors.applicable_items = "Select at least one applicable item.";
+      errors.applicable_items = 'Select at least one applicable item.';
     }
 
     if (
-      ruleFormValues.excluded_items?.some((item) =>
+      ruleFormValues.excluded_items?.some((item: any) =>
         ruleFormValues.applicable_items.includes(item)
       )
     ) {
       errors.excluded_items =
-        "Excluded items cannot overlap with applicable items.";
+        'Excluded items cannot overlap with applicable items.';
     }
 
     setRuleErrors(errors);
@@ -353,7 +363,7 @@ export default function EditDiscountModal({
 
   const buildRulePayload = () => {
     const toNumber = (value: string) =>
-      value === undefined || value === null || value === ""
+      value === undefined || value === null || value === ''
         ? undefined
         : Number(value);
 
@@ -380,7 +390,8 @@ export default function EditDiscountModal({
     try {
       const discountPayload: any = {
         id: discount.id,
-        branch: branch,
+        is_global: applyToAllBranches,
+        branches: selectedBranches,
         name: name,
         description: description,
         type: type,
@@ -392,7 +403,10 @@ export default function EditDiscountModal({
       };
 
       await updateDiscount(discountPayload);
-      await queryClient.invalidateQueries({ queryKey: ["discounts"] });
+      await queryClient.invalidateQueries({
+        queryKey: ['discounts', currentPage],
+      });
+      await queryClient.invalidateQueries({ queryKey: ['discountRules'] });
 
       const rulePayload = buildRulePayload();
 
@@ -402,26 +416,17 @@ export default function EditDiscountModal({
         await createDiscountRule(rulePayload);
       }
 
-      await queryClient.invalidateQueries({ queryKey: ["discountRules"] });
+      await queryClient.invalidateQueries({ queryKey: ['discountRules'] });
       onClose();
     } catch (error) {
-      console.error("Error updating discount", error);
+      console.error('Error updating discount', error);
       Toast.show({
-        type: "error",
-        text1: "Failed to update discount",
-        text2: "Please try again.",
+        type: 'error',
+        text1: 'Failed to update discount',
+        text2: 'Please try again.',
       });
     }
   };
-
-  const availableMenus = useMemo(
-    () =>
-      menus.map((mn: any) => ({
-        label: mn.name,
-        value: mn.id,
-      })),
-    [menus]
-  );
 
   return (
     <Portal>
@@ -435,63 +440,72 @@ export default function EditDiscountModal({
             contentContainerStyle={stylesModal.scrollContent}
             showsVerticalScrollIndicator
           >
-            <Menu
-              visible={showMenu}
-              onDismiss={() => setShowMenu(false)}
-              anchor={
-                <View>
-                  <Text style={stylesModal.fieldLabel}>Branch</Text>
-                  <Button
-                    mode="outlined"
-                    style={stylesModal.dropdownBtn}
-                    labelStyle={{
-                      color: branch === "" ? "#aaa" : "#333",
-                      fontSize: 14,
-                      width: "100%",
-                      textAlign: "left",
-                      marginLeft: 0,
-                    }}
-                    onPress={() => setShowMenu(true)}
-                    contentStyle={{
-                      flexDirection: "row-reverse",
-                      width: "100%",
-                      paddingLeft: 10,
-                    }}
-                    icon={showMenu ? "chevron-up" : "chevron-down"}
-                  >
-                    {branch
-                      ? branches.find((b: any) => b.id === branch)?.address
-                      : "Branch"}
-                  </Button>
-                </View>
-              }
-              contentStyle={[stylesModal.menuContainer, { width: "100%" }]}
-              style={{ alignSelf: "stretch" }}
-              anchorPosition="bottom"
+            <View
+              style={{
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: 15,
+              }}
             >
-              {branches.length > 0 ? (
-                branches.map((b: any) => (
-                  <Menu.Item
-                    key={b.id}
-                    onPress={() => {
-                      setBranch(b.id!);
-                      setShowMenu(false);
-                    }}
-                    title={b.address}
-                    titleStyle={stylesModal.menuItem}
-                  />
-                ))
-              ) : (
-                <Menu.Item title="No branches available" disabled />
-              )}
-            </Menu>
+              <Text style={{ color: '#40392B' }}>Is Global</Text>
+              <Switch
+                value={applyToAllBranches}
+                onValueChange={setApplyToAllBranches}
+                color="#91B275"
+                disabled={isBranch}
+              />
+            </View>
+            {!applyToAllBranches && (
+              <>
+                <Text style={stylesModal.fieldLabel}>Branch</Text>
+                <MultiSelectDropdown
+                  label="Select Branches"
+                  placeholder="Select Branches"
+                  options={
+                    (branches.map((br) => ({
+                      label: br.address,
+                      value: br.id!,
+                    })) as Option[]) || []
+                  }
+                  value={selectedBranches || []}
+                  onSelect={(values) => setSelectedBranches(values)}
+                  menuContentStyle={{
+                    backgroundColor: '#fff',
+                  }}
+                  CustomMenuHeader={() => <Text>{''}</Text>}
+                  CustomMultiSelectDropdownInput={({
+                    placeholder,
+                    selectedLabel,
+                    rightIcon,
+                  }: DropdownInputProps) => (
+                    <PaperTextInput
+                      mode="outlined"
+                      placeholder={placeholder}
+                      placeholderTextColor={'#202B1866'}
+                      value={selectedLabel}
+                      style={{
+                        backgroundColor: '#50693A17',
+                        maxHeight: 50,
+                      }}
+                      contentStyle={{
+                        borderColor: '#ccc',
+                      }}
+                      textColor={'#000'}
+                      right={rightIcon}
+                      outlineColor="#ccc"
+                    />
+                  )}
+                />
+              </>
+            )}
 
             <TextInput
               label="Name"
               placeholder="Name"
               value={name}
               onChangeText={setName}
-              style={stylesModal.input}
+              style={{ ...stylesModal.input, marginTop: 15 }}
               placeholderTextColor="#999"
             />
 
@@ -515,28 +529,29 @@ export default function EditDiscountModal({
                     mode="outlined"
                     style={stylesModal.dropdownBtn}
                     labelStyle={{
-                      color: type === "" ? "#aaa" : "#333",
+                      color: type === '' ? '#aaa' : '#333',
                       fontSize: 14,
-                      width: "100%",
-                      textAlign: "left",
+                      width: '100%',
+                      textAlign: 'left',
                       marginLeft: 0,
                     }}
                     onPress={() => setShowType(true)}
                     contentStyle={{
-                      flexDirection: "row-reverse",
-                      width: "100%",
+                      flexDirection: 'row-reverse',
+                      width: '100%',
                       paddingLeft: 10,
                     }}
-                    icon={showType ? "chevron-up" : "chevron-down"}
+                    icon={showType ? 'chevron-up' : 'chevron-down'}
                   >
                     {type
-                      ? TYPEOPTIONS.find((option) => option.value === type)?.label
-                      : "Discount Type"}
+                      ? TYPEOPTIONS.find((option) => option.value === type)
+                          ?.label
+                      : 'Discount Type'}
                   </Button>
                 </View>
               }
-              contentStyle={[stylesModal.menuContainer, { width: "100%" }]}
-              style={{ alignSelf: "stretch" }}
+              contentStyle={[stylesModal.menuContainer, { width: '100%' }]}
+              style={{ alignSelf: 'stretch' }}
               anchorPosition="bottom"
             >
               {TYPEOPTIONS.map((option) => (
@@ -573,7 +588,7 @@ export default function EditDiscountModal({
             <TextInput
               label="Priority"
               placeholder="Priority"
-              value={priority ?? ""}
+              value={priority ?? ''}
               onChangeText={setPriority}
               style={stylesModal.input}
               keyboardType="numeric"
@@ -585,12 +600,15 @@ export default function EditDiscountModal({
               <Button
                 onPress={() => setShowFromPicker(true)}
                 mode="outlined"
-                contentStyle={{ flexDirection: "row-reverse" }}
+                contentStyle={{ flexDirection: 'row-reverse' }}
                 style={stylesModal.dateButton}
                 labelStyle={stylesModal.dateLabel}
                 icon="chevron-down"
               >
-                Valid From: {valid_from ? dayjs(valid_from).format("YYYY-MM-DD") : "Not set"}
+                Valid From:{' '}
+                {valid_from
+                  ? dayjs(valid_from).format('YYYY-MM-DD')
+                  : 'Not set'}
               </Button>
               <DatePicker
                 dateFilterVisible={showFromPicker}
@@ -605,12 +623,15 @@ export default function EditDiscountModal({
               <Button
                 onPress={() => setShowUntilPicker(true)}
                 mode="outlined"
-                contentStyle={{ flexDirection: "row-reverse" }}
+                contentStyle={{ flexDirection: 'row-reverse' }}
                 style={stylesModal.dateButton}
                 labelStyle={stylesModal.dateLabel}
                 icon="chevron-down"
               >
-                Valid Until: {valid_until ? dayjs(valid_until).format("YYYY-MM-DD") : "Not set"}
+                Valid Until:{' '}
+                {valid_until
+                  ? dayjs(valid_until).format('YYYY-MM-DD')
+                  : 'Not set'}
               </Button>
               <DatePicker
                 dateFilterVisible={showUntilPicker}
@@ -624,7 +645,7 @@ export default function EditDiscountModal({
 
             <Text style={stylesModal.sectionHeader}>Discount Rule</Text>
 
-            {type === "volume" && (
+            {type === 'volume' && (
               <>
                 <Text style={stylesModal.fieldLabel}>Minimum items</Text>
                 <TextInput
@@ -634,8 +655,8 @@ export default function EditDiscountModal({
                   value={ruleFormValues.min_items}
                   onChangeText={(value) =>
                     handleRuleFormChange(
-                      "min_items",
-                      value.replace(/[^0-9]/g, "")
+                      'min_items',
+                      value.replace(/[^0-9]/g, '')
                     )
                   }
                 />
@@ -645,7 +666,7 @@ export default function EditDiscountModal({
               </>
             )}
 
-            {type !== "bogo" && type !== "freeItem" && (
+            {type !== 'bogo' && type !== 'freeItem' && (
               <>
                 <Text style={stylesModal.fieldLabel}>Max discount amount</Text>
                 <TextInput
@@ -654,8 +675,8 @@ export default function EditDiscountModal({
                   value={ruleFormValues.max_discount_amount}
                   onChangeText={(value) =>
                     handleRuleFormChange(
-                      "max_discount_amount",
-                      value.replace(/[^0-9.\-]/g, "")
+                      'max_discount_amount',
+                      value.replace(/[^0-9.\-]/g, '')
                     )
                   }
                 />
@@ -668,7 +689,7 @@ export default function EditDiscountModal({
               </>
             )}
 
-            {type === "combo" && (
+            {type === 'combo' && (
               <>
                 <Text style={stylesModal.fieldLabel}>Combo size</Text>
                 <TextInput
@@ -677,8 +698,8 @@ export default function EditDiscountModal({
                   value={ruleFormValues.combo_size}
                   onChangeText={(value) =>
                     handleRuleFormChange(
-                      "combo_size",
-                      value.replace(/[^0-9]/g, "")
+                      'combo_size',
+                      value.replace(/[^0-9]/g, '')
                     )
                   }
                 />
@@ -688,7 +709,7 @@ export default function EditDiscountModal({
               </>
             )}
 
-            {(type === "bogo" || type === "freeItem") && (
+            {(type === 'bogo' || type === 'freeItem') && (
               <>
                 <TextInput
                   label="Buy quantity"
@@ -697,8 +718,8 @@ export default function EditDiscountModal({
                   value={ruleFormValues.buy_quantity}
                   onChangeText={(value) =>
                     handleRuleFormChange(
-                      "buy_quantity",
-                      value.replace(/[^0-9]/g, "")
+                      'buy_quantity',
+                      value.replace(/[^0-9]/g, '')
                     )
                   }
                 />
@@ -713,8 +734,8 @@ export default function EditDiscountModal({
                   value={ruleFormValues.get_quantity}
                   onChangeText={(value) =>
                     handleRuleFormChange(
-                      "get_quantity",
-                      value.replace(/[^0-9]/g, "")
+                      'get_quantity',
+                      value.replace(/[^0-9]/g, '')
                     )
                   }
                 />
@@ -735,10 +756,15 @@ export default function EditDiscountModal({
                     right={<PaperTextInput.Icon icon="chevron-down" />}
                     outlineStyle={stylesModal.dropdownOutline}
                     style={stylesModal.dropdownInput}
-                    theme={{ colors: { outline: "#5E6E4933", primary: "#91B275" } }}
+                    theme={{
+                      colors: { outline: '#5E6E4933', primary: '#91B275' },
+                    }}
                   />
                 </TouchableOpacity>
-                <HelperText type="error" visible={!!ruleErrors.applicable_items}>
+                <HelperText
+                  type="error"
+                  visible={!!ruleErrors.applicable_items}
+                >
                   {ruleErrors.applicable_items}
                 </HelperText>
 
@@ -755,7 +781,9 @@ export default function EditDiscountModal({
                     right={<PaperTextInput.Icon icon="chevron-down" />}
                     outlineStyle={stylesModal.dropdownOutline}
                     style={stylesModal.dropdownInput}
-                    theme={{ colors: { outline: "#5E6E4933", primary: "#91B275" } }}
+                    theme={{
+                      colors: { outline: '#5E6E4933', primary: '#91B275' },
+                    }}
                   />
                 </TouchableOpacity>
                 <HelperText type="error" visible={!!ruleErrors.excluded_items}>
@@ -769,7 +797,7 @@ export default function EditDiscountModal({
               <Switch
                 value={ruleFormValues.is_percentage}
                 onValueChange={(value) =>
-                  handleRuleFormChange("is_percentage", value)
+                  handleRuleFormChange('is_percentage', value)
                 }
                 color="#91B275"
               />
@@ -781,7 +809,7 @@ export default function EditDiscountModal({
           <Button
             mode="contained"
             style={stylesModal.addButton}
-            labelStyle={{ color: "#fff" }}
+            labelStyle={{ color: '#fff' }}
             onPress={handleSubmit}
           >
             Update Discount
@@ -791,7 +819,7 @@ export default function EditDiscountModal({
       <MenuItemSelectorModal
         title="Select applicable items"
         visible={applicableSelectorVisible}
-        menus={menus}
+        menus={menus?.results || []}
         selectedIds={ruleFormValues.applicable_items}
         disabledIds={ruleFormValues.excluded_items}
         onApply={handleApplicableApply}
@@ -800,7 +828,7 @@ export default function EditDiscountModal({
       <MenuItemSelectorModal
         title="Select excluded items"
         visible={excludedSelectorVisible}
-        menus={menus}
+        menus={menus?.results || []}
         selectedIds={ruleFormValues.excluded_items}
         disabledIds={ruleFormValues.applicable_items}
         onApply={handleExcludedApply}
@@ -812,13 +840,13 @@ export default function EditDiscountModal({
 
 const stylesModal = StyleSheet.create({
   dialog: {
-    backgroundColor: "#EFF4EB",
-    width: "45%",
-    alignSelf: "center",
+    backgroundColor: '#EFF4EB',
+    width: '45%',
+    alignSelf: 'center',
     borderRadius: 12,
   },
   content: {
-    maxHeight: "70vh",
+    maxHeight: '70vh',
     paddingBottom: 0,
   },
   scroll: {
@@ -828,84 +856,84 @@ const stylesModal = StyleSheet.create({
     paddingBottom: 24,
   },
   menuItem: {
-    color: "#333",
+    color: '#333',
     fontSize: 14,
   },
   dropdownBtn: {
-    backgroundColor: "#50693A17",
+    backgroundColor: '#50693A17',
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: "#ccc",
-    justifyContent: "space-between",
+    borderColor: '#ccc',
+    justifyContent: 'space-between',
     marginBottom: 16,
   },
   menuContainer: {
-    backgroundColor: "#fff",
+    backgroundColor: '#fff',
   },
   input: {
-    backgroundColor: "#50693A17",
+    backgroundColor: '#50693A17',
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: "#ccc",
+    borderColor: '#ccc',
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 14,
-    color: "#333",
+    color: '#333',
     marginBottom: 12,
   },
   fieldLabel: {
     fontSize: 13,
-    fontWeight: "600",
-    color: "#40392B",
+    fontWeight: '600',
+    color: '#40392B',
     marginBottom: 6,
   },
   toggleRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginVertical: 12,
   },
   toggleLabel: {
     fontSize: 16,
-    color: "#333",
+    color: '#333',
   },
   addButton: {
-    backgroundColor: "#91B275",
+    backgroundColor: '#91B275',
     borderRadius: 30,
     width: 170,
-    alignSelf: "flex-end",
+    alignSelf: 'flex-end',
   },
   dateRow: {
     marginBottom: 12,
   },
   dateButton: {
-    backgroundColor: "#50693A17",
+    backgroundColor: '#50693A17',
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: "#ccc",
+    borderColor: '#ccc',
   },
   dateLabel: {
-    color: "#22281B",
+    color: '#22281B',
     fontSize: 14,
-    fontWeight: "500",
+    fontWeight: '500',
   },
   sectionDivider: {
     height: 1,
-    backgroundColor: "#D5DEC9",
+    backgroundColor: '#D5DEC9',
     marginVertical: 16,
   },
   sectionHeader: {
     fontSize: 16,
-    fontWeight: "600",
-    color: "#40392B",
+    fontWeight: '600',
+    color: '#40392B',
     marginBottom: 12,
   },
   dropdownInput: {
-    backgroundColor: "#50693A17",
+    backgroundColor: '#50693A17',
     marginBottom: 12,
   },
   dropdownOutline: {
     borderRadius: 8,
-    borderColor: "#5E6E4933",
+    borderColor: '#5E6E4933',
   },
 });

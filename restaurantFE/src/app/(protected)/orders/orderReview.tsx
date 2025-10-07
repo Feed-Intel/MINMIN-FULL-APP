@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { Text, Button, Card, Divider, DataTable } from 'react-native-paper';
+import { router } from 'expo-router';
 import DeleteIcon from '@/assets/icons/Delete.svg';
 import { useDispatch } from 'react-redux';
 import { updateQuantity } from '@/lib/reduxStore/cartSlice';
@@ -24,6 +25,7 @@ export default function AcceptOrders() {
   const total = subtotal + shipping + tax;
   const remarks = useAppSelector((state: RootState) => state.cart.remarks);
   const MenuTax = useAppSelector((state: RootState) => state.cart.tax);
+  const cart = useAppSelector((state: RootState) => state.cart);
   const dispatch = useDispatch();
 
   const newQuantities = cartItems.reduce((acc: any, item: any) => {
@@ -58,10 +60,14 @@ export default function AcceptOrders() {
           Customer Information
         </Text>
         <View style={{ flexDirection: 'row' }}>
-          <Text style={{ color: '#000', fontWeight: 'bold' }}>Name:</Text>
+          <Text style={{ color: '#000', fontWeight: 'bold' }}>
+            Name: {cart.customerName}
+          </Text>
         </View>
         <View style={{ flexDirection: 'row' }}>
-          <Text style={{ color: '#000', fontWeight: 'bold' }}>Contact:</Text>
+          <Text style={{ color: '#000', fontWeight: 'bold' }}>
+            Contact: {cart.contactNumber}
+          </Text>
         </View>
         <View
           style={{
@@ -72,13 +78,14 @@ export default function AcceptOrders() {
         >
           <View style={{ flexDirection: 'row' }}>
             <Text style={{ color: '#000', fontWeight: 'bold' }}>
-              TIN Number:
+              TIN Number: {cart.tinNumber}
             </Text>
           </View>
           <Button
             mode="contained"
             style={styles.addButton}
             labelStyle={{ color: '#fff' }}
+            onPress={() => router.back()}
           >
             Edit Info
           </Button>

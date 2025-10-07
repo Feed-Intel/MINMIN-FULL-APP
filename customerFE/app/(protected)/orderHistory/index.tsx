@@ -229,6 +229,9 @@ const OrderHistoryScreen = () => {
             scrollEventThrottle={16}
             contentContainerStyle={styles.webListContentContainer}
           >
+            {filteredOrders.length == 0 && (
+              <Text style={styles.message}>{i18n.t('no_orders_found')}</Text>
+            )}
             <View style={styles.gridContainer}>
               {filteredOrders.map((item) => (
                 <View
@@ -274,6 +277,9 @@ const OrderHistoryScreen = () => {
             onEndReachedThreshold={0.5}
             ListFooterComponent={
               isLoading ? <ActivityIndicator size="small" animating /> : null
+            }
+            ListEmptyComponent={
+              <Text style={styles.message}>{i18n.t('no_orders_found')}</Text>
             }
           />
         )}
@@ -377,11 +383,14 @@ const OrderCard = ({
             i18n.t('cancel_order_alert_message'),
             [
               {
-                text: i18n.t('no_button'),
+                text: i18n.t('alert_no_button'),
                 style: 'cancel',
                 onPress: () => resolve(false),
               },
-              { text: i18n.t('yes_button'), onPress: () => resolve(true) },
+              {
+                text: i18n.t('alert_yes_button'),
+                onPress: () => resolve(true),
+              },
             ]
           );
         });
@@ -1108,6 +1117,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginBottom: 4,
   },
+  message: { textAlign: 'center', marginTop: 20, fontSize: 16, color: '#777' },
   // New styles for mobile category selector
   tabContainer: {
     flexDirection: 'row',

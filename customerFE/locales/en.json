@@ -210,6 +210,7 @@
   "no_dishes_found_for_search": "No dishes found for \"{{searchQuery}}\"",
   "no_restaurants_found_for_search": "No restaurants found for \"{{searchQuery}}\"",
   "no_restaurants_found": "No restaurants found",
+  "no_orders_found":"No Orders found",
   "start_typing_to_search_message": "Start typing to search for restaurants or dishes!",
   "failed_to_load_results_message": "Failed to load results.",
   "branch_information_section_title": "Branch Information",

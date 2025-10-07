@@ -21,7 +21,7 @@ const BranchSelector: React.FC<Props> = ({
   label = 'Branch',
 }) => {
   const { isRestaurant, isBranch, branchId } = useRestaurantIdentity();
-  const { data: branches, isLoading } = useGetBranches();
+  const { data: branches, isLoading } = useGetBranches(undefined, true);
   const [menuVisible, setMenuVisible] = useState(false);
 
   useEffect(() => {

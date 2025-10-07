@@ -1,27 +1,27 @@
-import { ThemeProvider } from "@react-navigation/native";
-import { QueryClient } from "@tanstack/react-query";
-import ReduxStoreProvider from "@/lib/reduxStore/ReduxStoreProvider";
-import { useFonts } from "expo-font";
-import { Stack } from "expo-router";
-import * as SplashScreen from "expo-splash-screen";
-import { StatusBar } from "expo-status-bar";
-import { useEffect } from "react";
-import { LogBox, useColorScheme } from "react-native";
-import PlusJakartaSans from "../assets/fonts/PlusJakartaSans.ttf";
-import "react-native-reanimated";
-import Toast from "react-native-toast-message";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { router } from "expo-router";
-import { Provider as PaperProvider } from "react-native-paper";
-import Loader from "@/components/dashboard/Loader";
-import { createAsyncStoragePersister } from "@tanstack/query-async-storage-persister";
-import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
+import { ThemeProvider } from '@react-navigation/native';
+import { QueryClient } from '@tanstack/react-query';
+import ReduxStoreProvider from '@/lib/reduxStore/ReduxStoreProvider';
+import { useFonts } from 'expo-font';
+import { Stack } from 'expo-router';
+import * as SplashScreen from 'expo-splash-screen';
+import { StatusBar } from 'expo-status-bar';
+import { useEffect } from 'react';
+import { LogBox, useColorScheme } from 'react-native';
+import PlusJakartaSans from '../assets/fonts/PlusJakartaSans.ttf';
+import 'react-native-reanimated';
+import Toast from 'react-native-toast-message';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { router } from 'expo-router';
+import { MD3LightTheme, Provider as PaperProvider } from 'react-native-paper';
+import Loader from '@/components/dashboard/Loader';
+import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister';
+import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 import {
   navigationDarkTheme,
   navigationLightTheme,
   paperDarkTheme,
   paperLightTheme,
-} from "@/theme/minminTheme";
+} from '@/theme/minminTheme';
 
 const queryClient = new QueryClient();
 
@@ -29,9 +29,7 @@ const asyncStoragePersister = createAsyncStoragePersister({
   storage: AsyncStorage,
 });
 
-LogBox.ignoreLogs([
-  "Warning: findDOMNode is deprecated",
-]);
+LogBox.ignoreLogs(['Warning: findDOMNode is deprecated']);
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
 
@@ -41,9 +39,9 @@ export default function RootLayout() {
   });
 
   async function checkAuth() {
-    const token = await AsyncStorage.getItem("refreshToken");
+    const token = await AsyncStorage.getItem('refreshToken');
     if (!Boolean(token)) {
-      router.replace("/(auth)");
+      router.replace('/(auth)');
     }
   }
 
@@ -59,8 +57,21 @@ export default function RootLayout() {
   }
 
   const scheme = useColorScheme();
-  const navigationTheme = scheme === "dark" ? navigationDarkTheme : navigationLightTheme;
-  const paperTheme = scheme === "dark" ? paperDarkTheme : paperLightTheme;
+  const navigationTheme =
+    scheme === 'dark' ? navigationDarkTheme : navigationLightTheme;
+  const paperTheme = {
+    ...MD3LightTheme,
+    colors: {
+      ...MD3LightTheme.colors,
+      primary: '#91B275', // active border and accent
+      secondary: '#91B27517',
+      outline: '#B5B3E8', // input border
+      background: '#EDEBFF', // dropdown background
+      surface: '#FFFFFF',
+      onPrimary: '#FFFFFF',
+      onSurface: '#333333', // text color
+    },
+  };
 
   return (
     <ThemeProvider value={navigationTheme}>
