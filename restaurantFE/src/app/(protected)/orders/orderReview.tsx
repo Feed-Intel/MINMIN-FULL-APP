@@ -12,7 +12,10 @@ import { Text, Button, Card, Divider, DataTable } from 'react-native-paper';
 import { router } from 'expo-router';
 import DeleteIcon from '@/assets/icons/Delete.svg';
 import { useDispatch } from 'react-redux';
-import { updateQuantity } from '@/lib/reduxStore/cartSlice';
+import { clearCart, updateQuantity } from '@/lib/reduxStore/cartSlice';
+import { useRestaurantIdentity } from '@/hooks/useRestaurantIdentity';
+import { useCreateOrder } from '@/services/mutation/orderMutation';
+import { useQueryClient } from '@tanstack/react-query';
 
 export default function AcceptOrders() {
   const cartItems = useAppSelector((state: RootState) => state.cart.items);
@@ -27,6 +30,9 @@ export default function AcceptOrders() {
   const MenuTax = useAppSelector((state: RootState) => state.cart.tax);
   const cart = useAppSelector((state: RootState) => state.cart);
   const dispatch = useDispatch();
+  const { mutateAsync: createOrder } = useCreateOrder();
+  const { tenantId, branchId } = useRestaurantIdentity();
+  const queryClient = useQueryClient();
 
   const newQuantities = cartItems.reduce((acc: any, item: any) => {
     acc[item.id] = item.quantity;
@@ -39,6 +45,34 @@ export default function AcceptOrders() {
         quantity: Math.max((newQuantities[id] || 0) - 1, 0),
       })
     );
+  };
+
+  const handlePlaceOrder = async () => {
+    const orderData = {
+      tenant: tenantId,
+      branch: branchId,
+      customerName: cart.customerName,
+      contactNumber: cart.contactNumber,
+      tinNumber: cart.tinNumber,
+      table: '',
+      coupon: '',
+      items: cartItems.map((item: any) => ({
+        menu_item: item.id,
+        quantity: newQuantities[item.id] || 1,
+        price: item.price,
+        remarks: remarks[item.id],
+      })),
+    };
+    // const transactionID = generateTransactionID();
+    await createOrder(orderData);
+    await queryClient.invalidateQueries({ queryKey: ['orders'] });
+    dispatch(clearCart());
+    router.replace('/(protected)/orders');
+  };
+
+  const handleCancelOrder = () => {
+    dispatch(clearCart());
+    router.replace('/(protected)/orders');
   };
 
   return (
@@ -222,6 +256,7 @@ export default function AcceptOrders() {
             mode="contained"
             style={styles.acceptButton}
             labelStyle={{ color: '#fff' }}
+            onPress={handlePlaceOrder}
           >
             Place order
           </Button>
@@ -229,6 +264,7 @@ export default function AcceptOrders() {
             mode="outlined"
             style={styles.cancelButton}
             labelStyle={{ color: '#000' }}
+            onPress={handleCancelOrder}
           >
             Cancel order
           </Button>

@@ -1,5 +1,7 @@
 import React from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, TouchableOpacity } from 'react-native';
+import { Text } from 'react-native-paper';
+import { ChevronRight } from 'lucide-react-native';
 
 interface PaginationProps {
   totalPages: number;
@@ -7,68 +9,59 @@ interface PaginationProps {
   onPageChange: (page: number) => void;
 }
 
-const Pagination: React.FC<PaginationProps> = ({
+export default function Pagination({
   totalPages,
   currentPage,
   onPageChange,
-}) => {
-  const handlePrev = () => {
-    if (currentPage > 1) {
-      onPageChange(currentPage - 1);
-    }
-  };
-
-  const handleNext = () => {
-    if (currentPage < totalPages) {
-      onPageChange(currentPage + 1);
-    }
-  };
+}: PaginationProps) {
+  const pages = Array.from({ length: totalPages }, (_, i) => i + 1);
 
   return (
     <View
       style={{
         flexDirection: 'row',
-        justifyContent: 'center',
         alignItems: 'center',
-        marginVertical: 16,
+        justifyContent: 'center',
+        paddingVertical: 10,
       }}
     >
-      {/* Previous button */}
-      <TouchableOpacity
-        onPress={handlePrev}
-        disabled={currentPage === 1}
-        style={{
-          paddingHorizontal: 12,
-          paddingVertical: 8,
-          backgroundColor: currentPage === 1 ? '#ccc' : '#007bff',
-          borderRadius: 8,
-          marginHorizontal: 5,
-        }}
-      >
-        <Text style={{ color: '#fff' }}>Prev</Text>
-      </TouchableOpacity>
+      {pages.map((page) => (
+        <TouchableOpacity
+          key={page}
+          onPress={() => onPageChange(page)}
+          style={{
+            backgroundColor: page === currentPage ? '#A4D18E' : 'transparent',
+            paddingHorizontal: 10,
+            paddingVertical: 6,
+            borderRadius: 8,
+            marginHorizontal: 4,
+            minWidth: 32,
+            alignItems: 'center',
+          }}
+        >
+          <Text
+            style={{
+              color: page === currentPage ? '#000205' : '#14212E9E',
+              fontWeight: page === currentPage ? '600' : '400',
+              fontSize: 14,
+            }}
+          >
+            {page}
+          </Text>
+        </TouchableOpacity>
+      ))}
 
-      {/* Current page info */}
-      <Text style={{ marginHorizontal: 10, fontSize: 16 }}>
-        {currentPage} / {totalPages}
-      </Text>
-
-      {/* Next button */}
+      {/* Next Button */}
       <TouchableOpacity
-        onPress={handleNext}
         disabled={currentPage === totalPages}
+        onPress={() => onPageChange(currentPage + 1)}
         style={{
-          paddingHorizontal: 12,
-          paddingVertical: 8,
-          backgroundColor: currentPage === totalPages ? '#ccc' : '#007bff',
-          borderRadius: 8,
-          marginHorizontal: 5,
+          marginLeft: 4,
+          opacity: currentPage === totalPages ? 0.4 : 1,
         }}
       >
-        <Text style={{ color: '#fff' }}>Next</Text>
+        <ChevronRight size={20} color={'#1B2128'} />
       </TouchableOpacity>
     </View>
   );
-};
-
-export default Pagination;
+}

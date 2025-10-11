@@ -1,27 +1,27 @@
-import React, { useState } from "react";
+import React, { useState } from 'react';
 import {
   ScrollView,
   StyleSheet,
   View,
   useWindowDimensions,
-} from "react-native";
-import { Text, TextInput, Button, Snackbar } from "react-native-paper";
-import { Dropdown, Option } from "react-native-paper-dropdown";
-import { router } from "expo-router";
+} from 'react-native';
+import { Text, TextInput, Button, Snackbar } from 'react-native-paper';
+import { Dropdown, Option } from 'react-native-paper-dropdown';
+import { router } from 'expo-router';
 import {
   useAddRelatedMenuItem,
   useGetMenus,
-} from "@/services/mutation/menuMutation";
+} from '@/services/mutation/menuMutation';
 
-const TAGS = ["Best Paired With", "Alternative", "Customer Favorite"];
+const TAGS = ['Best Paired With', 'Alternative', 'Customer Favorite'];
 
 export default function AddRelatedItem() {
   const { width } = useWindowDimensions();
-  const [menuItem, setMenuItem] = useState<string | undefined>("");
-  const [relatedItem, setRelatedItem] = useState<string | undefined>("");
-  const [tag, setTag] = useState<string | undefined>("");
+  const [menuItem, setMenuItem] = useState<string | undefined>('');
+  const [relatedItem, setRelatedItem] = useState<string | undefined>('');
+  const [tag, setTag] = useState<string | undefined>('');
   const [snackbarVisible, setSnackbarVisible] = useState(false);
-  const [snackbarMessage, setSnackbarMessage] = useState("");
+  const [snackbarMessage, setSnackbarMessage] = useState('');
 
   // Screen size breakpoints
   const isSmallScreen = width < 768;
@@ -33,7 +33,7 @@ export default function AddRelatedItem() {
 
   const handleAddItem = async () => {
     if (!menuItem || !relatedItem || !tag) {
-      setSnackbarMessage("All fields are required.");
+      setSnackbarMessage('All fields are required.');
       setSnackbarVisible(true);
       return;
     }
@@ -43,9 +43,9 @@ export default function AddRelatedItem() {
       related_item: relatedItem,
       tag,
     });
-    setSnackbarMessage("Related item added successfully!");
+    setSnackbarMessage('Related item added successfully!');
     setSnackbarVisible(true);
-    router.push("/(protected)/menus/relatedMenu");
+    router.push('/(protected)/menus/relatedMenu');
   };
 
   return (
@@ -54,14 +54,14 @@ export default function AddRelatedItem() {
         style={[
           styles.container,
           {
-            width: isSmallScreen ? "100%" : isMediumScreen ? "90%" : "70%",
+            width: isSmallScreen ? '100%' : isMediumScreen ? '90%' : '70%',
             paddingHorizontal: isSmallScreen ? 16 : isMediumScreen ? 24 : 32,
             maxWidth: 800,
           },
         ]}
       >
         <Text
-          variant={isSmallScreen ? "headlineMedium" : "headlineLarge"}
+          variant={isSmallScreen ? 'headlineMedium' : 'headlineLarge'}
           style={[styles.title, { marginBottom: isSmallScreen ? 12 : 24 }]}
         >
           Add Related Item
@@ -73,7 +73,7 @@ export default function AddRelatedItem() {
               label="Menu Item"
               placeholder="Select Menu Item"
               options={
-                (menus
+                (menus?.results
                   ?.filter((menu) => menu.id !== relatedItem)
                   .map((menu) => ({
                     label: menu.name,
@@ -82,7 +82,7 @@ export default function AddRelatedItem() {
               }
               value={menuItem}
               onSelect={setMenuItem}
-              mode={isSmallScreen ? "flat" : "outlined"}
+              mode={isSmallScreen ? 'flat' : 'outlined'}
             />
           </View>
 
@@ -91,7 +91,7 @@ export default function AddRelatedItem() {
               label="Related Menu Item"
               placeholder="Select Related Menu Item"
               options={
-                (menus
+                (menus?.results
                   ?.filter((menu) => menu.id !== menuItem)
                   .map((menu) => ({
                     label: menu.name,
@@ -100,7 +100,7 @@ export default function AddRelatedItem() {
               }
               value={relatedItem}
               onSelect={setRelatedItem}
-              mode={isSmallScreen ? "flat" : "outlined"}
+              mode={isSmallScreen ? 'flat' : 'outlined'}
             />
           </View>
 
@@ -116,7 +116,7 @@ export default function AddRelatedItem() {
               }
               value={tag}
               onSelect={setTag}
-              mode={isSmallScreen ? "flat" : "outlined"}
+              mode={isSmallScreen ? 'flat' : 'outlined'}
             />
           </View>
 
@@ -135,7 +135,7 @@ export default function AddRelatedItem() {
             contentStyle={{ height: isSmallScreen ? 40 : 48 }}
             labelStyle={{ fontSize: isSmallScreen ? 14 : 16 }}
           >
-            {isPending ? "Adding..." : "Add Item"}
+            {isPending ? 'Adding...' : 'Add Item'}
           </Button>
 
           <Snackbar
@@ -158,26 +158,26 @@ export default function AddRelatedItem() {
 const styles = StyleSheet.create({
   scrollContainer: {
     flexGrow: 1,
-    justifyContent: "center",
+    justifyContent: 'center',
   },
   container: {
-    alignSelf: "center",
+    alignSelf: 'center',
     paddingVertical: 24,
   },
   formContent: {
     flex: 1,
-    justifyContent: "center",
+    justifyContent: 'center',
   },
   title: {
-    textAlign: "center",
-    fontWeight: "600",
+    textAlign: 'center',
+    fontWeight: '600',
   },
   input: {
     marginBottom: 16,
   },
   addButton: {
-    alignSelf: "center",
-    width: "100%",
+    alignSelf: 'center',
+    width: '100%',
     maxWidth: 400,
   },
 });

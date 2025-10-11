@@ -78,6 +78,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     opt_in_promotions = models.BooleanField(default=True)  # Opt-in for promotions
     enable_email_notifications = models.BooleanField(default=True)  # Email notifications
     enable_in_app_notifications = models.BooleanField(default=True)  # In-app notifications
+    tin_no = models.CharField(max_length=15, blank=True, null=True)
     is_staff = models.BooleanField(default=False) 
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(default=now)

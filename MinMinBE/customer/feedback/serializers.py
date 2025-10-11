@@ -33,25 +33,28 @@ class FeedbackSerializer(serializers.ModelSerializer):
         }
     
     def get_menu(self, obj):
-        return {
-            'id': obj.menu.id,
-            'name': obj.menu.name,
-            'price': obj.menu.price
-        }
+        if obj.menu:
+            return {
+                'id': obj.menu.id,
+                'name': obj.menu.name,
+                'price': obj.menu.price
+            }
     
     def get_restaurant(self, obj):
-        return {
-            'id': obj.restaurant.id,
-            'name': obj.restaurant.restaurant_name
-        }
+        if obj.restaurant:
+            return {
+                'id': obj.restaurant.id,
+                'name': obj.restaurant.restaurant_name
+            }
     
     def get_customer(self, obj):
-        return {
-            'id': obj.customer.id,
-            'email': obj.customer.email,
-            'full_name': obj.customer.full_name,
-            'image': self.get_image_url(obj.customer)
-        }
+        if obj.customer:
+            return {
+                'id': obj.customer.id,
+                'email': obj.customer.email,
+                'full_name': obj.customer.full_name,
+                'image': self.get_image_url(obj.customer)
+            }
     
     def get_image_url(self, customer):
         request = self.context.get('request')  

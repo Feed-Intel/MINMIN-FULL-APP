@@ -7,6 +7,7 @@
   "forgot_password_subtitle": "Please provide the email address associated with your account.",
   "reset_password_button": "Reset Password",
   "remember_password_text": "Remember Password ?",
+  "failed_to_load_branch_details_error":"Failed to Load Branch Details",
   "login_link": "Login",
   "login_title": "Log In",
   "email_placeholder": "Email",

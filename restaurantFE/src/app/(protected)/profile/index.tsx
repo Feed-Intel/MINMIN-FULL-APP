@@ -40,11 +40,13 @@ import { useAppSelector } from '@/lib/reduxStore/hooks';
 import { base64ToBlob, buildImageUrl } from '@/util/imageUtils';
 import { logoutUser } from '@/util/logoutUser';
 import LanguageSelector from '@/components/LanguageSelector';
+import PostGallery from '@/components/PostGallery';
+import AddPostModal from '@/components/UploadPostImage';
+import CustomerFeedback from '@/components/CustomerFeedback';
 
 const LANGUAGE_STORAGE_KEY = 'restaurant-language-preference';
 const PRIVACY_POLICY_URL = 'https://alpha.feed-intel.com/privacy/';
 const TERMS_URL = 'https://alpha.feed-intel.com/terms/';
-const SUPPORT_EMAIL = 'mailto:support@feed-intel.com';
 
 const formatNumber = (value?: number | null) => {
   if (value === null || value === undefined || Number.isNaN(value)) {
@@ -106,6 +108,8 @@ const ProfileScreen = () => {
   const [snackbarMessage, setSnackbarMessage] = useState('');
   const [showLanguageModal, setShowLanguageModal] = useState(false);
   const [selectedLanguage, setSelectedLanguage] = useState<'en' | 'am'>('en');
+  const [activeTab, setActiveTab] = useState<string>('Business Detail');
+  const [addPost, setAddPost] = useState<boolean>(false);
 
   useEffect(() => {
     if (tenant) {
@@ -330,7 +334,12 @@ const ProfileScreen = () => {
         ) : (
           <>
             <Card style={[styles.sectionCard, styles.profileCard]}>
-              <Card.Content>
+              <Card.Content
+                style={{
+                  flexDirection: 'row',
+                  justifyContent: 'space-between',
+                }}
+              >
                 <View
                   style={[
                     styles.profileRow,
@@ -402,214 +411,302 @@ const ProfileScreen = () => {
                     </View>
                   </View>
                 </View>
+                {activeTab == 'Posts' && (
+                  <Button
+                    icon="plus"
+                    style={{
+                      backgroundColor: '#91B275',
+                      borderRadius: 20,
+                      paddingHorizontal: 16,
+                      alignSelf: 'center',
+                    }}
+                    labelStyle={{
+                      color: '#fff',
+                    }}
+                    onPress={() => setAddPost(true)}
+                  >
+                    Add Posts
+                  </Button>
+                )}
               </Card.Content>
             </Card>
-
+            {/* Tab Navigation */}
+            <View style={styles.tabContainer}>
+              <View style={styles.tabGroup}>
+                <TouchableOpacity
+                  style={[
+                    styles.tabButton,
+                    activeTab === 'Business Detail' && styles.activeTab,
+                  ]}
+                  onPress={() => setActiveTab('Business Detail')}
+                >
+                  <Text
+                    style={[
+                      styles.tabLabel,
+                      activeTab === 'Business Detail' && styles.activeTabLabel,
+                    ]}
+                  >
+                    Business Detail
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.tabButton,
+                    activeTab === 'Posts' && styles.activeTab,
+                  ]}
+                  onPress={() => setActiveTab('Posts')}
+                >
+                  <Text
+                    style={[
+                      styles.tabLabel,
+                      activeTab === 'Posts' && styles.activeTabLabel,
+                    ]}
+                  >
+                    Posts
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.tabButton,
+                    activeTab === 'Customer Feedback' && styles.activeTab,
+                  ]}
+                  onPress={() => setActiveTab('Customer Feedback')}
+                >
+                  <Text
+                    style={[
+                      styles.tabLabel,
+                      activeTab === 'Customer Feedback' &&
+                        styles.activeTabLabel,
+                    ]}
+                  >
+                    Customer Feedback
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
             <Card style={styles.sectionCard}>
               <Card.Content>
                 <View style={styles.sectionHeader}>
-                  <Text style={styles.sectionTitle}>Business Details</Text>
+                  <Text style={styles.sectionTitle}>{activeTab}</Text>
                   <Ionicons
                     name="storefront-outline"
                     size={22}
                     color="#91B275"
                   />
                 </View>
-                <View style={styles.inputGroup}>
-                  <TextInput
-                    placeholder="Restaurant Name"
-                    value={restaurantName}
-                    onChangeText={setRestaurantName}
-                    style={styles.input}
-                  />
-                  <TextInput
-                    placeholder="Profile Description"
-                    value={profile}
-                    onChangeText={setProfile}
-                    multiline
-                    numberOfLines={4}
-                    style={[styles.input, styles.textArea]}
-                  />
-                </View>
-              </Card.Content>
-            </Card>
-
-            <Card style={styles.sectionCard}>
-              <Card.Content>
-                <View style={styles.sectionHeader}>
-                  <Text style={styles.sectionTitle}>Financial & Payments</Text>
-                  <Ionicons name="wallet-outline" size={22} color="#91B275" />
-                </View>
-
-                <View style={styles.inputRow}>
-                  <TextInput
-                    placeholder="Chapa Payment API Key"
-                    value={chapaPaymentApiKey}
-                    onChangeText={setChapaPaymentApiKey}
-                    style={styles.input}
-                  />
-                  <TextInput
-                    placeholder="Chapa Public Key"
-                    value={chapaPaymentPublicKey}
-                    onChangeText={setChapaPaymentPublicKey}
-                    style={styles.input}
-                  />
-                </View>
-
-                <View style={styles.inputRow}>
-                  <TextInput
-                    placeholder="Tax Percentage"
-                    value={taxPercentage?.toString() ?? ''}
-                    onChangeText={(text) =>
-                      setTaxPercentage(text ? Number(text) : null)
-                    }
-                    keyboardType="numeric"
-                    style={styles.input}
-                  />
-                  <TextInput
-                    placeholder="Service Charge Percentage"
-                    value={serviceChargePercentage?.toString() ?? ''}
-                    onChangeText={(text) =>
-                      setServiceChargePercentage(text ? Number(text) : null)
-                    }
-                    keyboardType="numeric"
-                    style={styles.input}
-                  />
-                </View>
-
-                <TextInput
-                  placeholder="Max Discount Limit"
-                  value={maxDiscount?.toString() ?? ''}
-                  onChangeText={(text) =>
-                    setMaxDiscount(text ? Number(text) : null)
-                  }
-                  keyboardType="numeric"
-                  style={styles.input}
-                />
-
-                <Button
-                  mode="contained"
-                  onPress={handleUpdateProfile}
-                  style={styles.saveButton}
-                  contentStyle={styles.saveButtonContent}
-                  loading={isSavingProfile}
-                  disabled={isSavingProfile}
-                >
-                  Save Changes
-                </Button>
-              </Card.Content>
-            </Card>
-
-            <Card style={styles.sectionCard}>
-              <Card.Content>
-                <View style={styles.sectionHeader}>
-                  <Text style={styles.sectionTitle}>Top Performing Items</Text>
-                  <Ionicons
-                    name="trending-up-outline"
-                    size={22}
-                    color="#91B275"
-                  />
-                </View>
-
-                {isLoadingTopItems ? (
-                  <ActivityIndicator size="small" />
-                ) : topItems.length ? (
-                  <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={styles.topItemsRow}
-                  >
-                    {topItems.map((item) => (
-                      <View
-                        key={item.id || item.name}
-                        style={styles.topItemCard}
-                      >
-                        {item.image ? (
-                          <Image
-                            source={{
-                              uri: buildImageUrl(item.image) ?? item.image,
-                            }}
-                            style={styles.topItemImage}
-                          />
-                        ) : (
-                          <View
-                            style={[
-                              styles.topItemImage,
-                              styles.topItemPlaceholder,
-                            ]}
-                          >
-                            <Ionicons
-                              name="fast-food-outline"
-                              size={26}
-                              color="#91B275"
-                            />
-                          </View>
-                        )}
-                        <Text style={styles.topItemName} numberOfLines={1}>
-                          {item.name || 'Menu Item'}
-                        </Text>
-                        <Text style={styles.topItemMeta}>
-                          {formatNumber(item.count)} orders
-                        </Text>
-                      </View>
-                    ))}
-                  </ScrollView>
-                ) : (
-                  <Text style={styles.emptyStateText}>
-                    Performance data will appear once you start taking orders.
-                  </Text>
+                {activeTab == 'Business Detail' && (
+                  <View style={styles.inputGroup}>
+                    <TextInput
+                      placeholder="Restaurant Name"
+                      value={restaurantName}
+                      onChangeText={setRestaurantName}
+                      style={styles.input}
+                    />
+                    <TextInput
+                      placeholder="Profile Description"
+                      value={profile}
+                      onChangeText={setProfile}
+                      multiline
+                      numberOfLines={4}
+                      style={[styles.input, styles.textArea]}
+                    />
+                  </View>
                 )}
               </Card.Content>
             </Card>
-
-            <Card style={styles.sectionCard}>
-              <Card.Content>
-                <Text style={styles.sectionTitle}>Account Settings</Text>
-                <Divider style={styles.settingsDivider} />
-                {accountSettings.map((item) => (
-                  <TouchableOpacity
-                    key={item.key}
-                    style={styles.settingRow}
-                    onPress={item.onPress}
-                  >
-                    <View style={styles.settingLeft}>
-                      <MaterialCommunityIcons
-                        name={item.icon as any}
-                        size={22}
-                        color={item.destructive ? '#D64323' : '#2E3A24'}
-                      />
-                      <Text
-                        style={[
-                          styles.settingLabel,
-                          item.destructive && styles.destructiveSetting,
-                        ]}
-                      >
-                        {item.label}
+            {activeTab == 'Business Detail' && (
+              <>
+                <Card style={styles.sectionCard}>
+                  <Card.Content>
+                    <View style={styles.sectionHeader}>
+                      <Text style={styles.sectionTitle}>
+                        Financial & Payments
                       </Text>
+                      <Ionicons
+                        name="wallet-outline"
+                        size={22}
+                        color="#91B275"
+                      />
                     </View>
 
-                    {item.key === 'language' ? (
-                      <View style={styles.settingRight}>
-                        <Text style={styles.settingValue}>
-                          {selectedLanguage === 'en' ? 'English' : 'አማርኛ'}
-                        </Text>
-                        <MaterialIcons
-                          name="keyboard-arrow-right"
-                          size={24}
-                          color="#9AA79A"
-                        />
-                      </View>
-                    ) : item.showChevron === false ? null : (
-                      <MaterialIcons
-                        name="keyboard-arrow-right"
-                        size={24}
-                        color="#9AA79A"
+                    <View style={styles.inputRow}>
+                      <TextInput
+                        placeholder="Chapa Payment API Key"
+                        value={chapaPaymentApiKey}
+                        onChangeText={setChapaPaymentApiKey}
+                        style={styles.input}
                       />
+                      <TextInput
+                        placeholder="Chapa Public Key"
+                        value={chapaPaymentPublicKey}
+                        onChangeText={setChapaPaymentPublicKey}
+                        style={styles.input}
+                      />
+                    </View>
+
+                    <View style={styles.inputRow}>
+                      <TextInput
+                        placeholder="Tax Percentage"
+                        value={taxPercentage?.toString() ?? ''}
+                        onChangeText={(text) =>
+                          setTaxPercentage(text ? Number(text) : null)
+                        }
+                        keyboardType="numeric"
+                        style={styles.input}
+                      />
+                      <TextInput
+                        placeholder="Service Charge Percentage"
+                        value={serviceChargePercentage?.toString() ?? ''}
+                        onChangeText={(text) =>
+                          setServiceChargePercentage(text ? Number(text) : null)
+                        }
+                        keyboardType="numeric"
+                        style={styles.input}
+                      />
+                    </View>
+
+                    <TextInput
+                      placeholder="Max Discount Limit"
+                      value={maxDiscount?.toString() ?? ''}
+                      onChangeText={(text) =>
+                        setMaxDiscount(text ? Number(text) : null)
+                      }
+                      keyboardType="numeric"
+                      style={styles.input}
+                    />
+
+                    <Button
+                      mode="contained"
+                      onPress={handleUpdateProfile}
+                      style={styles.saveButton}
+                      contentStyle={styles.saveButtonContent}
+                      loading={isSavingProfile}
+                      disabled={isSavingProfile}
+                    >
+                      Save Changes
+                    </Button>
+                  </Card.Content>
+                </Card>
+
+                <Card style={styles.sectionCard}>
+                  <Card.Content>
+                    <View style={styles.sectionHeader}>
+                      <Text style={styles.sectionTitle}>
+                        Top Performing Items
+                      </Text>
+                      <Ionicons
+                        name="trending-up-outline"
+                        size={22}
+                        color="#91B275"
+                      />
+                    </View>
+
+                    {isLoadingTopItems ? (
+                      <ActivityIndicator size="small" />
+                    ) : topItems.length ? (
+                      <ScrollView
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        contentContainerStyle={styles.topItemsRow}
+                      >
+                        {topItems.map((item) => (
+                          <View
+                            key={item.id || item.name}
+                            style={styles.topItemCard}
+                          >
+                            {item.image ? (
+                              <Image
+                                source={{
+                                  uri: buildImageUrl(item.image) ?? item.image,
+                                }}
+                                style={styles.topItemImage}
+                              />
+                            ) : (
+                              <View
+                                style={[
+                                  styles.topItemImage,
+                                  styles.topItemPlaceholder,
+                                ]}
+                              >
+                                <Ionicons
+                                  name="fast-food-outline"
+                                  size={26}
+                                  color="#91B275"
+                                />
+                              </View>
+                            )}
+                            <Text style={styles.topItemName} numberOfLines={1}>
+                              {item.name || 'Menu Item'}
+                            </Text>
+                            <Text style={styles.topItemMeta}>
+                              {formatNumber(item.count)} orders
+                            </Text>
+                          </View>
+                        ))}
+                      </ScrollView>
+                    ) : (
+                      <Text style={styles.emptyStateText}>
+                        Performance data will appear once you start taking
+                        orders.
+                      </Text>
                     )}
-                  </TouchableOpacity>
-                ))}
-              </Card.Content>
-            </Card>
+                  </Card.Content>
+                </Card>
+
+                <Card style={styles.sectionCard}>
+                  <Card.Content>
+                    <Text style={styles.sectionTitle}>Account Settings</Text>
+                    <Divider style={styles.settingsDivider} />
+                    {accountSettings.map((item) => (
+                      <TouchableOpacity
+                        key={item.key}
+                        style={styles.settingRow}
+                        onPress={item.onPress}
+                      >
+                        <View style={styles.settingLeft}>
+                          <MaterialCommunityIcons
+                            name={item.icon as any}
+                            size={22}
+                            color={item.destructive ? '#D64323' : '#2E3A24'}
+                          />
+                          <Text
+                            style={[
+                              styles.settingLabel,
+                              item.destructive && styles.destructiveSetting,
+                            ]}
+                          >
+                            {item.label}
+                          </Text>
+                        </View>
+
+                        {item.key === 'language' ? (
+                          <View style={styles.settingRight}>
+                            <Text style={styles.settingValue}>
+                              {selectedLanguage === 'en' ? 'English' : 'አማርኛ'}
+                            </Text>
+                            <MaterialIcons
+                              name="keyboard-arrow-right"
+                              size={24}
+                              color="#9AA79A"
+                            />
+                          </View>
+                        ) : item.showChevron === false ? null : (
+                          <MaterialIcons
+                            name="keyboard-arrow-right"
+                            size={24}
+                            color="#9AA79A"
+                          />
+                        )}
+                      </TouchableOpacity>
+                    ))}
+                  </Card.Content>
+                </Card>
+              </>
+            )}
+            {activeTab == 'Posts' && (
+              <PostGallery onAddPost={() => setAddPost(true)} />
+            )}
+            {activeTab == 'Customer Feedback' && <CustomerFeedback />}
           </>
         )}
       </ScrollView>
@@ -617,6 +714,7 @@ const ProfileScreen = () => {
         showLanguageModal={showLanguageModal}
         setShowLanguageModal={setShowLanguageModal}
       />
+      <AddPostModal visible={addPost} onDismiss={() => setAddPost(false)} />
       <Snackbar
         visible={Boolean(snackbarMessage)}
         onDismiss={() => setSnackbarMessage('')}
@@ -860,6 +958,35 @@ const styles = StyleSheet.create({
   settingValue: {
     fontSize: 14,
     color: '#5A6E49',
+  },
+  tabContainer: {
+    borderColor: '#5E6E4933',
+    borderBottomWidth: 1,
+  },
+  tabGroup: {
+    flexDirection: 'row',
+    justifyContent: 'flex-start',
+    alignItems: 'flex-start',
+    borderRadius: 6,
+    padding: 2,
+  },
+  tabButton: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+  },
+  activeTab: {
+    borderBottomWidth: 1,
+    borderBottomColor: '#96B76E',
+  },
+  tabLabel: {
+    color: '#8D8D8D',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  activeTabLabel: {
+    color: '#96B76E',
   },
   snackbar: {
     margin: 16,

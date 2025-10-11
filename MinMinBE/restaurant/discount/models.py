@@ -9,7 +9,7 @@ import uuid
 class Coupon(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     tenant = models.ForeignKey(Tenant, on_delete=models.CASCADE, null=True,related_name='tenant_coupons')
-    is_global = models.BooleanField(default=False)
+    is_global = models.BooleanField(default=True)
     branches = models.ManyToManyField(Branch, blank=True, related_name='coupons')
     discount_code = models.CharField(max_length=255, null=True, blank=True)
     is_percentage = models.BooleanField(default=False)
@@ -40,7 +40,7 @@ class CouponUsage(models.Model):
 class Discount(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     tenant = models.ForeignKey(Tenant, on_delete=models.CASCADE, null=True,related_name='tenant_discounts')
-    is_global = models.BooleanField(default=False)
+    is_global = models.BooleanField(default=True)
     branches = models.ManyToManyField(Branch, blank=True, related_name='discounts')
     name = models.CharField(max_length=255, null=True, blank=True)
     description = models.TextField(null=True, blank=True)
