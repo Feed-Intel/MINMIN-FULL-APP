@@ -3,65 +3,88 @@ from .models import RelatedMenuItem
 from restaurant.menu.models import Menu
 from restaurant.tenant.models import Tenant
 
-class RelatedMenuItemSerializer(serializers.ModelSerializer):
-    menu_item = serializers.PrimaryKeyRelatedField(queryset=Menu.objects.all())
-    related_item = serializers.PrimaryKeyRelatedField(queryset=Menu.objects.all())
+
+# ───────────────────────────────
+# SIMPLE MENU SERIALIZER
+# ───────────────────────────────
+class SimpleMenuSerializer(serializers.ModelSerializer):
+    image = serializers.SerializerMethodField()
+
     class Meta:
-        model = RelatedMenuItem
-        fields = ['id', 'tenant', 'menu_item', 'related_item', 'tag']
-        read_only_fields = ['tenant']
+        model = Menu
+        fields = ['id', 'name', 'price', 'image']
 
-    def create(self, validated_data):
-        """
-        Creates a new RelatedMenuItem instance.
-        """
-        user = self.context['request'].user
-        tenant = Tenant.objects.get(admin=user)
-        related_menu_item = RelatedMenuItem.objects.create(
-            tenant=tenant,
-            **validated_data
-        )
-        return related_menu_item
-
-    def get_tenant(self, obj):
-        return {
-            'id': obj.tenant.id,
-            'restaurant_name': obj.tenant.restaurant_name,
-            'CHAPA_API_KEY': obj.tenant.CHAPA_API_KEY,
-            'CHAPA_PUBLIC_KEY':obj.tenant.CHAPA_PUBLIC_KEY,
-            'tax': obj.tenant.tax,
-            'service_charge': obj.tenant.service_charge
-        }
-    
-    def get_related_item(self, obj):
-        return {
-            'id': obj.related_item.id,
-            'name': obj.related_item.name,
-            'price': obj.related_item.price,
-            'image': self.get_image_url(obj.related_item),
-        }
-
-    def get_menu_item(self, obj):
-        return {
-            'id': obj.menu_item.id,
-            'name': obj.menu_item.name,
-            'price': obj.menu_item.price,
-            'image': self.get_image_url(obj.menu_item),
-        }
-    
-    def get_image_url(self, menu_item):
-        request = self.context.get('request')  # Get request object if available
-        if menu_item.image:
-            return request.build_absolute_uri(menu_item.image.url) if request else menu_item.image.url
+    def get_image(self, obj):
+        """Return absolute image URL if request context is available."""
+        request = self.context.get('request')
+        if obj.image:
+            return request.build_absolute_uri(obj.image.url) if request else obj.image.url
         return None
 
+
+# ───────────────────────────────
+# SINGLE RELATED MENU ITEM SERIALIZER
+# ───────────────────────────────
+class RelatedMenuItemSerializer(serializers.ModelSerializer):
+    # Use PK for writing
+    menu_item = serializers.PrimaryKeyRelatedField(queryset=Menu.objects.all())
+    related_item = serializers.PrimaryKeyRelatedField(queryset=Menu.objects.all())
+
+    class Meta:
+        model = RelatedMenuItem
+        fields = ['id', 'tenant', 'menu_item', 'related_item', 'created_at', 'updated_at']
+        read_only_fields = ['tenant', 'created_at', 'updated_at']
+
+    def create(self, validated_data):
+        """Create a single RelatedMenuItem for the logged-in tenant."""
+        user = self.context['request'].user
+        tenant = Tenant.objects.get(admin=user)
+        return RelatedMenuItem.objects.create(tenant=tenant, **validated_data)
+
     def to_representation(self, instance):
-        """
-        Customizes the serialized response.
-        """
-        representation = super().to_representation(instance)
-        # Replace write-only fields with full detail serializers
-        representation['tenant'] = self.get_tenant(instance)
-        representation['menu_item'] = self.get_menu_item(instance)
-        representation['related_item'] = self.get_related_item(instance)
-        return representation
+        """Customize response with nested related info."""
+        rep = super().to_representation(instance)
+        rep['tenant'] = {
+            'id': instance.tenant.id,
+            'restaurant_name': instance.tenant.restaurant_name,
+        }
+        rep['menu_item'] = SimpleMenuSerializer(instance.menu_item, context=self.context).data
+        rep['related_item'] = SimpleMenuSerializer(instance.related_item, context=self.context).data
+        return rep
+
+
+# ───────────────────────────────
+# BULK CREATION SERIALIZER
+# ───────────────────────────────
+class RelatedMenuBulkCreateSerializer(serializers.Serializer):
+    menu_item = serializers.PrimaryKeyRelatedField(queryset=Menu.objects.all())
+    related_items = serializers.ListField(
+        child=serializers.PrimaryKeyRelatedField(queryset=Menu.objects.all()),
+        allow_empty=True,
+        help_text="List of related items with id",
+    )
+
+    def create(self, validated_data):
+        """Create multiple RelatedMenuItem entries for one menu."""
+        user = self.context['request'].user
+        tenant = Tenant.objects.get(admin=user)
+        menu_item = validated_data['menu_item']
+        related_items = validated_data['related_items']
+
+        created_objects = []
+        RelatedMenuItem.objects.filter(
+                tenant=tenant,
+                menu_item=menu_item
+            ).delete()
+        for related_item in related_items:
+            obj = RelatedMenuItem.objects.create(
+                tenant=tenant,
+                menu_item=menu_item,
+                related_item=related_item
+            )
+            created_objects.append(obj)
+        return created_objects
+
+    def to_representation(self, instances):
+        """Return serialized list of created RelatedMenuItem objects."""
+        return RelatedMenuItemSerializer(instances, many=True, context=self.context).data

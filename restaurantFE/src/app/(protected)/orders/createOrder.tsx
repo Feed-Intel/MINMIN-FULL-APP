@@ -37,12 +37,14 @@ import {
   updateQuantity,
   setCustomerInfo,
 } from '@/lib/reduxStore/cartSlice';
+import Pagination from '@/components/Pagination';
 
 const DEFAULT_CATEGORIES = ['Main course', 'Pasta', 'Dessert', 'Drinks'];
 
 export default function CreateOrder() {
   const [activeTab, setActiveTab] = useState<'all' | 'combos'>('all');
-  const { data: menus, isLoading: isMenusLoading } = useGetMenus();
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const { data: menus, isLoading: isMenusLoading } = useGetMenus(currentPage);
   const [currentMenuItem, setCurrentMenuItem] = useState<any>(null);
   const { data: combos, isLoading: isCombosLoading } = useGetCombos();
   const { isRestaurant, isBranch, branchId, tenantId } =
@@ -156,8 +158,6 @@ export default function CreateOrder() {
     setCurrentMenuItem(menu);
     setModalSearchQuery('');
     setModalSelectedCategory('All');
-    setSelectedItems([]);
-    setTag('');
     setShowRelatedModal(true);
   };
 
@@ -169,22 +169,44 @@ export default function CreateOrder() {
     );
   };
 
-  const handleQuantityChange = (id: string, increment: boolean) => {
-    dispatch(
-      updateQuantity({
-        id,
-        quantity: increment
-          ? (newQuantities[id] || 0) + 1
-          : Math.max((newQuantities[id] || 0) - 1, 0),
-      })
-    );
+  const handleQuantityChange = (menu: any, increment: boolean) => {
+    if (newQuantities[menu.id] === undefined) {
+      dispatch(
+        addToCart({
+          item: {
+            id: menu.id!,
+            name: menu.name,
+            description: menu.description,
+            price: parseFloat(menu.price),
+            quantity: 1,
+            image: menu.image,
+          },
+          restaurantId: tenantId!,
+          branchId: branchId!,
+          tableId: '',
+          paymentAPIKEY: menu?.tenant.CHAPA_API_KEY,
+          paymentPUBLICKEY: menu?.tenant.CHAPA_PUBLIC_KEY || '',
+          tax: menu.tenant.tax || 0,
+          serviceCharge: menu.tenant.service_charge || 0,
+        })
+      );
+    } else {
+      dispatch(
+        updateQuantity({
+          id: menu.id,
+          quantity: increment
+            ? (newQuantities[menu.id] || 0) + 1
+            : Math.max((newQuantities[menu.id] || 0) - 1, 0),
+        })
+      );
+    }
   };
 
   const handleAddRelatedItem = () => {
     selectedItems.map((Ritem) => {
       const existingItem: any = cart.items.find((item) => item.id === Ritem);
       if (!existingItem) {
-        const item = modalFilteredMenus?.find((t) => t.id === Ritem);
+        const item = modalFilteredMenus?.find((t: any) => t.id === Ritem);
         dispatch(
           addToCart({
             item: {
@@ -340,7 +362,7 @@ export default function CreateOrder() {
               </DataTable.Title>
             </DataTable.Header>
 
-            {branchFilteredMenus?.map((menu) => {
+            {branchFilteredMenus?.map((menu: any) => {
               const categories = getMenuCategories(menu);
               const categoriesLabel = categories.length
                 ? categories.join(', ')
@@ -386,7 +408,7 @@ export default function CreateOrder() {
                       }}
                     >
                       <TouchableOpacity
-                        onPress={() => handleQuantityChange(menu.id!, false)}
+                        onPress={() => handleQuantityChange(menu, false)}
                       >
                         <Trash color={'#22281B'} height={16} />
                       </TouchableOpacity>
@@ -394,7 +416,7 @@ export default function CreateOrder() {
                         {newQuantities[menu.id!] || 0}
                       </Text>
                       <TouchableOpacity
-                        onPress={() => handleQuantityChange(menu.id!, true)}
+                        onPress={() => handleQuantityChange(menu, true)}
                       >
                         <Plus color={'#22281B'} height={16} />
                       </TouchableOpacity>
@@ -407,7 +429,9 @@ export default function CreateOrder() {
                       style={styles.relatedButton}
                       labelStyle={styles.relatedButtonLabel}
                     >
-                      + Related item
+                      {selectedItems.length != 0
+                        ? 'Update Related item'
+                        : '+ Related item'}
                     </Button>
                   </DataTable.Cell>
                   <DataTable.Cell>
@@ -448,6 +472,11 @@ export default function CreateOrder() {
               );
             })}
           </DataTable>
+          <Pagination
+            totalPages={Math.round(menus?.count! / 10) || 0}
+            currentPage={currentPage}
+            onPageChange={setCurrentPage}
+          />
         </View>
       )}
 
@@ -540,6 +569,11 @@ export default function CreateOrder() {
               </DataTable.Row>
             ))}
           </DataTable>
+          <Pagination
+            totalPages={Math.round(combos?.count! / 10) || 0}
+            currentPage={currentPage}
+            onPageChange={setCurrentPage}
+          />
         </View>
       )}
       <Portal>
@@ -594,7 +628,7 @@ export default function CreateOrder() {
             </ScrollView>
 
             <ScrollView style={styles.itemsContainer}>
-              {modalFilteredMenus?.map((menu) => {
+              {modalFilteredMenus?.map((menu: any) => {
                 const categories = getMenuCategories(menu);
                 const categoriesLabel = categories.length
                   ? categories.join(', ')
@@ -633,7 +667,7 @@ export default function CreateOrder() {
                 textColor="#fff"
                 style={styles.addItemButton}
                 labelStyle={{ color: '#fff', fontWeight: '600', fontSize: 17 }}
-                disabled={selectedItems.length === 0 || !tag}
+                disabled={selectedItems.length === 0}
               >
                 Add Item
               </Button>

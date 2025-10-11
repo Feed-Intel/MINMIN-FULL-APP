@@ -5,6 +5,8 @@ from .models import Order, OrderItem
 from restaurant.table.models import Table
 from restaurant.table.serializers import TableSerializer
 from restaurant.branch.models import Branch
+from accounts.models import User
+
 class OrderItemSerializer(serializers.ModelSerializer):
     menu_item_name = serializers.SerializerMethodField()
     menu_item_image = serializers.SerializerMethodField()
@@ -46,6 +48,21 @@ class OrderSerializer(serializers.ModelSerializer):
         table = validated_data.get('table')
         branch = validated_data.get('branch')
         items_data = validated_data.pop('items')
+
+        customer_name = validated_data.get('customer_name')
+        customer_phone = validated_data.get('customer_phone')
+        customer_tinNo = validated_data.get('customer_tinNo')
+        customer = self.context['request'].user
+        if not customer_name or not customer_phone or not customer_tinNo:
+            new_user,created = User.objects.get_or_create(
+                email=f'{customer_name}@example.com',
+                password='password',
+                full_name=customer_name,
+                user_type='customer',
+                phone=customer_phone,
+                tin_no=customer_tinNo
+            )
+            customer = new_user
         
         # Automatically assign delivery table if none provided
         if not table:
@@ -71,7 +88,7 @@ class OrderSerializer(serializers.ModelSerializer):
             table=table,
             branch=branch,
             tenant=branch.tenant,
-            customer=self.context['request'].user
+            customer=customer
         )
 
         # Create order items

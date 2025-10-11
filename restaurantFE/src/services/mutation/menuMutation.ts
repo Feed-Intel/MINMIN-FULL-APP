@@ -41,10 +41,13 @@ export const useGetMenuAvailabilities = (next?: string | null) =>
     }
   );
 
-export const useGetRelatedMenus = () =>
+export const useGetRelatedMenus = (
+  page?: number | undefined,
+  noPage?: boolean
+) =>
   useQuery<RelatedMenu[]>({
     queryKey: ['relatedMenus'],
-    queryFn: GetRelatedItems,
+    queryFn: () => GetRelatedItems(page, noPage),
     staleTime: 0,
   });
 

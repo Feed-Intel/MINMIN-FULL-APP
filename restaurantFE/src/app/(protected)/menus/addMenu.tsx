@@ -23,6 +23,12 @@ import { useCreateMenu } from '@/services/mutation/menuMutation';
 import { useQueryClient } from '@tanstack/react-query';
 import { base64ToBlob } from '@/util/imageUtils';
 import ModalHeader from '@/components/ModalHeader';
+import {
+  DropdownInputProps,
+  MultiSelectDropdown,
+  Option,
+} from 'react-native-paper-dropdown';
+import { useGetBranches } from '@/services/mutation/branchMutation';
 
 interface AddMenuDialogProps {
   visible: boolean;
@@ -36,6 +42,8 @@ type MenuFormState = {
   price: string;
   is_side: boolean;
   image: { uri: string; name: string; type: string };
+  is_global: boolean;
+  branches: string[];
 };
 
 export default function AddMenuDialog({
@@ -50,6 +58,8 @@ export default function AddMenuDialog({
     price: '',
     is_side: false,
     image: { uri: '', name: '', type: '' },
+    is_global: false,
+    branches: [],
   });
   const [categoryMenuVisible, setCategoryMenuVisible] = useState(false);
 
@@ -58,6 +68,7 @@ export default function AddMenuDialog({
 
   const queryClient = useQueryClient();
   const { mutateAsync: createMenu, isPending } = useCreateMenu();
+  const { data: branches } = useGetBranches(undefined, true);
 
   const categories = ['Appetizer', 'Breakfast', 'Lunch', 'Dinner'];
 
@@ -125,7 +136,10 @@ export default function AddMenuDialog({
     formData.append('price', menuData.price);
     formData.append('is_side', String(menuData.is_side));
     formData.append('categories', JSON.stringify(menuData.categories));
-
+    formData.append('is_global', String(menuData.is_global));
+    for (const branch of menuData.branches) {
+      formData.append('branches', branch);
+    }
     const base64Data = menuData.image.uri;
     const contentType = menuData.image.type || 'image/jpeg';
     const extension = menuData.image.name?.split('.').pop() || 'jpg';
@@ -139,6 +153,16 @@ export default function AddMenuDialog({
 
     await createMenu(formData);
     queryClient.invalidateQueries({ queryKey: ['menus'] });
+    setMenuData({
+      name: '',
+      description: '',
+      categories: [],
+      price: '',
+      is_side: false,
+      image: { uri: '', name: '', type: '' },
+      is_global: false,
+      branches: [],
+    });
     Toast.show({
       type: 'success',
       text1: 'Success',
@@ -190,6 +214,65 @@ export default function AddMenuDialog({
                 color: '#202B1866',
               }}
             />
+
+            <View
+              style={{
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: 15,
+              }}
+            >
+              <Text style={{ color: '#40392B' }}>Is Global</Text>
+              <Switch
+                value={menuData.is_global}
+                onValueChange={(value) => handleInputChange('is_global', value)}
+                color="#91B275"
+              />
+            </View>
+            {!menuData.is_global && (
+              <>
+                <Text style={styles.fieldLabel}>Branch</Text>
+                <MultiSelectDropdown
+                  label="Select Branches"
+                  placeholder="Select Branches"
+                  options={
+                    (branches?.results.map((br) => ({
+                      label: br.address,
+                      value: br.id!,
+                    })) as Option[]) || []
+                  }
+                  value={menuData.branches || []}
+                  onSelect={(values) => handleInputChange('branches', values)}
+                  menuContentStyle={{
+                    backgroundColor: '#fff',
+                  }}
+                  CustomMenuHeader={() => <Text>{''}</Text>}
+                  CustomMultiSelectDropdownInput={({
+                    placeholder,
+                    selectedLabel,
+                    rightIcon,
+                  }: DropdownInputProps) => (
+                    <TextInput
+                      mode="outlined"
+                      placeholder={placeholder}
+                      placeholderTextColor={'#202B1866'}
+                      value={selectedLabel}
+                      style={{
+                        backgroundColor: '#50693A17',
+                        maxHeight: 50,
+                      }}
+                      contentStyle={{
+                        borderColor: '#ccc',
+                      }}
+                      textColor={'#000'}
+                      right={rightIcon}
+                      outlineColor="#ccc"
+                    />
+                  )}
+                />
+              </>
+            )}
 
             {/* Category Selector */}
             <View style={styles.dropdownContainer}>
@@ -356,6 +439,8 @@ const styles = StyleSheet.create({
     width: '40%',
     alignSelf: 'center',
     borderRadius: 12,
+    height: '80%',
+    overflowY: 'scroll',
   },
   input: {
     flex: 1,
@@ -407,7 +492,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   dropdownContainer: {
-    marginBottom: 16,
+    marginVertical: 16,
   },
   dropdownButton: {
     borderWidth: 1,
@@ -447,5 +532,11 @@ const styles = StyleSheet.create({
   },
   categoryChipText: {
     color: '#40392B',
+  },
+  fieldLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#40392B',
+    marginBottom: 6,
   },
 });

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState } from 'react';
 import {
   View,
   ScrollView,
@@ -8,7 +8,7 @@ import {
   FlatList,
   TouchableOpacity,
   useColorScheme,
-} from "react-native";
+} from 'react-native';
 import {
   Text,
   Switch,
@@ -22,22 +22,22 @@ import {
   TextInput,
   DataTable,
   useTheme,
-} from "react-native-paper";
-import { useGetBranches } from "@/services/mutation/branchMutation";
+} from 'react-native-paper';
+import { useGetBranches } from '@/services/mutation/branchMutation';
 import {
   useGetMenus,
   useGetMenuAvailabilities,
   useUpdateMenuAvailability,
-} from "@/services/mutation/menuMutation";
-import { MenuAvailability as MenuAvailabilityType } from "@/types/menuType";
-import { Branch } from "@/types/branchType";
-import { MenuType } from "@/types/menuType";
-import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
+} from '@/services/mutation/menuMutation';
+import { MenuAvailability as MenuAvailabilityType } from '@/types/menuType';
+import { Branch } from '@/types/branchType';
+import { MenuType } from '@/types/menuType';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
 export default function MenuAvailability() {
   const { width } = useWindowDimensions();
   const [snackbarVisible, setSnackbarVisible] = useState(false);
-  const [snackbarMessage, setSnackbarMessage] = useState("");
+  const [snackbarMessage, setSnackbarMessage] = useState('');
   const [selectedBranch, setSelectedBranch] = useState<Branch | null>(null);
   const theme = useTheme();
 
@@ -81,15 +81,15 @@ export default function MenuAvailability() {
         menu_item: menuItemId,
         is_available: isAvailable,
       });
-      setSnackbarMessage("Menu availability updated successfully!");
+      setSnackbarMessage('Menu availability updated successfully!');
       setSnackbarVisible(true);
 
       setMenuAvailabilites((prev) =>
         prev.map((item) =>
-          (typeof item.branch === "object" && "id" in item.branch
+          (typeof item.branch === 'object' && 'id' in item.branch
             ? item.branch.id
             : item.branch) === branchId &&
-          (typeof item.menu_item === "object" && "id" in item.menu_item
+          (typeof item.menu_item === 'object' && 'id' in item.menu_item
             ? item.menu_item.id
             : item.menu_item) === menuItemId
             ? { ...item, is_available: isAvailable }
@@ -97,7 +97,7 @@ export default function MenuAvailability() {
         )
       );
     } catch (error) {
-      setSnackbarMessage("Failed to update menu availability");
+      setSnackbarMessage('Failed to update menu availability');
       setSnackbarVisible(true);
     }
   };
@@ -105,10 +105,10 @@ export default function MenuAvailability() {
   const getAvailabilityStatus = (branchId: string, menuId: string) => {
     const availability = menuAvailabilites.find(
       (avail) =>
-        (typeof avail.branch === "object" && "id" in avail.branch
+        (typeof avail.branch === 'object' && 'id' in avail.branch
           ? avail.branch.id
           : avail.branch) === branchId &&
-        (typeof avail.menu_item === "object" && "id" in avail.menu_item
+        (typeof avail.menu_item === 'object' && 'id' in avail.menu_item
           ? avail.menu_item.id
           : avail.menu_item) === menuId
     );
@@ -126,7 +126,7 @@ export default function MenuAvailability() {
       >
         <ActivityIndicator
           animating={true}
-          size={isSmallScreen ? "small" : "large"}
+          size={isSmallScreen ? 'small' : 'large'}
           color={theme.colors.primary}
         />
       </View>
@@ -136,7 +136,7 @@ export default function MenuAvailability() {
   if (!selectedBranch) {
     return (
       <BranchSelectionScreen
-        branches={branches || []}
+        branches={branches?.results || []}
         onSelectBranch={setSelectedBranch}
         isSmallScreen={isSmallScreen}
         colorScheme={colorScheme ?? null}
@@ -147,7 +147,7 @@ export default function MenuAvailability() {
   return (
     <MenuAvailabilityScreen
       branch={selectedBranch}
-      menus={menus || []}
+      menus={menus?.results || []}
       menuAvailabilites={menuAvailabilites}
       getAvailabilityStatus={getAvailabilityStatus}
       handleToggle={handleToggle}
@@ -166,7 +166,7 @@ interface BranchSelectionScreenProps {
   branches: Branch[];
   onSelectBranch: (branch: Branch) => void;
   isSmallScreen: boolean;
-  colorScheme: "light" | "dark" | null;
+  colorScheme: 'light' | 'dark' | null;
 }
 
 const BranchSelectionScreen: React.FC<BranchSelectionScreenProps> = ({
@@ -186,12 +186,12 @@ const BranchSelectionScreen: React.FC<BranchSelectionScreenProps> = ({
       paddingBottom: 12,
       paddingHorizontal: 16,
       backgroundColor: theme.colors.primary,
-      flexDirection: "row",
-      alignItems: "center",
+      flexDirection: 'row',
+      alignItems: 'center',
     },
     headerTitle: {
       fontSize: 20,
-      fontWeight: "bold",
+      fontWeight: 'bold',
       color: theme.colors.onPrimary,
       flex: 1,
       marginLeft: 10,
@@ -199,7 +199,7 @@ const BranchSelectionScreen: React.FC<BranchSelectionScreenProps> = ({
     tableContainer: {
       margin: 16,
       borderRadius: 8,
-      overflow: "hidden",
+      overflow: 'hidden',
       backgroundColor: theme.colors.surface,
       elevation: 3,
     },
@@ -207,17 +207,17 @@ const BranchSelectionScreen: React.FC<BranchSelectionScreenProps> = ({
       backgroundColor: theme.colors.primary,
     },
     headerCell: {
-      justifyContent: "center",
+      justifyContent: 'center',
     },
     headerText: {
       color: theme.colors.onPrimary,
-      fontWeight: "bold",
+      fontWeight: 'bold',
     },
     tableRow: {
       backgroundColor: theme.colors.surface,
     },
     tableCell: {
-      justifyContent: "center",
+      justifyContent: 'center',
       paddingVertical: 12,
     },
     cellText: {
@@ -258,7 +258,7 @@ const BranchSelectionScreen: React.FC<BranchSelectionScreenProps> = ({
             </DataTable.Cell>
             <DataTable.Cell style={styles.tableCell}>
               <Text style={styles.cellText}>
-                {branch.gps_coordinates || "N/A"}
+                {branch.gps_coordinates || 'N/A'}
               </Text>
             </DataTable.Cell>
             <DataTable.Cell style={styles.tableCell}>
@@ -294,7 +294,7 @@ interface MenuAvailabilityScreenProps {
   snackbarVisible: boolean;
   snackbarMessage: string;
   setSnackbarVisible: (visible: boolean) => void;
-  colorScheme: "light" | "dark" | null;
+  colorScheme: 'light' | 'dark' | null;
 }
 
 const MenuAvailabilityScreen: React.FC<MenuAvailabilityScreenProps> = ({
@@ -314,21 +314,19 @@ const MenuAvailabilityScreen: React.FC<MenuAvailabilityScreenProps> = ({
   const theme = useTheme();
 
   const renderMenuItem = ({ item }: { item: MenuType }) => {
-    const categories = Array.isArray(item.categories) && item.categories.length
-      ? item.categories
-      : item.category
-      ? [item.category]
-      : [];
+    const categories =
+      Array.isArray(item.categories) && item.categories.length
+        ? item.categories
+        : item.category
+        ? [item.category]
+        : [];
 
     return (
       <Card style={styles.menuCard}>
         <Card.Content>
           <View style={styles.menuHeader}>
             {item.image ? (
-              <Image
-                source={{ uri: item.image }}
-                style={styles.menuImage}
-              />
+              <Image source={{ uri: item.image }} style={styles.menuImage} />
             ) : (
               <View style={[styles.menuImage, styles.imagePlaceholder]}>
                 <MaterialCommunityIcons
@@ -352,10 +350,7 @@ const MenuAvailabilityScreen: React.FC<MenuAvailabilityScreenProps> = ({
                   <Chip style={styles.categoryChip}>—</Chip>
                 )}
                 {item.is_side && (
-                  <Chip
-                    style={styles.sideChip}
-                    textStyle={styles.sideChipText}
-                  >
+                  <Chip style={styles.sideChip} textStyle={styles.sideChipText}>
                     Side Dish
                   </Chip>
                 )}
@@ -372,8 +367,8 @@ const MenuAvailabilityScreen: React.FC<MenuAvailabilityScreenProps> = ({
           <View style={styles.availabilityContainer}>
             <Text style={styles.availabilityLabel}>
               {getAvailabilityStatus(branch.id!, item.id!)
-                ? "Currently Available"
-                : "Not Available"}
+                ? 'Currently Available'
+                : 'Not Available'}
             </Text>
             <Switch
               value={getAvailabilityStatus(branch.id!, item.id!)}
@@ -388,7 +383,7 @@ const MenuAvailabilityScreen: React.FC<MenuAvailabilityScreenProps> = ({
       </Card>
     );
   };
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchTerm, setSearchTerm] = useState('');
 
   const filteredMenus = menus.filter(
     (menu) =>
@@ -400,7 +395,7 @@ const MenuAvailabilityScreen: React.FC<MenuAvailabilityScreenProps> = ({
   // Fixed: Count only availabilities for the specific branch
   const availableCount = menuAvailabilites.filter(
     (avail) =>
-      (typeof avail.branch === "object" && "id" in avail.branch
+      (typeof avail.branch === 'object' && 'id' in avail.branch
         ? avail.branch.id
         : avail.branch) === branch.id && avail.is_available
   ).length;
@@ -415,14 +410,14 @@ const MenuAvailabilityScreen: React.FC<MenuAvailabilityScreenProps> = ({
       paddingBottom: 8,
       paddingHorizontal: 16,
       backgroundColor: theme.colors.primary,
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "space-between",
-      flexWrap: "wrap",
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      flexWrap: 'wrap',
     },
     headerTitle: {
       fontSize: 20,
-      fontWeight: "bold",
+      fontWeight: 'bold',
       color: theme.colors.onPrimary,
       flex: 1,
       marginLeft: 10,
@@ -430,32 +425,32 @@ const MenuAvailabilityScreen: React.FC<MenuAvailabilityScreenProps> = ({
     branchTitle: {
       fontSize: 14,
       color: theme.colors.onPrimary,
-      width: "100%",
+      width: '100%',
       marginTop: 4,
       marginLeft: 40,
       opacity: 0.9,
     },
     statsContainer: {
-      flexDirection: "row",
-      justifyContent: "space-around",
+      flexDirection: 'row',
+      justifyContent: 'space-around',
       padding: 16,
       backgroundColor: theme.colors.surface,
       marginBottom: 4,
       elevation: 2,
     },
     statCard: {
-      alignItems: "center",
+      alignItems: 'center',
       padding: 5,
       borderRadius: 12,
       backgroundColor:
-        colorScheme === "dark"
+        colorScheme === 'dark'
           ? theme.colors.surfaceVariant
           : theme.colors.secondaryContainer,
-      width: "45%",
+      width: '45%',
     },
     statNumber: {
       fontSize: 24,
-      fontWeight: "bold",
+      fontWeight: 'bold',
       color: theme.colors.primary,
     },
     statLabel: {
@@ -472,7 +467,7 @@ const MenuAvailabilityScreen: React.FC<MenuAvailabilityScreenProps> = ({
       elevation: 2,
     },
     searchInput: {
-      backgroundColor: "transparent",
+      backgroundColor: 'transparent',
       height: 50,
       color: theme.colors.onSurface,
     },
@@ -484,11 +479,11 @@ const MenuAvailabilityScreen: React.FC<MenuAvailabilityScreenProps> = ({
       marginBottom: 16,
       borderRadius: 16,
       backgroundColor: theme.colors.surface,
-      overflow: "hidden",
+      overflow: 'hidden',
       elevation: 2,
     },
     menuHeader: {
-      flexDirection: "row",
+      flexDirection: 'row',
       marginBottom: 12,
     },
     menuImage: {
@@ -499,20 +494,20 @@ const MenuAvailabilityScreen: React.FC<MenuAvailabilityScreenProps> = ({
     },
     imagePlaceholder: {
       backgroundColor: theme.colors.surfaceVariant,
-      justifyContent: "center",
-      alignItems: "center",
+      justifyContent: 'center',
+      alignItems: 'center',
     },
     menuInfo: {
       flex: 1,
     },
     menuName: {
       fontSize: 18,
-      fontWeight: "bold",
+      fontWeight: 'bold',
       color: theme.colors.onSurface,
     },
     menuPrice: {
       fontSize: 16,
-      fontWeight: "bold",
+      fontWeight: 'bold',
       color: theme.colors.primary,
       marginTop: 4,
     },
@@ -522,9 +517,9 @@ const MenuAvailabilityScreen: React.FC<MenuAvailabilityScreenProps> = ({
       marginBottom: 12,
     },
     chipContainer: {
-      flexDirection: "row",
+      flexDirection: 'row',
       marginTop: 8,
-      flexWrap: "wrap",
+      flexWrap: 'wrap',
     },
     categoryChip: {
       backgroundColor: theme.colors.secondaryContainer,
@@ -543,13 +538,13 @@ const MenuAvailabilityScreen: React.FC<MenuAvailabilityScreenProps> = ({
       marginVertical: 12,
     },
     availabilityContainer: {
-      flexDirection: "row",
-      justifyContent: "space-between",
-      alignItems: "center",
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
     },
     availabilityLabel: {
       fontSize: 16,
-      fontWeight: "500",
+      fontWeight: '500',
       color: theme.colors.onSurface,
     },
     snackbar: {
@@ -629,7 +624,7 @@ const MenuAvailabilityScreen: React.FC<MenuAvailabilityScreenProps> = ({
 const styles = StyleSheet.create({
   loadingContainer: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });

@@ -7,6 +7,7 @@
   "forgot_password_subtitle": "እባክዎ ከመለያዎ ጋር የተገናኘውን ኢሜል አድራሻ ያስገቡ።",
   "reset_password_button": "የይለፍ ቃል ዳግም አስጀምር",
   "remember_password_text": "የይለፍ ቃል ያስታውሱ?",
+  "failed_to_load_branch_details_error":"የቅርንጫፉን ዝርዝር መጫን አልተቻለም",
   "login_link": "ግባ",
   "login_title": "ግባ",
   "email_placeholder": "ኢሜል",

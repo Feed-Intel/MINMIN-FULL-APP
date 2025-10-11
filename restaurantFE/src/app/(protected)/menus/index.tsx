@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   ScrollView,
   StyleSheet,
@@ -26,12 +26,18 @@ import {
   useGetMenus,
   useUpdateMenuAvailability,
   useGetMenuAvailabilities,
+  useAddRelatedMenuItem,
+  useGetRelatedMenus,
+  useUpdateRelatedMenuItem,
 } from '@/services/mutation/menuMutation';
 import { useQueryClient } from '@tanstack/react-query';
 import { useDispatch } from 'react-redux';
 import { AppDispatch } from '@/lib/reduxStore/store';
 import { hideLoader, showLoader } from '@/lib/reduxStore/loaderSlice';
-import { useGetCombos } from '@/services/mutation/comboMutation';
+import {
+  useDeleteCombo,
+  useGetCombos,
+} from '@/services/mutation/comboMutation';
 import BranchSelector from '@/components/BranchSelector';
 import { useRestaurantIdentity } from '@/hooks/useRestaurantIdentity';
 import AddMenuModal from './addMenu';
@@ -41,7 +47,6 @@ import EditComboDialog from '../combos/[comboId]';
 import Pagination from '@/components/Pagination';
 
 const DEFAULT_CATEGORIES = ['Main course', 'Pasta', 'Dessert', 'Drinks'];
-// const TAGS = ["Best Paired With", "Alternative", "Customer Favorite"];
 
 export default function Menus() {
   // const { width } = useWindowDimensions();
@@ -50,8 +55,9 @@ export default function Menus() {
   const { data: combos, isLoading: isCombosLoading } = useGetCombos();
   // const { data: branches } = useGetBranches();
   const { mutateAsync: menuDelete } = useDeleteMenu();
-  const { mutateAsync: updateAvailability } = useUpdateMenuAvailability();
+  // const { mutateAsync: updateAvailability } = useUpdateMenuAvailability();
   const { data: availabilityData } = useGetMenuAvailabilities();
+  const { data: relatedMenus } = useGetRelatedMenus(undefined, true);
   const { isRestaurant, isBranch, branchId } = useRestaurantIdentity();
 
   const queryClient = useQueryClient();
@@ -73,7 +79,6 @@ export default function Menus() {
   const [showRelatedModal, setShowRelatedModal] = useState(false);
   const [currentMenuItem, setCurrentMenuItem] = useState<any>(null);
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
-  const [tag, setTag] = useState('');
 
   // Separate state for main table and modal
   const [mainSearchQuery, setMainSearchQuery] = useState('');
@@ -86,6 +91,23 @@ export default function Menus() {
   const [showEditMenuDialog, setShowEditMenuDialog] = useState(false);
   const [showEditComboDialog, setShowEditComboDialog] = useState(false);
   const [selectedItem, setSelectedItem] = useState<any>(null);
+  const { mutateAsync: createRelatedItem } = useAddRelatedMenuItem();
+  const { mutateAsync: deleteCombo } = useDeleteCombo();
+
+  useEffect(() => {
+    if (currentMenuItem) {
+      const relatedItemExists = relatedMenus?.find(
+        (it) => (it.menu_item as any).id == currentMenuItem.id
+      );
+      if (relatedItemExists) {
+        setSelectedItems(
+          relatedMenus!
+            .filter((it) => (it.menu_item as any).id == currentMenuItem.id)
+            .map((it) => (it.related_item as any).id)
+        );
+      }
+    }
+  }, [currentMenuItem, showRelatedModal]);
 
   const getMenuCategories = (menu: any): string[] => {
     if (Array.isArray(menu?.categories) && menu.categories.length) {
@@ -121,12 +143,20 @@ export default function Menus() {
     dispatch(hideLoader());
   };
 
+  const handleDeleteCombo = async () => {
+    setMenuID(null);
+    setShowDialog(false);
+    dispatch(showLoader());
+    await deleteCombo(menuID!);
+    queryClient.invalidateQueries({ queryKey: ['combos'] });
+    dispatch(hideLoader());
+  };
+
   const openRelatedModal = (menu: any) => {
     setCurrentMenuItem(menu);
     setModalSearchQuery('');
     setModalSelectedCategory('All');
     setSelectedItems([]);
-    setTag('');
     setShowRelatedModal(true);
   };
 
@@ -138,16 +168,13 @@ export default function Menus() {
     );
   };
 
-  const handleAddRelatedItems = () => {
+  const handleRelatedItemsActions = async () => {
     setShowRelatedModal(false);
-    router.push({
-      pathname: '/(protected)/menus/addRelatedItem',
-      params: {
-        menuItem: currentMenuItem.id,
-        relatedItems: JSON.stringify(selectedItems),
-        tag,
-      },
+    await createRelatedItem({
+      menu_item: currentMenuItem.id,
+      related_items: selectedItems,
     });
+    await queryClient.invalidateQueries({ queryKey: ['relatedMenus'] });
   };
 
   const branchFilteredMenus = useMemo(() => {
@@ -225,46 +252,46 @@ export default function Menus() {
     );
   });
 
-  // Get availability status for a menu item
-  const getAvailabilityStatus = (menuId: string) => {
-    if (!selectedBranch || selectedBranch === 'all') return false;
+  // // Get availability status for a menu item
+  // const getAvailabilityStatus = (menuId: string) => {
+  //   if (!selectedBranch || selectedBranch === 'all') return false;
 
-    const availability = availabilityData?.results.find(
-      (avail) =>
-        (typeof avail.branch === 'object' ? avail.branch.id : avail.branch) ===
-          selectedBranch &&
-        (typeof avail.menu_item === 'object'
-          ? avail.menu_item.id
-          : avail.menu_item) === menuId
-    );
+  //   const availability = availabilityData?.results.find(
+  //     (avail) =>
+  //       (typeof avail.branch === 'object' ? avail.branch.id : avail.branch) ===
+  //         selectedBranch &&
+  //       (typeof avail.menu_item === 'object'
+  //         ? avail.menu_item.id
+  //         : avail.menu_item) === menuId
+  //   );
 
-    return availability ? availability.is_available : false;
-  };
+  //   return availability ? availability.is_available : false;
+  // };
 
-  // Toggle menu availability
-  const toggleAvailability = async (menuId: string, isAvailable: boolean) => {
-    if (!selectedBranch || selectedBranch === 'all') return;
+  // // Toggle menu availability
+  // const toggleAvailability = async (menuId: string, isAvailable: boolean) => {
+  //   if (!selectedBranch || selectedBranch === 'all') return;
 
-    try {
-      await updateAvailability({
-        branch: selectedBranch,
-        menu_item: menuId,
-        is_available: isAvailable,
-      });
+  //   try {
+  //     await updateAvailability({
+  //       branch: selectedBranch,
+  //       menu_item: menuId,
+  //       is_available: isAvailable,
+  //     });
 
-      setSnackbarMessage(
-        isAvailable
-          ? 'Menu item is now available'
-          : 'Menu item is now unavailable'
-      );
-      setSnackbarVisible(true);
+  //     setSnackbarMessage(
+  //       isAvailable
+  //         ? 'Menu item is now available'
+  //         : 'Menu item is now unavailable'
+  //     );
+  //     setSnackbarVisible(true);
 
-      queryClient.invalidateQueries({ queryKey: ['menuAvailabilities'] });
-    } catch (error) {
-      setSnackbarMessage('Failed to update availability');
-      setSnackbarVisible(true);
-    }
-  };
+  //     queryClient.invalidateQueries({ queryKey: ['menuAvailabilities'] });
+  //   } catch (error) {
+  //     setSnackbarMessage('Failed to update availability');
+  //     setSnackbarVisible(true);
+  //   }
+  // };
 
   return (
     <ScrollView style={styles.container}>
@@ -443,7 +470,11 @@ export default function Menus() {
                       style={styles.relatedButton}
                       labelStyle={styles.relatedButtonLabel}
                     >
-                      + Related item
+                      {relatedMenus?.find(
+                        (it) => (it.menu_item as any).id == menu.id
+                      )
+                        ? 'Update Related item'
+                        : '+ Related Item'}
                     </Button>
                   </DataTable.Cell>
                   <DataTable.Cell>
@@ -641,7 +672,7 @@ export default function Menus() {
             </ScrollView>
 
             <ScrollView style={styles.itemsContainer}>
-              {modalFilteredMenus?.map((menu) => {
+              {modalFilteredMenus?.map((menu: any) => {
                 const categories = getMenuCategories(menu);
                 const categoriesLabel = categories.length
                   ? categories.join(', ')
@@ -675,14 +706,19 @@ export default function Menus() {
             <View style={styles.footerActions}>
               <Button
                 mode="contained"
-                onPress={handleAddRelatedItems}
+                onPress={handleRelatedItemsActions}
                 icon="plus"
                 textColor="#fff"
                 style={styles.addItemButton}
                 labelStyle={{ color: '#fff', fontWeight: '600', fontSize: 17 }}
-                disabled={selectedItems.length === 0 || !tag}
+                disabled={selectedItems.length === 0}
               >
-                Add Item
+                {currentMenuItem &&
+                relatedMenus?.find(
+                  (it) => (it.menu_item as any).id == currentMenuItem.id
+                )
+                  ? 'Update Item'
+                  : 'Add Item'}
               </Button>
               <Text style={styles.selectedItemsText}>
                 {selectedItems.length} items selected
@@ -714,7 +750,12 @@ export default function Menus() {
             >
               Cancel
             </Button>
-            <Button onPress={handleDeleteMenu} labelStyle={{ color: 'red' }}>
+            <Button
+              onPress={
+                activeTab === 'all' ? handleDeleteMenu : handleDeleteCombo
+              }
+              labelStyle={{ color: 'red' }}
+            >
               Delete
             </Button>
           </Dialog.Actions>

@@ -65,10 +65,19 @@ export const DeleteMenuAvailability = asyncHandler(async (id: string) => {
   return resp.data;
 });
 
-export const GetRelatedItems = asyncHandler(async () => {
-  const resp = await apiClient.get('/related-menu/');
-  return resp.data.results;
-});
+export const GetRelatedItems = asyncHandler(
+  async (page?: number | undefined, noPage?: boolean | undefined) => {
+    if (noPage) {
+      const resp = await apiClient.get(`/related-menu/?nopage=1`);
+      return resp.data;
+    } else if (Boolean(page)) {
+      const resp = await apiClient.get(`/related-menu/?page=${page}`);
+      return resp.data.results;
+    }
+    const resp = await apiClient.get('/related-menu/');
+    return resp.data.results;
+  }
+);
 
 export const GetRelatedItem = asyncHandler(async (id: string) => {
   const resp = await apiClient.get(`/related-menu/${id}/`);
@@ -76,7 +85,7 @@ export const GetRelatedItem = asyncHandler(async (id: string) => {
 });
 
 export const CreateRelatedItem = asyncHandler(async (data: any) => {
-  const resp = await apiClient.post('/related-menu/', data);
+  const resp = await apiClient.post('/related-menu/bulk-create/', data);
   return resp.data;
 });
 

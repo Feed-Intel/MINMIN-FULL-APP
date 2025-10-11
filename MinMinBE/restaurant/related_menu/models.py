@@ -24,11 +24,11 @@ class RelatedMenuItem(models.Model):
         related_name='related_items',
         null=True
     )  # Foreign Key to Menu (related to other menu items)
-    tag = models.CharField(max_length=255, choices=(
-        ('Best Paired With', 'Best Paired With'),
-        ('Alternative', 'Alternative'),
-        ('Customer Favorite', 'Customer Favorite'),
-    ))
+    # tag = models.CharField(max_length=255, choices=(
+    #     ('Best Paired With', 'Best Paired With'),
+    #     ('Alternative', 'Alternative'),
+    #     ('Customer Favorite', 'Customer Favorite'),
+    # ))
     created_at = models.DateTimeField(auto_now_add=True)  # Timestamp for creation
     updated_at = models.DateTimeField(auto_now=True)  # Timestamp for updates
 
@@ -36,4 +36,4 @@ class RelatedMenuItem(models.Model):
         unique_together = ('menu_item', 'related_item', 'tenant')  # Ensure uniqueness
 
     def __str__(self):
-        return f"{self.menu_item.name} - {self.related_item.name} ({self.tag})"
+        return f"{self.menu_item.name} - {self.related_item.name}"
