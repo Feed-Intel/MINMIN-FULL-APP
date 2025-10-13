@@ -119,8 +119,10 @@ class MenuSerializer(serializers.ModelSerializer):
         }
     def get_is_global(self, obj):
         user = self.context['request'].user
-        tenant = Tenant.objects.get(admin=user)
-        return Branch.objects.filter(tenant=tenant).count() == MenuAvailability.objects.filter(menu_item=obj).count()
+        if user.user_type in ['admin', 'restaurant']:
+            tenant = Tenant.objects.get(admin=user)
+            return Branch.objects.filter(tenant=tenant).count() == MenuAvailability.objects.filter(menu_item=obj).count()
+        return False
     def get_branches(self, obj):
         return MenuAvailability.objects.filter(menu_item=obj).values_list('branch_id', flat=True)
     
