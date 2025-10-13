@@ -57,7 +57,6 @@ export default function CreateOrder() {
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [showRelatedModal, setShowRelatedModal] = useState(false);
   const { data: availabilityData } = useGetMenuAvailabilities();
-  const [tag, setTag] = useState('');
   const cart = useAppSelector((state: RootState) => state.cart);
   const dispatch = useDispatch();
 
