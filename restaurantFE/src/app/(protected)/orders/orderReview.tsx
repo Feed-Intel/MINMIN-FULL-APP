@@ -51,9 +51,9 @@ export default function AcceptOrders() {
     const orderData = {
       tenant: tenantId,
       branch: branchId,
-      customerName: cart.customerName,
-      contactNumber: cart.contactNumber,
-      tinNumber: cart.tinNumber,
+      customer_name: cart.customerName,
+      customer_phone: cart.contactNumber,
+      customer_tinNo: cart.tinNumber,
       table: '',
       coupon: '',
       items: cartItems.map((item: any) => ({

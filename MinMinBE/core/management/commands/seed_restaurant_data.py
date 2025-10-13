@@ -176,7 +176,6 @@ class Command(BaseCommand):
                 for branch in [b for b in branches if b.tenant == tenant]:
                     branch_discount = Discount.objects.create(
                         tenant=tenant,
-                        branch=branch,
                         name=f"{branch.address.split()[0]} Special",
                         description=faker.text(),
                         type=choice(['volume', 'combo', 'bogo', 'freeItem']),
@@ -194,7 +193,6 @@ class Command(BaseCommand):
 
                     Coupon.objects.create(
                         tenant=tenant,
-                        branch=branch,
                         discount_code=f"{branch.address[:4].upper()}-{randint(100,999)}",
                         discount_amount=Decimal(randint(10, 25)),
                         is_percentage=True,
