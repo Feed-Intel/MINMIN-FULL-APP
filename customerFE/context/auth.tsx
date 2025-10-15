@@ -352,6 +352,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         // For native: The server returns both tokens in the response
         // We need to store these tokens securely and decode the user data
         const tokens = await tokenResponse.json();
+        console.log(tokens);
         await handleNativeTokens(tokens);
 
         router.replace('/(protected)/feed');
