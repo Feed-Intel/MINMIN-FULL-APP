@@ -2,7 +2,12 @@ import * as WebBrowser from 'expo-web-browser';
 import * as React from 'react';
 // import * as AppleAuthentication from "expo-apple-authentication";
 import { tokenStorage } from '@/utils/cache';
-import { BASE_URL, COOKIE_NAME, REFRESH_COOKIE_NAME } from '@/utils/constants';
+import {
+  APP_SCHEME,
+  BASE_URL,
+  COOKIE_NAME,
+  REFRESH_COOKIE_NAME,
+} from '@/utils/constants';
 import { AuthUser } from '@/utils/middleware';
 import {
   AuthError,
@@ -43,13 +48,13 @@ const AuthContext = React.createContext({
 const config: AuthRequestConfig = {
   clientId: 'google',
   scopes: ['openid', 'profile', 'email'],
-  redirectUri: makeRedirectUri(),
+  redirectUri: makeRedirectUri({ scheme: 'minmincustomer' }),
 };
 
 const facebookConfig: AuthRequestConfig = {
   clientId: 'facebook',
   scopes: ['email', 'public_profile'],
-  redirectUri: makeRedirectUri(),
+  redirectUri: makeRedirectUri({ scheme: 'minmincustomer' }),
   responseType: 'token',
 };
 
@@ -352,7 +357,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         // For native: The server returns both tokens in the response
         // We need to store these tokens securely and decode the user data
         const tokens = await tokenResponse.json();
-        console.log(tokens);
         await handleNativeTokens(tokens);
 
         router.replace('/(protected)/feed');
