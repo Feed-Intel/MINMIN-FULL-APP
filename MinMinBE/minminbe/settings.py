@@ -152,7 +152,6 @@ MIDDLEWARE = [
     "accounts.middleware.LogEventsMiddleware",
 ]
 
-# Optionally enable Django Silk if it's installed (place AFTER MIDDLEWARE is defined).
 try:
     import silk  # type: ignore  # noqa: F401
 
@@ -381,9 +380,9 @@ EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER","feedintel1@gmail.com")
 EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD","mmwbmidynpfpzity")
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 
-GOOGLE_CLIENT_ID = get_ssm_parameter("/minminbe/GOOGLE_CLIENT_ID", config("GOOGLE_CLIENT_ID", default=""))
+GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID","")
 GOOGLE_AUTH_URL = get_ssm_parameter("/minminbe/GOOGLE_AUTH_URL", config("GOOGLE_AUTH_URL", default=""))
-GOOGLE_CLIENT_SECRET = get_ssm_parameter("/minminbe/GOOGLE_CLIENT_SECRET", config("GOOGLE_CLIENT_SECRET", default=""))
+GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET","")
 REDIRECT_URL = config("REDIRECT_URL", default="http://localhost:8081")
 MAX_FAILED_ATTEMPTS = 5
 LOCKOUT_DURATION = 15

@@ -83,7 +83,7 @@ jobs:
             EXPO_PUBLIC_PRIVATEKEY=${{ secrets.PRIVATEKEY || '' }}
             EXPO_PUBLIC_MERCHANT_APPID=${{ secrets.MERCHANT_APPID || '' }}
             EXPO_PUBLIC_MERCHANT_SHORTCODE=${{ secrets.MERCHANT_SHORTCODE || '' }}
-            EXPO_PUBLIC_SCHEME=minmin://
+            EXPO_PUBLIC_SCHEME=minmincustomer://
 
   build_restaurant:
     name: Build Frontend (Restaurant web)
@@ -419,6 +419,8 @@ jobs:
             sudo bash -c "echo 'DJANGO_SECRET_KEY=${{ secrets.DJANGO_SECRET_KEY }}' > /opt/minmin/api.env"
             sudo bash -c "echo 'DJANGO_SETTINGS_MODULE=minminbe.settings' >> /opt/minmin/api.env"
             sudo bash -c "echo 'DEBUG=False' >> /opt/minmin/api.env"
+            sudo bash -c "echo 'GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID || '' }}' >> /opt/minmin/api.env"
+            sudo bash -c "echo 'GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET || '' }}' >> /opt/minmin/api.env"
             sudo bash -c "echo 'ALLOWED_HOSTS=${{ vars.API_DOMAIN }},${{ vars.CUSTOMER_DOMAIN }},${{ vars.RESTAURANT_DOMAIN }},localhost,127.0.0.1,stg.customer.feed-intel.com,stg.restaurant.feed-intel.com,stg.api.feed-intel.com' >> /opt/minmin/api.env"
             sudo bash -c "echo 'CSRF_TRUSTED_ORIGINS=https://${{ vars.API_DOMAIN }},https://${{ vars.CUSTOMER_DOMAIN }},https://${{ vars.RESTAURANT_DOMAIN }},https://stg.restaurant.feed-intel.com,https://stg.customer.feed-intel.com' >> /opt/minmin/api.env"
             sudo bash -c "echo 'DJANGO_ALLOWED_CORS_ORIGINS=https://${{ vars.CUSTOMER_DOMAIN }},https://${{ vars.RESTAURANT_DOMAIN }},https://stg.restaurant.feed-intel.com,https://stg.customer.feed-intel.com' >> /opt/minmin/api.env"

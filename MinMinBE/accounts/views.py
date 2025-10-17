@@ -410,6 +410,8 @@ class GoogleLoginView(APIView):
         redirect_uri = request.data.get("redirect_uri")
         code_verifier = request.data.get("code_verifier")
         token = request.data.get("id_token")
+        print(GOOGLE_CLIENT_ID)
+        print(GOOGLE_CLIENT_SECRET)
         if not code and not token:
             return Response(
                 {"error": "Missing authorization code"},
@@ -438,7 +440,7 @@ class GoogleLoginView(APIView):
             idinfo = id_token.verify_oauth2_token(
                 token,
                 requests.Request(),
-                settings.SOCIAL_AUTH_GOOGLE_OAUTH2_KEY,
+                GOOGLE_CLIENT_ID
             )
 
             # Extract user information

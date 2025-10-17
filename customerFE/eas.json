@@ -26,11 +26,19 @@
         "EXPO_PUBLIC_BACKEND_URL": "https://stg.api.feed-intel.com/api",
         "EXPO_PUBLIC_API_KEY": "xpScq0KU.ojctCGgceAtwxAloMZn73DlA03BmYWNs",
         "EXPO_PUBLIC_WS_URL": "wss://stg.api.feed-intel.com/ws/user",
-        "EXPO_PUBLIC_GOOGLE_CLIENT_ID": "897496635501-nlc0r1ijbfadqo9osj49kf3br73cl8gp.apps.googleusercontent.com",
+        "EXPO_PUBLIC_GOOGLE_CLIENT_ID": "395375341331-fg1962bicpnj7u3j4pgf4g1hdlp1tj0p.apps.googleusercontent.com",
         "EXPO_PUBLIC_CHAPA_CHECKOUT_URL": "https://checkout.chapa.co/checkout/payment/",
         "EXPO_PUBLIC_SCHEME": "minmincustomer://",
-        "EXPO_PUBLIC_BASE_URL": "https://customer.feed-intel.com"
+        "EXPO_PUBLIC_BASE_URL": "https://stg.customer.feed-intel.com/"
       }
+    },
+    "development-simulator": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "ios": {
+        "simulator": true
+      },
+      "environment": "development"
     }
   },
   "submit": {
