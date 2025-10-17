@@ -27,7 +27,6 @@ export async function POST(request: Request) {
   });
 
   const data = await response.json();
-  console.log(data.id_token);
   if (!data.id_token) {
     return Response.json(
       { error: 'Missing required parameters' },

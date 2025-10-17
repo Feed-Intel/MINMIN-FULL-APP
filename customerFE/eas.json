@@ -31,6 +31,14 @@
         "EXPO_PUBLIC_SCHEME": "minmincustomer://",
         "EXPO_PUBLIC_BASE_URL": "https://stg.customer.feed-intel.com/"
       }
+    },
+    "development-simulator": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "ios": {
+        "simulator": true
+      },
+      "environment": "development"
     }
   },
   "submit": {

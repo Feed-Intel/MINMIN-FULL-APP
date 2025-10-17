@@ -68,7 +68,8 @@
     "react-native-webview": "13.13.5",
     "react-redux": "^9.2.0",
     "rn-swipe-button": "^3.0.1",
-    "expo-build-properties": "~0.14.8"
+    "expo-build-properties": "~0.14.8",
+    "expo-dev-client": "~5.2.4"
   },
   "devDependencies": {
     "@babel/core": "^7.26.0",

@@ -152,7 +152,6 @@ MIDDLEWARE = [
     "accounts.middleware.LogEventsMiddleware",
 ]
 
-# Optionally enable Django Silk if it's installed (place AFTER MIDDLEWARE is defined).
 try:
     import silk  # type: ignore  # noqa: F401
 
