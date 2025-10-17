@@ -12,6 +12,7 @@ from restaurant.tenant.models import Tenant
 from restaurant.branch.models import Branch
 from restaurant.table.models import Table
 from restaurant.menu.models import Menu
+from feed.models import Post,Comment,Tag
 from restaurant.menu_availability.models import MenuAvailability
 from restaurant.combo.models import Combo, ComboItem
 from restaurant.discount.models import Discount, DiscountRule, Coupon
@@ -30,6 +31,11 @@ class Command(BaseCommand):
         parser.add_argument('--menus', type=int, default=20, help='Menu items per restaurant')
         parser.add_argument('--customers', type=int, default=50, help='Number of customers to create')
         parser.add_argument('--orders', type=int, default=5, help='Orders per customer')
+        parser.add_argument(
+            '--only-posts',
+            action='store_true',
+            help='Seed only posts for existing tenant admins'
+        )
 
     def handle(self, *args, **options):
         faker = Faker()
@@ -40,6 +46,13 @@ class Command(BaseCommand):
         menus_per_restaurant = options['menus']
         customer_count = options['customers']
         orders_per_customer = options['orders']
+        only_posts = options['only_posts']
+
+        if only_posts:
+            self._seed_posts_only()
+            self.stdout.write(self.style.SUCCESS('✅ Seeded posts only.'))
+            return
+
 
         self.stdout.write(self.style.WARNING('Starting database seed...'))
 
@@ -197,6 +210,38 @@ class Command(BaseCommand):
                         discount_amount=Decimal(randint(10, 25)),
                         is_percentage=True,
                     )
+                post_count = randint(3, 8)
+                for _ in range(post_count):
+                    post = Post.objects.create(
+                        user=admin,
+                        image=self._fake_image(),
+                        caption=faker.sentence(nb_words=randint(10, 20)),
+                        location=faker.city(),
+                        share_count=randint(0, 30)
+                    )
+                    tag_names = ['food', 'drink', 'dessert', 'offer', 'event', 'chef_special']
+                    existing_tags = list(Tag.objects.all())
+                    if not existing_tags:
+                        for name in tag_names:
+                            Tag.objects.create(name=name)
+                        existing_tags = list(Tag.objects.all())
+
+                    selected_tags = sample(existing_tags, k=randint(1, 3))
+                    post.tags.add(*selected_tags)
+                    if User.objects.filter(user_type='customer').exists():
+                        customer_users = list(User.objects.filter(user_type='customer'))
+                        liked_users = sample(customer_users, k=randint(0, min(10, len(customer_users))))
+                        bookmarked_users = sample(customer_users, k=randint(0, min(5, len(customer_users))))
+                        post.likes.add(*liked_users)
+                        post.bookmarks.add(*bookmarked_users)
+
+                    for _ in range(randint(0, 5)):
+                        commenter = choice(customer_users) if customer_users else admin
+                        Comment.objects.create(
+                            post=post,
+                            user=commenter,
+                            text=faker.sentence(nb_words=randint(6, 15))
+                        )
 
         # create customers
         customers = [demo_customer]
@@ -245,3 +290,60 @@ class Command(BaseCommand):
         buffer = io.BytesIO()
         img.save(buffer, format='PNG')
         return ContentFile(buffer.getvalue(), 'seed.png')
+    
+    def _seed_posts_only(self):
+        faker = Faker()
+
+        tenants = Tenant.objects.select_related('admin').all()
+        if not tenants.exists():
+            self.stdout.write(self.style.ERROR("No tenants found. Please seed tenants first."))
+            return
+
+        # Ensure tags exist
+        tag_names = ['food', 'drink', 'dessert', 'offer', 'event', 'chef_special']
+        existing_tags = list(Tag.objects.all())
+        if not existing_tags:
+            for name in tag_names:
+                Tag.objects.create(name=name)
+            existing_tags = list(Tag.objects.all())
+
+        customers = list(User.objects.filter(user_type='customer'))
+        tags = list(Tag.objects.all())
+
+        total_posts = 0
+        for tenant in tenants:
+            admin = tenant.admin
+            post_count = randint(3, 8)
+
+            for _ in range(post_count):
+                post = Post.objects.create(
+                    user=admin,
+                    image=self._fake_image(),
+                    caption=faker.sentence(nb_words=randint(10, 20)),
+                    location=faker.city(),
+                    share_count=randint(0, 30)
+                )
+
+                # Assign tags, likes, bookmarks, comments
+                # selected_tags = sample(tags, k=randint(1, 3))
+                # post.tags.add(*selected_tags)
+
+                if customers:
+                    liked_users = sample(customers, k=randint(0, min(10, len(customers))))
+                    bookmarked_users = sample(customers, k=randint(0, min(5, len(customers))))
+                    post.likes.add(*liked_users)
+                    post.bookmarks.add(*bookmarked_users)
+
+                    for _ in range(randint(0, 5)):
+                        commenter = choice(customers)
+                        Comment.objects.create(
+                            post=post,
+                            user=commenter,
+                            text=faker.sentence(nb_words=randint(6, 15))
+                        )
+
+            total_posts += post_count
+            self.stdout.write(self.style.NOTICE(f"Seeded {post_count} posts for {tenant.restaurant_name}"))
+
+        self.stdout.write(self.style.SUCCESS(f"✅ Done! Created {total_posts} posts total."))
+
