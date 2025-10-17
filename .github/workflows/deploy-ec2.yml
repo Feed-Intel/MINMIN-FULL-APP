@@ -83,7 +83,7 @@ jobs:
             EXPO_PUBLIC_PRIVATEKEY=${{ secrets.PRIVATEKEY || '' }}
             EXPO_PUBLIC_MERCHANT_APPID=${{ secrets.MERCHANT_APPID || '' }}
             EXPO_PUBLIC_MERCHANT_SHORTCODE=${{ secrets.MERCHANT_SHORTCODE || '' }}
-            EXPO_PUBLIC_SCHEME=minmin://
+            EXPO_PUBLIC_SCHEME=minmincustomer://
 
   build_restaurant:
     name: Build Frontend (Restaurant web)
