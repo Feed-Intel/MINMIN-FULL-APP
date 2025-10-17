@@ -27,10 +27,7 @@ export async function GET(request: Request) {
   } else if (redirectUri === BASE_URL) {
     platform = 'web';
   } else {
-    return Response.json(
-      { error: redirectUri + ' ' + APP_SCHEME },
-      { status: 400 }
-    );
+    return Response.json({ error: 'Invalid redirect_uri' }, { status: 400 });
   }
 
   // use state to drive redirect back to platform
