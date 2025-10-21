@@ -51,61 +51,9 @@ interface TableStates {
   };
 }
 
-// Dropdown component
-// const YesNoDropdown = ({
-//   value,
-//   onChange,
-// }: {
-//   value: boolean;
-//   onChange: (val: boolean) => void;
-// }) => {
-//   const [visible, setVisible] = useState(false);
-
-//   return (
-//     <Menu
-//       visible={visible}
-//       onDismiss={() => setVisible(false)}
-//       anchor={
-//         <Button
-//           mode="outlined"
-//           onPress={() => setVisible(true)}
-//           style={styles.dropdownBtn}
-//           labelStyle={{ color: "#333", fontSize: 14 }}
-//           contentStyle={{ flexDirection: "row-reverse" }} // moves arrow to the right
-//           icon={() => (
-//             <Icon
-//               source={visible ? "chevron-up" : "chevron-down"} // toggle up/down
-//               size={18}
-//               color="#333"
-//             />
-//           )}
-//         >
-//           {value ? "yes" : "no"}
-//         </Button>
-//       }
-//     >
-//       <Menu.Item
-//         onPress={() => {
-//           onChange(true);
-//           setVisible(false);
-//         }}
-//         title="yes"
-//       />
-//       <Menu.Item
-//         onPress={() => {
-//           onChange(false);
-//           setVisible(false);
-//         }}
-//         title="no"
-//       />
-//     </Menu>
-//   );
-// };
-
 const ManageTables: React.FC = () => {
   const { width }: { width: number } = useWindowDimensions();
   const [currentPage, setCurrentPage] = useState(1);
-  const { data: tables } = useGetTables(currentPage);
   const { mutateAsync: tableDelete } = useDeleteTable();
   const queryClient = useQueryClient();
   const dispatch = useDispatch();
@@ -113,7 +61,7 @@ const ManageTables: React.FC = () => {
   const [showDialog, setShowDialog] = React.useState<boolean>(false);
   const [tableID, setTableID] = React.useState<string | null>(null);
   const [addTableModalVisible, setAddTableModalVisible] = useState(false);
-  const { data: branches } = useGetBranches();
+  const { data: branches } = useGetBranches(undefined, true);
   const { isRestaurant, isBranch, branchId } = useRestaurantIdentity();
   const [tableStates, setTableStates] = useState<TableStates>({});
   const [selectedBranch, setSelectedBranch] = useState<string | null>(
@@ -123,6 +71,14 @@ const ManageTables: React.FC = () => {
   const updateTable = useUpdateTable();
   const [table, setTable] = useState<{} | null>(null);
   const isSmallScreen: boolean = width < 768;
+  const queryParamsTable = useMemo(() => {
+    return {
+      page: currentPage,
+      branch: selectedBranch,
+      search: searchTerm,
+    };
+  }, [currentPage, selectedBranch, searchTerm]);
+  const { data: tables } = useGetTables(queryParamsTable);
 
   useEffect(() => {
     if (!tables) return;
@@ -175,34 +131,6 @@ const ManageTables: React.FC = () => {
     });
     queryClient.invalidateQueries({ queryKey: ['tables', currentPage] });
   };
-
-  const filteredTables = useMemo(() => {
-    if (!tables?.results) return [];
-
-    if (!searchTerm && !selectedBranch) return tables.results;
-
-    if (searchTerm && selectedBranch) {
-      return tables?.results.filter((tbl) => {
-        const branchValue =
-          typeof tbl.branch === 'object' ? tbl.branch?.id : tbl.branch;
-        return (
-          branchValue === selectedBranch && tbl.table_code?.includes(searchTerm)
-        );
-      });
-    }
-    if (searchTerm) {
-      return tables?.results.filter((tbl) => {
-        return tbl.table_code?.includes(searchTerm);
-      });
-    }
-    if (selectedBranch) {
-      return tables?.results.filter((tbl) => {
-        const branchValue =
-          typeof tbl.branch === 'object' ? tbl.branch?.id : tbl.branch;
-        return branchValue === selectedBranch;
-      });
-    }
-  }, [searchTerm, selectedBranch, tables]);
 
   const downloadQRCode = async (imageUrl: string) => {
     if (Platform.OS === 'web') {
@@ -257,7 +185,10 @@ const ManageTables: React.FC = () => {
             </View>
             <BranchSelector
               selectedBranch={selectedBranch}
-              onChange={setSelectedBranch}
+              onChange={(branchid) => {
+                setCurrentPage(1);
+                setSelectedBranch(branchid);
+              }}
               includeAllOption={isRestaurant}
               style={styles.branchSelector}
             />
@@ -265,11 +196,14 @@ const ManageTables: React.FC = () => {
             {/* Search Bar */}
             <View style={styles.searchBarContainer}>
               <TextInput
-                placeholder="search by Item location or table number"
+                placeholder="search by Table ID or Branch Address"
                 style={styles.searchBar}
                 placeholderTextColor="#999"
                 value={searchTerm}
-                onChangeText={(text: string) => setSearchTerm(text)}
+                onChangeText={(text: string) => {
+                  setCurrentPage(1);
+                  setSearchTerm(text);
+                }}
               />
               <Button
                 mode="contained"
@@ -305,7 +239,7 @@ const ManageTables: React.FC = () => {
                   )}
                 </View>
 
-                {filteredTables.map((table: any) => (
+                {tables?.results.map((table: any) => (
                   <View key={table.id} style={styles.row}>
                     {/* Branch */}
                     <Text
@@ -391,7 +325,7 @@ const ManageTables: React.FC = () => {
                   </View>
                 ))}
                 <Pagination
-                  totalPages={Math.round(tables?.count! / 10) || 0}
+                  totalPages={Math.ceil((tables?.count || 0) / 10)}
                   currentPage={currentPage}
                   onPageChange={setCurrentPage}
                 />
@@ -439,7 +373,7 @@ const ManageTables: React.FC = () => {
         defaultBranchId={
           selectedBranch && selectedBranch !== 'all'
             ? selectedBranch
-            : branchId ?? (branches?.results as Branch[])[0]?.id
+            : branchId ?? (branches?.results as Branch[])?.[0]?.id
         }
         lockBranch={isBranch}
       />
@@ -593,7 +527,7 @@ function AddTableModal({
 
   useEffect(() => {
     if (visible) {
-      const fallbackBranch = defaultBranchId ?? branches[0]?.id ?? '';
+      const fallbackBranch = defaultBranchId ?? branches?.[0]?.id ?? '';
       setBranch(fallbackBranch);
       setIsFastTable(false);
       setIsDeliveryTable(false);
@@ -641,7 +575,7 @@ function AddTableModal({
                   style={{ alignSelf: 'stretch' }}
                   anchorPosition="bottom"
                 >
-                  {branches.length > 0 ? (
+                  {branches?.length > 0 ? (
                     branches.map((b: any) => (
                       <Menu.Item
                         key={b.id}
@@ -795,7 +729,7 @@ function EditTableModal({
                   style={{ alignSelf: 'stretch' }}
                   anchorPosition="bottom"
                 >
-                  {branches.length > 0 ? (
+                  {branches?.length > 0 ? (
                     branches.map((b: any) => (
                       <Menu.Item
                         key={b.id}

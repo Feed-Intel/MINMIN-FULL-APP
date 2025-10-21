@@ -14,14 +14,27 @@ import {
   UpdateMenuAvailability,
   UpdateRelatedItem,
 } from '../api/menuApi';
-import { MenuAvailability, MenuType, RelatedMenu } from '@/types/menuType';
+import {
+  MenuAvailability,
+  MenuQueryParams,
+  MenuType,
+  RelatedMenu,
+} from '@/types/menuType';
 import { AppDispatch } from '@/lib/reduxStore/store';
 import { hideLoader, showLoader } from '@/lib/reduxStore/loaderSlice';
 
-export const useGetMenus = (page?: number | null) =>
+export const useGetMenus = (params?: MenuQueryParams, noPage?: boolean) =>
   useQuery<{ next: string | null; results: MenuType[]; count: number }>({
-    queryKey: ['menus', page],
-    queryFn: () => GetMenus(page),
+    queryKey: ['menus', params],
+    queryFn: () => {
+      const searchParams = new URLSearchParams();
+      Object.entries(params ?? {}).forEach(([key, value]) => {
+        if (value) {
+          searchParams.append(key, String(value));
+        }
+      });
+      return GetMenus(searchParams.toString(), noPage);
+    },
     staleTime: 0,
   });
 
@@ -32,11 +45,19 @@ export const useGetMenu = (id: string) =>
     staleTime: 0,
   });
 
-export const useGetMenuAvailabilities = (next?: string | null) =>
+export const useGetMenuAvailabilities = (param?: MenuQueryParams | null) =>
   useQuery<{ next: string | null; results: MenuAvailability[]; count: number }>(
     {
-      queryKey: ['menuAvailability', next],
-      queryFn: () => GetMenuAvailabilities(next),
+      queryKey: ['menuAvailability', param],
+      queryFn: () => {
+        const searchParams = new URLSearchParams();
+        Object.entries(param ?? {}).forEach(([key, value]) => {
+          if (value) {
+            searchParams.append(key, String(value));
+          }
+        });
+        return GetMenuAvailabilities(searchParams.toString());
+      },
       staleTime: 0,
     }
   );

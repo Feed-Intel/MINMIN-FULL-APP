@@ -83,7 +83,7 @@ export default function PostGallery({ onAddPost }: { onAddPost: () => void }) {
         </Card>
       ))}
       <Pagination
-        totalPages={Math.round(posts?.count! / 10) || 0}
+        totalPages={Math.ceil((posts?.count || 0) / 10)}
         currentPage={currentPage}
         onPageChange={setCurrentPage}
       />

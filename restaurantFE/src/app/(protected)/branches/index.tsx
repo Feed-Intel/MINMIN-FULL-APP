@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   ScrollView,
   StyleSheet,
@@ -30,7 +30,6 @@ import Pagination from '@/components/Pagination';
 
 export default function Branches() {
   const [currentPage, setCurrentPage] = useState<number>(1);
-  const { data: branches } = useGetBranches(currentPage);
   const { mutateAsync: branchDelete } = useDeleteBranch();
   const { mutateAsync: updateBranch } = useUpdateBranch();
   const queryClient = useQueryClient();
@@ -43,6 +42,13 @@ export default function Branches() {
   const dispatch = useDispatch<AppDispatch>();
   const { width } = useWindowDimensions();
   const { isBranch } = useRestaurantIdentity();
+  const queryParams = useMemo(() => {
+    return {
+      page: currentPage,
+      search: searchQuery,
+    };
+  }, [currentPage, searchQuery]);
+  const { data: branches } = useGetBranches(queryParams);
 
   const handleDeleteBranch = async () => {
     try {
@@ -70,10 +76,6 @@ export default function Branches() {
       console.error('Error updating branch:', error);
     }
   };
-
-  const filteredBranches = branches?.results.filter((branch) =>
-    branch?.address?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
 
   return (
     <>
@@ -106,10 +108,13 @@ export default function Branches() {
           <View style={styles.searchContainer}>
             <TextInput
               style={styles.searchInput}
-              placeholder="search by name"
+              placeholder="search by address"
               placeholderTextColor="#2E191466"
               value={searchQuery}
-              onChangeText={setSearchQuery}
+              onChangeText={(text) => {
+                setCurrentPage(1);
+                setSearchQuery(text);
+              }}
             />
             {!isBranch && (
               <Button
@@ -148,7 +153,7 @@ export default function Branches() {
                 </DataTable.Title>
               </DataTable.Header>
 
-              {filteredBranches?.map((branch) => {
+              {branches?.results?.map((branch) => {
                 const [latitude, longitude] = branch.location
                   ? [branch.location.lat, branch.location.lng]
                   : ['1', '1'];
@@ -213,7 +218,7 @@ export default function Branches() {
               })}
             </DataTable>
             <Pagination
-              totalPages={Math.round(branches?.count! / 10) || 0}
+              totalPages={Math.ceil((branches?.count || 0) / 10)}
               currentPage={currentPage}
               onPageChange={setCurrentPage}
             />

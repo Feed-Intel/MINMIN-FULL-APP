@@ -19,6 +19,7 @@ import {
   ActivityIndicator,
   Snackbar,
   Paragraph,
+  Menu,
 } from 'react-native-paper';
 import { router } from 'expo-router';
 import {
@@ -45,18 +46,15 @@ import AddComboModal from '../combos/addCombo';
 import EditMenuDialog from './[menuId]';
 import EditComboDialog from '../combos/[comboId]';
 import Pagination from '@/components/Pagination';
+import debounce from 'lodash.debounce';
+import { MenuType } from '@/types/menuType';
 
-const DEFAULT_CATEGORIES = ['Main course', 'Pasta', 'Dessert', 'Drinks'];
+const DEFAULT_CATEGORIES = ['Main course', 'Pasta', 'Dessert', 'Drink'];
 
 export default function Menus() {
-  // const { width } = useWindowDimensions();
   const [currentPage, setCurrentPage] = useState<number>(1);
-  const { data: menus, isLoading: isMenusLoading } = useGetMenus(currentPage);
-  const { data: combos, isLoading: isCombosLoading } = useGetCombos();
-  // const { data: branches } = useGetBranches();
   const { mutateAsync: menuDelete } = useDeleteMenu();
-  // const { mutateAsync: updateAvailability } = useUpdateMenuAvailability();
-  const { data: availabilityData } = useGetMenuAvailabilities();
+
   const { data: relatedMenus } = useGetRelatedMenus(undefined, true);
   const { isRestaurant, isBranch, branchId } = useRestaurantIdentity();
 
@@ -86,13 +84,42 @@ export default function Menus() {
   const [combosSearchQuery, setCombosSearchQuery] = useState('');
   const [modalSearchQuery, setModalSearchQuery] = useState('');
   const [modalSelectedCategory, setModalSelectedCategory] = useState('All');
-
-  // Edit dialog states
+  const [debouncedQuery, setDebouncedQuery] = useState('');
+  const debouncedSearch = useMemo(
+    () => debounce((q: string) => setDebouncedQuery(q), 300),
+    []
+  );
   const [showEditMenuDialog, setShowEditMenuDialog] = useState(false);
   const [showEditComboDialog, setShowEditComboDialog] = useState(false);
   const [selectedItem, setSelectedItem] = useState<any>(null);
   const { mutateAsync: createRelatedItem } = useAddRelatedMenuItem();
   const { mutateAsync: deleteCombo } = useDeleteCombo();
+
+  const queryParams = useMemo(() => {
+    const category = mainSelectedCategory === 'All' ? '' : mainSelectedCategory;
+    return {
+      page: currentPage,
+      category,
+      branch: selectedBranch === 'all' ? undefined : selectedBranch,
+      search: debouncedQuery,
+    };
+  }, [currentPage, mainSelectedCategory, selectedBranch, debouncedQuery]);
+  const { data: menus, isLoading: isMenusLoading } =
+    useGetMenuAvailabilities(queryParams);
+
+  const queryParamsCombo = useMemo(() => {
+    return {
+      page: currentPage,
+      branch: selectedBranch === 'all' ? undefined : selectedBranch,
+      search: debouncedQuery,
+    };
+  }, [currentPage, selectedBranch, debouncedQuery]);
+  const { data: combos, isLoading: isCombosLoading } = useGetCombos(
+    queryParamsCombo,
+    activeTab === 'combos'
+  );
+
+  const { data: rawMenu } = useGetMenus(undefined, true);
 
   useEffect(() => {
     if (currentMenuItem) {
@@ -177,122 +204,6 @@ export default function Menus() {
     await queryClient.invalidateQueries({ queryKey: ['relatedMenus'] });
   };
 
-  const branchFilteredMenus = useMemo(() => {
-    if (!menus?.results) return [] as typeof menus;
-    if (!selectedBranch || selectedBranch === 'all') return menus.results;
-
-    if (!availabilityData?.results) return menus.results;
-
-    return menus.results.filter((menu) =>
-      availabilityData.results.some((avail) => {
-        const branchValue =
-          typeof avail.branch === 'object' ? avail.branch?.id : avail.branch;
-        const menuValue =
-          typeof avail.menu_item === 'object'
-            ? avail.menu_item?.id
-            : avail.menu_item;
-
-        return branchValue === selectedBranch && menuValue === menu.id;
-      })
-    );
-  }, [menus, selectedBranch, availabilityData]);
-
-  // Filter menus for main table
-  const filteredMenus = branchFilteredMenus?.filter((menu) => {
-    const categories = getMenuCategories(menu);
-    const matchesCategory =
-      mainSelectedCategory === 'All' ||
-      categories.includes(mainSelectedCategory);
-    const categoryText = categories.join(' ');
-
-    return (
-      matchesCategory &&
-      (menu.name.toLowerCase().includes(mainSearchQuery.toLowerCase()) ||
-        categoryText.toLowerCase().includes(mainSearchQuery.toLowerCase()))
-    );
-  });
-
-  const branchFilteredCombos = useMemo(() => {
-    if (!combos?.results) return [] as typeof combos;
-    if (!selectedBranch || selectedBranch === 'all') return combos.results;
-
-    return combos.results.filter((combo) => {
-      const branchValue =
-        typeof combo.branch === 'object' ? combo.branch?.id : combo.branch;
-      return branchValue === selectedBranch;
-    });
-  }, [combos?.results, selectedBranch]);
-
-  // Filter combos for combos tab
-  const filteredCombos = branchFilteredCombos?.filter(
-    (combo) =>
-      combo.name.toLowerCase().includes(combosSearchQuery.toLowerCase()) ||
-      (typeof combo.branch === 'object'
-        ? combo.branch?.address
-            ?.toLowerCase()
-            .includes(combosSearchQuery.toLowerCase())
-        : combo.branch?.toLowerCase().includes(combosSearchQuery.toLowerCase()))
-  );
-
-  // Filter menus for modal
-  const modalFilteredMenus = branchFilteredMenus?.filter((menu) => {
-    if (menu.id === currentMenuItem?.id) {
-      return false;
-    }
-    const categories = getMenuCategories(menu);
-    const matchesCategory =
-      modalSelectedCategory === 'All' ||
-      categories.includes(modalSelectedCategory);
-    const categoryText = categories.join(' ');
-
-    return (
-      matchesCategory &&
-      (menu.name.toLowerCase().includes(modalSearchQuery.toLowerCase()) ||
-        categoryText.toLowerCase().includes(modalSearchQuery.toLowerCase()))
-    );
-  });
-
-  // // Get availability status for a menu item
-  // const getAvailabilityStatus = (menuId: string) => {
-  //   if (!selectedBranch || selectedBranch === 'all') return false;
-
-  //   const availability = availabilityData?.results.find(
-  //     (avail) =>
-  //       (typeof avail.branch === 'object' ? avail.branch.id : avail.branch) ===
-  //         selectedBranch &&
-  //       (typeof avail.menu_item === 'object'
-  //         ? avail.menu_item.id
-  //         : avail.menu_item) === menuId
-  //   );
-
-  //   return availability ? availability.is_available : false;
-  // };
-
-  // // Toggle menu availability
-  // const toggleAvailability = async (menuId: string, isAvailable: boolean) => {
-  //   if (!selectedBranch || selectedBranch === 'all') return;
-
-  //   try {
-  //     await updateAvailability({
-  //       branch: selectedBranch,
-  //       menu_item: menuId,
-  //       is_available: isAvailable,
-  //     });
-
-  //     setSnackbarMessage(
-  //       isAvailable
-  //         ? 'Menu item is now available'
-  //         : 'Menu item is now unavailable'
-  //     );
-  //     setSnackbarVisible(true);
-
-  //     queryClient.invalidateQueries({ queryKey: ['menuAvailabilities'] });
-  //   } catch (error) {
-  //     setSnackbarMessage('Failed to update availability');
-  //     setSnackbarVisible(true);
-  //   }
-  // };
-
   return (
     <ScrollView style={styles.container}>
       <View style={styles.header}>
@@ -301,7 +212,10 @@ export default function Menus() {
         </Text>
         <BranchSelector
           selectedBranch={selectedBranch}
-          onChange={setSelectedBranch}
+          onChange={(branchid) => {
+            setCurrentPage(1);
+            setSelectedBranch(branchid);
+          }}
           includeAllOption={isRestaurant}
           style={styles.branchSelector}
         />
@@ -313,11 +227,17 @@ export default function Menus() {
                 : 'Search by Combo name or Branch'
             }
             value={activeTab === 'all' ? mainSearchQuery : combosSearchQuery}
-            onChangeText={(text) =>
-              activeTab === 'all'
-                ? setMainSearchQuery(text)
-                : setCombosSearchQuery(text)
-            }
+            onChangeText={(text) => {
+              if (activeTab === 'all') {
+                setMainSearchQuery(text);
+                debouncedSearch(text);
+                setCurrentPage(1);
+              } else {
+                setCombosSearchQuery(text);
+                debouncedSearch(text);
+                setCurrentPage(1);
+              }
+            }}
             style={styles.searchBar}
             inputStyle={styles.searchInput}
             placeholderTextColor="#8D8D8D"
@@ -440,7 +360,7 @@ export default function Menus() {
               </DataTable.Title>
             </DataTable.Header>
 
-            {filteredMenus?.map((menu) => {
+            {menus?.results?.map((menu) => {
               const categories = getMenuCategories(menu);
               const categoriesLabel = categories.length
                 ? categories.join(', ')
@@ -450,18 +370,22 @@ export default function Menus() {
                 <DataTable.Row key={menu.id} style={styles.tableRow}>
                   <DataTable.Cell style={styles.imageCell}>
                     <Image
-                      source={{ uri: menu.image }}
+                      source={{ uri: (menu.menu_item as MenuType)?.image }}
                       style={styles.menuImage}
                     />
                   </DataTable.Cell>
                   <DataTable.Cell>
-                    <Text style={styles.menuName}>{menu.name}</Text>
+                    <Text style={styles.menuName}>{menu.menu_item.name}</Text>
                   </DataTable.Cell>
                   <DataTable.Cell>
-                    <Text style={styles.categoryTag}>{categoriesLabel}</Text>
+                    <Text style={styles.categoryTag}>
+                      {menu.menu_item.category}
+                    </Text>
                   </DataTable.Cell>
                   <DataTable.Cell>
-                    <Text style={styles.menuPrice}>${menu.price}</Text>
+                    <Text style={styles.menuPrice}>
+                      ${menu.menu_item.price}
+                    </Text>
                   </DataTable.Cell>
                   <DataTable.Cell>
                     <Button
@@ -537,7 +461,7 @@ export default function Menus() {
               </DataTable.Title>
             </DataTable.Header>
 
-            {filteredCombos?.map((combo) => (
+            {combos?.results?.map((combo) => (
               <DataTable.Row key={combo.id}>
                 <DataTable.Cell>
                   <Text style={styles.menuName}>{combo.name}</Text>
@@ -595,7 +519,9 @@ export default function Menus() {
       <Pagination
         totalPages={
           Math.round(
-            activeTab == 'all' ? menus?.count! / 10 : combos?.count! / 10
+            activeTab == 'all'
+              ? Math.ceil((menus?.count ?? 0) / 10)
+              : Math.ceil((combos?.count ?? 0) / 10)
           ) || 0
         }
         currentPage={currentPage}
@@ -636,7 +562,10 @@ export default function Menus() {
             <View style={styles.searchContainer}>
               <Searchbar
                 placeholder="Search by Item name"
-                onChangeText={setModalSearchQuery}
+                onChangeText={(text) => {
+                  setCurrentPage(1);
+                  setModalSearchQuery(text);
+                }}
                 value={modalSearchQuery}
                 style={styles.searchBar}
                 inputStyle={styles.inputStyle}
@@ -672,7 +601,7 @@ export default function Menus() {
             </ScrollView>
 
             <ScrollView style={styles.itemsContainer}>
-              {modalFilteredMenus?.map((menu: any) => {
+              {rawMenu?.results?.map((menu: any) => {
                 const categories = getMenuCategories(menu);
                 const categoriesLabel = categories.length
                   ? categories.join(', ')

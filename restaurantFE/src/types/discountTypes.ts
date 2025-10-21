@@ -1,4 +1,4 @@
-import { Branch } from "./branchType";
+import { Branch } from './branchType';
 
 export interface Coupon {
   id: string;
@@ -13,7 +13,7 @@ export interface Discount {
   branch: any;
   name: string | null;
   description: string | null;
-  type: "volume" | "combo" | "bogo" | "freeItem" | "coupon";
+  type: 'volume' | 'combo' | 'bogo' | 'freeItem' | 'coupon';
   off_peak_hours: boolean;
   priority: number | null | undefined;
   is_stackable: boolean;
@@ -40,3 +40,9 @@ export interface DiscountRule {
   created_at?: string;
   updated_at?: string;
 }
+
+export type DiscountQueryParams = {
+  page: number;
+  branch?: string | null;
+  search?: string;
+};

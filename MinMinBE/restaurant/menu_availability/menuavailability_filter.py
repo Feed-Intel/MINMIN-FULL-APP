@@ -27,10 +27,13 @@ class MenuAvailabilityFilter(filters.FilterSet):
         ]
 
     def filter_search(self, queryset, name, value):
+        search_query = Q(menu_item__name__icontains=value) | \
+                    Q(branch__tenant__restaurant_name__icontains=value) | \
+                    Q(menu_item__categories__icontains=value)
+        if self.request.user.user_type in ['admin', 'restaurant']:
+            return queryset.filter(search_query)
         return queryset.filter(
-            (Q(menu_item__name__icontains=value) | 
-             Q(branch__tenant__restaurant_name__icontains=value))
-            & Q(is_available=True)
+            search_query& Q(is_available=True)
         )
 
     def filter_categories(self, queryset, name, value):

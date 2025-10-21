@@ -16,7 +16,7 @@ import {
   fetchDiscount,
   fetchDiscountRule,
 } from '../api/discountApi';
-import { Coupon, Discount } from '@/types/discountTypes';
+import { Coupon, Discount, DiscountQueryParams } from '@/types/discountTypes';
 import { AppDispatch } from '@/lib/reduxStore/store';
 import { useDispatch } from 'react-redux';
 import { hideLoader, showLoader } from '@/lib/reduxStore/loaderSlice';
@@ -26,10 +26,18 @@ import { hideLoader, showLoader } from '@/lib/reduxStore/loaderSlice';
 //     queryKey: ["discounts"],
 //     queryFn: fetchDiscounts,
 //   });
-export const useDiscounts = (page?: number | null) =>
+export const useDiscounts = (params?: DiscountQueryParams | null) =>
   useQuery<{ next: string | null; results: Discount[]; count: number }>({
-    queryKey: ['discounts', page],
-    queryFn: () => fetchDiscounts(page),
+    queryKey: ['discounts', params],
+    queryFn: () => {
+      const searchParams = new URLSearchParams();
+      Object.entries(params ?? {}).forEach(([key, value]) => {
+        if (value) {
+          searchParams.append(key, String(value));
+        }
+      });
+      return fetchDiscounts(searchParams.toString());
+    },
     staleTime: 0,
     refetchInterval: 30000,
   });
@@ -130,10 +138,18 @@ export const useGetDiscountRuleById = (id: string) =>
     staleTime: 0,
   });
 
-export const useGetCoupons = (page?: number | null) =>
+export const useGetCoupons = (param?: DiscountQueryParams | null) =>
   useQuery<{ next: string | null; results: Coupon[]; count: number }>({
-    queryKey: ['coupons', page],
-    queryFn: () => fetchCoupons(page),
+    queryKey: ['coupons', param],
+    queryFn: () => {
+      const searchParams = new URLSearchParams();
+      Object.entries(param ?? {}).forEach(([key, value]) => {
+        if (value) {
+          searchParams.append(key, String(value));
+        }
+      });
+      return fetchCoupons(searchParams.toString());
+    },
     staleTime: 0,
   });
 

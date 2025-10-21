@@ -9,7 +9,7 @@ import {
   updateQr,
   fetchTableById,
 } from '../api/tableApi';
-import { Table } from '@/types/tableTypes';
+import { Table, TableQueryParams } from '@/types/tableTypes';
 import { useDispatch } from 'react-redux';
 import { AppDispatch } from '@/lib/reduxStore/store';
 import { hideLoader, showLoader } from '@/lib/reduxStore/loaderSlice';
@@ -56,10 +56,18 @@ export function useUpdateQr() {
     },
   });
 }
-export const useGetTables = (page?: number | null) =>
+export const useGetTables = (param?: TableQueryParams | null) =>
   useQuery<{ next: string | null; results: Table[]; count: number }>({
-    queryKey: ['tables', page],
-    queryFn: () => fetchTables(page),
+    queryKey: ['tables', param],
+    queryFn: () => {
+      const searchParams = new URLSearchParams();
+      Object.entries(param ?? {}).forEach(([key, value]) => {
+        if (value) {
+          searchParams.append(key, String(value));
+        }
+      });
+      return fetchTables(searchParams.toString());
+    },
     staleTime: 0,
     refetchOnMount: true,
   });

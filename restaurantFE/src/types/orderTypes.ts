@@ -42,3 +42,15 @@ export interface OrderItem {
   price: number;
   remarks?: string;
 }
+
+export type ChannelFilterId = 'ALL' | 'DINE_IN' | 'TAKEAWAY' | 'DELIVERY';
+
+export type OrderQueryParams = {
+  page: number;
+  status?: string; // e.g., 'pending_payment,placed'
+  channel?: ChannelFilterId;
+  from?: string | null;
+  to?: string | null;
+  branchId?: string | null;
+  search?: string;
+};

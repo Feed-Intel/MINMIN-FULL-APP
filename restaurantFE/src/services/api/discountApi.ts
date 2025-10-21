@@ -2,13 +2,9 @@ import { apiClient } from '@/config/axiosConfig';
 import { asyncHandler } from '@/util/asyncHandler';
 
 export const fetchDiscounts = asyncHandler(
-  async (page?: number | null): Promise<any[]> => {
-    if (Boolean(page)) {
-      const resp = await apiClient.get(`/discount/?page=${page}`);
-      return resp.data || [];
-    }
-    const resp = await apiClient.get(`/discount/`);
-    return resp.data || [];
+  async (param?: string | null): Promise<any[]> => {
+    const resp = await apiClient.get(`/discount?${param}`);
+    return resp.data;
   }
 );
 
@@ -20,12 +16,8 @@ export const fetchDiscount = asyncHandler(
 );
 
 export const fetchCoupons = asyncHandler(
-  async (page?: number | null): Promise<any[]> => {
-    if (Boolean(page)) {
-      const resp = await apiClient.get(`/coupon/?page=${page}`);
-      return resp.data || [];
-    }
-    const resp = await apiClient.get(`/coupon/`);
+  async (param?: string | null): Promise<any[]> => {
+    const resp = await apiClient.get(`/coupon?${param}`);
     return resp.data || [];
   }
 );

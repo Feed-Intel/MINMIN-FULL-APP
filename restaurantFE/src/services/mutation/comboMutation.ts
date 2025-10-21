@@ -6,15 +6,27 @@ import {
   UpdateCombo,
   DeleteCombo,
 } from '../api/comboApi';
-import { Combo } from '@/types/comboTypes';
+import { Combo, ComboQueryParams } from '@/types/comboTypes';
 import { useDispatch } from 'react-redux';
 import { AppDispatch } from '@/lib/reduxStore/store';
 import { hideLoader, showLoader } from '@/lib/reduxStore/loaderSlice';
 
-export const useGetCombos = (page?: number | undefined) =>
+export const useGetCombos = (
+  params?: ComboQueryParams | undefined,
+  enabled?: boolean
+) =>
   useQuery<{ next: string | null; results: Combo[]; count: number }>({
-    queryKey: ['combos', page],
-    queryFn: () => GetCombos(page),
+    queryKey: ['combos', params],
+    queryFn: () => {
+      const searchParams = new URLSearchParams();
+      Object.entries(params ?? {}).forEach(([key, value]) => {
+        if (value) {
+          searchParams.append(key, String(value));
+        }
+      });
+      return GetCombos(searchParams.toString());
+    },
+    enabled: enabled ?? true,
   });
 
 export const useGetComboById = (id: string) =>

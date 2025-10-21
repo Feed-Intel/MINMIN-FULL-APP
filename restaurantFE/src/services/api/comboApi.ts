@@ -6,12 +6,8 @@ export const GetComboById = asyncHandler(async (id: string) => {
   return resp.data;
 });
 
-export const GetCombos = asyncHandler(async (page: number | undefined) => {
-  if (Boolean(page)) {
-    const resp = await apiClient.get(`/combo/?page=${page}`);
-    return resp.data;
-  }
-  const resp = await apiClient.get('/combo/');
+export const GetCombos = asyncHandler(async (params: string | undefined) => {
+  const resp = await apiClient.get(`/combo?${params}`);
   return resp.data;
 });
 

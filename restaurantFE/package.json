@@ -46,6 +46,7 @@
     "expo-system-ui": "~4.0.9",
     "expo-web-browser": "~14.0.2",
     "jwt-decode": "^4.0.0",
+    "lodash.debounce": "^4.0.8",
     "lucide-react-native": "^0.528.0",
     "react": "18.3.1",
     "react-dom": "18.3.1",
@@ -74,6 +75,7 @@
   "devDependencies": {
     "@babel/core": "^7.25.2",
     "@types/jest": "^29.5.12",
+    "@types/lodash.debounce": "^4.0.9",
     "@types/react": "~18.3.12",
     "@types/react-native-tags": "^2.2.5",
     "@types/react-native-vector-icons": "^6.4.18",

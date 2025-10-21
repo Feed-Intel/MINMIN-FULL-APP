@@ -16,6 +16,7 @@ class MenuSerializer(serializers.ModelSerializer):
         allow_null=True,
         help_text="List of related items with id",
         write_only=True,
+        required=False,
     )
     class Meta:
         model = Menu
@@ -61,7 +62,7 @@ class MenuSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         user = self.context['request'].user
         tenant = Tenant.objects.get(admin=user)
-        branches = validated_data.pop('branches')
+        branches = validated_data.pop('branches', [])
         is_global = validated_data.pop('is_global')
         menu = Menu.objects.create(
             tenant=tenant,
@@ -84,7 +85,7 @@ class MenuSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         user = self.context['request'].user
         tenant = Tenant.objects.get(admin=user)
-        branches = validated_data.pop('branches')
+        branches = validated_data.pop('branches', [])
         is_global = validated_data.pop('is_global')
         instance.name = validated_data.get('name', instance.name)
         instance.description = validated_data.get('description', instance.description)

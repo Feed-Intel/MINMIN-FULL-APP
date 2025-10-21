@@ -27,15 +27,15 @@ import { router } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { useDispatch } from 'react-redux';
 import dayjs from 'dayjs';
+import debounce from 'lodash.debounce';
 
 import BranchSelector from '@/components/BranchSelector';
 import FiltersDrawer from '@/components/FiltersDrawer';
 import { usePersistentFilters } from '@/hooks/usePersistentFilters';
-// import { OrderModal } from "./createOrder";
 import { useRestaurantIdentity } from '@/hooks/useRestaurantIdentity';
 import { resetPendingOrders } from '@/lib/reduxStore/orderSlice';
 import { useOrders, useUpdateOrder } from '@/services/mutation/orderMutation';
-import { Order } from '@/types/orderTypes';
+import { ChannelFilterId, Order } from '@/types/orderTypes';
 import Pagination from '@/components/Pagination';
 
 type StatusFilterId =
@@ -45,8 +45,6 @@ type StatusFilterId =
   | 'READY'
   | 'COMPLETED'
   | 'CANCELLED';
-
-type ChannelFilterId = 'ALL' | 'DINE_IN' | 'TAKEAWAY' | 'DELIVERY';
 
 type OrdersFilters = {
   status: StatusFilterId;
@@ -185,6 +183,11 @@ export default function Orders() {
   const [datePickerField, setDatePickerField] = useState<'from' | 'to' | null>(
     null
   );
+  const [debouncedQuery, setDebouncedQuery] = useState('');
+  const debouncedSearch = useMemo(
+    () => debounce((q: string) => setDebouncedQuery(q), 300),
+    []
+  );
   const [newOrderToast, setNewOrderToast] = useState<{
     id: string;
     orderCode: string;
@@ -196,11 +199,9 @@ export default function Orders() {
 
   const queryClient = useQueryClient();
   const [currentPage, setCurrentPage] = useState<number>(1);
-  const { data: orders, isLoading } = useOrders(currentPage);
   const updateOrderStatus = useUpdateOrder();
   const dispatch = useDispatch();
   const { isRestaurant, isBranch, branchId } = useRestaurantIdentity();
-
   const {
     value: filters,
     setValue: setFilters,
@@ -213,16 +214,52 @@ export default function Orders() {
     to: null,
     branchId: isBranch ? branchId ?? null : 'all',
   });
+  const selectedBranch = useMemo(() => {
+    if (isBranch) return branchId ?? null;
+    return filters.branchId;
+  }, [filters.branchId, isBranch, branchId]);
 
   const highlightTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>(
     {}
   );
   const previousOrderIds = useRef<Set<string>>(new Set());
   const bootstrappedOrders = useRef(false);
+  const queryParams = useMemo(() => {
+    const statusFilter = STATUS_FILTERS.find(
+      (item) => item.id === filters.status
+    );
+    const apiStatuses = statusFilter?.statuses;
+
+    return {
+      page: currentPage,
+      status:
+        filters.status !== 'ALL' && apiStatuses
+          ? apiStatuses.join(',')
+          : undefined,
+      channel: filters.channel !== 'ALL' ? filters.channel : undefined,
+      from_date: filters.from,
+      to_date: filters.to,
+      branch: selectedBranch === 'all' ? undefined : selectedBranch,
+      search: debouncedQuery,
+    };
+  }, [
+    currentPage,
+    filters.status,
+    filters.channel,
+    filters.from,
+    filters.to,
+    selectedBranch,
+    debouncedQuery,
+  ]);
+  const { data: orders, isLoading } = useOrders(queryParams);
 
   useEffect(() => {
     dispatch(resetPendingOrders());
   }, [dispatch]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filters]);
 
   useEffect(() => {
     if (!isHydrated) return;
@@ -233,11 +270,6 @@ export default function Orders() {
       setFilters((prev) => ({ ...prev, branchId: 'all' }));
     }
   }, [isHydrated, isBranch, branchId, filters.branchId, setFilters]);
-
-  const selectedBranch = useMemo(() => {
-    if (isBranch) return branchId ?? null;
-    return filters.branchId;
-  }, [filters.branchId, isBranch, branchId]);
 
   const activeFiltersCount = useMemo(() => {
     let count = 0;
@@ -323,62 +355,8 @@ export default function Orders() {
   }, []);
 
   const filteredOrders = useMemo(() => {
-    if (!orders) return [];
-
-    const statusLookup = new Set(
-      STATUS_FILTERS.find((item) => item.id === filters.status)?.statuses ?? []
-    );
-
-    return orders.results
-      .filter((order) => {
-        if (selectedBranch && selectedBranch !== 'all') {
-          const branchValue =
-            typeof order.branch === 'object' ? order.branch?.id : order.branch;
-          if (branchValue !== selectedBranch) return false;
-        }
-
-        if (filters.status !== 'ALL' && !statusLookup.has(order.status)) {
-          return false;
-        }
-
-        if (filters.channel !== 'ALL') {
-          const orderChannel = getChannelFromOrder(order);
-          if (orderChannel !== filters.channel) return false;
-        }
-
-        if (filters.from) {
-          const fromDate = dayjs(filters.from);
-          if (dayjs(order.created_at).isBefore(fromDate, 'day')) return false;
-        }
-
-        if (filters.to) {
-          const toDate = dayjs(filters.to);
-          if (dayjs(order.created_at).isAfter(toDate, 'day')) return false;
-        }
-
-        const term = searchTerm.trim().toLowerCase();
-        if (!term) return true;
-
-        const customerName =
-          typeof order.customer === 'string'
-            ? order.customer.toLowerCase()
-            : order.customer?.full_name?.toLowerCase() ?? '';
-        const branchAddress =
-          typeof order.branch === 'string'
-            ? order.branch.toLowerCase()
-            : order.branch?.address?.toLowerCase() ?? '';
-        const orderId = order.order_id?.toLowerCase() ?? '';
-
-        return (
-          customerName.includes(term) ||
-          branchAddress.includes(term) ||
-          orderId.includes(term)
-        );
-      })
-      .sort(
-        (a, b) => dayjs(b.created_at).valueOf() - dayjs(a.created_at).valueOf()
-      );
-  }, [orders, filters, selectedBranch, searchTerm]);
+    return orders?.results ?? [];
+  }, [orders]);
 
   const handleStatusUpdate = useCallback(
     async (orderId: string, status: Order['status']) => {
@@ -510,7 +488,11 @@ export default function Orders() {
                   mode="outlined"
                   placeholder="Search by customer, branch, or order ID"
                   value={searchTerm}
-                  onChangeText={setSearchTerm}
+                  onChangeText={(text) => {
+                    setCurrentPage(1);
+                    setSearchTerm(text);
+                    debouncedSearch(text);
+                  }}
                   style={styles.searchInput}
                   left={<TextInput.Icon icon="magnify" />}
                   outlineStyle={{ borderWidth: 0 }}
@@ -724,7 +706,7 @@ export default function Orders() {
                   })}
                 </DataTable>
                 <Pagination
-                  totalPages={Math.round(orders?.count! / 10) || 0}
+                  totalPages={Math.ceil((orders?.count ?? 0) / 10)} // Use Math.ceil for accurate page count
                   currentPage={currentPage}
                   onPageChange={setCurrentPage}
                 />
@@ -740,7 +722,9 @@ export default function Orders() {
           resetFilters();
           setFiltersVisible(false);
         }}
-        onApply={() => setFiltersVisible(false)}
+        onApply={() => {
+          setFiltersVisible(false);
+        }}
       >
         <View style={styles.filtersSection}>
           <Text style={styles.filtersLabel}>Status</Text>
@@ -753,6 +737,10 @@ export default function Orders() {
                   setFilters((prev) => ({ ...prev, status: status.id }))
                 }
                 selected={filters.status === status.id}
+                style={{
+                  backgroundColor:
+                    filters.status === status.id ? '#91B275' : '#fff',
+                }}
               >
                 {status.label}
               </Chip>
@@ -771,6 +759,10 @@ export default function Orders() {
                   setFilters((prev) => ({ ...prev, channel: channel.id }))
                 }
                 selected={filters.channel === channel.id}
+                style={{
+                  backgroundColor:
+                    filters.channel === channel.id ? '#91B275' : '#fff',
+                }}
               >
                 {channel.label}
               </Chip>
@@ -823,7 +815,10 @@ export default function Orders() {
             <Text style={styles.filtersLabel}>Branch</Text>
             <BranchSelector
               selectedBranch={filters.branchId}
-              onChange={handleBranchChange}
+              onChange={(branchId) => {
+                setCurrentPage(1);
+                handleBranchChange(branchId);
+              }}
               includeAllOption={isRestaurant}
             />
           </View>

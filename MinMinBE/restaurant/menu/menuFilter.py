@@ -1,23 +1,3 @@
-# from django_filters import rest_framework as filters
-# from .models import Menu
-
-# class MenuFilter(filters.FilterSet):
-#     branch = filters.UUIDFilter(field_name='branch')  # Exact match for tenant
-#     name = filters.CharFilter(lookup_expr='icontains')  # Case-insensitive substring match
-#     tags = filters.CharFilter(lookup_expr='icontains')  # Case-insensitive substring match
-#     category = filters.CharFilter(lookup_expr='icontains')  # Case-insensitive substring match
-#     min_price = filters.NumberFilter(field_name='price', lookup_expr='gte')  # Min price
-#     max_price = filters.NumberFilter(field_name='price', lookup_expr='lte')  # Max price
-#     is_side = filters.BooleanFilter()  # Exact match for boolean field
-#     start_date = filters.DateTimeFilter(field_name='created_at', lookup_expr='gte')  # Created after
-#     end_date = filters.DateTimeFilter(field_name='created_at', lookup_expr='lte')  # Created before
-
-#     class Meta:
-#         model = Menu
-#         fields = [
-#             'branch', 'name', 'tags', 'category', 'min_price', 'max_price', 
-#             'is_side', 'start_date', 'end_date'
-#         ]
 from django_filters import rest_framework as filters
 from django.db.models import Q
 from .models import Menu
@@ -39,7 +19,7 @@ class MenuFilter(filters.FilterSet):
 
     def filter_search(self, queryset, name, value):
         return queryset.filter(
-            Q(name__icontains=value) | Q(tenant__restaurant_name__icontains=value)
+            Q(name__icontains=value) | Q(tenant__restaurant_name__icontains=value) | Q(categories__icontains=value)
         )
 
     def filter_tags(self, queryset, name, value):
