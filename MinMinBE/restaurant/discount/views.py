@@ -10,6 +10,7 @@ from django.db.models import Q
 from rest_framework.pagination import PageNumberPagination
 from .models import Discount, DiscountRule, DiscountApplication, Coupon
 from .serializers import DiscountSerializer, DiscountRuleSerializer, DiscountApplicationSerializer, CouponSerializer
+from .dicountFilter import DiscountFilter, CouponFilter
 from customer.order.models import Order
 from .utils import apply_discounts
 from accounts.permissions import HasCustomAPIKey, IsAdminOrRestaurant, IsAdminRestaurantOrBranch
@@ -26,9 +27,8 @@ class DiscountViewSet(CachedModelViewSet):
     permission_classes = [IsAuthenticated,HasCustomAPIKey]
     queryset = Discount.objects.all()
     serializer_class = DiscountSerializer
-    filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
-    filterset_fields = ['type', 'off_peak_hours', 'is_stackable']
-    ordering_fields = [ 'priority']
+    filter_backends = [DjangoFilterBackend]
+    filterset_class = DiscountFilter
     pagination_class = DiscountPagination
     # ordering = ['-valid_from']
 
@@ -190,8 +190,8 @@ class CouponViewSet(CachedModelViewSet):
     permission_classes = [IsAuthenticated, HasCustomAPIKey, IsAdminRestaurantOrBranch]
     queryset = Coupon.objects.all()
     serializer_class = CouponSerializer
-    filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
-    filterset_fields = ['discount_code']
+    filter_backends = [DjangoFilterBackend]
+    filterset_class = CouponFilter
     ordering_fields = ['created_at', 'updated_at','valid_from', 'valid_until']
     ordering = ['-created_at']
     pagination_class = CouponPagination

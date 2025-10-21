@@ -35,3 +35,10 @@ export type RelatedMenu = {
   related_item?: string | MenuType;
   tag?: string;
 };
+
+export type MenuQueryParams = {
+  page: number;
+  category?: string;
+  branchId?: string | null;
+  search?: string;
+};

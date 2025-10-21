@@ -7,15 +7,23 @@ import {
   fetchOrder,
   createOrder,
 } from '../api/orderApi';
-import { Order } from '@/types/orderTypes';
+import { Order, OrderQueryParams } from '@/types/orderTypes';
 import { useDispatch } from 'react-redux';
 import { AppDispatch } from '@/lib/reduxStore/store';
 import { hideLoader, showLoader } from '@/lib/reduxStore/loaderSlice';
 
-export const useOrders = (page?: number | undefined) =>
+export const useOrders = (params?: OrderQueryParams) =>
   useQuery<{ next: string | null; results: Order[]; count: number }>({
-    queryKey: ['orders', page],
-    queryFn: () => fetchOrders(page),
+    queryKey: ['orders', params],
+    queryFn: () => {
+      const searchParams = new URLSearchParams();
+      Object.entries(params ?? {}).forEach(([key, value]) => {
+        if (value) {
+          searchParams.append(key, String(value));
+        }
+      });
+      return fetchOrders(searchParams.toString());
+    },
     staleTime: 0,
     refetchInterval: 15000,
   });

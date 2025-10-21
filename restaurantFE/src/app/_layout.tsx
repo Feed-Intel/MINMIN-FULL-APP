@@ -16,14 +16,19 @@ import { MD3LightTheme, Provider as PaperProvider } from 'react-native-paper';
 import Loader from '@/components/dashboard/Loader';
 import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister';
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
-import {
-  navigationDarkTheme,
-  navigationLightTheme,
-  paperDarkTheme,
-  paperLightTheme,
-} from '@/theme/minminTheme';
+import { navigationDarkTheme, navigationLightTheme } from '@/theme/minminTheme';
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      gcTime: 0,
+      staleTime: 0,
+      refetchOnMount: true,
+      refetchOnWindowFocus: true,
+      refetchOnReconnect: true,
+    },
+  },
+});
 
 const asyncStoragePersister = createAsyncStoragePersister({
   storage: AsyncStorage,

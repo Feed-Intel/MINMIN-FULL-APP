@@ -21,3 +21,9 @@ export interface ComboItem {
   quantity: number;
   is_half: boolean;
 }
+
+export type ComboQueryParams = {
+  page: number;
+  branch?: string | null;
+  search?: string;
+};

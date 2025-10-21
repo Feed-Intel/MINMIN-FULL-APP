@@ -3,15 +3,12 @@ import { asyncHandler } from '@/util/asyncHandler';
 import { Branch } from '@/types/branchType';
 
 export const GetBranches = asyncHandler(
-  async (page: number | undefined, noPage?: boolean) => {
+  async (param?: string, noPage?: boolean) => {
     if (noPage) {
       const resp = await apiClient.get(`/branch/?nopage=1`);
       return { results: resp.data || [] };
-    } else if (Boolean(page)) {
-      const resp = await apiClient.get(`/branch/?page=${page}`);
-      return resp.data;
     }
-    const resp = await apiClient.get('/branch/');
+    const resp = await apiClient.get(`/branch?${param}`);
     return resp.data;
   }
 );

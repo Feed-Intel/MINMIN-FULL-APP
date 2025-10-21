@@ -34,8 +34,6 @@ import Pagination from '@/components/Pagination';
 const ManageDiscounts: React.FC = () => {
   const { width }: { width: number } = useWindowDimensions();
   const [currentPage, setCurrentPage] = useState<number>(1);
-  const { data: discounts } = useDiscounts(currentPage);
-  const { data: coupons } = useGetCoupons(currentPage);
   const { data: branches } = useGetBranches(undefined, true);
   const { data: discountRules = [] } = useDiscountRules();
   const { mutateAsync: discountDelete } = useDeleteDiscount();
@@ -59,27 +57,17 @@ const ManageDiscounts: React.FC = () => {
   const [selectedBranch, setSelectedBranch] = useState<string | null>(
     isBranch ? branchId ?? null : null
   );
+  const [searchTerm, setSearchTerm] = useState('');
   const isSmallScreen: boolean = width < 768;
-
-  const filterByBranch = <T extends { branch?: any }>(items: T[]): T[] => {
-    if (!selectedBranch || selectedBranch === 'all') return items;
-
-    return items.filter((item) => {
-      const branchValue =
-        typeof item.branch === 'object' ? item.branch?.id : item.branch;
-      return branchValue === selectedBranch;
-    });
-  };
-  const filteredDiscounts = useMemo(
-    () =>
-      filterByBranch(discounts?.results as any) as unknown as typeof discounts,
-    [discounts, selectedBranch]
-  );
-
-  const filteredCoupons = useMemo(
-    () => filterByBranch(coupons as any) as unknown as typeof coupons,
-    [coupons, selectedBranch]
-  );
+  const queryParams = useMemo(() => {
+    return {
+      page: currentPage,
+      branch: selectedBranch === 'all' ? undefined : selectedBranch,
+      search: searchTerm,
+    };
+  }, [currentPage, selectedBranch, searchTerm]);
+  const { data: discounts } = useDiscounts(queryParams);
+  const { data: coupons } = useGetCoupons(queryParams);
 
   const handleDeleteDiscount = async (): Promise<void> => {
     setShowDialog(false);
@@ -125,16 +113,28 @@ const ManageDiscounts: React.FC = () => {
             </View>
             <BranchSelector
               selectedBranch={selectedBranch}
-              onChange={setSelectedBranch}
+              onChange={(branchId) => {
+                setCurrentPage(1);
+                setSelectedBranch(branchId);
+              }}
               includeAllOption={isRestaurant}
             />
 
             {/* Search Bar */}
             <View style={styles.searchBarContainer}>
               <TextInput
-                placeholder="Search by Item name or Catagory"
+                placeholder={
+                  selectedCategory == 'Discount'
+                    ? 'Search by Name or Branch Address'
+                    : 'Search by Coupon Code'
+                }
                 style={styles.searchBar}
                 placeholderTextColor="#999"
+                value={searchTerm}
+                onChangeText={(text) => {
+                  setCurrentPage(1);
+                  setSearchTerm(text);
+                }}
               />
               <Button
                 mode="contained"
@@ -219,7 +219,7 @@ const ManageDiscounts: React.FC = () => {
                     ))}
                   </View>
 
-                  {filteredDiscounts?.map((disc: any) => {
+                  {discounts?.results.map((disc: any) => {
                     const relatedRule = discountRules.find(
                       (rule: any) => rule.discount_id.id === disc.id
                     );
@@ -333,7 +333,7 @@ const ManageDiscounts: React.FC = () => {
                     )}
                   </View>
 
-                  {filteredCoupons?.results.map((cp: any) => (
+                  {coupons?.results.map((cp: any) => (
                     <View key={cp.id} style={styles.row}>
                       {/* Branch */}
                       <Text
@@ -391,8 +391,8 @@ const ManageDiscounts: React.FC = () => {
                 totalPages={
                   Math.round(
                     selectedCategory == 'Coupons'
-                      ? coupons?.count! / 10
-                      : discounts?.count! / 10
+                      ? Math.ceil((coupons?.count ?? 0) / 10)
+                      : Math.ceil((discounts?.count ?? 0) / 10)
                   ) || 0
                 }
                 currentPage={currentPage}

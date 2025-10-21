@@ -1,5 +1,10 @@
-import React, { useState, useEffect } from "react";
-import { ScrollView, StyleSheet, useWindowDimensions, View } from "react-native";
+import React, { useState, useEffect } from 'react';
+import {
+  ScrollView,
+  StyleSheet,
+  useWindowDimensions,
+  View,
+} from 'react-native';
 import {
   TextInput,
   Button,
@@ -13,14 +18,14 @@ import {
   Dialog,
   Menu,
   Snackbar,
-} from "react-native-paper";
-import { useQueryClient } from "@tanstack/react-query";
-import { Combo } from "@/types/comboTypes";
-import { MenuType } from "@/types/menuType";
-import { useGetBranches } from "@/services/mutation/branchMutation";
-import { useGetMenus } from "@/services/mutation/menuMutation";
-import { useUpdateCombo } from "@/services/mutation/comboMutation";
-import { useRestaurantIdentity } from "@/hooks/useRestaurantIdentity";
+} from 'react-native-paper';
+import { useQueryClient } from '@tanstack/react-query';
+import { Combo } from '@/types/comboTypes';
+import { MenuType } from '@/types/menuType';
+import { useGetBranches } from '@/services/mutation/branchMutation';
+import { useGetMenus } from '@/services/mutation/menuMutation';
+import { useUpdateCombo } from '@/services/mutation/comboMutation';
+import { useRestaurantIdentity } from '@/hooks/useRestaurantIdentity';
 
 type ComboItem = {
   menu_item: string | MenuType;
@@ -34,22 +39,28 @@ interface EditComboDialogProps {
   onClose: () => void;
 }
 
-export default function EditComboDialog({ visible, combo: initialCombo, onClose }: EditComboDialogProps) {
+export default function EditComboDialog({
+  visible,
+  combo: initialCombo,
+  onClose,
+}: EditComboDialogProps) {
   const [combo, setCombo] = useState<
     Partial<Combo & { combo_items: ComboItem[] }>
   >({
-    name: "",
-    branch: "",
+    name: '',
+    branch: '',
     combo_price: 0,
-    combo_items: [{ menu_item: "", quantity: 1, is_half: false }],
+    combo_items: [{ menu_item: '', quantity: 1, is_half: false }],
   });
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [branchMenuVisible, setBranchMenuVisible] = useState(false);
-  const [menuItemMenusVisible, setMenuItemMenusVisible] = useState<{[key: number]: boolean}>({});
+  const [menuItemMenusVisible, setMenuItemMenusVisible] = useState<{
+    [key: number]: boolean;
+  }>({});
   const [snackbarVisible, setSnackbarVisible] = useState(false);
-  
+
   const queryClient = useQueryClient();
-  const { data: branches } = useGetBranches();
+  const { data: branches } = useGetBranches(undefined, true);
   const { data: menuItems } = useGetMenus();
   const { mutateAsync: updateCombo, isPending } = useUpdateCombo();
   const { width } = useWindowDimensions();
@@ -94,7 +105,7 @@ export default function EditComboDialog({ visible, combo: initialCombo, onClose 
       ...prev,
       combo_items: [
         ...(prev.combo_items ?? []),
-        { menu_item: "", quantity: 1, is_half: false },
+        { menu_item: '', quantity: 1, is_half: false },
       ],
     }));
   };
@@ -106,9 +117,9 @@ export default function EditComboDialog({ visible, combo: initialCombo, onClose 
   };
 
   const toggleMenuItemMenu = (index: number, visible: boolean) => {
-    setMenuItemMenusVisible(prev => ({
+    setMenuItemMenusVisible((prev) => ({
       ...prev,
-      [index]: visible
+      [index]: visible,
     }));
   };
 
@@ -116,21 +127,21 @@ export default function EditComboDialog({ visible, combo: initialCombo, onClose 
     const errors: { [key: string]: string } = {};
 
     if (!combo.name?.trim()) {
-      errors.name = "Combo name is required.";
+      errors.name = 'Combo name is required.';
     } else if (combo.name.trim().length < 3) {
-      errors.name = "Combo name must be at least 3 characters long.";
+      errors.name = 'Combo name must be at least 3 characters long.';
     }
 
     if (!combo.branch) {
-      errors.branch = "Branch selection is required.";
+      errors.branch = 'Branch selection is required.';
     }
 
     if ((combo.combo_price ?? 0) <= 0) {
-      errors.combo_price = "Combo price must be greater than 0.";
+      errors.combo_price = 'Combo price must be greater than 0.';
     }
 
     if (!combo.combo_items || combo.combo_items.length === 0) {
-      errors.combo_items = "At least one combo item is required.";
+      errors.combo_items = 'At least one combo item is required.';
     } else {
       combo.combo_items.forEach((item, index) => {
         if (!item.menu_item) {
@@ -156,18 +167,22 @@ export default function EditComboDialog({ visible, combo: initialCombo, onClose 
     try {
       await updateCombo({
         ...combo,
-        branch: typeof combo.branch === "object" ? combo.branch.id : combo.branch,
-        combo_items: combo.combo_items?.map(item => ({
+        branch:
+          typeof combo.branch === 'object' ? combo.branch.id : combo.branch,
+        combo_items: combo.combo_items?.map((item) => ({
           ...item,
-          menu_item: typeof item.menu_item === "object" ? item.menu_item.id : item.menu_item
-        }))
+          menu_item:
+            typeof item.menu_item === 'object'
+              ? item.menu_item.id
+              : item.menu_item,
+        })),
       });
-      queryClient.invalidateQueries({ queryKey: ["combos"] });
+      queryClient.invalidateQueries({ queryKey: ['combos'] });
       setSnackbarVisible(true);
       onClose();
     } catch (error) {
-      console.error("Error updating combo:", error);
-      setErrors({ general: "Failed to update combo. Please try again." });
+      console.error('Error updating combo:', error);
+      setErrors({ general: 'Failed to update combo. Please try again.' });
     }
   };
 
@@ -179,12 +194,14 @@ export default function EditComboDialog({ visible, combo: initialCombo, onClose 
           <ScrollView>
             <Card style={styles.card}>
               <Card.Content>
-                <Text variant="titleLarge" style={styles.title}>Combo Details</Text>
+                <Text variant="titleLarge" style={styles.title}>
+                  Combo Details
+                </Text>
 
                 <TextInput
                   label="Combo Name"
                   value={combo.name}
-                  onChangeText={(text) => handleInputChange("name", text)}
+                  onChangeText={(text) => handleInputChange('name', text)}
                   style={styles.input}
                   error={!!errors.name}
                 />
@@ -198,8 +215,8 @@ export default function EditComboDialog({ visible, combo: initialCombo, onClose 
                   style={styles.input}
                   keyboardType="numeric"
                   onChangeText={(text) => {
-                    const sanitizedValue = text.replace(/[^0-9\-,\.]/g, "");
-                    handleInputChange("combo_price", sanitizedValue);
+                    const sanitizedValue = text.replace(/[^0-9\-,\.]/g, '');
+                    handleInputChange('combo_price', sanitizedValue);
                   }}
                   error={!!errors.combo_price}
                 />
@@ -211,8 +228,9 @@ export default function EditComboDialog({ visible, combo: initialCombo, onClose 
                 <View style={styles.dropdownContainer}>
                   {isBranch ? (
                     <Text style={styles.readonlyBranch}>
-                      {branches?.find((b: any) => b.id === (branchId ?? combo.branch))?.address ??
-                        "Assigned Branch"}
+                      {branches?.results.find(
+                        (b: any) => b.id === (branchId ?? combo.branch)
+                      )?.address ?? 'Assigned Branch'}
                     </Text>
                   ) : (
                     <Menu
@@ -223,25 +241,28 @@ export default function EditComboDialog({ visible, combo: initialCombo, onClose 
                           mode="outlined"
                           style={styles.dropdownButton}
                           labelStyle={{
-                            color: "#333",
+                            color: '#333',
                             fontSize: 14,
-                            width: "100%",
-                            textAlign: "left",
+                            width: '100%',
+                            textAlign: 'left',
                           }}
                           onPress={() => setBranchMenuVisible(true)}
                           contentStyle={{
-                            flexDirection: "row-reverse",
-                            width: "100%",
+                            flexDirection: 'row-reverse',
+                            width: '100%',
                           }}
-                          icon={branchMenuVisible ? "chevron-up" : "chevron-down"}
+                          icon={
+                            branchMenuVisible ? 'chevron-up' : 'chevron-down'
+                          }
                         >
                           {combo.branch
-                            ? branches?.find((b: any) => b.id === combo.branch)?.address
-                            : "Select Branch"}
+                            ? branches?.find((b: any) => b.id === combo.branch)
+                                ?.address
+                            : 'Select Branch'}
                         </Button>
                       }
-                      contentStyle={[styles.menuContent, { width: "100%" }]}
-                      style={{ alignSelf: "stretch" }}
+                      contentStyle={[styles.menuContent, { width: '100%' }]}
+                      style={{ alignSelf: 'stretch' }}
                       anchorPosition="bottom"
                     >
                       {branches && branches.length > 0 ? (
@@ -249,7 +270,7 @@ export default function EditComboDialog({ visible, combo: initialCombo, onClose 
                           <Menu.Item
                             key={branch.id}
                             onPress={() => {
-                              handleInputChange("branch", branch.id);
+                              handleInputChange('branch', branch.id);
                               setBranchMenuVisible(false);
                             }}
                             title={branch.address}
@@ -274,10 +295,14 @@ export default function EditComboDialog({ visible, combo: initialCombo, onClose 
                 <DataTable>
                   <DataTable.Header>
                     <DataTable.Title>Menu Item</DataTable.Title>
-                    <DataTable.Title style={isSmallScreen && { paddingLeft: 6 }}>
+                    <DataTable.Title
+                      style={isSmallScreen && { paddingLeft: 6 }}
+                    >
                       Qty
                     </DataTable.Title>
-                    <DataTable.Title style={{ paddingLeft: 0 }}>Half?</DataTable.Title>
+                    <DataTable.Title style={{ paddingLeft: 0 }}>
+                      Half?
+                    </DataTable.Title>
                     <DataTable.Title style={{ paddingLeft: 0 }}>
                       Actions
                     </DataTable.Title>
@@ -296,25 +321,35 @@ export default function EditComboDialog({ visible, combo: initialCombo, onClose 
                                 mode="outlined"
                                 style={styles.dropdownButton}
                                 labelStyle={{
-                                  color: "#333",
+                                  color: '#333',
                                   fontSize: 14,
-                                  width: "100%",
-                                  textAlign: "left",
+                                  width: '100%',
+                                  textAlign: 'left',
                                 }}
                                 onPress={() => toggleMenuItemMenu(index, true)}
                                 contentStyle={{
-                                  flexDirection: "row-reverse",
-                                  width: "100%",
+                                  flexDirection: 'row-reverse',
+                                  width: '100%',
                                 }}
-                                icon={menuItemMenusVisible[index] ? "chevron-up" : "chevron-down"}
+                                icon={
+                                  menuItemMenusVisible[index]
+                                    ? 'chevron-up'
+                                    : 'chevron-down'
+                                }
                               >
-                                {typeof item.menu_item === "string" && item.menu_item
-                                  ? menuItems?.find((m: any) => m.id === item.menu_item)?.name
-                                  : "Select Menu Item"}
+                                {typeof item.menu_item === 'string' &&
+                                item.menu_item
+                                  ? menuItems?.find(
+                                      (m: any) => m.id === item.menu_item
+                                    )?.name
+                                  : 'Select Menu Item'}
                               </Button>
                             }
-                            contentStyle={[styles.menuContent, { width: "100%" }]}
-                            style={{ alignSelf: "stretch" }}
+                            contentStyle={[
+                              styles.menuContent,
+                              { width: '100%' },
+                            ]}
+                            style={{ alignSelf: 'stretch' }}
                             anchorPosition="bottom"
                           >
                             {menuItems && menuItems.length > 0 ? (
@@ -322,7 +357,11 @@ export default function EditComboDialog({ visible, combo: initialCombo, onClose 
                                 <Menu.Item
                                   key={menuItem.id}
                                   onPress={() => {
-                                    handleItemChange(index, "menu_item", menuItem.id);
+                                    handleItemChange(
+                                      index,
+                                      'menu_item',
+                                      menuItem.id
+                                    );
                                     toggleMenuItemMenu(index, false);
                                   }}
                                   title={menuItem.name}
@@ -330,7 +369,10 @@ export default function EditComboDialog({ visible, combo: initialCombo, onClose 
                                 />
                               ))
                             ) : (
-                              <Menu.Item title="No menu items available" disabled />
+                              <Menu.Item
+                                title="No menu items available"
+                                disabled
+                              />
                             )}
                           </Menu>
                         </View>
@@ -347,8 +389,11 @@ export default function EditComboDialog({ visible, combo: initialCombo, onClose 
                           keyboardType="numeric"
                           value={item.quantity.toString()}
                           onChangeText={(text) => {
-                            const sanitizedValue = text.replace(/[^0-9\-,\.]/g, "");
-                            handleItemChange(index, "quantity", sanitizedValue);
+                            const sanitizedValue = text.replace(
+                              /[^0-9\-,\.]/g,
+                              ''
+                            );
+                            handleItemChange(index, 'quantity', sanitizedValue);
                           }}
                           style={styles.quantityInput}
                           error={!!errors[`quantity_${index}`]}
@@ -363,9 +408,9 @@ export default function EditComboDialog({ visible, combo: initialCombo, onClose 
 
                       <DataTable.Cell style={{ flex: 0.7, paddingLeft: 0 }}>
                         <Checkbox
-                          status={item.is_half ? "checked" : "unchecked"}
+                          status={item.is_half ? 'checked' : 'unchecked'}
                           onPress={() =>
-                            handleItemChange(index, "is_half", !item.is_half)
+                            handleItemChange(index, 'is_half', !item.is_half)
                           }
                         />
                       </DataTable.Cell>
@@ -419,7 +464,7 @@ export default function EditComboDialog({ visible, combo: initialCombo, onClose 
 
 const styles = StyleSheet.create({
   dialog: {
-    backgroundColor: "#fff",
+    backgroundColor: '#fff',
     borderRadius: 12,
     padding: 8,
     maxHeight: '90%',

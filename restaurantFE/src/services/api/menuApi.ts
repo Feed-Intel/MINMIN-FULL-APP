@@ -1,14 +1,16 @@
 import { apiClient } from '@/config/axiosConfig';
 import { asyncHandler } from '@/util/asyncHandler';
 
-export const GetMenus = asyncHandler(async (page?: number | null) => {
-  if (Boolean(page)) {
-    const resp = await apiClient.get(`/menu/?page=${page}`);
+export const GetMenus = asyncHandler(
+  async (params?: string | null, noPage?: boolean) => {
+    if (noPage) {
+      const resp = await apiClient.get(`/menu/?nopage=1`);
+      return resp.data;
+    }
+    const resp = await apiClient.get(`/menu?${params}`);
     return resp.data;
   }
-  const resp = await apiClient.get('/menu/');
-  return resp.data;
-});
+);
 
 export const GetMenu = asyncHandler(async (id: string) => {
   const resp = await apiClient.get(`/menu/${id}/`);
@@ -39,13 +41,8 @@ export const DeleteMenu = asyncHandler(async (id: string) => {
 });
 
 export const GetMenuAvailabilities = asyncHandler(
-  async (next?: string | null) => {
-    if (Boolean(next)) {
-      const page = next?.split('page=')[1];
-      const resp = await apiClient.get(`/menu-availability/?page=${page}`);
-      return resp.data;
-    }
-    const resp = await apiClient.get('/menu-availability/');
+  async (param?: string | null) => {
+    const resp = await apiClient.get(`/menu-availability?${param}`);
     return resp.data;
   }
 );
