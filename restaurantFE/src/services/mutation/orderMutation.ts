@@ -45,7 +45,7 @@ export function useCreateOrder() {
       console.error('Error creating Order:', error);
     },
     onSuccess: () => {
-      //("Order created successfully");
+      queryClient.invalidateQueries({ queryKey: ['orders'] });
     },
     onSettled: async (_: any, error: any) => {
       if (error) {
@@ -97,7 +97,7 @@ export function useDeleteOrder() {
       console.error('Error deleting order:', error);
     },
     onSuccess: () => {
-      //("Order deleted successfully");
+      queryClient.invalidateQueries({ queryKey: ['orders'] });
     },
     onSettled: async (_: any, error: any) => {
       if (error) {

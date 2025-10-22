@@ -54,7 +54,7 @@ export function useCreateDiscount() {
       console.error('Error creating discount:', error);
     },
     onSuccess: () => {
-      //("Discount created successfully");
+      queryClient.invalidateQueries({ queryKey: ['discounts'] });
     },
     onSettled: async (_: any, error: any) => {
       if (error) {
@@ -106,7 +106,7 @@ export function useDeleteDiscount() {
       console.error('Error deleting discount:', error);
     },
     onSuccess: () => {
-      //("Discount deleted successfully");
+      queryClient.invalidateQueries({ queryKey: ['discounts'] });
     },
     onSettled: async (_: any, error: any) => {
       if (error) {
@@ -124,10 +124,10 @@ export function useDeleteDiscount() {
 //     queryKey: ["discountRules"],
 //     queryFn: fetchDiscountRules,
 //   });
-export const useDiscountRules = () =>
+export const useDiscountRules = (page?: number, noPage?: boolean) =>
   useQuery({
     queryKey: ['discountRules'],
-    queryFn: () => fetchDiscountRules(),
+    queryFn: () => fetchDiscountRules(page, noPage),
     staleTime: 0,
   });
 
@@ -164,12 +164,16 @@ export function useCreateDiscountRule(
   onError?: (error: any) => void
 ) {
   const dispatch = useDispatch<AppDispatch>();
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (data: Partial<any>) => {
       dispatch(showLoader());
       return createDiscountRule(data);
     },
-    onSuccess,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['discountRules'] });
+      if (onSuccess) onSuccess;
+    },
     onError,
     onSettled: () => dispatch(hideLoader()),
   });
@@ -206,7 +210,7 @@ export function useDeleteDiscountRule() {
       console.error('Error deleting discountRule:', error);
     },
     onSuccess: () => {
-      //("DiscountRule deleted successfully");
+      queryClient.invalidateQueries({ queryKey: ['discountRules'] });
     },
     onSettled: async (_: any, error: any) => {
       if (error) {
@@ -232,7 +236,7 @@ export function useCreateCoupon() {
       console.error('Error creating discount:', error);
     },
     onSuccess: () => {
-      //("Coupon created successfully");
+      queryClient.invalidateQueries({ queryKey: ['coupons'] });
     },
     onSettled: async (_: any, error: any) => {
       if (error) {
@@ -279,7 +283,7 @@ export function useDeleteCoupon() {
       console.error('Error deleting Coupon:', error);
     },
     onSuccess: () => {
-      //("Coupon deleted successfully");
+      queryClient.invalidateQueries({ queryKey: ['coupons'] });
     },
     onSettled: async (_: any, error: any) => {
       if (error) {

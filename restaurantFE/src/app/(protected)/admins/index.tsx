@@ -442,8 +442,8 @@ function AddAdminModal({ branches, visible, onClose }: AddAdminModalProps) {
               style={{ alignSelf: 'stretch' }} // Make it align with the anchor width
               anchorPosition="bottom"
             >
-              {branches.length > 0 ? (
-                branches.map((b: any) => (
+              {branches?.length > 0 ? (
+                branches?.map((b: any) => (
                   <Menu.Item
                     key={b.id}
                     onPress={() => {
@@ -637,8 +637,8 @@ function UpdateAdminModal({
               style={{ alignSelf: 'stretch' }} // Make it align with the anchor width
               anchorPosition="bottom"
             >
-              {branches.length > 0 ? (
-                branches.map((b: any) => (
+              {branches?.length > 0 ? (
+                branches?.map((b: any) => (
                   <Menu.Item
                     key={b.id}
                     onPress={() => {

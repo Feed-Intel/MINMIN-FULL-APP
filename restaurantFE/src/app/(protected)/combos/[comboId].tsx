@@ -256,8 +256,9 @@ export default function EditComboDialog({
                           }
                         >
                           {combo.branch
-                            ? branches?.find((b: any) => b.id === combo.branch)
-                                ?.address
+                            ? branches?.results.find(
+                                (b: any) => b.id === combo.branch
+                              )?.address
                             : 'Select Branch'}
                         </Button>
                       }

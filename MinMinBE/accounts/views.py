@@ -12,8 +12,6 @@ from django.utils.timezone import now, timedelta
 from django.core.mail import send_mail
 import logging
 from hashlib import sha256
-from rest_framework.decorators import action
-from django.core.cache import cache
 from accounts.models import User
 from minminbe.settings import EMAIL_HOST_USER, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET
 from django_filters.rest_framework import DjangoFilterBackend
@@ -30,6 +28,7 @@ from allauth.socialaccount.providers.facebook.provider import FacebookProvider
 from google.oauth2 import id_token
 from google.auth.transport import requests
 import random
+from .utils import generate_and_send_otp_verification
 
 
 # Utility function for token generation
@@ -55,47 +54,26 @@ class RegisterView(APIView):
 
         email = (serializer.validated_data.get('email') or "").lower().strip()
 
-        # Check if a user with the same email already exists
         if User.objects.filter(email=email).exists():
             return Response(
                 {"error": "A user with this email already exists."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        # Create the user first (without OTP), then try to email OTP.
-        # If email sending fails, roll back user creation so the UI gets a clear error
-        # and we don't leave a half-registered account.
-        user = serializer.save()
+        user = serializer.save(is_active=False, skip_otp_signal=True) 
 
-        # Generate OTP (do not persist until email succeeds)
-        otp = str(random.randint(100000, 999999))
-
-        try:
-            send_mail(
-                subject="Your OTP for Registration",
-                message=f"Your OTP is {otp}. It is valid for 10 minutes.",
-                from_email=EMAIL_HOST_USER,
-                recipient_list=[email],
-                fail_silently=False,
-            )
-        except Exception as e:
-            # Roll back created user if we cannot deliver the OTP
+        otp_sent, error_msg = generate_and_send_otp_verification(user)
+        
+        if not otp_sent:
             try:
                 user.delete()
             except Exception:
-                pass
-            logging.getLogger(__name__).warning(
-                f"Failed to send registration OTP email to {email}: {e}"
-            )
+                pass 
+            
             return Response(
-                {"error": "Could not send OTP email. Please try again later."},
+                {"error": error_msg or "Could not send OTP email. Please try again later."},
                 status=status.HTTP_502_BAD_GATEWAY,
             )
-
-        # Email sent OK — persist hashed OTP and expiry
-        user.otp = sha256(otp.encode()).hexdigest()
-        user.otp_expiry = now() + timedelta(minutes=10)
-        user.save(update_fields=["otp", "otp_expiry"])
 
         return Response(
             {"message": "Registration successful. Please verify your OTP."},
@@ -185,7 +163,7 @@ class LoginView(TokenObtainPairView):
                 {"error": "Your Restaurant is not Registered. Please contact your administrator."},
                 status=status.HTTP_403_FORBIDDEN,
             )
-        if user.user_type == 'branch' and user.branch is None:
+        if user.user_type in ['branch','restaurant'] and user.branch is None:
             return Response(
                 {"error": "Your Branch is not set. Please contact your administrator."},
                 status=status.HTTP_403_FORBIDDEN,

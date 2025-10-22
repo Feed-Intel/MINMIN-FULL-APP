@@ -1,4 +1,4 @@
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   GetBranchAdmins,
   CreateBranchAdmin,
@@ -25,27 +25,40 @@ export const useGetBranchAdmin = (adminId: string) =>
 export const useCreateBranchAdmin = (
   onSuccess?: (data: any) => void,
   onError?: (error: any) => void
-) =>
-  useMutation({
+) => {
+  const queryClient = useQueryClient();
+  return useMutation({
     mutationKey: ['createBranchAdmin'],
     mutationFn: CreateBranchAdmin,
-    onSuccess: onSuccess,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['branchAdmins'] });
+    },
     onError,
   });
+};
 
 export const useUpdateBranchAdmin = (
   onSuccess?: (data: any) => void,
   onError?: (error: any) => void
-) =>
-  useMutation({
+) => {
+  const queryClient = useQueryClient();
+  return useMutation({
     mutationKey: ['updateBranchAdmin'],
     mutationFn: UpdateBranchAdmin,
-    onSuccess: onSuccess,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['branchAdmins'] });
+    },
     onError,
   });
+};
 
-export const useDeleteBranchAdmin = () =>
-  useMutation({
+export const useDeleteBranchAdmin = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
     mutationKey: ['deleteBranchAdmin'],
     mutationFn: DeleteBranchAdmin,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['branchAdmins'] });
+    },
   });
+};

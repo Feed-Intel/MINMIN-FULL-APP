@@ -50,10 +50,16 @@ export const updateDiscount = asyncHandler(
 //   return resp.data.results || [];
 // });
 
-export const fetchDiscountRules = asyncHandler(async (): Promise<any[]> => {
-  const resp = await apiClient.get(`/discount-rule/`);
-  return resp.data.results || [];
-});
+export const fetchDiscountRules = asyncHandler(
+  async (page?: number, noPage?: boolean): Promise<any[]> => {
+    if (noPage) {
+      const resp = await apiClient.get(`/discount-rule/?nopage=1`);
+      return resp.data || [];
+    }
+    const resp = await apiClient.get(`/discount-rule/?page=${page || 1}`);
+    return resp.data.results || [];
+  }
+);
 
 export const fetchDiscountRule = asyncHandler(
   async (id: string): Promise<any[]> => {

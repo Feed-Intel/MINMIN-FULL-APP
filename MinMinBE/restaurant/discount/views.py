@@ -35,17 +35,29 @@ class DiscountViewSet(CachedModelViewSet):
     def get_queryset(self):
         user = self.request.user
         if user.user_type == 'admin':
-            return Discount.objects.prefetch_related('branches', 'tenant')
+            return Discount.objects.prefetch_related('branches', 'tenant').distinct()
 
         if user.user_type == 'restaurant':
             tenant = get_user_tenant(user)
-            return Discount.objects.filter(tenant=tenant).prefetch_related('branches', 'tenant') if tenant else Discount.objects.none()
+            return Discount.objects.filter(tenant=tenant).prefetch_related('branches', 'tenant').distinct() if tenant else Discount.objects.none()
 
         if user.user_type == 'branch':
             branch = get_user_branch(user)
-            return Discount.objects.filter(branch=branch).prefetch_related('branches', 'tenant') if branch else Discount.objects.none()
+            return Discount.objects.filter(branch=branch).prefetch_related('branches', 'tenant').distinct() if branch else Discount.objects.none()
 
         return Discount.objects.none()
+    
+    def get_paginated_response(self, data):
+        # If 'nopage' query param is set, return unpaginated data
+        if self.request.query_params.get('nopage') == '1':
+            return Response(data)
+        return super().get_paginated_response(data)
+
+    def paginate_queryset(self, queryset):
+        # If 'nopage' query param is set, skip pagination
+        if self.request.query_params.get('nopage') == '1':
+            return None
+        return super().paginate_queryset(queryset)
     @action(detail=False, methods=['post'],url_path='apply-discount')
     def apply_discounts_to_order(self, request):
         """

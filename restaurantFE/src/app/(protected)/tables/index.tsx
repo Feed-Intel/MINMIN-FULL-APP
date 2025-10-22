@@ -64,8 +64,8 @@ const ManageTables: React.FC = () => {
   const { data: branches } = useGetBranches(undefined, true);
   const { isRestaurant, isBranch, branchId } = useRestaurantIdentity();
   const [tableStates, setTableStates] = useState<TableStates>({});
-  const [selectedBranch, setSelectedBranch] = useState<string | null>(
-    isBranch ? branchId ?? null : null
+  const [selectedBranch, setSelectedBranch] = useState<string | undefined>(
+    isBranch ? branchId ?? undefined : undefined
   );
   const [searchTerm, setSearchTerm] = useState<string>();
   const updateTable = useUpdateTable();
@@ -74,7 +74,7 @@ const ManageTables: React.FC = () => {
   const queryParamsTable = useMemo(() => {
     return {
       page: currentPage,
-      branch: selectedBranch,
+      branch: selectedBranch === 'all' ? undefined : selectedBranch,
       search: searchTerm,
     };
   }, [currentPage, selectedBranch, searchTerm]);

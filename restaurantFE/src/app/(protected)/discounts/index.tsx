@@ -35,7 +35,7 @@ const ManageDiscounts: React.FC = () => {
   const { width }: { width: number } = useWindowDimensions();
   const [currentPage, setCurrentPage] = useState<number>(1);
   const { data: branches } = useGetBranches(undefined, true);
-  const { data: discountRules = [] } = useDiscountRules();
+  const { data: discountRules = [] } = useDiscountRules(undefined, true);
   const { mutateAsync: discountDelete } = useDeleteDiscount();
   const { mutateAsync: couponDelete } = useDeleteCoupon();
   const queryClient = useQueryClient();

@@ -417,7 +417,7 @@ jobs:
             # API application env
             sudo bash -c "echo 'DJANGO_SECRET_KEY=${{ secrets.DJANGO_SECRET_KEY }}' > /opt/minmin/api.env"
             sudo bash -c "echo 'DJANGO_SETTINGS_MODULE=minminbe.settings' >> /opt/minmin/api.env"
-            sudo bash -c "echo 'DEBUG=True' >> /opt/minmin/api.env"
+            sudo bash -c "echo 'DEBUG=False' >> /opt/minmin/api.env"
             sudo bash -c "echo 'GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID || '' }}' >> /opt/minmin/api.env"
             sudo bash -c "echo 'GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET || '' }}' >> /opt/minmin/api.env"
             sudo bash -c "echo 'ALLOWED_HOSTS=${{ vars.API_DOMAIN }},${{ vars.CUSTOMER_DOMAIN }},${{ vars.RESTAURANT_DOMAIN }},localhost,127.0.0.1,stg.customer.feed-intel.com,stg.restaurant.feed-intel.com,stg.api.feed-intel.com' >> /opt/minmin/api.env"

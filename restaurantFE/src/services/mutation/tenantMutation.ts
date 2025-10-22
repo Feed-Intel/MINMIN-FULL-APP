@@ -1,20 +1,20 @@
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   GetDashboardData,
   GetTenantProfile,
   GetTopMenuItems,
   UpdateTenantProfile,
   UpdateTenantProfileImage,
-} from "../api/tenantApi";
+} from '../api/tenantApi';
 
 export const useDashboardData = (params?: {
-  period?: "today" | "month" | "year" | "custom";
+  period?: 'today' | 'month' | 'year' | 'custom';
   start_date?: string;
   end_date?: string;
   branch_id?: string;
 }) => {
   return useQuery({
-    queryKey: ["dashboard", params],
+    queryKey: ['dashboard', params],
     queryFn: () => GetDashboardData(params),
     staleTime: 1000 * 60 * 5, // 5 minutes cache
   });
@@ -26,7 +26,7 @@ export const useTopMenuItems = (params?: {
   branch_id?: string;
 }) => {
   return useQuery({
-    queryKey: ["topMenuItems", params],
+    queryKey: ['topMenuItems', params],
     queryFn: () => GetTopMenuItems(params),
     staleTime: 1000 * 60 * 5, // 5 minutes cache
   });
@@ -34,18 +34,28 @@ export const useTopMenuItems = (params?: {
 
 export const useGetTenantProfile = (id?: string) =>
   useQuery({
-    queryKey: ["tenantProfile", id],
+    queryKey: ['tenantProfile', id],
     queryFn: () => GetTenantProfile(id!),
     enabled: Boolean(id),
     staleTime: 0,
   });
 
-export const useUpdateTenantProfile = () =>
-  useMutation({
+export const useUpdateTenantProfile = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
     mutationFn: UpdateTenantProfile,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tenantProfile'] });
+    },
   });
+};
 
-export const useUpdateTenantProfileImage = () =>
-  useMutation({
+export const useUpdateTenantProfileImage = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
     mutationFn: UpdateTenantProfileImage,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tenantProfile'] });
+    },
   });
+};

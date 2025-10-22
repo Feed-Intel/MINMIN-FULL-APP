@@ -89,6 +89,9 @@ export function useCreateTable() {
     onError: (error: any) => {
       console.error('Error creating table:', error);
     },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tables'] });
+    },
     onSettled: async (_: any, error: any) => {
       if (error) {
         console.error(error);
@@ -109,7 +112,7 @@ export function useUpdateTable() {
       console.error('Error creating table:', error);
     },
     onSuccess: () => {
-      //("Table created successfully");
+      queryClient.invalidateQueries({ queryKey: ['tables'] });
     },
     onSettled: async (_: any, error: any) => {
       if (error) {
@@ -134,7 +137,7 @@ export function useDeleteTable() {
       console.error('Error deleting table:', error);
     },
     onSuccess: () => {
-      //("Table deleted successfully");
+      queryClient.invalidateQueries({ queryKey: ['tables'] });
     },
     onSettled: async (_: any, error: any) => {
       dispatch(hideLoader());

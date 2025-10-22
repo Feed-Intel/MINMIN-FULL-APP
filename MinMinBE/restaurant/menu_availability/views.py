@@ -61,7 +61,6 @@ class MenuAvailabilityView(CachedModelViewSet):
             # --- Customer-specific QuerySet Logic with Caching ---
             user_location_str = redis_client.get(str(user.id)) # Ensure user.id is stringified here if it's a UUID
 
-            # Build a comprehensive cache key based on dynamic parameters
             cache_key_parts = [
                 f"menu_availability_qs_customer:{str(user.id)}", # Ensure user.id is a string
                 f"loc:{user_location_str or 'none'}",
@@ -73,8 +72,6 @@ class MenuAvailabilityView(CachedModelViewSet):
             filter_params.pop('page_size', None)
             
             if filter_params:
-                # IMPORTANT: Custom JSON Encoder to handle UUIDs within filter_params if any filter value is a UUID
-                # This ensures any UUIDs in your query parameters (e.g., /?branch_id=uuid_value) are handled
                 class UUIDEncoder(json.JSONEncoder):
                     def default(self, obj):
                         if isinstance(obj, uuid.UUID):
@@ -92,10 +89,6 @@ class MenuAvailabilityView(CachedModelViewSet):
 
             if cached_pks_json:
                 cached_pks = json.loads(cached_pks_json)
-                # If your PKs are UUIDs, you might need to convert them back from strings to UUID objects
-                # when filtering, although Django's ORM often handles string UUIDs correctly for `pk__in`.
-                # If it errors, uncomment this line:
-                # cached_pks = [uuid.UUID(pk_str) for pk_str in cached_pks]
                 
                 queryset = base_queryset.filter(pk__in=cached_pks).select_related(
                     'menu_item', 'branch', 'branch__tenant', 'branch__tenant__admin'
@@ -156,7 +149,8 @@ class MenuAvailabilityView(CachedModelViewSet):
             elif user.user_type == 'restaurant':
                 tenant = get_user_tenant(user)
                 if tenant:
-                    queryset = base_queryset.filter(branch__tenant=tenant)
+                    tenant_availabilities = base_queryset.filter(branch__tenant=tenant)
+                    queryset = tenant_availabilities.order_by('menu_item', '-created_at').distinct('menu_item')
             elif user.user_type == 'branch':
                 branch = get_user_branch(user)
                 if branch:
