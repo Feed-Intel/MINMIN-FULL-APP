@@ -67,7 +67,7 @@ export default function AddComboDialog({
 
   const defaultBranchId = useMemo(() => {
     if (isBranch && branchId) return branchId;
-    return branches?.[0]?.id ?? '';
+    return branches?.results?.[0]?.id ?? '';
   }, [isBranch, branchId, branches]);
 
   useEffect(() => {
@@ -245,7 +245,7 @@ export default function AddComboDialog({
                             }
                           >
                             {combo.branch
-                              ? branches?.find(
+                              ? branches?.results.find(
                                   (b: any) => b.id === combo.branch
                                 )?.address
                               : 'Select Branch'}
@@ -255,8 +255,8 @@ export default function AddComboDialog({
                         style={{ alignSelf: 'stretch' }}
                         anchorPosition="bottom"
                       >
-                        {branches && branches.length > 0 ? (
-                          branches.map((branch: any) => (
+                        {branches?.results && branches.results.length > 0 ? (
+                          branches.results.map((branch: any) => (
                             <Menu.Item
                               key={branch.id}
                               onPress={() => {
@@ -389,7 +389,7 @@ export default function AddComboDialog({
                             >
                               {typeof item.menu_item === 'string' &&
                               item.menu_item
-                                ? menuItems?.find(
+                                ? menuItems?.results.find(
                                     (m: any) => m.id === item.menu_item
                                   )?.name
                                 : 'Menu Item'}
@@ -399,8 +399,8 @@ export default function AddComboDialog({
                           style={{ alignSelf: 'flex-start' }}
                           anchorPosition="bottom"
                         >
-                          {menuItems && menuItems.length > 0 ? (
-                            menuItems.map((menuItem: any) => (
+                          {menuItems && menuItems.results.length > 0 ? (
+                            menuItems.results.map((menuItem: any) => (
                               <Menu.Item
                                 key={menuItem.id}
                                 onPress={() => {

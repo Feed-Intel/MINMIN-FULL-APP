@@ -32,7 +32,7 @@ export const useGetPostById = (id: any) => {
 
 export const useAddPost = () => {
   const queryClient = useQueryClient();
-  useMutation({
+  return useMutation({
     mutationFn: addPost,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['posts'] });

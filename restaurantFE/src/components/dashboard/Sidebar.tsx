@@ -49,6 +49,7 @@ const Sidebar: React.FC = () => {
       icon: 'map-marker-outline',
     },
     { name: 'Tables', route: '/(protected)/tables', icon: 'table-chair' },
+    { name: 'Loyalty', route: '/(protected)/loyalty', icon: 'star-outline' },
     {
       name: 'Administration',
       route: '/(protected)/admins',
