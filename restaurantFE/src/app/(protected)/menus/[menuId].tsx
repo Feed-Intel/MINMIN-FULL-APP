@@ -144,6 +144,24 @@ export default function EditMenuDialog({
       return;
     }
 
+    if (!menuData.description) {
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Please provide a description',
+      });
+      return;
+    }
+
+    if (!menuData.price) {
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Please provide a price',
+      });
+      return;
+    }
+
     if (menuData.categories.length === 0) {
       Toast.show({
         type: 'error',

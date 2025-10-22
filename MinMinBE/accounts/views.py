@@ -69,33 +69,33 @@ class RegisterView(APIView):
 
         # Generate OTP (do not persist until email succeeds)
         otp = str(random.randint(100000, 999999))
-
-        try:
-            send_mail(
-                subject="Your OTP for Registration",
-                message=f"Your OTP is {otp}. It is valid for 10 minutes.",
-                from_email=EMAIL_HOST_USER,
-                recipient_list=[email],
-                fail_silently=False,
-            )
-        except Exception as e:
-            # Roll back created user if we cannot deliver the OTP
+        if user.user_type == 'customer':
             try:
-                user.delete()
-            except Exception:
-                pass
-            logging.getLogger(__name__).warning(
-                f"Failed to send registration OTP email to {email}: {e}"
-            )
-            return Response(
-                {"error": "Could not send OTP email. Please try again later."},
-                status=status.HTTP_502_BAD_GATEWAY,
-            )
+                send_mail(
+                    subject="Your OTP for Registration",
+                    message=f"Your OTP is {otp}. It is valid for 10 minutes.",
+                    from_email=EMAIL_HOST_USER,
+                    recipient_list=[email],
+                    fail_silently=False,
+                )
+            except Exception as e:
+                # Roll back created user if we cannot deliver the OTP
+                try:
+                    user.delete()
+                except Exception:
+                    pass
+                logging.getLogger(__name__).warning(
+                    f"Failed to send registration OTP email to {email}: {e}"
+                )
+                return Response(
+                    {"error": "Could not send OTP email. Please try again later."},
+                    status=status.HTTP_502_BAD_GATEWAY,
+                )
 
-        # Email sent OK — persist hashed OTP and expiry
-        user.otp = sha256(otp.encode()).hexdigest()
-        user.otp_expiry = now() + timedelta(minutes=10)
-        user.save(update_fields=["otp", "otp_expiry"])
+            # Email sent OK — persist hashed OTP and expiry
+            user.otp = sha256(otp.encode()).hexdigest()
+            user.otp_expiry = now() + timedelta(minutes=10)
+            user.save(update_fields=["otp", "otp_expiry"])
 
         return Response(
             {"message": "Registration successful. Please verify your OTP."},

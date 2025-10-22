@@ -34,8 +34,9 @@ const LoginScreen = () => {
       branch?: string;
     }>(data.access_token);
     const isBranchUser = decoded.user_type === 'branch';
+    const isRestaurantUser = decoded.user_type === 'restaurant';
 
-    if (isBranchUser && !decoded?.branch) {
+    if ((isBranchUser || isRestaurantUser) && !decoded?.branch) {
       Toast.show({
         type: 'error',
         text1: 'Error',
@@ -45,7 +46,7 @@ const LoginScreen = () => {
       return;
     }
 
-    if (decoded.user_type === 'restaurant' && !decoded?.tenant) {
+    if (isRestaurantUser && !decoded?.tenant) {
       Toast.show({
         type: 'error',
         text1: 'Error',

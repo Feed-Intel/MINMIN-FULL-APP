@@ -38,6 +38,7 @@ export const useCreateBranch = (
   onError?: (error?: any) => void
 ) => {
   const dispatch = useDispatch<AppDispatch>();
+  const queryClient = useQueryClient();
   return useMutation({
     mutationKey: ['createBranch'],
     mutationFn: (data: any) => {
@@ -45,6 +46,7 @@ export const useCreateBranch = (
       return CreateBranch(data);
     },
     onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['branches'] });
       if (onSuccess) onSuccess(data);
     },
     onError: (error) => {
@@ -60,7 +62,7 @@ export const useUpdateBranch = (
   onError?: (error?: any) => void
 ) => {
   const dispatch = useDispatch<AppDispatch>();
-
+  const queryClient = useQueryClient();
   return useMutation({
     mutationKey: ['updateBranch'],
     mutationFn: (data: any) => {
@@ -68,6 +70,7 @@ export const useUpdateBranch = (
       return UpdateBranch(data);
     },
     onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['branches'] });
       if (onSuccess) onSuccess(data);
     },
     onError: (error) => {
@@ -84,7 +87,6 @@ export const useDeleteBranch = (
 ) => {
   const queryClient = useQueryClient();
   const dispatch = useDispatch<AppDispatch>();
-
   return useMutation({
     mutationKey: ['deleteBranch'],
     mutationFn: (data: any) => {
@@ -92,8 +94,8 @@ export const useDeleteBranch = (
       return DeleteBranch(data);
     },
     onSuccess: (data) => {
-      if (onSuccess) onSuccess(data);
       queryClient.invalidateQueries({ queryKey: ['branches'] });
+      if (onSuccess) onSuccess(data);
     },
     onError: (error) => {
       dispatch(hideLoader());

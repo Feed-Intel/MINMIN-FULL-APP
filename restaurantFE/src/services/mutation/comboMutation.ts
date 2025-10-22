@@ -41,7 +41,7 @@ export function useCreateCombo(
   onError?: (error: any) => void
 ) {
   const dispatch = useDispatch<AppDispatch>();
-
+  const queryClient = useQueryClient();
   return useMutation({
     mutationKey: ['create-combo'],
     mutationFn: (data: any) => {
@@ -49,6 +49,7 @@ export function useCreateCombo(
       return CreateCombo(data);
     },
     onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['combos'] });
       if (onSuccess) onSuccess(data);
     },
     onError: (error) => {
@@ -64,13 +65,14 @@ export function useUpdateCombo(
   onError?: (error: any) => void
 ) {
   const dispatch = useDispatch<AppDispatch>();
-
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (data: any) => {
       dispatch(showLoader());
       return UpdateCombo(data);
     },
     onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['combos'] });
       if (onSuccess) onSuccess(data);
     },
     onError: (error) => {
@@ -94,8 +96,8 @@ export function useDeleteCombo(
       return DeleteCombo(data);
     },
     onSuccess: (data) => {
-      if (onSuccess) onSuccess(data);
       queryClient.invalidateQueries({ queryKey: ['combos'] });
+      if (onSuccess) onSuccess(data);
     },
     onError: (error) => {
       dispatch(hideLoader());

@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   addPost,
   deletePost,
@@ -30,18 +30,33 @@ export const useGetPostById = (id: any) => {
   });
 };
 
-export const useAddPost = () =>
-  useMutation({
+export const useAddPost = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
     mutationFn: addPost,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['posts'] });
+    },
   });
+};
 
-export const useUpdatePost = (id: string) =>
+export const useUpdatePost = (id: string) => {
+  const queryClient = useQueryClient();
   useMutation({
     mutationKey: ['update-post', id],
     mutationFn: updatePost.bind(null, id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['posts'] });
+    },
   });
+};
 
-export const useDeletePost = () =>
-  useMutation({
+export const useDeletePost = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
     mutationFn: deletePost,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['posts'] });
+    },
   });
+};

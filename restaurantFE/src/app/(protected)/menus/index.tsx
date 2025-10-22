@@ -19,17 +19,13 @@ import {
   ActivityIndicator,
   Snackbar,
   Paragraph,
-  Menu,
 } from 'react-native-paper';
-import { router } from 'expo-router';
 import {
   useDeleteMenu,
   useGetMenus,
-  useUpdateMenuAvailability,
   useGetMenuAvailabilities,
   useAddRelatedMenuItem,
   useGetRelatedMenus,
-  useUpdateRelatedMenuItem,
 } from '@/services/mutation/menuMutation';
 import { useQueryClient } from '@tanstack/react-query';
 import { useDispatch } from 'react-redux';
@@ -406,7 +402,7 @@ export default function Menus() {
                       <Button
                         mode="text"
                         onPress={() => {
-                          setSelectedItem(menu);
+                          setSelectedItem(menu.menu_item);
                           setShowEditMenuDialog(true);
                         }}
                         icon="pencil-outline"
@@ -417,7 +413,7 @@ export default function Menus() {
                       <Button
                         mode="text"
                         onPress={() => {
-                          setMenuID(menu.id!);
+                          setMenuID(menu.menu_item.id!);
                           setShowDialog(true);
                         }}
                         contentStyle={styles.deleteButtonContent}

@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useDispatch } from 'react-redux';
 import {
   CreateMenu,
@@ -77,7 +77,7 @@ export const useCreateMenu = (
   onError?: (error: any) => void
 ) => {
   const dispatch = useDispatch<AppDispatch>();
-
+  const queryClient = useQueryClient();
   return useMutation({
     mutationKey: ['createMenu'],
     mutationFn: (data: any) => {
@@ -85,6 +85,7 @@ export const useCreateMenu = (
       return CreateMenu(data);
     },
     onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['menus'] });
       if (onSuccess) onSuccess(data);
     },
     onError: (error) => {
@@ -97,11 +98,14 @@ export const useCreateMenu = (
 
 export const useUpdateMenu = (id: string) => {
   const dispatch = useDispatch<AppDispatch>();
-
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (data: FormData) => {
       dispatch(showLoader());
       return UpdateMenu(id, data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['menus'] });
     },
     onError: () => dispatch(hideLoader()),
     onSettled: () => dispatch(hideLoader()),
@@ -110,12 +114,15 @@ export const useUpdateMenu = (id: string) => {
 
 export const useDeleteRelatedMenu = () => {
   const dispatch = useDispatch<AppDispatch>();
-
+  const queryClient = useQueryClient();
   return useMutation({
     mutationKey: ['deleteMenu'],
     mutationFn: (data: any) => {
       dispatch(showLoader());
       return DeleteRelatedItem(data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['relatedMenus'] });
     },
     onError: () => dispatch(hideLoader()),
     onSettled: () => dispatch(hideLoader()),
@@ -134,13 +141,14 @@ export const useUpdateMenuAvailability = (
   onError?: (error: any) => void
 ) => {
   const dispatch = useDispatch<AppDispatch>();
-
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (data: any) => {
       dispatch(showLoader());
       return UpdateMenuAvailability(data);
     },
     onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['menuAvailability'] });
       if (onSuccess) onSuccess(data);
     },
     onError: (error) => {
@@ -156,7 +164,7 @@ export const useAddRelatedMenuItem = (
   onError?: (error: any) => void
 ) => {
   const dispatch = useDispatch<AppDispatch>();
-
+  const queryClient = useQueryClient();
   return useMutation({
     mutationKey: ['addRelatedMenuItem'],
     mutationFn: (data: any) => {
@@ -164,6 +172,7 @@ export const useAddRelatedMenuItem = (
       return CreateRelatedItem(data);
     },
     onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['relatedMenus'] });
       if (onSuccess) onSuccess(data);
     },
     onError: (error) => {
@@ -179,7 +188,7 @@ export const useUpdateRelatedMenuItem = (
   onError?: (error: any) => void
 ) => {
   const dispatch = useDispatch<AppDispatch>();
-
+  const queryClient = useQueryClient();
   return useMutation({
     mutationKey: ['updateRelatedMenuItem'],
     mutationFn: (data: any) => {
@@ -187,6 +196,7 @@ export const useUpdateRelatedMenuItem = (
       return UpdateRelatedItem(data);
     },
     onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['relatedMenus'] });
       if (onSuccess) onSuccess(data);
     },
     onError: (error) => {
@@ -199,12 +209,15 @@ export const useUpdateRelatedMenuItem = (
 
 export const useDeleteMenu = () => {
   const dispatch = useDispatch<AppDispatch>();
-
+  const queryClient = useQueryClient();
   return useMutation({
     mutationKey: ['deleteMenu'],
     mutationFn: (data: any) => {
       dispatch(showLoader());
       return DeleteMenu(data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['menus'] });
     },
     onError: () => dispatch(hideLoader()),
     onSettled: () => dispatch(hideLoader()),
