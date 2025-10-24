@@ -24,15 +24,24 @@ export const useOrders = (params?: OrderQueryParams) =>
       });
       return fetchOrders(searchParams.toString());
     },
+    gcTime: 0,
     staleTime: 0,
-    refetchInterval: 15000,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
+    refetchInterval: 60000,
   });
 
 export const useGetOrder = (id: string) =>
   useQuery<Order>({
     queryKey: ['order', id],
     queryFn: () => fetchOrder(id),
+    gcTime: 0,
     staleTime: 0,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
+    refetchInterval: 60000,
   });
 
 export function useCreateOrder() {
@@ -46,6 +55,10 @@ export function useCreateOrder() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['orders'] });
+      queryClient.refetchQueries({
+        queryKey: ['orders'],
+        type: 'active',
+      });
     },
     onSettled: async (_: any, error: any) => {
       if (error) {
@@ -61,7 +74,12 @@ export const useTenant = () =>
   useQuery({
     queryKey: ['tenant'],
     queryFn: fetchTenant,
+    gcTime: 0,
     staleTime: 0,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
+    refetchInterval: 60000,
   });
 
 export function useUpdateOrder() {
@@ -78,6 +96,10 @@ export function useUpdateOrder() {
     onSuccess: () => {
       //("Order updated successfully");
       queryClient.invalidateQueries({ queryKey: ['orders'] });
+      queryClient.refetchQueries({
+        queryKey: ['orders'],
+        type: 'active',
+      });
     },
     onSettled: () => {
       dispatch(hideLoader());
@@ -98,6 +120,10 @@ export function useDeleteOrder() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['orders'] });
+      queryClient.refetchQueries({
+        queryKey: ['orders'],
+        type: 'active',
+      });
     },
     onSettled: async (_: any, error: any) => {
       if (error) {

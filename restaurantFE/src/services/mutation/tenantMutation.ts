@@ -16,7 +16,12 @@ export const useDashboardData = (params?: {
   return useQuery({
     queryKey: ['dashboard', params],
     queryFn: () => GetDashboardData(params),
-    staleTime: 1000 * 60 * 5, // 5 minutes cache
+    gcTime: 0,
+    staleTime: 0,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
+    refetchInterval: 60000,
   });
 };
 
@@ -28,7 +33,12 @@ export const useTopMenuItems = (params?: {
   return useQuery({
     queryKey: ['topMenuItems', params],
     queryFn: () => GetTopMenuItems(params),
-    staleTime: 1000 * 60 * 5, // 5 minutes cache
+    gcTime: 0,
+    staleTime: 0,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
+    refetchInterval: 60000,
   });
 };
 
@@ -37,7 +47,12 @@ export const useGetTenantProfile = (id?: string) =>
     queryKey: ['tenantProfile', id],
     queryFn: () => GetTenantProfile(id!),
     enabled: Boolean(id),
+    gcTime: 0,
     staleTime: 0,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
+    refetchInterval: 60000,
   });
 
 export const useUpdateTenantProfile = () => {
@@ -56,6 +71,10 @@ export const useUpdateTenantProfileImage = () => {
     mutationFn: UpdateTenantProfileImage,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tenantProfile'] });
+      queryClient.refetchQueries({
+        queryKey: ['tenantProfile'],
+        type: 'active',
+      });
     },
   });
 };

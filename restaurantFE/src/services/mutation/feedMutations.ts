@@ -13,6 +13,12 @@ export const useGetPosts = (page?: number | null | undefined) => {
   return useQuery<{ next: string | null; results: Post[]; count: number }>({
     queryKey: ['posts', page],
     queryFn: () => getPosts(page),
+    gcTime: 0,
+    staleTime: 0,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
+    refetchInterval: 60000,
   });
 };
 
@@ -20,6 +26,12 @@ export const useGetPostsStats = (id: string) => {
   return useQuery({
     queryKey: ['postStats', id],
     queryFn: () => getPostStats(id),
+    gcTime: 0,
+    staleTime: 0,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
+    refetchInterval: 60000,
   });
 };
 
@@ -27,6 +39,12 @@ export const useGetPostById = (id: any) => {
   return useQuery({
     queryKey: ['posts', id],
     queryFn: () => getPost(id),
+    gcTime: 0,
+    staleTime: 0,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
+    refetchInterval: 60000,
   });
 };
 
@@ -36,6 +54,10 @@ export const useAddPost = () => {
     mutationFn: addPost,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['posts'] });
+      queryClient.refetchQueries({
+        queryKey: ['posts'],
+        type: 'active',
+      });
     },
   });
 };
@@ -47,6 +69,10 @@ export const useUpdatePost = (id: string) => {
     mutationFn: updatePost.bind(null, id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['posts'] });
+      queryClient.refetchQueries({
+        queryKey: ['posts'],
+        type: 'active',
+      });
     },
   });
 };
@@ -57,6 +83,10 @@ export const useDeletePost = () => {
     mutationFn: deletePost,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['posts'] });
+      queryClient.refetchQueries({
+        queryKey: ['posts'],
+        type: 'active',
+      });
     },
   });
 };

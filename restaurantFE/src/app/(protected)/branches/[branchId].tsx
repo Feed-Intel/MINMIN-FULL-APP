@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from "react";
-import { StyleSheet, View } from "react-native";
+import React, { useState, useEffect } from 'react';
+import { StyleSheet, View } from 'react-native';
 import {
   TextInput,
   Button,
@@ -9,8 +9,10 @@ import {
   HelperText,
   Portal,
   Dialog,
-} from "react-native-paper";
-import { useUpdateBranch } from "@/services/mutation/branchMutation";
+} from 'react-native-paper';
+import { useUpdateBranch } from '@/services/mutation/branchMutation';
+import Toast from 'react-native-toast-message';
+import { id } from 'react-native-paper-dates';
 
 interface EditBranchDialogProps {
   visible: boolean;
@@ -34,52 +36,78 @@ export default function EditBranchDialog({
   useEffect(() => {
     if (branch) {
       setBranchData({
-        ...branch,
-        gps_coordinates: branch.gps_coordinates || "",
+        id: branch.id,
+        address: branch.address,
+        is_default: branch.is_default,
+        lat: branch.location?.lat,
+        lng: branch.location?.lng,
+        gps_coordinates: branch.gps_coordinates || '',
       });
     }
   }, [branch]);
 
   const validateForm = () => {
     const errors: { [key: string]: string } = {};
-
-    if (!branchData?.address?.trim()) {
-      errors.address = "Address is required.";
+    if (!branchData.address.trim()) {
+      errors.address = 'Address is required.';
+      Toast.show({
+        type: 'error',
+        text1: 'Validation Error',
+        text2: 'Address is required.',
+      });
     } else if (branchData.address.trim().length < 3) {
-      errors.address = "Address must be at least 3 characters long.";
+      errors.address = 'Address must be at least 3 characters long.';
+      Toast.show({
+        type: 'error',
+        text1: 'Validation Error',
+        text2: 'Address must be at least 3 characters long.',
+      });
     }
 
-    if (!branchData?.gps_coordinates?.trim()) {
-      errors.gps_coordinates = "GPS Coordinates are required.";
-    } else {
-      const coords = branchData.gps_coordinates.split(",");
-      if (coords.length !== 2) {
-        errors.gps_coordinates =
-          "GPS Coordinates must be in the format: latitude,longitude";
-      } else {
-        const latitude = parseFloat(coords[0].trim());
-        const longitude = parseFloat(coords[1].trim());
-        if (
-          isNaN(latitude) ||
-          isNaN(longitude) ||
-          latitude < -90 ||
-          latitude > 90 ||
-          longitude < -180 ||
-          longitude > 180
-        ) {
-          errors.gps_coordinates =
-            "Invalid GPS Coordinates. Latitude must be between -90 and 90, and Longitude must be between -180 and 180.";
-        }
-      }
+    if (!branchData.lat.trim()) {
+      errors.lat = 'Latitude is required.';
+      Toast.show({
+        type: 'error',
+        text1: 'Validation Error',
+        text2: 'Latitude is required.',
+      });
     }
-
+    if (!branchData.lng.trim()) {
+      errors.lng = 'Longitude is required.';
+      Toast.show({
+        type: 'error',
+        text1: 'Validation Error',
+        text2: 'Longitude is required.',
+      });
+    }
+    const latitude = parseFloat(branchData.lat.trim());
+    const longitude = parseFloat(branchData.lng.trim());
+    if (isNaN(latitude) || latitude < -90 || latitude > 90) {
+      errors.lat = 'Latitude must be between -90 and 90';
+      Toast.show({
+        type: 'error',
+        text1: 'Validation Error',
+        text2: 'Latitude must be between -90 and 90',
+      });
+    }
+    if (isNaN(longitude) || longitude < -180 || longitude > 180) {
+      errors.lng = 'Longitude must be between -180 and 180';
+      Toast.show({
+        type: 'error',
+        text1: 'Validation Error',
+        text2: 'Longitude must be between -180 and 180',
+      });
+    }
     setErrors(errors);
     return Object.keys(errors).length === 0;
   };
 
   const handleUpdate = () => {
     if (validateForm() && branchData) {
-      updateBranch(branchData);
+      updateBranch({
+        ...branchData,
+        gps_coordinates: `${branchData.lat},${branchData.lng}`,
+      });
     }
   };
 
@@ -91,7 +119,7 @@ export default function EditBranchDialog({
           <TextInput
             placeholder="Address"
             mode="outlined"
-            value={branchData?.address || ""}
+            value={branchData?.address || ''}
             onChangeText={(text) =>
               setBranchData((prev: any) => ({ ...prev, address: text }))
             }
@@ -112,37 +140,52 @@ export default function EditBranchDialog({
           </HelperText>
 
           <TextInput
-  placeholder="GPS Coordinates (e.g., 38.83, 8.98)"
-  mode="outlined"
-  value={
-    typeof branchData?.location === "object"
-      ? `${branchData.location.lat}, ${branchData.location.lng}`
-      : branchData?.location || ""
-  }
-  onChangeText={(text) => {
-    const sanitizedValue = text.replace(/[^0-9\-,\.]/g, "");
-    const [lat, lng] = sanitizedValue.split(",").map(val => val.trim());
+            placeholder="Latitude"
+            mode="outlined"
+            value={branchData?.lat}
+            onChangeText={(text) => {
+              const sanitizedValue = text.replace(/[^0-9\-,\.]/g, '');
+              setBranchData({
+                ...branchData,
+                lat: sanitizedValue,
+              });
+            }}
+            style={styles.input}
+            error={!!errors.lat}
+            outlineStyle={{
+              borderColor: '#91B275',
+              borderWidth: 0,
+              borderRadius: 16,
+            }}
+            placeholderTextColor="#202B1866"
+          />
+          <HelperText type="error" visible={!!errors.lat}>
+            {errors.lat}
+          </HelperText>
 
-    // Convert to object if both values are available
-    const location = lat && lng ? { lat, lng } : sanitizedValue;
-
-    setBranchData((prev: any) => ({
-      ...prev,
-      location,
-    }));
-  }}
-  style={styles.input}
-  error={!!errors.location}
-  placeholderTextColor="#202B1866"
-  outlineStyle={{
-    borderColor: '#91B275',
-    borderWidth: 0,
-    borderRadius: 16,
-  }}
-  contentStyle={{
-    color: '#202B1866',
-  }}
-/>
+          <TextInput
+            placeholder="Longitude"
+            mode="outlined"
+            value={branchData?.lng}
+            onChangeText={(text) => {
+              const sanitizedValue = text.replace(/[^0-9\-,\.]/g, '');
+              setBranchData({
+                ...branchData,
+                lng: sanitizedValue,
+              });
+            }}
+            style={styles.input}
+            error={!!errors.lng}
+            outlineStyle={{
+              borderColor: '#91B275',
+              borderWidth: 0,
+              borderRadius: 16,
+            }}
+            placeholderTextColor="#202B1866"
+          />
+          <HelperText type="error" visible={!!errors.lng}>
+            {errors.lng}
+          </HelperText>
 
           <HelperText type="error" visible={!!errors.location}>
             {errors.location}
@@ -156,8 +199,8 @@ export default function EditBranchDialog({
                 setBranchData((prev: any) => ({ ...prev, is_default: value }))
               }
               color="#96B76E"
-              trackColor={{ false: "#96B76E", true: "#96B76E" }}
-              thumbColor={"#fff"}
+              trackColor={{ false: '#96B76E', true: '#96B76E' }}
+              thumbColor={'#fff'}
             />
           </View>
         </Dialog.Content>
@@ -165,7 +208,7 @@ export default function EditBranchDialog({
           {/* <Button onPress={onClose}>Cancel</Button> */}
           <Button
             mode="contained"
-            onPress={() => updateBranch(branchData)}
+            onPress={handleUpdate}
             loading={isPending}
             disabled={isPending}
             style={{
@@ -187,13 +230,13 @@ export default function EditBranchDialog({
         visible={showSnackbar || !!errors.general}
         onDismiss={() => {
           setShowSnackbar(false);
-          setErrors({ ...errors, general: "" });
+          setErrors({ ...errors, general: '' });
         }}
         duration={3000}
       >
         {showSnackbar && !errors.general
-          ? "Branch updated successfully!"
-          : errors.general || "Please fix the errors in the form."}
+          ? 'Branch updated successfully!'
+          : errors.general || 'Please fix the errors in the form.'}
       </Snackbar>
     </Portal>
   );
@@ -201,9 +244,9 @@ export default function EditBranchDialog({
 
 const styles = StyleSheet.create({
   dialog: {
-    backgroundColor: "#EFF4EB",
-    width: "40%",
-    alignSelf: "center",
+    backgroundColor: '#EFF4EB',
+    width: '40%',
+    alignSelf: 'center',
     borderRadius: 12,
   },
   input: {
@@ -214,14 +257,14 @@ const styles = StyleSheet.create({
     borderColor: '#91B275',
   },
   switchContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: 16,
   },
   switchText: {
     fontSize: 17,
-    fontWeight: "400",
-    color: "#40392B",
+    fontWeight: '400',
+    color: '#40392B',
   },
 });

@@ -12,14 +12,24 @@ export const useGetLoyaltySettings = () =>
   useQuery({
     queryKey: ['loyaltySettings'],
     queryFn: getLoyaltySettings,
+    gcTime: 0,
     staleTime: 0,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
+    refetchInterval: 60000,
   });
 
 export const useGetLoyaltyConversionRate = () =>
   useQuery({
     queryKey: ['loyaltyConversionRate'],
     queryFn: getLoyaltyConversionRate,
+    gcTime: 0,
     staleTime: 0,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
+    refetchInterval: 60000,
   });
 
 export const useUpdateLoyaltySettings = () => {
@@ -29,6 +39,15 @@ export const useUpdateLoyaltySettings = () => {
     mutationFn: updateLoyaltySettings,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['loyaltySettings'] });
+      queryClient.refetchQueries({
+        queryKey: ['loyaltySettings'],
+        type: 'active',
+      });
+      queryClient.invalidateQueries({ queryKey: ['loyaltyConversionRate'] });
+      queryClient.refetchQueries({
+        queryKey: ['loyaltyConversionRate'],
+        type: 'active',
+      });
     },
     onMutate: () => dispatch(showLoader()),
     onError: () => dispatch(hideLoader()),

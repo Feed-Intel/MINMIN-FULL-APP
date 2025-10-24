@@ -35,14 +35,24 @@ export const useGetMenus = (params?: MenuQueryParams, noPage?: boolean) =>
       });
       return GetMenus(searchParams.toString(), noPage);
     },
+    gcTime: 0,
     staleTime: 0,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
+    refetchInterval: 60000,
   });
 
 export const useGetMenu = (id: string) =>
   useQuery<MenuType>({
     queryKey: ['menu', id],
     queryFn: () => GetMenu(id),
+    gcTime: 0,
     staleTime: 0,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
+    refetchInterval: 60000,
   });
 
 export const useGetMenuAvailabilities = (param?: MenuQueryParams | null) =>
@@ -58,7 +68,12 @@ export const useGetMenuAvailabilities = (param?: MenuQueryParams | null) =>
         });
         return GetMenuAvailabilities(searchParams.toString());
       },
+      gcTime: 0,
       staleTime: 0,
+      refetchOnMount: true,
+      refetchOnWindowFocus: true,
+      refetchOnReconnect: true,
+      refetchInterval: 60000,
     }
   );
 
@@ -69,7 +84,12 @@ export const useGetRelatedMenus = (
   useQuery<RelatedMenu[]>({
     queryKey: ['relatedMenus'],
     queryFn: () => GetRelatedItems(page, noPage),
+    gcTime: 0,
     staleTime: 0,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
+    refetchInterval: 60000,
   });
 
 export const useCreateMenu = (
@@ -86,6 +106,10 @@ export const useCreateMenu = (
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['menus'] });
+      queryClient.refetchQueries({
+        queryKey: ['menus'],
+        type: 'active',
+      });
       if (onSuccess) onSuccess(data);
     },
     onError: (error) => {
@@ -106,6 +130,10 @@ export const useUpdateMenu = (id: string) => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['menus'] });
+      queryClient.refetchQueries({
+        queryKey: ['menus'],
+        type: 'active',
+      });
     },
     onError: () => dispatch(hideLoader()),
     onSettled: () => dispatch(hideLoader()),
@@ -123,6 +151,10 @@ export const useDeleteRelatedMenu = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['relatedMenus'] });
+      queryClient.refetchQueries({
+        queryKey: ['relatedMenus'],
+        type: 'active',
+      });
     },
     onError: () => dispatch(hideLoader()),
     onSettled: () => dispatch(hideLoader()),
@@ -133,7 +165,12 @@ export const useGetRelatedMenuItem = (id: string) =>
   useQuery<RelatedMenu>({
     queryKey: ['relatedMenu', id],
     queryFn: () => GetRelatedItem(id),
+    gcTime: 0,
     staleTime: 0,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
+    refetchInterval: 60000,
   });
 
 export const useUpdateMenuAvailability = (
@@ -149,6 +186,10 @@ export const useUpdateMenuAvailability = (
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['menuAvailability'] });
+      queryClient.refetchQueries({
+        queryKey: ['menuAvailability'],
+        type: 'active',
+      });
       if (onSuccess) onSuccess(data);
     },
     onError: (error) => {
@@ -173,6 +214,10 @@ export const useAddRelatedMenuItem = (
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['relatedMenus'] });
+      queryClient.refetchQueries({
+        queryKey: ['relatedMenus'],
+        type: 'active',
+      });
       if (onSuccess) onSuccess(data);
     },
     onError: (error) => {
@@ -197,6 +242,10 @@ export const useUpdateRelatedMenuItem = (
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['relatedMenus'] });
+      queryClient.refetchQueries({
+        queryKey: ['relatedMenus'],
+        type: 'active',
+      });
       if (onSuccess) onSuccess(data);
     },
     onError: (error) => {
@@ -218,6 +267,10 @@ export const useDeleteMenu = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['menus'] });
+      queryClient.refetchQueries({
+        queryKey: ['menus'],
+        type: 'active',
+      });
     },
     onError: () => dispatch(hideLoader()),
     onSettled: () => dispatch(hideLoader()),

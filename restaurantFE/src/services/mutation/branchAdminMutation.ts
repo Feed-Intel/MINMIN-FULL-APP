@@ -12,14 +12,24 @@ export const useGetBranchAdmins = (page: number | undefined) =>
   useQuery<{ next: string | null; results: BranchAdmin[]; count: number }>({
     queryKey: ['branchAdmins', page],
     queryFn: () => GetBranchAdmins(page),
+    gcTime: 0,
     staleTime: 0,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
+    refetchInterval: 60000,
   });
 
 export const useGetBranchAdmin = (adminId: string) =>
   useQuery<BranchAdmin>({
     queryKey: ['branchAdmin', adminId],
     queryFn: () => GetBranchAdmin(adminId),
+    gcTime: 0,
     staleTime: 0,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
+    refetchInterval: 60000,
   });
 
 export const useCreateBranchAdmin = (
@@ -32,6 +42,10 @@ export const useCreateBranchAdmin = (
     mutationFn: CreateBranchAdmin,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['branchAdmins'] });
+      queryClient.refetchQueries({
+        queryKey: ['branchAdmins'],
+        type: 'active',
+      });
     },
     onError,
   });
@@ -47,6 +61,10 @@ export const useUpdateBranchAdmin = (
     mutationFn: UpdateBranchAdmin,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['branchAdmins'] });
+      queryClient.refetchQueries({
+        queryKey: ['branchAdmins'],
+        type: 'active',
+      });
     },
     onError,
   });
@@ -59,6 +77,10 @@ export const useDeleteBranchAdmin = () => {
     mutationFn: DeleteBranchAdmin,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['branchAdmins'] });
+      queryClient.refetchQueries({
+        queryKey: ['branchAdmins'],
+        type: 'active',
+      });
     },
   });
 };

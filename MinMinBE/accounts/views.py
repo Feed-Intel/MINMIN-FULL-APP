@@ -315,7 +315,7 @@ class AdminOrRestaurantOnlyView(RoleBasedView):
     def get_queryset(self):
         user = self.request.user
         if user.user_type == 'restaurant' or user.user_type == 'admin':
-            return self.queryset.filter(branch__tenant__admin=user)
+            return self.queryset.filter(branch__tenant__admin=user,user_type='branch')
         else:
             return self.queryset.none()
 

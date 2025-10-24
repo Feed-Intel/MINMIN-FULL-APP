@@ -105,7 +105,7 @@ export default function AddComboDialog({
   };
 
   const handleRemoveItem = (index: number) => {
-    const updatedItems = [...(combo.combo_items ?? [])];
+    const updatedItems = [...(combo?.combo_items ?? [])];
     updatedItems.splice(index, 1);
     setCombo({ ...combo, combo_items: updatedItems });
   };
@@ -122,7 +122,7 @@ export default function AddComboDialog({
 
     if (!combo.name?.trim()) {
       errors.name = 'Combo name is required.';
-    } else if (combo.name.trim().length < 3) {
+    } else if (combo.name.trim()?.length < 3) {
       errors.name = 'Combo name must be at least 3 characters long.';
     }
 
@@ -134,10 +134,10 @@ export default function AddComboDialog({
       errors.combo_price = 'Combo price must be greater than 0.';
     }
 
-    if (!combo.combo_items || combo.combo_items.length === 0) {
+    if (!combo.combo_items || combo.combo_items?.length === 0) {
       errors.combo_items = 'At least one combo item is required.';
     } else {
-      combo.combo_items.forEach((item, index) => {
+      combo.combo_items?.forEach((item, index) => {
         if (!item.menu_item) {
           errors[`menu_item_${index}`] = `Menu item is required for item ${
             index + 1
@@ -152,7 +152,7 @@ export default function AddComboDialog({
     }
 
     setErrors(errors);
-    return Object.keys(errors).length === 0;
+    return Object.keys(errors)?.length === 0;
   };
 
   const handleSave = async () => {
@@ -255,8 +255,8 @@ export default function AddComboDialog({
                         style={{ alignSelf: 'stretch' }}
                         anchorPosition="bottom"
                       >
-                        {branches?.results && branches.results.length > 0 ? (
-                          branches.results.map((branch: any) => (
+                        {branches?.results && branches?.results?.length > 0 ? (
+                          branches?.results?.map((branch: any) => (
                             <Menu.Item
                               key={branch.id}
                               onPress={() => {
@@ -358,7 +358,7 @@ export default function AddComboDialog({
                   </DataTable.Title>
                 </DataTable.Header>
 
-                {combo.combo_items?.map((item, index) => (
+                {combo?.combo_items?.map((item, index) => (
                   <DataTable.Row key={index}>
                     <DataTable.Cell>
                       {/* Updated Menu Item Dropdown */}
@@ -399,8 +399,8 @@ export default function AddComboDialog({
                           style={{ alignSelf: 'flex-start' }}
                           anchorPosition="bottom"
                         >
-                          {menuItems && menuItems.results.length > 0 ? (
-                            menuItems.results.map((menuItem: any) => (
+                          {menuItems && menuItems?.results?.length > 0 ? (
+                            menuItems?.results?.map((menuItem: any) => (
                               <Menu.Item
                                 key={menuItem.id}
                                 onPress={() => {

@@ -133,10 +133,10 @@ export default function Menus() {
   }, [currentMenuItem, showRelatedModal]);
 
   const getMenuCategories = (menu: any): string[] => {
-    if (Array.isArray(menu?.categories) && menu.categories.length) {
+    if (Array.isArray(menu?.categories) && menu?.categories?.length) {
       return menu.categories;
     }
-    if (Array.isArray(menu?.category) && menu.category.length) {
+    if (Array.isArray(menu?.category) && menu?.category?.length) {
       return menu.category.filter((value: any) => typeof value === 'string');
     }
     if (typeof menu?.category === 'string' && menu.category) {
@@ -357,11 +357,6 @@ export default function Menus() {
             </DataTable.Header>
 
             {menus?.results?.map((menu) => {
-              const categories = getMenuCategories(menu);
-              const categoriesLabel = categories.length
-                ? categories.join(', ')
-                : '—';
-
               return (
                 <DataTable.Row key={menu.id} style={styles.tableRow}>
                   <DataTable.Cell style={styles.imageCell}>

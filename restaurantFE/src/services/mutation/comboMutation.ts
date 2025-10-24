@@ -27,13 +27,24 @@ export const useGetCombos = (
       return GetCombos(searchParams.toString());
     },
     enabled: enabled ?? true,
+    gcTime: 0,
+    staleTime: 0,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
+    refetchInterval: 60000,
   });
 
 export const useGetComboById = (id: string) =>
   useQuery({
     queryKey: ['combos', id],
     queryFn: () => GetComboById(id),
+    gcTime: 0,
     staleTime: 0,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
+    refetchInterval: 60000,
   });
 
 export function useCreateCombo(
@@ -73,6 +84,10 @@ export function useUpdateCombo(
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['combos'] });
+      queryClient.refetchQueries({
+        queryKey: ['combos'],
+        type: 'active',
+      });
       if (onSuccess) onSuccess(data);
     },
     onError: (error) => {
@@ -97,6 +112,10 @@ export function useDeleteCombo(
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['combos'] });
+      queryClient.refetchQueries({
+        queryKey: ['combos'],
+        type: 'active',
+      });
       if (onSuccess) onSuccess(data);
     },
     onError: (error) => {
