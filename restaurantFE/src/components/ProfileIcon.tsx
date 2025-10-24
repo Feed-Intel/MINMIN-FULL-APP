@@ -185,7 +185,7 @@ export default function ProfileIcon() {
                     </View>
                   </TouchableOpacity>
                   <Text style={styles.restaurantName}>
-                    {tenant?.name || 'Restaurant name'}
+                    {tenant?.restaurant_name || 'Restaurant name'}
                   </Text>
                 </View>
               }
