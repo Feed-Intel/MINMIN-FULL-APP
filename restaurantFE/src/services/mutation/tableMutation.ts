@@ -23,7 +23,12 @@ export const useQRs = () =>
   useQuery({
     queryKey: ['qrs'],
     queryFn: () => fetchQRs(),
+    gcTime: 0,
     staleTime: 0,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
+    refetchInterval: 60000,
   });
 export function useCreateQR() {
   const queryClient = useQueryClient();
@@ -68,15 +73,24 @@ export const useGetTables = (param?: TableQueryParams | null) =>
       });
       return fetchTables(searchParams.toString());
     },
+    gcTime: 0,
     staleTime: 0,
     refetchOnMount: true,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
+    refetchInterval: 60000,
   });
 
 export const useGetTableById = (id: string) =>
   useQuery<Table>({
     queryKey: ['table', id],
     queryFn: () => fetchTableById(id),
+    gcTime: 0,
     staleTime: 0,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
+    refetchInterval: 60000,
   });
 export function useCreateTable() {
   const queryClient = useQueryClient();
@@ -97,6 +111,10 @@ export function useCreateTable() {
         console.error(error);
       } else {
         await queryClient.invalidateQueries({ queryKey: ['tables'] });
+        await queryClient.refetchQueries({
+          queryKey: ['tables'],
+          type: 'active',
+        });
       }
       dispatch(hideLoader());
     },
@@ -119,6 +137,10 @@ export function useUpdateTable() {
         console.error(error);
       } else {
         await queryClient.invalidateQueries({ queryKey: ['tables'] });
+        await queryClient.refetchQueries({
+          queryKey: ['tables'],
+          type: 'active',
+        });
       }
       dispatch(hideLoader());
     },
@@ -138,6 +160,10 @@ export function useDeleteTable() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tables'] });
+      queryClient.refetchQueries({
+        queryKey: ['tables'],
+        type: 'active',
+      });
     },
     onSettled: async (_: any, error: any) => {
       dispatch(hideLoader());

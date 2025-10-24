@@ -55,7 +55,6 @@ class OrderSerializer(serializers.ModelSerializer):
         customer = self.context['request'].user
         if customer.user_type != 'customer':
             new_user,created = User.objects.get_or_create(
-                email=f'{customer_name}@example.com',
                 password='password',
                 full_name=customer_name,
                 user_type='customer',

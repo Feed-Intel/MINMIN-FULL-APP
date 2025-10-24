@@ -21,11 +21,6 @@ import { AppDispatch } from '@/lib/reduxStore/store';
 import { useDispatch } from 'react-redux';
 import { hideLoader, showLoader } from '@/lib/reduxStore/loaderSlice';
 
-// export const useDiscounts = () =>
-//   useQuery({
-//     queryKey: ["discounts"],
-//     queryFn: fetchDiscounts,
-//   });
 export const useDiscounts = (params?: DiscountQueryParams | null) =>
   useQuery<{ next: string | null; results: Discount[]; count: number }>({
     queryKey: ['discounts', params],
@@ -38,8 +33,12 @@ export const useDiscounts = (params?: DiscountQueryParams | null) =>
       });
       return fetchDiscounts(searchParams.toString());
     },
+    gcTime: 0,
     staleTime: 0,
-    refetchInterval: 30000,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
+    refetchInterval: 60000,
   });
 export function useCreateDiscount() {
   const queryClient = useQueryClient();
@@ -55,12 +54,20 @@ export function useCreateDiscount() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['discounts'] });
+      queryClient.refetchQueries({
+        queryKey: ['discounts'],
+        type: 'active',
+      });
     },
     onSettled: async (_: any, error: any) => {
       if (error) {
         console.error(error);
       } else {
         await queryClient.invalidateQueries({ queryKey: ['discounts'] });
+        await queryClient.refetchQueries({
+          queryKey: ['discounts'],
+          type: 'active',
+        });
       }
       dispatch(hideLoader());
     },
@@ -71,7 +78,12 @@ export const useGetDiscountById = (id: string) =>
   useQuery({
     queryKey: ['discount', id],
     queryFn: () => fetchDiscount(id),
+    gcTime: 0,
     staleTime: 0,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
+    refetchInterval: 60000,
   });
 
 export function useUpdateDiscount() {
@@ -86,6 +98,10 @@ export function useUpdateDiscount() {
     onSuccess: () => {
       //("Discount updated successfully");
       queryClient.invalidateQueries({ queryKey: ['discounts'] });
+      queryClient.refetchQueries({
+        queryKey: ['discounts'],
+        type: 'active',
+      });
     },
     onSettled: () => {
       dispatch(hideLoader());
@@ -107,6 +123,10 @@ export function useDeleteDiscount() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['discounts'] });
+      queryClient.refetchQueries({
+        queryKey: ['discounts'],
+        type: 'active',
+      });
     },
     onSettled: async (_: any, error: any) => {
       if (error) {
@@ -128,14 +148,24 @@ export const useDiscountRules = (page?: number, noPage?: boolean) =>
   useQuery({
     queryKey: ['discountRules'],
     queryFn: () => fetchDiscountRules(page, noPage),
+    gcTime: 0,
     staleTime: 0,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
+    refetchInterval: 60000,
   });
 
 export const useGetDiscountRuleById = (id: string) =>
   useQuery({
     queryKey: ['discountRule', id],
     queryFn: () => fetchDiscountRule(id),
+    gcTime: 0,
     staleTime: 0,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
+    refetchInterval: 60000,
   });
 
 export const useGetCoupons = (param?: DiscountQueryParams | null) =>
@@ -150,14 +180,24 @@ export const useGetCoupons = (param?: DiscountQueryParams | null) =>
       });
       return fetchCoupons(searchParams.toString());
     },
+    gcTime: 0,
     staleTime: 0,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
+    refetchInterval: 60000,
   });
 
 export const useGetCoupon = (id: string) =>
   useQuery({
     queryKey: ['coupon', id],
     queryFn: () => fetchCoupon(id),
+    gcTime: 0,
     staleTime: 0,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
+    refetchInterval: 60000,
   });
 export function useCreateDiscountRule(
   onSuccess?: (data: any) => void,
@@ -172,6 +212,10 @@ export function useCreateDiscountRule(
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['discountRules'] });
+      queryClient.refetchQueries({
+        queryKey: ['discountRules'],
+        type: 'active',
+      });
       if (onSuccess) onSuccess;
     },
     onError,
@@ -191,6 +235,10 @@ export function useUpdateDiscountRule() {
     onSuccess: () => {
       //("DiscountRule updated successfully");
       queryClient.invalidateQueries({ queryKey: ['discountRules'] });
+      queryClient.refetchQueries({
+        queryKey: ['discountRules'],
+        type: 'active',
+      });
     },
     onSettled: () => {
       dispatch(hideLoader());
@@ -211,6 +259,10 @@ export function useDeleteDiscountRule() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['discountRules'] });
+      queryClient.refetchQueries({
+        queryKey: ['discountRules'],
+        type: 'active',
+      });
     },
     onSettled: async (_: any, error: any) => {
       if (error) {
@@ -237,6 +289,10 @@ export function useCreateCoupon() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['coupons'] });
+      queryClient.refetchQueries({
+        queryKey: ['coupons'],
+        type: 'active',
+      });
     },
     onSettled: async (_: any, error: any) => {
       if (error) {
@@ -264,6 +320,10 @@ export function useUpdateCoupon() {
     onSuccess: () => {
       //("Coupon updated successfully");
       queryClient.invalidateQueries({ queryKey: ['coupons'] });
+      queryClient.refetchQueries({
+        queryKey: ['coupons'],
+        type: 'active',
+      });
     },
     onSettled: () => {
       dispatch(hideLoader());
@@ -284,6 +344,10 @@ export function useDeleteCoupon() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['coupons'] });
+      queryClient.refetchQueries({
+        queryKey: ['coupons'],
+        type: 'active',
+      });
     },
     onSettled: async (_: any, error: any) => {
       if (error) {

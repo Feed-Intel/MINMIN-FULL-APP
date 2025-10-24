@@ -268,8 +268,8 @@ export default function EditComboDialog({
                       }
                       contentStyle={[styles.menuContent, { width: '100%' }]}
                     >
-                      {branches?.results && branches.results.length > 0 ? (
-                        branches.results.map((branch: any) => (
+                      {branches?.results && branches?.results?.length > 0 ? (
+                        branches?.results?.map((branch: any) => (
                           <Menu.Item
                             key={branch.id}
                             onPress={() => {
@@ -323,8 +323,9 @@ export default function EditComboDialog({
                           </Button>
                         }
                       >
-                        {menuItems?.results && menuItems.results.length > 0 ? (
-                          menuItems.results.map((menuItem: any) => (
+                        {menuItems?.results &&
+                        menuItems?.results?.length > 0 ? (
+                          menuItems?.results?.map((menuItem: any) => (
                             <Menu.Item
                               key={menuItem.id}
                               onPress={() => {

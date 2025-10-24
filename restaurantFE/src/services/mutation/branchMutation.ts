@@ -23,14 +23,24 @@ export const useGetBranches = (params?: any, noPage?: boolean) =>
       });
       return GetBranches(searchParams.toString(), noPage);
     },
+    gcTime: 0,
     staleTime: 0,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
+    refetchInterval: 60000,
   });
 
 export const useGetBranch = (id: string) =>
   useQuery<Branch>({
     queryKey: ['branch', id],
     queryFn: () => GetBranch(id),
+    gcTime: 0,
     staleTime: 0,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
+    refetchInterval: 60000,
   });
 
 export const useCreateBranch = (
@@ -47,6 +57,10 @@ export const useCreateBranch = (
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['branches'] });
+      queryClient.refetchQueries({
+        queryKey: ['branches'],
+        type: 'active',
+      });
       if (onSuccess) onSuccess(data);
     },
     onError: (error) => {
@@ -71,6 +85,10 @@ export const useUpdateBranch = (
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['branches'] });
+      queryClient.refetchQueries({
+        queryKey: ['branches'],
+        type: 'active',
+      });
       if (onSuccess) onSuccess(data);
     },
     onError: (error) => {
@@ -95,6 +113,10 @@ export const useDeleteBranch = (
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['branches'] });
+      queryClient.refetchQueries({
+        queryKey: ['branches'],
+        type: 'active',
+      });
       if (onSuccess) onSuccess(data);
     },
     onError: (error) => {
