@@ -3,6 +3,5 @@ from .models import MenuAvailability
 
 @admin.register(MenuAvailability)
 class MenuAvailabilityAdmin(admin.ModelAdmin):
-    list_display = ('menu_item_id', 'branch_id', 'is_available', 'special_notes', 'updated_at')
-    search_fields = ('menu_item_id', 'branch_id')
-    list_filter = ('is_available',)
+    list_display = ('menu_item', 'branch', 'is_available', 'updated_at')
+    search_fields = ['menu_item__name', 'branch__tenant__restaurant_name', 'special_notes']
