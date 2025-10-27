@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   ScrollView,
   View,
@@ -34,6 +34,9 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 export default function BranchAdmins() {
   const [currentPage, setCurrentPage] = useState<number>(1);
   const { data: branchAdmins } = useGetBranchAdmins(currentPage);
+  const [isAdminActive, setIsAdminActive] = useState<Record<string, boolean>>(
+    {}
+  );
   const { mutateAsync: adminDelete } = useDeleteBranchAdmin();
   const dispatch = useDispatch<AppDispatch>();
   const queryClient = useQueryClient();
@@ -42,6 +45,13 @@ export default function BranchAdmins() {
   const [showAddAdminModal, setShowAddAdminModal] = React.useState(false);
   const { data: branches } = useGetBranches();
   const [admin, setAdmin] = useState<{} | null>(null);
+
+  const onSuccessEdit = () => {
+    queryClient.invalidateQueries({ queryKey: ['branchAdmins'] });
+  };
+
+  const { mutate: editBranchAdmin, isPending: isUpdating } =
+    useUpdateBranchAdmin(onSuccessEdit);
 
   const handleDeleteAdmin = async () => {
     try {
@@ -55,6 +65,38 @@ export default function BranchAdmins() {
       setShowDialog(false);
     }
   };
+
+  const updateBranchAdmin = async (admin: any, value: boolean) => {
+    try {
+      dispatch(showLoader());
+      editBranchAdmin({
+        ...admin,
+        branch: (typeof admin.branch === 'object'
+          ? admin.branch.id
+          : admin.branch) as any,
+        is_active: value,
+      });
+      queryClient.invalidateQueries({ queryKey: ['branchAdmins'] });
+      setIsAdminActive((prev) => ({
+        ...prev,
+        [admin.id!]: value,
+      }));
+      dispatch(hideLoader());
+    } catch (error) {
+      console.error('Error updating branch admin:', error);
+    }
+  };
+
+  useEffect(() => {
+    if (branchAdmins) {
+      setIsAdminActive(
+        branchAdmins.results.reduce((acc, admin) => {
+          acc[admin.id!] = admin.is_active!;
+          return acc;
+        }, {} as Record<string, boolean>)
+      );
+    }
+  }, [branchAdmins]);
 
   return (
     <ScrollView style={styles.container}>
@@ -130,8 +172,10 @@ export default function BranchAdmins() {
                 <Text style={styles.cell}>
                   <View style={styles.actionContainer}>
                     <Switch
-                      value={true}
-                      onValueChange={() => {}}
+                      value={isAdminActive[admin.id!] || false}
+                      onValueChange={(val) => {
+                        updateBranchAdmin(admin, val);
+                      }}
                       color="#91B275"
                     />
                     <TouchableOpacity
@@ -142,6 +186,7 @@ export default function BranchAdmins() {
                           email: admin.email,
                           phone: admin.phone,
                           branch: (admin.branch as any).id,
+                          is_active: admin.is_active,
                         })
                       }
                     >

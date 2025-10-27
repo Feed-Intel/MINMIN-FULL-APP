@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   ScrollView,
   StyleSheet,
@@ -42,6 +42,10 @@ export default function Branches() {
   const dispatch = useDispatch<AppDispatch>();
   const { width } = useWindowDimensions();
   const { isBranch } = useRestaurantIdentity();
+  const [defaultBranches, setActiveBranches] = useState<{
+    [key: string]: boolean;
+  }>({});
+
   const queryParams = useMemo(() => {
     return {
       page: currentPage,
@@ -49,6 +53,17 @@ export default function Branches() {
     };
   }, [currentPage, searchQuery]);
   const { data: branches } = useGetBranches(queryParams);
+
+  useEffect(() => {
+    if (branches) {
+      setActiveBranches(
+        branches.results.reduce((acc, branch) => {
+          acc[branch.id!] = branch.is_default!;
+          return acc;
+        }, {} as Record<string, boolean>)
+      );
+    }
+  }, [branches]);
 
   const handleDeleteBranch = async () => {
     try {
@@ -63,14 +78,22 @@ export default function Branches() {
     }
   };
 
-  const handleToggleDefault = async (branch: any) => {
+  const handleToggleDefault = async (branch: any, value: boolean) => {
     try {
       dispatch(showLoader());
       await updateBranch({
-        ...branch,
-        is_default: !branch.is_default,
+        id: branch.id,
+        address: branch.address,
+        is_default: value,
+        lat: branch.location?.lat,
+        lng: branch.location?.lng,
+        gps_coordinates: branch.gps_coordinates || '',
       });
       queryClient.invalidateQueries({ queryKey: ['branches'] });
+      setActiveBranches((prev) => ({
+        ...prev,
+        [branch.id!]: value,
+      }));
       dispatch(hideLoader());
     } catch (error) {
       console.error('Error updating branch:', error);
@@ -177,8 +200,10 @@ export default function Branches() {
                         <View style={styles.actionButtons}>
                           <View style={styles.switchContainer}>
                             <Switch
-                              value={branch.is_default}
-                              onValueChange={() => handleToggleDefault(branch)}
+                              value={defaultBranches[branch.id!] || false}
+                              onValueChange={(value) =>
+                                handleToggleDefault(branch, value)
+                              }
                               color="#96B76E"
                               trackColor={{ false: '#96B76E', true: '#96B76E' }}
                               thumbColor={branch.is_default ? '#fff' : '#fff'}
@@ -234,6 +259,7 @@ export default function Branches() {
           style={{
             width: width > 500 ? '80%' : '95%',
             alignSelf: 'center',
+            backgroundColor: '#EFF4EB',
           }}
         >
           <Dialog.Title>Confirm Deletion</Dialog.Title>
@@ -245,7 +271,9 @@ export default function Branches() {
           </Dialog.Content>
           <Dialog.Actions>
             <Button onPress={() => setShowDeleteDialog(false)}>Cancel</Button>
-            <Button onPress={handleDeleteBranch}>Delete</Button>
+            <Button onPress={handleDeleteBranch} labelStyle={{ color: 'red' }}>
+              Delete
+            </Button>
           </Dialog.Actions>
         </Dialog>
       </Portal>
