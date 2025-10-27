@@ -25,7 +25,7 @@ class Branch(models.Model):
     def delete(self, using=None, keep_parents=False):
         if (
             self.branch_combos.exists() or 
-            self.branch_discounts.exists() or 
+            self.discounts.exists() or 
             self.branch_menu_availabilities.exists() or 
             self.branch_qr_codes.exists() or 
             self.tables.exists() or 
