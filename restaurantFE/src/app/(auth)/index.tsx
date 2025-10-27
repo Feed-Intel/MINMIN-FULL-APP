@@ -32,6 +32,7 @@ const LoginScreen = () => {
       user_type: string;
       email: string;
       branch?: string;
+      restaurant_name?: string;
     }>(data.access_token);
     const isBranchUser = decoded.user_type === 'branch';
     const isRestaurantUser = decoded.user_type === 'restaurant';
@@ -62,6 +63,7 @@ const LoginScreen = () => {
         user_type: decoded.user_type,
         email: decoded.email,
         branch: decoded?.branch,
+        restaurant_name: decoded?.restaurant_name,
       })
     );
     router.replace('/(protected)/dashboard');
