@@ -26,7 +26,7 @@ class UserSerializer(serializers.ModelSerializer):
     lng = serializers.FloatField(write_only=True, required=False)
     class Meta:
         model = User
-        fields = ['id', 'full_name', 'phone', 'email', 'birthday', 'user_type', 'image' ,'branch', 'password','push_token','lat','lng']
+        fields = ['id', 'full_name', 'phone', 'email', 'birthday', 'user_type', 'image' ,'branch', 'password','push_token','lat','lng','is_active']
         extra_kwargs = {
             'password': {'write_only': True}  # Ensures password is write-only
         }
@@ -117,6 +117,7 @@ class UserSerializer(serializers.ModelSerializer):
         instance.phone = validated_data.get('phone', instance.phone)
         instance.push_token = validated_data.get('push_token', instance.push_token)
         instance.birthday = validated_data.get('birthday', instance.birthday)
+        instance.is_active = validated_data.get('is_active', instance.is_active)
         if instance.user_type == 'branch':
             instance.branch = validated_data.get('branch', instance.branch)
         if 'image' in validated_data:
