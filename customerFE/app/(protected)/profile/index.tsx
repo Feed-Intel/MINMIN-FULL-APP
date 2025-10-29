@@ -131,13 +131,13 @@ const ProfileScreen = () => {
       icon: 'shield-outline',
       action: () =>
         Platform.OS === 'web'
-          ? window.open('https://alpha.feed-intel.com/privacy/', '_blank')
+          ? window.open('https://stg.api.feed-intel.com/privacy/', '_blank')
           : router.push({
               pathname:
                 '/(protected)/profile/WebPageView' as RelativePathString,
               params: {
                 title: i18n.t('privacy_policy_setting'),
-                url: 'https://alpha.feed-intel.com/privacy/',
+                url: 'https://stg.api.feed-intel.com/privacy/',
               },
             }),
     },
@@ -147,13 +147,13 @@ const ProfileScreen = () => {
       icon: 'description',
       action: () =>
         Platform.OS === 'web'
-          ? window.open('https://alpha.feed-intel.com/terms/', '_blank')
+          ? window.open('https://stg.api.feed-intel.com/terms/', '_blank')
           : router.push({
               pathname:
                 '/(protected)/profile/WebPageView' as RelativePathString,
               params: {
                 title: i18n.t('terms_conditions_setting'),
-                url: 'https://alpha.feed-intel.com/terms/',
+                url: 'https://stg.api.feed-intel.com/terms/',
               },
             }),
     },
@@ -304,7 +304,7 @@ const ProfileScreen = () => {
                       onPress={() =>
                         Platform.OS === 'web'
                           ? window.open(
-                              'https://alpha.feed-intel.com/privacy/',
+                              'https://stg.api.feed-intel.com/privacy/',
                               '_blank'
                             )
                           : router.push({
@@ -312,7 +312,7 @@ const ProfileScreen = () => {
                                 '/(protected)/profile/WebPageView' as RelativePathString,
                               params: {
                                 title: i18n.t('terms_conditions_setting'),
-                                url: 'https://alpha.feed-intel.com/privacy/',
+                                url: 'https://stg.api.feed-intel.com/privacy/',
                               },
                             })
                       }

@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import Notification from '@/assets/icons/Notification.svg';
 import { Notification as NotificationType } from '@/lib/reduxStore/notificationSlice';
+import { i18n as I18n } from '@/app/_layout';
 
 export default function NotificationIcon({
   notification = [],
@@ -69,7 +70,9 @@ export default function NotificationIcon({
               ItemSeparatorComponent={() => <View style={styles.separator} />}
               ListFooterComponent={
                 <TouchableOpacity style={styles.footer}>
-                  <Text style={styles.footerText}>See more</Text>
+                  <Text style={styles.footerText}>
+                    {I18n.t('Common.see_more')}
+                  </Text>
                 </TouchableOpacity>
               }
             />

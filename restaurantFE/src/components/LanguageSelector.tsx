@@ -1,6 +1,10 @@
 import { useState } from 'react';
 import { TouchableOpacity, StyleSheet } from 'react-native';
 import { Button, Dialog, Portal, Text } from 'react-native-paper';
+import { useDispatch, useSelector } from 'react-redux';
+import { setLanguage } from '@/lib/reduxStore/localeSlice';
+import { i18n as I18n } from '@/app/_layout';
+import { RootState } from '@/lib/reduxStore/store';
 
 export default function LanguageSelector({
   showLanguageModal,
@@ -9,12 +13,15 @@ export default function LanguageSelector({
   showLanguageModal: boolean;
   setShowLanguageModal: (val: boolean) => void;
 }) {
-  const [selectedLanguage, setSelectedLanguage] = useState<'en' | 'am'>('en');
+  const locale = useSelector((state: RootState) => state.language.locale);
+  const [selectedLanguage, setSelectedLanguage] = useState<'en' | 'am'>(
+    (locale as 'en' | 'am') || 'am'
+  );
+  const dispatch = useDispatch();
   const handleChangeLanguage = async (locale: 'en' | 'am') => {
     setSelectedLanguage(locale);
-    // await AsyncStorage.setItem(LANGUAGE_STORAGE_KEY, locale);
+    dispatch(setLanguage(locale));
     setShowLanguageModal(false);
-    // setSnackbarMessage('Language preference saved');
   };
   return (
     <Portal>
@@ -47,7 +54,9 @@ export default function LanguageSelector({
           ))}
         </Dialog.Content>
         <Dialog.Actions>
-          <Button onPress={() => setShowLanguageModal(false)}>Cancel</Button>
+          <Button onPress={() => setShowLanguageModal(false)}>
+            {I18n.t('Common.cancel')}
+          </Button>
         </Dialog.Actions>
       </Dialog>
     </Portal>

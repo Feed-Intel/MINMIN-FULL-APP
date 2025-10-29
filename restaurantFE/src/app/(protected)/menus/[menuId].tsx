@@ -28,6 +28,7 @@ import {
   Option,
 } from 'react-native-paper-dropdown';
 import { useGetBranches } from '@/services/mutation/branchMutation';
+import { i18n as I18n } from '@/app/_layout';
 
 interface EditMenuDialogProps {
   visible: boolean;
@@ -138,8 +139,8 @@ export default function EditMenuDialog({
     if (!menuData.name || !menuData.image.uri) {
       Toast.show({
         type: 'error',
-        text1: 'Error',
-        text2: 'Please provide a name and select an image',
+        text1: I18n.t('Common.error_title'),
+        text2: I18n.t('editMenuDialog.error.nameImageRequired'),
       });
       return;
     }
@@ -147,8 +148,8 @@ export default function EditMenuDialog({
     if (!menuData.description) {
       Toast.show({
         type: 'error',
-        text1: 'Error',
-        text2: 'Please provide a description',
+        text1: I18n.t('Common.error_title'),
+        text2: I18n.t('editMenuDialog.error.descriptionRequired'),
       });
       return;
     }
@@ -156,8 +157,8 @@ export default function EditMenuDialog({
     if (!menuData.price) {
       Toast.show({
         type: 'error',
-        text1: 'Error',
-        text2: 'Please provide a price',
+        text1: I18n.t('Common.error_title'),
+        text2: I18n.t('editMenuDialog.error.priceRequired'),
       });
       return;
     }
@@ -165,8 +166,8 @@ export default function EditMenuDialog({
     if (menuData.categories.length === 0) {
       Toast.show({
         type: 'error',
-        text1: 'Error',
-        text2: 'Please select at least one category',
+        text1: I18n.t('Common.error_title'),
+        text2: I18n.t('editMenuDialog.error.categoryRequired'),
       });
       return;
     }
@@ -199,8 +200,8 @@ export default function EditMenuDialog({
     queryClient.invalidateQueries({ queryKey: ['menus'] });
     Toast.show({
       type: 'success',
-      text1: 'Success',
-      text2: 'Menu updated successfully!',
+      text1: I18n.t('Common.success_title'),
+      text2: I18n.t('MenuDialog.successUpdateMessage'),
     });
     onClose();
   };
@@ -209,12 +210,15 @@ export default function EditMenuDialog({
     <Portal>
       <Dialog visible={visible} onDismiss={onClose} style={styles.dialog}>
         <Dialog.Title>
-          <ModalHeader title="Edit Menu Item" onClose={onClose} />
+          <ModalHeader
+            title={I18n.t('MenuDialog.titleEdit')}
+            onClose={onClose}
+          />
         </Dialog.Title>
         <Dialog.Content>
           <ScrollView>
             <TextInput
-              label="Name"
+              label={I18n.t('MenuDialog.namePlaceholder')}
               value={menuData.name}
               onChangeText={(text) => handleInputChange('name', text)}
               mode="outlined"
@@ -231,7 +235,7 @@ export default function EditMenuDialog({
             />
 
             <TextInput
-              label="Description"
+              label={I18n.t('MenuDialog.descriptionPlaceholder')}
               value={menuData.description}
               onChangeText={(text) => handleInputChange('description', text)}
               mode="outlined"
@@ -256,7 +260,9 @@ export default function EditMenuDialog({
                 marginBottom: 15,
               }}
             >
-              <Text style={{ color: '#40392B' }}>Is Global</Text>
+              <Text style={{ color: '#40392B' }}>
+                {I18n.t('MenuDialog.isGlobalLabel')}
+              </Text>
               <Switch
                 value={menuData.is_global}
                 onValueChange={(value) => handleInputChange('is_global', value)}
@@ -265,7 +271,9 @@ export default function EditMenuDialog({
             </View>
             {!menuData.is_global && (
               <>
-                <Text style={styles.fieldLabel}>Branch</Text>
+                <Text style={styles.fieldLabel}>
+                  {I18n.t('MenuDialog.branchLabel')}
+                </Text>
                 <MultiSelectDropdown
                   label="Select Branches"
                   placeholder="Select Branches"
@@ -330,7 +338,7 @@ export default function EditMenuDialog({
                   >
                     {menuData.categories.length > 0
                       ? menuData.categories.join(', ')
-                      : 'Select Categories'}
+                      : I18n.t('MenuDialog.selectCategories')}
                   </Button>
                 }
                 contentStyle={[styles.menuContent, { width: '100%' }]}
@@ -347,7 +355,7 @@ export default function EditMenuDialog({
                           ? 'check'
                           : undefined
                       }
-                      title={category}
+                      title={I18n.t(`categories.${category.toLowerCase()}`)}
                       titleStyle={styles.menuItem}
                     />
                   ))
@@ -356,7 +364,7 @@ export default function EditMenuDialog({
                 )}
                 <Menu.Item
                   onPress={() => setCategoryMenuVisible(false)}
-                  title="Done"
+                  title={I18n.t('Common.done')}
                   titleStyle={styles.menuItem}
                 />
               </Menu>
@@ -372,14 +380,14 @@ export default function EditMenuDialog({
                     style={styles.categoryChip}
                     textStyle={styles.categoryChipText}
                   >
-                    {category}
+                    {I18n.t(`categories.${category.toLowerCase()}`)}
                   </Chip>
                 ))}
               </View>
             )}
 
             <TextInput
-              label="Price"
+              label={I18n.t('MenuDialog.pricePlaceholder')}
               value={menuData.price}
               onChangeText={(text) => {
                 const cleaned = text
@@ -407,7 +415,9 @@ export default function EditMenuDialog({
               style={styles.button}
               icon={menuData.image.uri ? 'image-edit' : 'image-plus'}
             >
-              {menuData.image.uri ? 'Change Image' : 'Pick an Image'}
+              {menuData.image.uri
+                ? I18n.t('MenuDialog.changeImage')
+                : I18n.t('MenuDialog.pickImage')}
             </Button>
 
             {menuData.image.uri && (
@@ -428,7 +438,7 @@ export default function EditMenuDialog({
                 variant={isSmallScreen ? 'bodyMedium' : 'bodyLarge'}
                 style={styles.switchText}
               >
-                Is Side Item
+                {I18n.t('MenuDialog.isSideItemLabel')}
               </Text>
               <Switch
                 value={menuData.is_side}
@@ -449,7 +459,7 @@ export default function EditMenuDialog({
             contentStyle={{ height: isSmallScreen ? 40 : 50 }}
             labelStyle={{ fontSize: isSmallScreen ? 14 : 16, color: '#fff' }}
           >
-            Update
+            {I18n.t('MenuDialog.saveButton')}
           </Button>
         </Dialog.Actions>
       </Dialog>

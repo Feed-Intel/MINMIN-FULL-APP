@@ -28,6 +28,7 @@ import { AppDispatch } from '@/lib/reduxStore/store';
 import { hideLoader, showLoader } from '@/lib/reduxStore/loaderSlice';
 import Pencil from '@/assets/icons/Pencil.svg';
 import Delete from '@/assets/icons/Delete.svg';
+import { i18n as I18n } from '@/app/_layout';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -100,40 +101,45 @@ export default function BranchAdmins() {
 
   return (
     <ScrollView style={styles.container}>
-      {/* Header */}
+      {/* Header */}{' '}
       <View style={styles.header}>
-        <Text style={styles.title}>Branch admins</Text>
+        {' '}
+        <Text style={styles.title}>
+          {I18n.t('BranchAdmins.header_title')}
+        </Text>{' '}
       </View>
-
-      {/* Search bar */}
+      {/* Search bar */}{' '}
       <View style={styles.searchBarContainer}>
+        {' '}
         <TextInput
-          placeholder="search by Item name or Catagory"
+          placeholder={I18n.t('BranchAdmins.search_placeholder')}
           style={styles.searchBar}
           placeholderTextColor="#999"
-        />
+        />{' '}
         <Button
           mode="contained"
           onPress={() => setShowAddAdminModal(true)}
           style={styles.addButton}
           labelStyle={{ fontSize: 14, color: '#fff' }}
         >
-          + Add Admin
-        </Button>
+          {I18n.t('BranchAdmins.add_button')}{' '}
+        </Button>{' '}
       </View>
-
-      {/* Table */}
+      {/* Table */}{' '}
       <Card style={styles.card} mode="outlined">
+        {' '}
         <Card.Content style={{ paddingHorizontal: 0 }}>
-          {/* Removed ScrollView horizontal wrapper */}
+          {/* Removed ScrollView horizontal wrapper */}{' '}
           <View style={styles.dataTable}>
+            {' '}
             <View style={styles.dataTableHeader}>
+              {' '}
               {[
-                'Full Name',
-                'Email Address',
-                'Phone Number',
-                'Branch',
-                'Actions',
+                I18n.t('BranchAdmins.table_header_fullname'),
+                I18n.t('BranchAdmins.table_header_email'),
+                I18n.t('BranchAdmins.table_header_phone'),
+                I18n.t('BranchAdmins.table_header_branch'),
+                I18n.t('BranchAdmins.table_header_actions'),
               ].map((title, index) => (
                 <Text
                   key={index}
@@ -147,37 +153,40 @@ export default function BranchAdmins() {
                     },
                   ]}
                 >
-                  {title}
+                  {title}{' '}
                 </Text>
-              ))}
-            </View>
-
+              ))}{' '}
+            </View>{' '}
             {branchAdmins?.results.map((admin) => (
               <View key={admin.id} style={styles.row}>
+                {' '}
                 <Text
                   style={[
                     styles.cell,
                     { textAlign: 'left', position: 'relative', left: 20 },
                   ]}
                 >
-                  {admin.full_name}
+                  {admin.full_name}{' '}
                 </Text>
                 <Text style={styles.cell}>{admin.email}</Text>
-                <Text style={styles.cell}>{admin.phone}</Text>
+                <Text style={styles.cell}>{admin.phone}</Text>{' '}
                 <Text style={styles.cell}>
+                  {' '}
                   {typeof admin.branch === 'string'
                     ? admin.branch
-                    : admin.branch.address}
-                </Text>
+                    : admin.branch.address}{' '}
+                </Text>{' '}
                 <Text style={styles.cell}>
+                  {' '}
                   <View style={styles.actionContainer}>
+                    {' '}
                     <Switch
                       value={isAdminActive[admin.id!] || false}
                       onValueChange={(val) => {
                         updateBranchAdmin(admin, val);
                       }}
                       color="#91B275"
-                    />
+                    />{' '}
                     <TouchableOpacity
                       onPress={() =>
                         setAdmin({
@@ -190,66 +199,70 @@ export default function BranchAdmins() {
                         })
                       }
                     >
-                      <Pencil height={40} width={40} color="#91B275" />
-                    </TouchableOpacity>
+                      {' '}
+                      <Pencil height={40} width={40} color="#91B275" />{' '}
+                    </TouchableOpacity>{' '}
                     <TouchableOpacity
                       onPress={() => {
                         setAdminID(admin.id!);
                         setShowDialog(true);
                       }}
                     >
-                      <Delete height={40} width={40} color="#91B275" />
-                    </TouchableOpacity>
-                  </View>
-                </Text>
+                      {' '}
+                      <Delete height={40} width={40} color="#91B275" />{' '}
+                    </TouchableOpacity>{' '}
+                  </View>{' '}
+                </Text>{' '}
               </View>
-            ))}
+            ))}{' '}
             <Pagination
               totalPages={Math.round(branchAdmins?.count! / 10) || 0}
               currentPage={currentPage}
               onPageChange={setCurrentPage}
-            />
-          </View>
-        </Card.Content>
+            />{' '}
+          </View>{' '}
+        </Card.Content>{' '}
       </Card>
-
-      {/* Delete confirmation dialog */}
+      {/* Delete confirmation dialog */}{' '}
       <Portal>
+        {' '}
         <Dialog
           visible={showDialog}
           onDismiss={() => setShowDialog(false)}
           style={styles.dialog}
         >
+          {' '}
           <Dialog.Title style={{ color: '#000' }}>
-            Confirm Deletion
-          </Dialog.Title>
+            {I18n.t('BranchAdmins.delete_dialog_title')}{' '}
+          </Dialog.Title>{' '}
           <Dialog.Content>
+            {' '}
             <Text style={{ color: '#000' }}>
-              Are you sure you want to delete this admin? This action cannot be
-              undone.
-            </Text>
-          </Dialog.Content>
+              {I18n.t('BranchAdmins.delete_dialog_message')}{' '}
+            </Text>{' '}
+          </Dialog.Content>{' '}
           <Dialog.Actions>
+            {' '}
             <Button
               onPress={() => setShowDialog(false)}
               labelStyle={{ color: '#000' }}
             >
-              Cancel
-            </Button>
+              {I18n.t('BranchAdmins.cancel_button')}{' '}
+            </Button>{' '}
             <Button
               onPress={handleDeleteAdmin}
               labelStyle={{ color: '#ff0000' }}
             >
-              Delete
-            </Button>
-          </Dialog.Actions>
-        </Dialog>
-      </Portal>
+              {I18n.t('BranchAdmins.delete_button')}{' '}
+            </Button>{' '}
+          </Dialog.Actions>{' '}
+        </Dialog>{' '}
+      </Portal>{' '}
       <AddAdminModal
         branches={branches?.results as Branch[]}
         visible={showAddAdminModal}
         onClose={() => setShowAddAdminModal(false)}
-      />
+      />{' '}
       {admin && (
         <UpdateAdminModal
           branches={branches?.results as Branch[]}
@@ -257,7 +270,7 @@ export default function BranchAdmins() {
           onClose={() => setAdmin(null)}
           admin={admin as any}
         />
-      )}
+      )}{' '}
     </ScrollView>
   );
 }
@@ -363,6 +376,7 @@ function AddAdminModal({ branches, visible, onClose }: AddAdminModalProps) {
   const [email, setEmail] = React.useState('');
   const [phone, setPhone] = React.useState('');
   const [branch, setBranch] = React.useState('');
+  // Assume useCreateBranchAdmin and useQueryClient are defined externally
   const { mutateAsync: addBranchAdmin } = useCreateBranchAdmin();
   const queryClient = useQueryClient();
 
@@ -372,8 +386,8 @@ function AddAdminModal({ branches, visible, onClose }: AddAdminModalProps) {
     if (!fullName?.trim()) {
       Toast.show({
         type: 'error',
-        text1: 'Error',
-        text2: 'Full name is required.',
+        text1: I18n.t('Common.error_title'),
+        text2: I18n.t('AddAdmin.error_fullname_required'),
       });
       return false;
     }
@@ -381,15 +395,15 @@ function AddAdminModal({ branches, visible, onClose }: AddAdminModalProps) {
     if (!email?.trim()) {
       Toast.show({
         type: 'error',
-        text1: 'Error',
-        text2: 'Email is required.',
+        text1: I18n.t('Common.error_title'),
+        text2: I18n.t('AddAdmin.error_email_required'),
       });
       return false;
     } else if (!/\S+@\S+\.\S+/.test(email)) {
       Toast.show({
         type: 'error',
-        text1: 'Error',
-        text2: 'Please enter a valid email address.',
+        text1: I18n.t('Common.error_title'),
+        text2: I18n.t('AddAdmin.error_email_invalid'),
       });
       return false;
     }
@@ -397,15 +411,15 @@ function AddAdminModal({ branches, visible, onClose }: AddAdminModalProps) {
     if (!phone?.trim()) {
       Toast.show({
         type: 'error',
-        text1: 'Error',
-        text2: 'Phone number is required.',
+        text1: I18n.t('Common.error_title'),
+        text2: I18n.t('AddAdmin.error_phone_required'),
       });
       return false;
     } else if (phone.length < 10 || phone.length > 15) {
       Toast.show({
         type: 'error',
-        text1: 'Error',
-        text2: 'Phone number must be between 10 and 15 digits.',
+        text1: I18n.t('Common.error_title'),
+        text2: I18n.t('AddAdmin.error_phone_length'),
       });
       return false;
     }
@@ -413,8 +427,8 @@ function AddAdminModal({ branches, visible, onClose }: AddAdminModalProps) {
     if (!branch) {
       Toast.show({
         type: 'error',
-        text1: 'Error',
-        text2: 'Branch is required.',
+        text1: I18n.t('Common.error_title'),
+        text2: I18n.t('AddAdmin.error_branch_required'),
       });
       return false;
     }
@@ -425,11 +439,13 @@ function AddAdminModal({ branches, visible, onClose }: AddAdminModalProps) {
   return (
     <Portal>
       <Dialog visible={visible} onDismiss={onClose} style={stylesModal.dialog}>
+        {/* Localized Dialog Title */}
+        <Dialog.Title>{I18n.t('AddAdmin.modal_title')}</Dialog.Title>
         <Dialog.Content style={{ paddingBottom: 10 }}>
           <ScrollView showsVerticalScrollIndicator={false}>
             {/* Full Name */}
             <TextInput
-              placeholder="Full name"
+              placeholder={I18n.t('AddAdmin.input_placeholder_fullname')}
               value={fullName}
               onChangeText={setFullName}
               style={stylesModal.input}
@@ -438,7 +454,7 @@ function AddAdminModal({ branches, visible, onClose }: AddAdminModalProps) {
 
             {/* Email */}
             <TextInput
-              placeholder="E-mail"
+              placeholder={I18n.t('AddAdmin.input_placeholder_email')}
               value={email}
               onChangeText={setEmail}
               style={stylesModal.input}
@@ -448,7 +464,7 @@ function AddAdminModal({ branches, visible, onClose }: AddAdminModalProps) {
 
             {/* Phone */}
             <TextInput
-              placeholder="Phone"
+              placeholder={I18n.t('AddAdmin.input_placeholder_phone')}
               value={phone}
               onChangeText={setPhone}
               style={stylesModal.input}
@@ -480,11 +496,11 @@ function AddAdminModal({ branches, visible, onClose }: AddAdminModalProps) {
                 >
                   {branch
                     ? branches.find((b: any) => b.id === branch)?.address
-                    : 'Branch'}
+                    : I18n.t('AddAdmin.dropdown_placeholder_branch')}
                 </Button>
               }
-              contentStyle={[stylesModal.menuContainer, { width: '100%' }]} // custom menu style
-              style={{ alignSelf: 'stretch' }} // Make it align with the anchor width
+              contentStyle={[stylesModal.menuContainer, { width: '100%' }]}
+              style={{ alignSelf: 'stretch' }}
               anchorPosition="bottom"
             >
               {branches?.length > 0 ? (
@@ -500,7 +516,10 @@ function AddAdminModal({ branches, visible, onClose }: AddAdminModalProps) {
                   />
                 ))
               ) : (
-                <Menu.Item title="No branches available" disabled />
+                <Menu.Item
+                  title={I18n.t('Common.no_branches_available')}
+                  disabled
+                />
               )}
             </Menu>
           </ScrollView>
@@ -508,6 +527,16 @@ function AddAdminModal({ branches, visible, onClose }: AddAdminModalProps) {
 
         {/* Dialog Actions */}
         <Dialog.Actions style={stylesModal.actions}>
+          {/* Localized Cancel Button */}
+          <Button
+            mode="outlined"
+            onPress={onClose}
+            style={stylesModal.cancelButton}
+            labelStyle={{ fontWeight: 'bold' }}
+          >
+            {I18n.t('BranchAdmins.cancel_button')}
+          </Button>
+          {/* Localized Add Admin Button */}
           <Button
             mode="contained"
             style={stylesModal.addButton}
@@ -523,12 +552,17 @@ function AddAdminModal({ branches, visible, onClose }: AddAdminModalProps) {
                   user_type: 'branch',
                 });
                 queryClient.invalidateQueries({ queryKey: ['branchAdmins'] });
+                // Show success toast
+                Toast.show({
+                  type: 'success',
+                  text1: I18n.t('AddAdmin.snackbar_success'),
+                });
                 onClose();
               }
             }}
             labelStyle={{ color: '#fff', fontWeight: 'bold' }}
           >
-            + Add Admin
+            {I18n.t('AddAdmin.button_add_admin')}
           </Button>
         </Dialog.Actions>
       </Dialog>
@@ -559,57 +593,63 @@ function UpdateAdminModal({
   const [email, setEmail] = React.useState(admin.email);
   const [phone, setPhone] = React.useState(admin.phone);
   const [branch, setBranch] = React.useState(admin.branch);
+  // Assume useUpdateBranchAdmin and useQueryClient are defined externally
   const { mutateAsync: updateBranchAdmin } = useUpdateBranchAdmin();
   const queryClient = useQueryClient();
 
   const [showMenu, setShowMenu] = React.useState(false);
+
   const validateForm = () => {
+    // Check Full Name
     if (!fullName?.trim()) {
       Toast.show({
         type: 'error',
-        text1: 'Error',
-        text2: 'Full name is required.',
+        text1: I18n.t('Common.error_title'),
+        text2: I18n.t('EditAdmin.error_fullname_required'),
       });
       return false;
     }
 
+    // Check Email
     if (!email?.trim()) {
       Toast.show({
         type: 'error',
-        text1: 'Error',
-        text2: 'Email is required.',
+        text1: I18n.t('Common.error_title'),
+        text2: I18n.t('EditAdmin.error_email_required'),
       });
       return false;
     } else if (!/\S+@\S+\.\S+/.test(email)) {
       Toast.show({
         type: 'error',
-        text1: 'Error',
-        text2: 'Please enter a valid email address.',
+        text1: I18n.t('Common.error_title'),
+        text2: I18n.t('EditAdmin.error_email_invalid'),
       });
       return false;
     }
 
+    // Check Phone
     if (!phone?.trim()) {
       Toast.show({
         type: 'error',
-        text1: 'Error',
-        text2: 'Phone number is required.',
+        text1: I18n.t('Common.error_title'),
+        text2: I18n.t('EditAdmin.error_phone_required'),
       });
       return false;
     } else if (phone.length < 10 || phone.length > 15) {
       Toast.show({
         type: 'error',
-        text1: 'Error',
-        text2: 'Phone number must be between 10 and 15 digits.',
+        text1: I18n.t('Common.error_title'),
+        text2: I18n.t('EditAdmin.error_phone_length'),
       });
       return false;
     }
 
+    // Check Branch
     if (!branch) {
       Toast.show({
         type: 'error',
-        text1: 'Error',
-        text2: 'Branch is required.',
+        text1: I18n.t('Common.error_title'),
+        text2: I18n.t('EditAdmin.error_branch_required'),
       });
       return false;
     }
@@ -620,20 +660,22 @@ function UpdateAdminModal({
   return (
     <Portal>
       <Dialog visible={visible} onDismiss={onClose} style={stylesModal.dialog}>
+        {/* Localized Dialog Title */}
+        <Dialog.Title>{I18n.t('EditAdmin.screen_title')}</Dialog.Title>
         <Dialog.Content style={{ paddingBottom: 10 }}>
           <ScrollView showsVerticalScrollIndicator={false}>
-            {/* Full Name */}
+            {/* Full Name Input */}
             <TextInput
-              placeholder="Full name"
+              placeholder={I18n.t('EditAdmin.label_fullname')}
               value={fullName}
               onChangeText={setFullName}
               style={stylesModal.input}
               placeholderTextColor="#999"
             />
 
-            {/* Email */}
+            {/* Email Input */}
             <TextInput
-              placeholder="E-mail"
+              placeholder={I18n.t('EditAdmin.label_email')}
               value={email}
               onChangeText={setEmail}
               style={stylesModal.input}
@@ -641,9 +683,9 @@ function UpdateAdminModal({
               placeholderTextColor="#999"
             />
 
-            {/* Phone */}
+            {/* Phone Input */}
             <TextInput
-              placeholder="Phone"
+              placeholder={I18n.t('EditAdmin.label_phone')}
               value={phone}
               onChangeText={setPhone}
               style={stylesModal.input}
@@ -651,6 +693,7 @@ function UpdateAdminModal({
               placeholderTextColor="#999"
             />
 
+            {/* Branch Dropdown Menu */}
             <Menu
               visible={showMenu}
               onDismiss={() => setShowMenu(false)}
@@ -675,11 +718,11 @@ function UpdateAdminModal({
                 >
                   {branch
                     ? branches.find((b: any) => b.id === branch)?.address
-                    : 'Branch'}
+                    : I18n.t('EditAdmin.placeholder_branch')}
                 </Button>
               }
-              contentStyle={[stylesModal.menuContainer, { width: '100%' }]} // custom menu style
-              style={{ alignSelf: 'stretch' }} // Make it align with the anchor width
+              contentStyle={[stylesModal.menuContainer, { width: '100%' }]}
+              style={{ alignSelf: 'stretch' }}
               anchorPosition="bottom"
             >
               {branches?.length > 0 ? (
@@ -695,7 +738,10 @@ function UpdateAdminModal({
                   />
                 ))
               ) : (
-                <Menu.Item title="No branches available" disabled />
+                <Menu.Item
+                  title={I18n.t('Common.no_branches_available')}
+                  disabled
+                />
               )}
             </Menu>
           </ScrollView>
@@ -703,6 +749,16 @@ function UpdateAdminModal({
 
         {/* Dialog Actions */}
         <Dialog.Actions style={stylesModal.actions}>
+          {/* Cancel Button */}
+          <Button
+            mode="outlined"
+            onPress={onClose}
+            style={stylesModal.cancelButton}
+            labelStyle={{ fontWeight: 'bold' }}
+          >
+            {I18n.t('BranchAdmins.cancel_button')}
+          </Button>
+          {/* Save Changes Button */}
           <Button
             mode="contained"
             style={stylesModal.addButton}
@@ -716,12 +772,17 @@ function UpdateAdminModal({
                   branch: branch,
                 });
                 queryClient.invalidateQueries({ queryKey: ['branchAdmins'] });
+                // Show success toast
+                Toast.show({
+                  type: 'success',
+                  text1: I18n.t('EditAdmin.snackbar_success'),
+                });
                 onClose();
               }
             }}
             labelStyle={{ color: '#fff', fontWeight: 'bold' }}
           >
-            Update Admin
+            {I18n.t('EditAdmin.button_save_changes')}
           </Button>
         </Dialog.Actions>
       </Dialog>
@@ -771,5 +832,10 @@ const stylesModal = StyleSheet.create({
   menuItem: {
     color: '#333',
     fontSize: 14,
+  },
+  cancelButton: {
+    borderRadius: 30,
+    paddingHorizontal: 25,
+    paddingVertical: 5,
   },
 });

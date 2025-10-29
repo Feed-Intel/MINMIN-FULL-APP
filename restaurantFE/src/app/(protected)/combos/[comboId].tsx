@@ -27,6 +27,7 @@ import { useGetBranches } from '@/services/mutation/branchMutation';
 import { useGetMenus } from '@/services/mutation/menuMutation';
 import { useUpdateCombo } from '@/services/mutation/comboMutation';
 import { useRestaurantIdentity } from '@/hooks/useRestaurantIdentity';
+import { i18n as I18n } from '@/app/_layout';
 
 type ComboItem = {
   menu_item: string | MenuType;
@@ -65,13 +66,7 @@ export default function EditComboDialog({
   const { data: branches } = useGetBranches();
   const { data: menuItems } = useGetMenus();
   const { mutateAsync: updateCombo, isPending } = useUpdateCombo();
-  const { width } = useWindowDimensions();
   const { isBranch, branchId } = useRestaurantIdentity();
-
-  const defaultBranchId = useMemo(() => {
-    if (isBranch && branchId) return branchId;
-    return branches?.results?.[0]?.id ?? '';
-  }, [isBranch, branchId, branches]);
 
   useEffect(() => {
     if (initialCombo) {
@@ -127,30 +122,32 @@ export default function EditComboDialog({
     const errors: { [key: string]: string } = {};
 
     if (!combo.name?.trim()) {
-      errors.name = 'Combo name is required.';
+      errors.name = I18n.t('comboDialog.errorComboNameRequired');
     } else if (combo.name.trim().length < 3) {
-      errors.name = 'Combo name must be at least 3 characters long.';
+      errors.name = I18n.t('comboDialog.errorComboNameMinLength');
     }
 
     if (!applyToAllBranches && !combo.branch) {
-      errors.branch = 'Branch selection is required.';
+      errors.branch = I18n.t('comboDialog.errorBranchRequired');
     }
 
     if ((combo.combo_price ?? 0) <= 0) {
-      errors.combo_price = 'Combo price must be greater than 0.';
+      errors.combo_price = I18n.t('comboDialog.errorComboPriceInvalid');
     }
 
     if (!combo.combo_items || combo.combo_items.length === 0) {
-      errors.combo_items = 'At least one combo item is required.';
+      errors.combo_items = I18n.t('comboDialog.errorComboItemsRequired');
     } else {
       combo.combo_items.forEach((item, index) => {
         if (!item.menu_item) {
-          errors[`menu_item_${index}`] = `Menu item is required for item ${
-            index + 1
-          }.`;
+          errors[`menu_item_${index}`] = I18n.t(
+            'comboDialog.errorMenuItemRequired'
+          );
         }
         if (item.quantity <= 0) {
-          errors[`quantity_${index}`] = `Quantity must be greater than 0.`;
+          errors[`quantity_${index}`] = I18n.t(
+            'comboDialog.errorQuantityInvalid'
+          );
         }
       });
     }
@@ -190,10 +187,12 @@ export default function EditComboDialog({
         <Dialog.Content>
           <ScrollView>
             <Card.Content>
-              <Text style={styles.title}>Edit Combo Details</Text>
+              <Text style={styles.title}>
+                {I18n.t('comboDialog.comboDetailEditTitle')}
+              </Text>
 
               <TextInput
-                placeholder="Combo Name"
+                placeholder={I18n.t('comboDialog.comboNamePlaceholder')}
                 value={combo.name}
                 onChangeText={(text) => handleInputChange('name', text)}
                 style={styles.input}
@@ -208,7 +207,7 @@ export default function EditComboDialog({
               </HelperText>
 
               <TextInput
-                placeholder="Combo Price"
+                placeholder={I18n.t('comboDialog.comboPricePlaceholder')}
                 value={combo.combo_price?.toString()}
                 keyboardType="numeric"
                 onChangeText={(text) => {
@@ -226,7 +225,9 @@ export default function EditComboDialog({
               </HelperText>
 
               <View style={styles.switchContainer}>
-                <Text style={styles.switchText}>Apply to All Branches</Text>
+                <Text style={styles.switchText}>
+                  {I18n.t('comboDialog.applyToAllBranchesLabel')}
+                </Text>
                 <Switch
                   value={applyToAllBranches}
                   onValueChange={(value) => setApplyToAllBranches(value)}
@@ -242,7 +243,8 @@ export default function EditComboDialog({
                     <Text style={styles.readonlyBranch}>
                       {branches?.results.find(
                         (b: any) => b.id === (branchId ?? combo.branch)
-                      )?.address ?? 'Assigned Branch'}
+                      )?.address ??
+                        I18n.t('comboDialog.assignedBranchReadonly')}
                     </Text>
                   ) : (
                     <Menu
@@ -263,7 +265,7 @@ export default function EditComboDialog({
                             ? branches?.results.find(
                                 (b: any) => b.id === combo.branch
                               )?.address
-                            : 'Select Branch'}
+                            : I18n.t('comboDialog.selectBranchButton')}
                         </Button>
                       }
                       contentStyle={[styles.menuContent, { width: '100%' }]}
@@ -281,21 +283,30 @@ export default function EditComboDialog({
                           />
                         ))
                       ) : (
-                        <Menu.Item title="No branches available" disabled />
+                        <Menu.Item
+                          title={I18n.t('comboDialog.noBranchesAvailable')}
+                          disabled
+                        />
                       )}
                     </Menu>
                   )}
                 </View>
               )}
 
-              <Text style={styles.subtitle}>Combo Items</Text>
-
               <DataTable style={styles.dataTable}>
                 <DataTable.Header>
-                  <DataTable.Title>Menu Item</DataTable.Title>
-                  <DataTable.Title>Qty</DataTable.Title>
-                  <DataTable.Title>Half?</DataTable.Title>
-                  <DataTable.Title>Actions</DataTable.Title>
+                  <DataTable.Title>
+                    {I18n.t('comboDialog.menuItemHeader')}
+                  </DataTable.Title>
+                  <DataTable.Title>
+                    {I18n.t('comboDialog.quantityHeader')}
+                  </DataTable.Title>
+                  <DataTable.Title>
+                    {I18n.t('comboDialog.isHalfHeader')}
+                  </DataTable.Title>
+                  <DataTable.Title>
+                    {I18n.t('comboDialog.actionsHeader')}
+                  </DataTable.Title>
                 </DataTable.Header>
 
                 {combo.combo_items?.map((item, index) => (
@@ -319,7 +330,7 @@ export default function EditComboDialog({
                               ? menuItems?.results.find(
                                   (m: any) => m.id === item.menu_item
                                 )?.name
-                              : 'Select Menu Item'}
+                              : I18n.t('comboDialog.menuItemDropdownDefault')}
                           </Button>
                         }
                       >
@@ -341,7 +352,10 @@ export default function EditComboDialog({
                             />
                           ))
                         ) : (
-                          <Menu.Item title="No menu items available" disabled />
+                          <Menu.Item
+                            title={I18n.t('comboDialog.noMenuItemsAvailable')}
+                            disabled
+                          />
                         )}
                       </Menu>
                     </DataTable.Cell>
@@ -383,14 +397,14 @@ export default function EditComboDialog({
               </DataTable>
 
               <Button icon="plus" onPress={handleAddItem}>
-                Add Combo Item
+                {I18n.t('comboDialog.addComboItemButton')}
               </Button>
             </Card.Content>
           </ScrollView>
         </Dialog.Content>
 
         <Dialog.Actions>
-          <Button onPress={onClose}>Cancel</Button>
+          <Button onPress={onClose}>{I18n.t('comboDialog.cancel')}</Button>
           <Button
             mode="contained"
             onPress={handleSave}
@@ -398,7 +412,7 @@ export default function EditComboDialog({
             style={styles.saveButton}
             disabled={isPending}
           >
-            Save Combo
+            {I18n.t('comboDialog.saveComboButton')}
           </Button>
         </Dialog.Actions>
       </Dialog>
@@ -408,7 +422,7 @@ export default function EditComboDialog({
         onDismiss={() => setSnackbarVisible(false)}
         duration={3000}
       >
-        Combo updated successfully!
+        {I18n.t('comboDialog.comboUpdatedSuccess')}
       </Snackbar>
     </Portal>
   );

@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useState } from 'react';
 import {
   Image,
   Linking,
-  Modal,
   Platform,
   ScrollView,
   StyleSheet,
@@ -16,9 +15,7 @@ import {
   Appbar,
   Button,
   Card,
-  Dialog,
   Divider,
-  Portal,
   Snackbar,
   Text,
 } from 'react-native-paper';
@@ -43,10 +40,11 @@ import LanguageSelector from '@/components/LanguageSelector';
 import PostGallery from '@/components/PostGallery';
 import AddPostModal from '@/components/UploadPostImage';
 import CustomerFeedback from '@/components/CustomerFeedback';
+import { i18n as I18n } from '@/app/_layout';
 
 const LANGUAGE_STORAGE_KEY = 'restaurant-language-preference';
-const PRIVACY_POLICY_URL = 'https://alpha.feed-intel.com/privacy/';
-const TERMS_URL = 'https://alpha.feed-intel.com/terms/';
+const PRIVACY_POLICY_URL = 'https://stg.api.feed-intel.com/privacy/';
+const TERMS_URL = 'https://stg.api.feed-intel.com/terms/';
 
 const formatNumber = (value?: number | null) => {
   if (value === null || value === undefined || Number.isNaN(value)) {
@@ -108,7 +106,9 @@ const ProfileScreen = () => {
   const [snackbarMessage, setSnackbarMessage] = useState('');
   const [showLanguageModal, setShowLanguageModal] = useState(false);
   const [selectedLanguage, setSelectedLanguage] = useState<'en' | 'am'>('en');
-  const [activeTab, setActiveTab] = useState<string>('Business Detail');
+  const [activeTab, setActiveTab] = useState<string>(
+    I18n.t('profile.tab_business_detail')
+  );
   const [addPost, setAddPost] = useState<boolean>(false);
 
   useEffect(() => {
@@ -166,7 +166,7 @@ const ProfileScreen = () => {
     () => [
       {
         key: 'discount',
-        label: 'Max Discount',
+        label: I18n.t('profile.stat_max_discount_label'),
         value:
           maxDiscount === null || Number.isNaN(maxDiscount)
             ? '--'
@@ -175,7 +175,7 @@ const ProfileScreen = () => {
       },
       {
         key: 'tax',
-        label: 'Tax',
+        label: I18n.t('profile.stat_tax_label'),
         value:
           taxPercentage === null || Number.isNaN(taxPercentage)
             ? '--'
@@ -184,7 +184,7 @@ const ProfileScreen = () => {
       },
       {
         key: 'service',
-        label: 'Service Charge',
+        label: I18n.t('profile.stat_service_charge_label'),
         value:
           serviceChargePercentage === null ||
           Number.isNaN(serviceChargePercentage)
@@ -240,10 +240,12 @@ const ProfileScreen = () => {
     updateProfileImage(formData, {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: ['tenantProfile'] });
-        setSnackbarMessage('Profile picture updated');
+        setSnackbarMessage(I18n.t('profile.snackbar_profile_pic_updated'));
       },
       onError: () => {
-        setSnackbarMessage('Could not update profile picture');
+        setSnackbarMessage(
+          I18n.t('profile.snackbar_profile_pic_update_failed')
+        );
       },
     });
   };
@@ -267,10 +269,10 @@ const ProfileScreen = () => {
       {
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: ['tenantProfile'] });
-          setSnackbarMessage('Profile details saved');
+          setSnackbarMessage(I18n.t('profile.snackbar_profile_saved'));
         },
         onError: () => {
-          setSnackbarMessage('Failed to save profile details');
+          setSnackbarMessage(I18n.t('profile.snackbar_profile_save_failed'));
         },
       }
     );
@@ -283,31 +285,31 @@ const ProfileScreen = () => {
   const accountSettings: AccountSetting[] = [
     {
       key: 'language',
-      label: 'Language',
+      label: I18n.t('profile.setting_language'),
       icon: 'translate',
       onPress: () => setShowLanguageModal(true),
     },
     {
       key: 'support',
-      label: 'Help & Support',
+      label: I18n.t('profile.setting_support'),
       icon: 'lifebuoy',
       onPress: () => {},
     },
     {
       key: 'privacy',
-      label: 'Privacy Policy',
+      label: I18n.t('profile.setting_privacy_policy'),
       icon: 'shield-check-outline',
       onPress: () => openExternalLink(PRIVACY_POLICY_URL),
     },
     {
       key: 'terms',
-      label: 'Terms & Conditions',
+      label: I18n.t('profile.setting_terms_conditions'),
       icon: 'file-document-outline',
       onPress: () => openExternalLink(TERMS_URL),
     },
     {
       key: 'logout',
-      label: 'Log out',
+      label: I18n.t('profile.setting_logout'),
       icon: 'logout',
       destructive: true,
       showChevron: false,
@@ -318,7 +320,10 @@ const ProfileScreen = () => {
   return (
     <SafeAreaView style={styles.safeArea}>
       <Appbar.Header style={styles.header}>
-        <Appbar.Content title="Profile" titleStyle={styles.headerTitle} />
+        <Appbar.Content
+          title={I18n.t('profile.header_title')}
+          titleStyle={styles.headerTitle}
+        />
         <Appbar.Action icon="logout" onPress={handleLogout} />
       </Appbar.Header>
 
@@ -367,7 +372,7 @@ const ProfileScreen = () => {
                       loading={isUploadingImage}
                       disabled={isUploadingImage}
                     >
-                      Change photo
+                      {I18n.t('profile.change_photo_button')}
                     </Button>
                   </View>
 
@@ -380,14 +385,14 @@ const ProfileScreen = () => {
                     <Text style={styles.profileName} numberOfLines={1}>
                       {restaurantName ||
                         tenant?.restaurant_name ||
-                        'Your restaurant'}
+                        I18n.t('profile.default_restaurant_name')}
                     </Text>
                     {userEmail ? (
                       <Text style={styles.profileMeta}>{userEmail}</Text>
                     ) : null}
                     {branchName ? (
                       <Text style={styles.profileMeta}>
-                        Branch: {branchName}
+                        {I18n.t('profile.branch_label', { branchName })}
                       </Text>
                     ) : null}
                     {profile ? (
@@ -411,7 +416,7 @@ const ProfileScreen = () => {
                     </View>
                   </View>
                 </View>
-                {activeTab == 'Posts' && (
+                {activeTab == I18n.t('profile.tab_posts') && (
                   <Button
                     icon="plus"
                     style={{
@@ -425,7 +430,7 @@ const ProfileScreen = () => {
                     }}
                     onPress={() => setAddPost(true)}
                   >
-                    Add Posts
+                    {I18n.t('profile.add_posts_button')}
                   </Button>
                 )}
               </Card.Content>
@@ -436,50 +441,59 @@ const ProfileScreen = () => {
                 <TouchableOpacity
                   style={[
                     styles.tabButton,
-                    activeTab === 'Business Detail' && styles.activeTab,
+                    activeTab === I18n.t('profile.tab_business_detail') &&
+                      styles.activeTab,
                   ]}
-                  onPress={() => setActiveTab('Business Detail')}
+                  onPress={() =>
+                    setActiveTab(I18n.t('profile.tab_business_detail'))
+                  }
                 >
                   <Text
                     style={[
                       styles.tabLabel,
-                      activeTab === 'Business Detail' && styles.activeTabLabel,
-                    ]}
-                  >
-                    Business Detail
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[
-                    styles.tabButton,
-                    activeTab === 'Posts' && styles.activeTab,
-                  ]}
-                  onPress={() => setActiveTab('Posts')}
-                >
-                  <Text
-                    style={[
-                      styles.tabLabel,
-                      activeTab === 'Posts' && styles.activeTabLabel,
-                    ]}
-                  >
-                    Posts
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[
-                    styles.tabButton,
-                    activeTab === 'Customer Feedback' && styles.activeTab,
-                  ]}
-                  onPress={() => setActiveTab('Customer Feedback')}
-                >
-                  <Text
-                    style={[
-                      styles.tabLabel,
-                      activeTab === 'Customer Feedback' &&
+                      activeTab === I18n.t('profile.tab_business_detail') &&
                         styles.activeTabLabel,
                     ]}
                   >
-                    Customer Feedback
+                    {I18n.t('profile.tab_business_detail')}
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.tabButton,
+                    activeTab === I18n.t('profile.tab_posts') &&
+                      styles.activeTab,
+                  ]}
+                  onPress={() => setActiveTab(I18n.t('profile.tab_posts'))}
+                >
+                  <Text
+                    style={[
+                      styles.tabLabel,
+                      activeTab === I18n.t('profile.tab_posts') &&
+                        styles.activeTabLabel,
+                    ]}
+                  >
+                    {I18n.t('profile.tab_posts')}
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.tabButton,
+                    activeTab === I18n.t('profile.tab_customer_feedback') &&
+                      styles.activeTab,
+                  ]}
+                  onPress={() =>
+                    setActiveTab(I18n.t('profile.tab_customer_feedback'))
+                  }
+                >
+                  <Text
+                    style={[
+                      styles.tabLabel,
+                      activeTab === I18n.t('profile.tab_customer_feedback') &&
+                        styles.activeTabLabel,
+                    ]}
+                  >
+                    {I18n.t('profile.tab_customer_feedback')}
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -494,16 +508,20 @@ const ProfileScreen = () => {
                     color="#91B275"
                   />
                 </View>
-                {activeTab == 'Business Detail' && (
+                {activeTab == I18n.t('profile.tab_business_detail') && (
                   <View style={styles.inputGroup}>
                     <TextInput
-                      placeholder="Restaurant Name"
+                      placeholder={I18n.t(
+                        'profile.input_placeholder_restaurant_name'
+                      )}
                       value={restaurantName}
                       onChangeText={setRestaurantName}
                       style={styles.input}
                     />
                     <TextInput
-                      placeholder="Profile Description"
+                      placeholder={I18n.t(
+                        'profile.input_placeholder_profile_description'
+                      )}
                       value={profile}
                       onChangeText={setProfile}
                       multiline
@@ -514,13 +532,13 @@ const ProfileScreen = () => {
                 )}
               </Card.Content>
             </Card>
-            {activeTab == 'Business Detail' && (
+            {activeTab == I18n.t('profile.tab_business_detail') && (
               <>
                 <Card style={styles.sectionCard}>
                   <Card.Content>
                     <View style={styles.sectionHeader}>
                       <Text style={styles.sectionTitle}>
-                        Financial & Payments
+                        {I18n.t('profile.section_title_financial_payments')}
                       </Text>
                       <Ionicons
                         name="wallet-outline"
@@ -531,13 +549,17 @@ const ProfileScreen = () => {
 
                     <View style={styles.inputRow}>
                       <TextInput
-                        placeholder="Chapa Payment API Key"
+                        placeholder={I18n.t(
+                          'profile.input_placeholder_chapa_api_key'
+                        )}
                         value={chapaPaymentApiKey}
                         onChangeText={setChapaPaymentApiKey}
                         style={styles.input}
                       />
                       <TextInput
-                        placeholder="Chapa Public Key"
+                        placeholder={I18n.t(
+                          'profile.input_placeholder_chapa_public_key'
+                        )}
                         value={chapaPaymentPublicKey}
                         onChangeText={setChapaPaymentPublicKey}
                         style={styles.input}
@@ -546,7 +568,9 @@ const ProfileScreen = () => {
 
                     <View style={styles.inputRow}>
                       <TextInput
-                        placeholder="Tax Percentage"
+                        placeholder={I18n.t(
+                          'profile.input_placeholder_tax_percentage'
+                        )}
                         value={taxPercentage?.toString() ?? ''}
                         onChangeText={(text) =>
                           setTaxPercentage(text ? Number(text) : null)
@@ -555,7 +579,9 @@ const ProfileScreen = () => {
                         style={styles.input}
                       />
                       <TextInput
-                        placeholder="Service Charge Percentage"
+                        placeholder={I18n.t(
+                          'profile.input_placeholder_service_charge_percentage'
+                        )}
                         value={serviceChargePercentage?.toString() ?? ''}
                         onChangeText={(text) =>
                           setServiceChargePercentage(text ? Number(text) : null)
@@ -566,7 +592,9 @@ const ProfileScreen = () => {
                     </View>
 
                     <TextInput
-                      placeholder="Max Discount Limit"
+                      placeholder={I18n.t(
+                        'profile.input_placeholder_max_discount'
+                      )}
                       value={maxDiscount?.toString() ?? ''}
                       onChangeText={(text) =>
                         setMaxDiscount(text ? Number(text) : null)
@@ -583,7 +611,7 @@ const ProfileScreen = () => {
                       loading={isSavingProfile}
                       disabled={isSavingProfile}
                     >
-                      Save Changes
+                      {I18n.t('profile.save_changes_button')}
                     </Button>
                   </Card.Content>
                 </Card>
@@ -592,7 +620,7 @@ const ProfileScreen = () => {
                   <Card.Content>
                     <View style={styles.sectionHeader}>
                       <Text style={styles.sectionTitle}>
-                        Top Performing Items
+                        {I18n.t('profile.section_title_top_items')}
                       </Text>
                       <Ionicons
                         name="trending-up-outline"
@@ -636,18 +664,20 @@ const ProfileScreen = () => {
                               </View>
                             )}
                             <Text style={styles.topItemName} numberOfLines={1}>
-                              {item.name || 'Menu Item'}
+                              {item.name ||
+                                I18n.t('profile.top_item_default_name')}
                             </Text>
                             <Text style={styles.topItemMeta}>
-                              {formatNumber(item.count)} orders
+                              {I18n.t('profile.top_item_orders_meta', {
+                                count: parseInt(formatNumber(item.count)),
+                              })}
                             </Text>
                           </View>
                         ))}
                       </ScrollView>
                     ) : (
                       <Text style={styles.emptyStateText}>
-                        Performance data will appear once you start taking
-                        orders.
+                        {I18n.t('profile.top_items_empty_state')}
                       </Text>
                     )}
                   </Card.Content>
@@ -655,7 +685,9 @@ const ProfileScreen = () => {
 
                 <Card style={styles.sectionCard}>
                   <Card.Content>
-                    <Text style={styles.sectionTitle}>Account Settings</Text>
+                    <Text style={styles.sectionTitle}>
+                      {I18n.t('profile.section_title_account_settings')}
+                    </Text>
                     <Divider style={styles.settingsDivider} />
                     {accountSettings.map((item) => (
                       <TouchableOpacity
@@ -682,7 +714,9 @@ const ProfileScreen = () => {
                         {item.key === 'language' ? (
                           <View style={styles.settingRight}>
                             <Text style={styles.settingValue}>
-                              {selectedLanguage === 'en' ? 'English' : 'አማርኛ'}
+                              {selectedLanguage === 'en'
+                                ? I18n.t('profile.language_english')
+                                : I18n.t('profile.language_amharic')}
                             </Text>
                             <MaterialIcons
                               name="keyboard-arrow-right"
@@ -703,10 +737,12 @@ const ProfileScreen = () => {
                 </Card>
               </>
             )}
-            {activeTab == 'Posts' && (
+            {activeTab == I18n.t('profile.tab_posts') && (
               <PostGallery onAddPost={() => setAddPost(true)} />
             )}
-            {activeTab == 'Customer Feedback' && <CustomerFeedback />}
+            {activeTab == I18n.t('profile.tab_customer_feedback') && (
+              <CustomerFeedback />
+            )}
           </>
         )}
       </ScrollView>

@@ -18,6 +18,7 @@ import {
   Option,
 } from 'react-native-paper-dropdown';
 import { Branch } from '@/types/branchType';
+import { i18n as I18n } from '@/app/_layout';
 
 type EditCouponProps = {
   coupon: any;
@@ -53,29 +54,35 @@ export default function EditCouponModal({
     if (!discountCode?.trim()) {
       Toast.show({
         type: 'error',
-        text1: 'Discount Code is required.',
+        text1: I18n.t('coupon_modal.error_code_required'),
       });
       return false;
     } else if (discountCode.trim().length < 3) {
       Toast.show({
         type: 'error',
-        text1: 'Discount Code must be at least 3 characters long.',
+        text1: I18n.t('coupon_modal.error_code_min_length'),
       });
       return false;
     }
 
     // Validate Valid From/Until Dates
     if (!validFrom) {
-      Toast.show({ type: 'error', text1: 'Valid From date is required.' });
+      Toast.show({
+        type: 'error',
+        text1: I18n.t('coupon_modal.error_from_required'),
+      });
       return false;
     }
     if (!validUntil) {
-      Toast.show({ type: 'error', text1: 'Valid Until date is required.' });
+      Toast.show({
+        type: 'error',
+        text1: I18n.t('coupon_modal.error_until_required'),
+      });
       return false;
     } else if (dayjs(validUntil).isBefore(validFrom)) {
       Toast.show({
         type: 'error',
-        text1: 'Valid Until must be after Valid From.',
+        text1: I18n.t('coupon_modal.error_until_after_from'),
       });
       return false;
     }
@@ -89,7 +96,7 @@ export default function EditCouponModal({
         <Dialog.Content>
           <ScrollView>
             <TextInput
-              placeholder="Coupon Code"
+              placeholder={I18n.t('coupon_modal.placeholder_code')}
               value={discountCode}
               onChangeText={setDiscountCode}
               style={stylesModal.input}
@@ -103,7 +110,9 @@ export default function EditCouponModal({
                 marginBottom: 15,
               }}
             >
-              <Text style={{ color: '#40392B' }}>Is Global</Text>
+              <Text style={{ color: '#40392B' }}>
+                {I18n.t('coupon_modal.label_is_global')}
+              </Text>
               <Switch
                 value={isGlobal}
                 onValueChange={setIsGlobal}
@@ -112,10 +121,14 @@ export default function EditCouponModal({
             </View>
             {!isGlobal && (
               <>
-                <Text style={stylesModal.fieldLabel}>Branch</Text>
+                <Text style={stylesModal.fieldLabel}>
+                  {I18n.t('coupon_modal.label_branch')}
+                </Text>
                 <MultiSelectDropdown
-                  label="Select Branches"
-                  placeholder="Select Branches"
+                  label={I18n.t('coupon_modal.placeholder_select_branches')}
+                  placeholder={I18n.t(
+                    'coupon_modal.placeholder_select_branches'
+                  )}
                   options={
                     (branches.map((br) => ({
                       label: br.address,
@@ -161,7 +174,9 @@ export default function EditCouponModal({
                 marginBottom: 15,
               }}
             >
-              <Text style={{ color: '#40392B' }}>Is Percentage</Text>
+              <Text style={{ color: '#40392B' }}>
+                {I18n.t('coupon_modal.label_is_percentage')}
+              </Text>
               <Switch
                 value={isPercentage}
                 onValueChange={setIsPercentage}
@@ -169,7 +184,7 @@ export default function EditCouponModal({
               />
             </View>
             <TextInput
-              placeholder="Discount Amount"
+              placeholder={I18n.t('coupon_modal.placeholder_amount')}
               value={discountAmount}
               onChangeText={setDiscountAmount}
               style={stylesModal.input}
@@ -199,10 +214,10 @@ export default function EditCouponModal({
                   }}
                   icon={'chevron-down'}
                 >
-                  Valid From:{' '}
+                  {I18n.t('coupon_modal.button_valid_from')}{' '}
                   {validFrom
                     ? dayjs(validFrom).format('YYYY-MM-DD')
-                    : 'Not Set'}
+                    : I18n.t('coupon_modal.date_not_set')}
                 </Button>
                 <DatePicker
                   dateFilterVisible={showFromPicker}
@@ -226,10 +241,10 @@ export default function EditCouponModal({
                   }}
                   icon={'chevron-down'}
                 >
-                  Valid Until:{' '}
+                  {I18n.t('coupon_modal.button_valid_until')}{' '}
                   {validUntil
                     ? dayjs(validUntil).format('YYYY-MM-DD')
-                    : 'Not Set'}
+                    : I18n.t('coupon_modal.date_not_set')}
                 </Button>
                 <DatePicker
                   dateFilterVisible={showUntilPicker}
@@ -266,7 +281,7 @@ export default function EditCouponModal({
               }
             }}
           >
-            + Update Coupon
+            {I18n.t('coupon_modal.button_update_coupon')}
           </Button>
         </Dialog.Actions>
       </Dialog>

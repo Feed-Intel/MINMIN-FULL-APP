@@ -7,10 +7,16 @@ import {
   DeleteBranchAdmin,
 } from '../api/branchAdminApi';
 import { BranchAdmin } from '@/types/branchAdmin';
+import { useTime } from '@/context/time';
 
-export const useGetBranchAdmins = (page: number | undefined) =>
-  useQuery<{ next: string | null; results: BranchAdmin[]; count: number }>({
-    queryKey: ['branchAdmins', page],
+export const useGetBranchAdmins = (page: number | undefined) => {
+  const { time } = useTime();
+  return useQuery<{
+    next: string | null;
+    results: BranchAdmin[];
+    count: number;
+  }>({
+    queryKey: ['branchAdmins', page, time],
     queryFn: () => GetBranchAdmins(page),
     gcTime: 0,
     staleTime: 0,
@@ -19,10 +25,12 @@ export const useGetBranchAdmins = (page: number | undefined) =>
     refetchOnReconnect: true,
     refetchInterval: 60000,
   });
+};
 
-export const useGetBranchAdmin = (adminId: string) =>
-  useQuery<BranchAdmin>({
-    queryKey: ['branchAdmin', adminId],
+export const useGetBranchAdmin = (adminId: string) => {
+  const { time } = useTime();
+  return useQuery<BranchAdmin>({
+    queryKey: ['branchAdmin', adminId, time],
     queryFn: () => GetBranchAdmin(adminId),
     gcTime: 0,
     staleTime: 0,
@@ -31,12 +39,14 @@ export const useGetBranchAdmin = (adminId: string) =>
     refetchOnReconnect: true,
     refetchInterval: 60000,
   });
+};
 
 export const useCreateBranchAdmin = (
   onSuccess?: (data: any) => void,
   onError?: (error: any) => void
 ) => {
   const queryClient = useQueryClient();
+  const { setTime } = useTime();
   return useMutation({
     mutationKey: ['createBranchAdmin'],
     mutationFn: CreateBranchAdmin,
@@ -46,6 +56,7 @@ export const useCreateBranchAdmin = (
         queryKey: ['branchAdmins'],
         type: 'active',
       });
+      setTime(Date.now());
     },
     onError,
   });
@@ -56,6 +67,7 @@ export const useUpdateBranchAdmin = (
   onError?: (error: any) => void
 ) => {
   const queryClient = useQueryClient();
+  const { setTime } = useTime();
   return useMutation({
     mutationKey: ['updateBranchAdmin'],
     mutationFn: UpdateBranchAdmin,
@@ -65,6 +77,7 @@ export const useUpdateBranchAdmin = (
         queryKey: ['branchAdmins'],
         type: 'active',
       });
+      setTime(Date.now());
     },
     onError,
   });
@@ -72,6 +85,7 @@ export const useUpdateBranchAdmin = (
 
 export const useDeleteBranchAdmin = () => {
   const queryClient = useQueryClient();
+  const { setTime } = useTime();
   return useMutation({
     mutationKey: ['deleteBranchAdmin'],
     mutationFn: DeleteBranchAdmin,
@@ -81,6 +95,7 @@ export const useDeleteBranchAdmin = () => {
         queryKey: ['branchAdmins'],
         type: 'active',
       });
+      setTime(Date.now());
     },
   });
 };

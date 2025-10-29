@@ -9,6 +9,7 @@ import { useDispatch } from 'react-redux';
 import { setRestaurant } from '@/lib/reduxStore/authSlice';
 import { useLogin } from '@/services/mutation/authMutation';
 import Toast from 'react-native-toast-message';
+import { i18n as I18n } from '../_layout';
 
 const LoginScreen = () => {
   const logoAnimation = React.useRef(new Animated.Value(0)).current;
@@ -40,9 +41,8 @@ const LoginScreen = () => {
     if ((isBranchUser || isRestaurantUser) && !decoded?.branch) {
       Toast.show({
         type: 'error',
-        text1: 'Error',
-        text2:
-          'Please contact your administrator to assign a branch to your account.',
+        text1: I18n.t('Login.error_title'), // Localized
+        text2: I18n.t('Login.error_no_branch'), // Localized
       });
       return;
     }
@@ -50,8 +50,8 @@ const LoginScreen = () => {
     if (isRestaurantUser && !decoded?.tenant) {
       Toast.show({
         type: 'error',
-        text1: 'Error',
-        text2: 'Your restaurant profile is not linked. Please contact support.',
+        text1: I18n.t('Login.error_title'), // Localized
+        text2: I18n.t('Login.error_no_tenant'), // Localized
       });
       return;
     }
@@ -71,7 +71,12 @@ const LoginScreen = () => {
 
   const handleLogin = () => {
     if (!email || !password) {
-      alert('Please fill in both fields!');
+      // Replaced alert with Toast and localized the message
+      Toast.show({
+        type: 'error',
+        text1: I18n.t('Login.error_title'),
+        text2: I18n.t('Login.error_missing_fields'),
+      });
       return;
     }
     LoginFn({ email, password }, { onSuccess });
@@ -86,22 +91,22 @@ const LoginScreen = () => {
             variant="headlineLarge"
             style={[styles.title, { color: '#3A3A3A' }]}
           >
-            Welcome to MinMin Restaurant
+            {I18n.t('Login.welcome_title')} {/* Localized */}
           </Text>
           <Paragraph style={styles.subtitle}>
-            Log in to manage your restaurant account
+            {I18n.t('Login.subtitle')} {/* Localized */}
           </Paragraph>
 
           {/* Input Fields */}
           <TextInput
-            placeholder="Email"
+            placeholder={I18n.t('Login.email_placeholder')}
             value={email}
             onChangeText={setEmail}
             style={styles.input}
             keyboardType="email-address"
           />
           <TextInput
-            placeholder="Password"
+            placeholder={I18n.t('Login.password_placeholder')}
             value={password}
             onChangeText={setPassword}
             style={styles.input}
@@ -116,7 +121,11 @@ const LoginScreen = () => {
             style={styles.button}
             labelStyle={{ color: '#fff' }}
           >
-            {isPending ? 'Logging in...' : 'Log in'}
+            {
+              isPending
+                ? I18n.t('Login.logging_in') // Localized
+                : I18n.t('Login.login_button') // Localized
+            }
           </Button>
 
           {/* Forgot Password */}
@@ -126,7 +135,7 @@ const LoginScreen = () => {
             style={styles.forgotPassword}
             labelStyle={{ color: '#3A3A3A' }}
           >
-            Forgot Password?
+            {I18n.t('Login.forgot_password')} {/* Localized */}
           </Button>
         </Card.Content>
       </Card>

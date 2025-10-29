@@ -10,10 +10,12 @@ import { Branch } from '@/types/branchType';
 import { useDispatch } from 'react-redux';
 import { AppDispatch } from '@/lib/reduxStore/store';
 import { hideLoader, showLoader } from '@/lib/reduxStore/loaderSlice';
+import { useTime } from '@/context/time';
 
-export const useGetBranches = (params?: any, noPage?: boolean) =>
-  useQuery<{ next: string | null; results: Branch[]; count: number }>({
-    queryKey: ['branches', params],
+export const useGetBranches = (params?: any, noPage?: boolean) => {
+  const { time } = useTime();
+  return useQuery<{ next: string | null; results: Branch[]; count: number }>({
+    queryKey: ['branches', params, time],
     queryFn: () => {
       const searchParams = new URLSearchParams();
       Object.entries(params ?? {}).forEach(([key, value]) => {
@@ -30,10 +32,12 @@ export const useGetBranches = (params?: any, noPage?: boolean) =>
     refetchOnReconnect: true,
     refetchInterval: 60000,
   });
+};
 
-export const useGetBranch = (id: string) =>
-  useQuery<Branch>({
-    queryKey: ['branch', id],
+export const useGetBranch = (id: string) => {
+  const { time } = useTime();
+  return useQuery<Branch>({
+    queryKey: ['branch', id, time],
     queryFn: () => GetBranch(id),
     gcTime: 0,
     staleTime: 0,
@@ -42,6 +46,7 @@ export const useGetBranch = (id: string) =>
     refetchOnReconnect: true,
     refetchInterval: 60000,
   });
+};
 
 export const useCreateBranch = (
   onSuccess?: (data?: any) => void,
@@ -49,6 +54,7 @@ export const useCreateBranch = (
 ) => {
   const dispatch = useDispatch<AppDispatch>();
   const queryClient = useQueryClient();
+  const { setTime } = useTime();
   return useMutation({
     mutationKey: ['createBranch'],
     mutationFn: (data: any) => {
@@ -61,6 +67,7 @@ export const useCreateBranch = (
         queryKey: ['branches'],
         type: 'active',
       });
+      setTime(Date.now());
       if (onSuccess) onSuccess(data);
     },
     onError: (error) => {
@@ -77,6 +84,7 @@ export const useUpdateBranch = (
 ) => {
   const dispatch = useDispatch<AppDispatch>();
   const queryClient = useQueryClient();
+  const { setTime } = useTime();
   return useMutation({
     mutationKey: ['updateBranch'],
     mutationFn: (data: any) => {
@@ -89,6 +97,7 @@ export const useUpdateBranch = (
         queryKey: ['branches'],
         type: 'active',
       });
+      setTime(Date.now());
       if (onSuccess) onSuccess(data);
     },
     onError: (error) => {
@@ -105,6 +114,7 @@ export const useDeleteBranch = (
 ) => {
   const queryClient = useQueryClient();
   const dispatch = useDispatch<AppDispatch>();
+  const { setTime } = useTime();
   return useMutation({
     mutationKey: ['deleteBranch'],
     mutationFn: (data: any) => {
@@ -117,6 +127,7 @@ export const useDeleteBranch = (
         queryKey: ['branches'],
         type: 'active',
       });
+      setTime(Date.now());
       if (onSuccess) onSuccess(data);
     },
     onError: (error) => {

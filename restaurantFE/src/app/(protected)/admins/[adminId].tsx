@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from 'react';
 import {
   View,
   StyleSheet,
   useWindowDimensions,
   ScrollView,
-} from "react-native";
+} from 'react-native';
 import {
   TextInput,
   Button,
@@ -12,17 +12,18 @@ import {
   Appbar,
   ActivityIndicator,
   HelperText,
-} from "react-native-paper";
-import { useRouter, useLocalSearchParams } from "expo-router";
-import { useQueryClient } from "@tanstack/react-query";
+} from 'react-native-paper';
+import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useQueryClient } from '@tanstack/react-query';
 
-import { BranchAdmin } from "@/types/branchAdmin";
+import { BranchAdmin } from '@/types/branchAdmin';
 import {
   useGetBranchAdmin,
   useUpdateBranchAdmin,
-} from "@/services/mutation/branchAdminMutation";
-import { Dropdown } from "react-native-paper-dropdown";
-import { useGetBranches } from "@/services/mutation/branchMutation";
+} from '@/services/mutation/branchAdminMutation';
+import { Dropdown } from 'react-native-paper-dropdown';
+import { useGetBranches } from '@/services/mutation/branchMutation';
+import { i18n as I18n } from '@/app/_layout';
 
 export default function EditAdminScreen() {
   const navigation = useRouter();
@@ -44,7 +45,7 @@ export default function EditAdminScreen() {
     if (isSuccess) {
       setUpdateBranchAdmin({
         ...admin,
-        branch: (typeof admin.branch === "object"
+        branch: (typeof admin.branch === 'object'
           ? admin.branch.id
           : admin.branch) as any,
       });
@@ -52,13 +53,13 @@ export default function EditAdminScreen() {
   }, [isSuccess]);
 
   const onSuccessEdit = () => {
-    queryClient.invalidateQueries({ queryKey: ["branchAdmins"] });
+    queryClient.invalidateQueries({ queryKey: ['branchAdmins'] });
     setSnackbarVisible(true);
     navigation.back();
   };
 
   const onErrorEdit = () => {
-    setErrors({ general: "Failed to update admin. Please try again." });
+    setErrors({ general: I18n.t('EditAdminScreen.error_general_failed') });
   };
 
   const { mutate: editBranchAdmin, isPending: isUpdating } =
@@ -68,26 +69,26 @@ export default function EditAdminScreen() {
     const errors: { [key: string]: string } = {};
 
     if (!updateBranchAdmin?.full_name?.trim()) {
-      errors.full_name = "Full name is required.";
+      errors.full_name = I18n.t('EditAdminScreen.error_fullname_required');
     }
 
     if (!updateBranchAdmin?.email?.trim()) {
-      errors.email = "Email is required.";
+      errors.email = I18n.t('EditAdminScreen.error_email_required');
     } else if (!/\S+@\S+\.\S+/.test(updateBranchAdmin.email)) {
-      errors.email = "Please enter a valid email address.";
+      errors.email = I18n.t('EditAdminScreen.error_email_invalid');
     }
 
     if (!updateBranchAdmin?.phone?.trim()) {
-      errors.phone = "Phone number is required.";
+      errors.phone = I18n.t('EditAdminScreen.error_phone_required');
     } else if (
       updateBranchAdmin.phone.length < 10 ||
       updateBranchAdmin.phone.length > 15
     ) {
-      errors.phone = "Phone number must be between 10 and 15 digits.";
+      errors.phone = I18n.t('EditAdminScreen.error_phone_length');
     }
 
     if (!updateBranchAdmin?.branch) {
-      errors.branch = "Branch is required.";
+      errors.branch = I18n.t('EditAdminScreen.error_branch_required');
     }
 
     setErrors(errors);
@@ -99,7 +100,10 @@ export default function EditAdminScreen() {
       if (updateBranchAdmin?.branch) {
         editBranchAdmin({ ...admin, ...updateBranchAdmin });
       } else {
-        setErrors({ ...errors, branch: "Branch is required." });
+        setErrors({
+          ...errors,
+          branch: I18n.t('EditAdminScreen.error_branch_required'),
+        });
       }
     }
   };
@@ -107,30 +111,32 @@ export default function EditAdminScreen() {
   if (isFetching) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" />
+        <ActivityIndicator size="large" />{' '}
       </View>
     );
   }
 
   return (
     <>
+      {' '}
       <Appbar.Header>
-        <Appbar.BackAction onPress={() => navigation.back()} />
-        <Appbar.Content title="Edit Admin" />
-      </Appbar.Header>
-
+        <Appbar.BackAction onPress={() => navigation.back()} />{' '}
+        <Appbar.Content title={I18n.t('EditAdminScreen.screen_title')} />{' '}
+      </Appbar.Header>{' '}
       <ScrollView contentContainerStyle={styles.scrollContent}>
+        {' '}
         <View
           style={[
             styles.container,
             {
-              width: width > 768 ? "50%" : "90%",
+              width: width > 768 ? '50%' : '90%',
             },
           ]}
         >
+          {' '}
           <TextInput
-            label="Full Name"
-            value={updateBranchAdmin?.full_name || ""}
+            label={I18n.t('EditAdminScreen.label_fullname')}
+            value={updateBranchAdmin?.full_name || ''}
             onChangeText={(text) =>
               setUpdateBranchAdmin((prevState) =>
                 prevState ? { ...prevState, full_name: text } : undefined
@@ -139,14 +145,13 @@ export default function EditAdminScreen() {
             style={styles.input}
             mode="outlined"
             error={!!errors.full_name}
-          />
+          />{' '}
           <HelperText type="error" visible={!!errors.full_name}>
-            {errors.full_name}
-          </HelperText>
-
+            {errors.full_name}{' '}
+          </HelperText>{' '}
           <TextInput
-            label="Email"
-            value={updateBranchAdmin?.email || ""}
+            label={I18n.t('EditAdminScreen.label_email')}
+            value={updateBranchAdmin?.email || ''}
             onChangeText={(text) =>
               setUpdateBranchAdmin((prevState) =>
                 prevState ? { ...prevState, email: text } : undefined
@@ -156,16 +161,15 @@ export default function EditAdminScreen() {
             mode="outlined"
             keyboardType="email-address"
             error={!!errors.email}
-          />
+          />{' '}
           <HelperText type="error" visible={!!errors.email}>
-            {errors.email}
-          </HelperText>
-
+            {errors.email}{' '}
+          </HelperText>{' '}
           <TextInput
-            label="Phone"
-            value={updateBranchAdmin?.phone || ""}
+            label={I18n.t('EditAdminScreen.label_phone')}
+            value={updateBranchAdmin?.phone || ''}
             onChangeText={(text) => {
-              const numericValue = text.replace(/[^0-9]/g, "");
+              const numericValue = text.replace(/[^0-9]/g, '');
               setUpdateBranchAdmin((prevState) =>
                 prevState ? { ...prevState, phone: numericValue } : undefined
               );
@@ -174,14 +178,13 @@ export default function EditAdminScreen() {
             mode="outlined"
             keyboardType="phone-pad"
             error={!!errors.phone}
-          />
+          />{' '}
           <HelperText type="error" visible={!!errors.phone}>
-            {errors.phone}
-          </HelperText>
-
+            {errors.phone}{' '}
+          </HelperText>{' '}
           <Dropdown
-            label="User Branch"
-            placeholder="Select Branch Assigned to User"
+            label={I18n.t('EditAdminScreen.label_branch')}
+            placeholder={I18n.t('EditAdminScreen.placeholder_branch')}
             options={
               branches?.map((branch: any) => ({
                 label: branch.address,
@@ -189,29 +192,27 @@ export default function EditAdminScreen() {
               })) || []
             }
             value={
-              typeof updateBranchAdmin?.branch === "object"
+              typeof updateBranchAdmin?.branch === 'object'
                 ? updateBranchAdmin.branch.id
                 : updateBranchAdmin?.branch
             }
             onSelect={(value) =>
               setUpdateBranchAdmin((prevState) =>
-                prevState ? { ...prevState, branch: value || "" } : undefined
+                prevState ? { ...prevState, branch: value || '' } : undefined
               )
             }
-          />
+          />{' '}
           <HelperText type="error" visible={!!errors.branch}>
-            {errors.branch}
-          </HelperText>
-
+            {errors.branch}{' '}
+          </HelperText>{' '}
           {errors.general && (
             <Snackbar
               visible
-              onDismiss={() => setErrors({ ...errors, general: "" })}
+              onDismiss={() => setErrors({ ...errors, general: '' })}
             >
-              {errors.general}
+              {errors.general}{' '}
             </Snackbar>
-          )}
-
+          )}{' '}
           <Button
             mode="contained"
             onPress={handleEditAdmin}
@@ -219,25 +220,24 @@ export default function EditAdminScreen() {
             style={styles.button}
             disabled={isUpdating}
           >
-            Save Changes
-          </Button>
-        </View>
-      </ScrollView>
-
+            {I18n.t('EditAdminScreen.button_save_changes')}{' '}
+          </Button>{' '}
+        </View>{' '}
+      </ScrollView>{' '}
       <Snackbar
         visible={snackbarVisible}
         onDismiss={() => setSnackbarVisible(false)}
         duration={3000}
       >
-        Admin updated successfully!
-      </Snackbar>
+        {I18n.t('EditAdminScreen.snackbar_success')}{' '}
+      </Snackbar>{' '}
     </>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    alignSelf: "center",
+    alignSelf: 'center',
     padding: 16,
   },
   scrollContent: {
@@ -251,7 +251,7 @@ const styles = StyleSheet.create({
   },
   loadingContainer: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
