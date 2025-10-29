@@ -3,10 +3,12 @@ import * as React from 'react';
 import { ScrollView, View } from 'react-native';
 import { Button, Card, Text } from 'react-native-paper';
 import Pagination from './Pagination';
+import { i18n as I18n } from '@/app/_layout';
 
 export default function PostGallery({ onAddPost }: { onAddPost: () => void }) {
   const [currentPage, setCurrentPage] = React.useState<number>(1);
   const { data: posts } = useGetPosts(currentPage);
+
   return (
     <ScrollView
       contentContainerStyle={{
@@ -31,12 +33,9 @@ export default function PostGallery({ onAddPost }: { onAddPost: () => void }) {
               fontSize: 30,
             }}
           >
-            Create Your First Post
+            {I18n.t('postGallery.createFirstPost')}
           </Text>
-          <Text>
-            Created a delicious dish? Share your culinary creations with
-            mouthwatering photos.
-          </Text>
+          <Text>{I18n.t('postGallery.createFirstPostDescription')}</Text>
           <Button
             icon="plus"
             style={{
@@ -50,10 +49,11 @@ export default function PostGallery({ onAddPost }: { onAddPost: () => void }) {
             }}
             onPress={onAddPost}
           >
-            Add Posts
+            {I18n.t('postGallery.addPosts')}
           </Button>
         </View>
       )}
+
       {posts?.results.map((ps) => (
         <Card
           key={ps.id}
@@ -82,6 +82,7 @@ export default function PostGallery({ onAddPost }: { onAddPost: () => void }) {
           </Card.Content>
         </Card>
       ))}
+
       <Pagination
         totalPages={Math.ceil((posts?.count || 0) / 10)}
         currentPage={currentPage}

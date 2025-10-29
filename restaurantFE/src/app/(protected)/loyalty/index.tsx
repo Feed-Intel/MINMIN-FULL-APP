@@ -13,6 +13,7 @@ import {
   ActivityIndicator,
   Snackbar,
 } from 'react-native-paper';
+import { i18n as I18n } from '@/app/_layout';
 
 const LoyaltySettingsScreen = () => {
   const [thresholdPoints, setThresholdPoints] = useState<number | null>(null);
@@ -45,10 +46,10 @@ const LoyaltySettingsScreen = () => {
           queryClient.invalidateQueries({
             queryKey: ['loyaltyConversionRate'],
           });
-          setSnackbarMessage('Settings updated successfully');
+          setSnackbarMessage(I18n.t('loyaltySettings.successMessage'));
         },
         onError: () => {
-          setSnackbarMessage('Failed to update settings');
+          setSnackbarMessage(I18n.t('loyaltySettings.errorMessage'));
         },
       }
     );
@@ -71,9 +72,13 @@ const LoyaltySettingsScreen = () => {
         </View>
       ) : (
         <View style={styles.contentWrapper}>
-          <Text style={styles.pageTitle}>Loyalty point</Text>
+          <Text style={styles.pageTitle}>
+            {I18n.t('loyaltySettings.title')}
+          </Text>
 
-          <Text style={styles.inputLabel}>threshold point for redemption</Text>
+          <Text style={styles.inputLabel}>
+            {I18n.t('loyaltySettings.thresholdLabel')}
+          </Text>
           <TextInput
             mode="outlined"
             value={thresholdPoints?.toString()}
@@ -87,7 +92,9 @@ const LoyaltySettingsScreen = () => {
             contentStyle={styles.inputContent}
           />
 
-          <Text style={styles.inputLabel}>Conversion rate</Text>
+          <Text style={styles.inputLabel}>
+            {I18n.t('loyaltySettings.conversionRateLabel')}
+          </Text>
           <TextInput
             mode="outlined"
             value={conversionRate?.toString()}
@@ -109,7 +116,7 @@ const LoyaltySettingsScreen = () => {
               style={styles.saveButton}
               labelStyle={styles.buttonLabel}
             >
-              Save Changes
+              {I18n.t('loyaltySettings.saveButton')}
             </Button>
             <Button
               mode="outlined" // Changed to outlined for a ghost button effect
@@ -118,7 +125,7 @@ const LoyaltySettingsScreen = () => {
               labelStyle={[styles.buttonLabel, styles.cancelButtonLabel]}
               textColor="#91B275" // Match the border color
             >
-              Cancel
+              {I18n.t('loyaltySettings.cancelButton')}
             </Button>
           </View>
         </View>

@@ -7,18 +7,23 @@ import { router } from 'expo-router';
 import { jwtDecode, JwtPayload } from 'jwt-decode';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useWebSockets } from '@/hooks/useWebSockets';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { setRestaurant } from '@/lib/reduxStore/authSlice';
 import Logo from '@/assets/icons/Logo.svg';
 import NotificationIcon from '@/components/Notification';
 import { useAppSelector } from '@/lib/reduxStore/hooks';
 import { RootState } from '@/lib/reduxStore/store';
 import ProfileIcon from '@/components/ProfileIcon';
+import TimeProvider from '@/context/time';
+import { i18n } from '@/app/_layout';
 
 export default function ProtectedLayout() {
   const dispatch = useDispatch();
   const notifications = useAppSelector(
     (state: RootState) => state.notifications.items
+  );
+  const currentLocale = useSelector(
+    (state: RootState) => state.language.locale
   );
 
   useWebSockets();
@@ -60,31 +65,39 @@ export default function ProtectedLayout() {
     checkAuth();
   }, []);
 
+  useEffect(() => {
+    if (currentLocale) {
+      i18n.locale = currentLocale;
+    }
+  }, [currentLocale]);
+
   return (
-    <Surface style={styles.container}>
-      <View
-        style={{
-          paddingHorizontal: 30,
-          borderBottomColor: '#5A6E4933',
-          borderBottomWidth: 1.5,
-          flexDirection: 'row',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-        }}
-      >
-        <Logo height={60} color={'#91B275'} />
-        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-          <NotificationIcon notification={notifications} />
-          <ProfileIcon />
+    <TimeProvider>
+      <Surface style={styles.container}>
+        <View
+          style={{
+            paddingHorizontal: 30,
+            borderBottomColor: '#5A6E4933',
+            borderBottomWidth: 1.5,
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+          }}
+        >
+          <Logo height={60} color={'#91B275'} />
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <NotificationIcon notification={notifications} />
+            <ProfileIcon />
+          </View>
         </View>
-      </View>
-      <View style={styles.horizontal}>
-        <Sidebar />
-        <View style={styles.stackContainer}>
-          <Slot />
+        <View style={styles.horizontal}>
+          <Sidebar />
+          <View style={styles.stackContainer}>
+            <Slot />
+          </View>
         </View>
-      </View>
-    </Surface>
+      </Surface>
+    </TimeProvider>
   );
 }
 

@@ -26,6 +26,7 @@ import { useGetMenus } from '@/services/mutation/menuMutation';
 import { useCreateCombo } from '@/services/mutation/comboMutation';
 import { Switch } from 'react-native';
 import { useRestaurantIdentity } from '@/hooks/useRestaurantIdentity';
+import { i18n as I18n } from '@/app/_layout';
 
 type ComboItem = {
   menu_item: string | MenuType;
@@ -121,32 +122,32 @@ export default function AddComboDialog({
     const errors: { [key: string]: string } = {};
 
     if (!combo.name?.trim()) {
-      errors.name = 'Combo name is required.';
+      errors.name = I18n.t('comboDialog.errorComboNameRequired');
     } else if (combo.name.trim()?.length < 3) {
-      errors.name = 'Combo name must be at least 3 characters long.';
+      errors.name = I18n.t('comboDialog.errorComboNameTooShort');
     }
 
     if (!applyToAllBranches && !combo.branch) {
-      errors.branch = 'Branch selection is required.';
+      errors.branch = I18n.t('comboDialog.errorBranchRequired');
     }
 
     if ((combo.combo_price ?? 0) <= 0) {
-      errors.combo_price = 'Combo price must be greater than 0.';
+      errors.combo_price = I18n.t('comboDialog.errorComboPriceInvalid');
     }
 
     if (!combo.combo_items || combo.combo_items?.length === 0) {
-      errors.combo_items = 'At least one combo item is required.';
+      errors.combo_items = I18n.t('comboDialog.errorComboItemsRequired');
     } else {
       combo.combo_items?.forEach((item, index) => {
         if (!item.menu_item) {
-          errors[`menu_item_${index}`] = `Menu item is required for item ${
-            index + 1
-          }.`;
+          errors[`menu_item_${index}`] = I18n.t(
+            'comboDialog.errorMenuItemRequired'
+          );
         }
         if (item.quantity <= 0) {
-          errors[
-            `quantity_${index}`
-          ] = `Quantity must be greater than 0 for item ${index + 1}.`;
+          errors[`quantity_${index}`] = I18n.t(
+            'comboDialog.errorQuantityInvalid'
+          );
         }
       });
     }
@@ -177,11 +178,11 @@ export default function AddComboDialog({
             {/* <Card style={styles.card}> */}
             <Card.Content>
               <Text variant="titleLarge" style={styles.title}>
-                Combo Details
+                {I18n.t('comboDialog.comboDetailsTitle')}
               </Text>
 
               <TextInput
-                placeholder="Combo Name"
+                placeholder={I18n.t('comboDialog.comboNamePlaceholder')}
                 value={combo.name}
                 onChangeText={(text) => handleInputChange('name', text)}
                 style={styles.input}
@@ -202,7 +203,9 @@ export default function AddComboDialog({
               </HelperText>
 
               <View style={styles.switchContainer}>
-                <Text style={styles.switchText}>Apply to All Branches</Text>
+                <Text style={styles.switchText}>
+                  {I18n.t('comboDialog.applyToAllBranchesLabel')}
+                </Text>
                 <Switch
                   value={applyToAllBranches}
                   onValueChange={(value) => setApplyToAllBranches(value)}
@@ -219,7 +222,8 @@ export default function AddComboDialog({
                       <Text style={styles.readonlyBranch}>
                         {branches?.results.find(
                           (b: any) => b.id === defaultBranchId
-                        )?.address ?? 'Assigned Branch'}
+                        )?.address ??
+                          I18n.t('comboDialog.assignedBranchReadonly')}
                       </Text>
                     ) : (
                       <Menu
@@ -248,7 +252,7 @@ export default function AddComboDialog({
                               ? branches?.results.find(
                                   (b: any) => b.id === combo.branch
                                 )?.address
-                              : 'Select Branch'}
+                              : I18n.t('comboDialog.selectBranchButton')}
                           </Button>
                         }
                         contentStyle={[styles.menuContent, { width: '100%' }]}
@@ -268,7 +272,10 @@ export default function AddComboDialog({
                             />
                           ))
                         ) : (
-                          <Menu.Item title="No branches available" disabled />
+                          <Menu.Item
+                            title={I18n.t('comboDialog.noBranchesAvailable')}
+                            disabled
+                          />
                         )}
                       </Menu>
                     )}
@@ -279,7 +286,7 @@ export default function AddComboDialog({
                 </>
               )}
               <TextInput
-                placeholder="Combo Price"
+                placeholder={I18n.t('comboDialog.comboPricePlaceholder')}
                 value={combo.combo_price?.toString()}
                 style={styles.input}
                 keyboardType="numeric"
@@ -320,7 +327,7 @@ export default function AddComboDialog({
                         color: '#40392B',
                       }}
                     >
-                      Menu Item
+                      {I18n.t('comboDialog.menuItemHeader')}
                     </Text>
                   </DataTable.Title>
                   <DataTable.Title style={isSmallScreen && { paddingLeft: 6 }}>
@@ -331,7 +338,7 @@ export default function AddComboDialog({
                         color: '#40392B',
                       }}
                     >
-                      Qty
+                      {I18n.t('comboDialog.quantityHeader')}
                     </Text>
                   </DataTable.Title>
                   <DataTable.Title style={{ paddingLeft: 0 }}>
@@ -342,7 +349,7 @@ export default function AddComboDialog({
                         color: '#40392B',
                       }}
                     >
-                      Half?
+                      {I18n.t('comboDialog.isHalfHeader')}
                     </Text>
                   </DataTable.Title>
                   <DataTable.Title style={{ paddingLeft: 0 }}>
@@ -353,7 +360,7 @@ export default function AddComboDialog({
                         color: '#40392B',
                       }}
                     >
-                      Actions
+                      {I18n.t('comboDialog.actionsHeader')}
                     </Text>
                   </DataTable.Title>
                 </DataTable.Header>
@@ -392,7 +399,7 @@ export default function AddComboDialog({
                                 ? menuItems?.results.find(
                                     (m: any) => m.id === item.menu_item
                                   )?.name
-                                : 'Menu Item'}
+                                : I18n.t('comboDialog.menuItemDropdownDefault')}
                             </Button>
                           }
                           contentStyle={[styles.menuContent, { width: '100%' }]}
@@ -417,7 +424,7 @@ export default function AddComboDialog({
                             ))
                           ) : (
                             <Menu.Item
-                              title="No menu items available"
+                              title={I18n.t('comboDialog.noMenuItemsAvailable')}
                               disabled
                             />
                           )}
@@ -490,7 +497,7 @@ export default function AddComboDialog({
                 onPress={handleAddItem}
                 style={styles.addButton}
               >
-                Add Combo Item
+                {I18n.t('comboDialog.addComboItemButton')}
               </Button>
             </Card.Content>
             {/* </Card> */}
@@ -510,7 +517,7 @@ export default function AddComboDialog({
               fontWeight: '400',
             }}
           >
-            Save Combo
+            {I18n.t('comboDialog.saveComboButton')}
           </Button>
         </Dialog.Actions>
       </Dialog>

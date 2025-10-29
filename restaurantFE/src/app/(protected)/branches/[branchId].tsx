@@ -12,7 +12,7 @@ import {
 } from 'react-native-paper';
 import { useUpdateBranch } from '@/services/mutation/branchMutation';
 import Toast from 'react-native-toast-message';
-import { id } from 'react-native-paper-dates';
+import { i18n as I18n } from '@/app/_layout';
 
 interface EditBranchDialogProps {
   visible: boolean;
@@ -39,8 +39,9 @@ export default function EditBranchDialog({
         id: branch.id,
         address: branch.address,
         is_default: branch.is_default,
-        lat: branch.location?.lat,
-        lng: branch.location?.lng,
+        // Ensure lat/lng are string for TextInput consistency
+        lat: String(branch.location?.lat || ''),
+        lng: String(branch.location?.lng || ''),
         gps_coordinates: branch.gps_coordinates || '',
       });
     }
@@ -48,76 +49,98 @@ export default function EditBranchDialog({
 
   const validateForm = () => {
     const errors: { [key: string]: string } = {};
-    if (!branchData.address.trim()) {
-      errors.address = 'Address is required.';
+
+    // Check if branchData is initialized
+    if (!branchData) return false;
+
+    // Validate Address
+    if (!branchData.address || !branchData.address.trim()) {
+      errors.address = I18n.t('EditBranch.error_address_required');
       Toast.show({
         type: 'error',
-        text1: 'Validation Error',
-        text2: 'Address is required.',
+        text1: I18n.t('Common.error_title'),
+        text2: errors.address,
       });
     } else if (branchData.address.trim().length < 3) {
-      errors.address = 'Address must be at least 3 characters long.';
+      errors.address = I18n.t('EditBranch.error_address_length');
       Toast.show({
         type: 'error',
-        text1: 'Validation Error',
-        text2: 'Address must be at least 3 characters long.',
+        text1: I18n.t('Common.error_title'),
+        text2: errors.address,
       });
     }
 
-    if (!branchData.lat.trim()) {
-      errors.lat = 'Latitude is required.';
+    // Validate Latitude
+    if (!branchData.lat || !branchData.lat.trim()) {
+      errors.lat = I18n.t('EditBranch.error_lat_required');
       Toast.show({
         type: 'error',
-        text1: 'Validation Error',
-        text2: 'Latitude is required.',
+        text1: I18n.t('Common.error_title'),
+        text2: errors.lat,
       });
+    } else {
+      const latitude = parseFloat(branchData.lat.trim());
+      if (isNaN(latitude) || latitude < -90 || latitude > 90) {
+        errors.lat = I18n.t('EditBranch.error_lat_range');
+        Toast.show({
+          type: 'error',
+          text1: I18n.t('Common.error_title'),
+          text2: errors.lat,
+        });
+      }
     }
-    if (!branchData.lng.trim()) {
-      errors.lng = 'Longitude is required.';
+
+    // Validate Longitude
+    if (!branchData.lng || !branchData.lng.trim()) {
+      errors.lng = I18n.t('EditBranch.error_lng_required');
       Toast.show({
         type: 'error',
-        text1: 'Validation Error',
-        text2: 'Longitude is required.',
+        text1: I18n.t('Common.error_title'),
+        text2: errors.lng,
       });
+    } else {
+      const longitude = parseFloat(branchData.lng.trim());
+      if (isNaN(longitude) || longitude < -180 || longitude > 180) {
+        errors.lng = I18n.t('EditBranch.error_lng_range');
+        Toast.show({
+          type: 'error',
+          text1: I18n.t('Common.error_title'),
+          text2: errors.lng,
+        });
+      }
     }
-    const latitude = parseFloat(branchData.lat.trim());
-    const longitude = parseFloat(branchData.lng.trim());
-    if (isNaN(latitude) || latitude < -90 || latitude > 90) {
-      errors.lat = 'Latitude must be between -90 and 90';
-      Toast.show({
-        type: 'error',
-        text1: 'Validation Error',
-        text2: 'Latitude must be between -90 and 90',
-      });
-    }
-    if (isNaN(longitude) || longitude < -180 || longitude > 180) {
-      errors.lng = 'Longitude must be between -180 and 180';
-      Toast.show({
-        type: 'error',
-        text1: 'Validation Error',
-        text2: 'Longitude must be between -180 and 180',
-      });
-    }
+
     setErrors(errors);
     return Object.keys(errors).length === 0;
   };
 
   const handleUpdate = () => {
     if (validateForm() && branchData) {
-      updateBranch({
-        ...branchData,
-        gps_coordinates: `${branchData.lat},${branchData.lng}`,
-      });
+      updateBranch(
+        {
+          ...branchData,
+          // Correctly convert to string format for API
+          gps_coordinates: `${branchData.lat},${branchData.lng}`,
+        },
+        {
+          onSuccess: () => {
+            onSuccess();
+            setShowSnackbar(true);
+            onClose();
+          },
+        }
+      );
     }
   };
 
   return (
     <Portal>
       <Dialog visible={visible} onDismiss={onClose} style={styles.dialog}>
-        {/* <Dialog.Title>Edit Branch</Dialog.Title> */}
+        <Dialog.Title>{I18n.t('EditBranch.modal_title')}</Dialog.Title>
         <Dialog.Content>
+          {/* Address Input */}
           <TextInput
-            placeholder="Address"
+            placeholder={I18n.t('EditBranch.placeholder_address')}
             mode="outlined"
             value={branchData?.address || ''}
             onChangeText={(text) =>
@@ -139,16 +162,18 @@ export default function EditBranchDialog({
             {errors.address}
           </HelperText>
 
+          {/* Latitude Input */}
           <TextInput
-            placeholder="Latitude"
+            placeholder={I18n.t('EditBranch.placeholder_lat')}
             mode="outlined"
             value={branchData?.lat}
             onChangeText={(text) => {
-              const sanitizedValue = text.replace(/[^0-9\-,\.]/g, '');
-              setBranchData({
-                ...branchData,
+              // Allows numbers, decimal, and minus sign
+              const sanitizedValue = text.replace(/[^0-9\-.]/g, '');
+              setBranchData((prev: any) => ({
+                ...prev,
                 lat: sanitizedValue,
-              });
+              }));
             }}
             style={styles.input}
             error={!!errors.lat}
@@ -158,21 +183,24 @@ export default function EditBranchDialog({
               borderRadius: 16,
             }}
             placeholderTextColor="#202B1866"
+            keyboardType="numeric"
           />
           <HelperText type="error" visible={!!errors.lat}>
             {errors.lat}
           </HelperText>
 
+          {/* Longitude Input */}
           <TextInput
-            placeholder="Longitude"
+            placeholder={I18n.t('EditBranch.placeholder_lng')}
             mode="outlined"
             value={branchData?.lng}
             onChangeText={(text) => {
-              const sanitizedValue = text.replace(/[^0-9\-,\.]/g, '');
-              setBranchData({
-                ...branchData,
+              // Allows numbers, decimal, and minus sign
+              const sanitizedValue = text.replace(/[^0-9\-.]/g, '');
+              setBranchData((prev: any) => ({
+                ...prev,
                 lng: sanitizedValue,
-              });
+              }));
             }}
             style={styles.input}
             error={!!errors.lng}
@@ -182,17 +210,17 @@ export default function EditBranchDialog({
               borderRadius: 16,
             }}
             placeholderTextColor="#202B1866"
+            keyboardType="numeric"
           />
           <HelperText type="error" visible={!!errors.lng}>
             {errors.lng}
           </HelperText>
 
-          <HelperText type="error" visible={!!errors.location}>
-            {errors.location}
-          </HelperText>
-
+          {/* Set as Default Switch */}
           <View style={styles.switchContainer}>
-            <Text style={styles.switchText}>Set as Default</Text>
+            <Text style={styles.switchText}>
+              {I18n.t('EditBranch.label_default_switch')}
+            </Text>
             <Switch
               value={branchData?.is_default || false}
               onValueChange={(value) =>
@@ -204,8 +232,13 @@ export default function EditBranchDialog({
             />
           </View>
         </Dialog.Content>
+
         <Dialog.Actions>
-          {/* <Button onPress={onClose}>Cancel</Button> */}
+          {/* Cancel Button */}
+          <Button onPress={onClose}>
+            {I18n.t('BranchAdmins.cancel_button')}
+          </Button>
+          {/* Update Branch Button */}
           <Button
             mode="contained"
             onPress={handleUpdate}
@@ -221,22 +254,23 @@ export default function EditBranchDialog({
               fontSize: 15,
             }}
           >
-            Update Branch
+            {I18n.t('EditBranch.button_update_branch')}
           </Button>
         </Dialog.Actions>
       </Dialog>
 
+      {/* Snackbar for error/success messages */}
       <Snackbar
         visible={showSnackbar || !!errors.general}
         onDismiss={() => {
           setShowSnackbar(false);
-          setErrors({ ...errors, general: '' });
+          setErrors((prev) => ({ ...prev, general: '' }));
         }}
         duration={3000}
       >
-        {showSnackbar && !errors.general
-          ? 'Branch updated successfully!'
-          : errors.general || 'Please fix the errors in the form.'}
+        {showSnackbar
+          ? I18n.t('EditBranch.snackbar_success')
+          : I18n.t('EditBranch.snackbar_generic_error')}
       </Snackbar>
     </Portal>
   );

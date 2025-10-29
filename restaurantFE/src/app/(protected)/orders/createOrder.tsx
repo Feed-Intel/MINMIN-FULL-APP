@@ -38,6 +38,7 @@ import {
   setCustomerInfo,
 } from '@/lib/reduxStore/cartSlice';
 import Pagination from '@/components/Pagination';
+import { i18n as I18n } from '@/app/_layout';
 
 const DEFAULT_CATEGORIES = ['Main course', 'Pasta', 'Dessert', 'Drinks'];
 
@@ -67,19 +68,6 @@ export default function CreateOrder() {
     return acc;
   }, {} as Record<string, number>);
 
-  // const [orderData, setOrderData] = useState({
-  //   tenant: tenantId,
-  //   branch: branchId,
-  //   table: '',
-  //   coupon: '',
-  //   items: cart.items.map((item: any) => ({
-  //     menu_item: item.id,
-  //     quantity: newQuantities[item.id] || 1,
-  //     price: item.price,
-  //     remarks: remarks[item.id],
-  //   })),
-  // });
-
   const getMenuCategories = (menu: any): string[] => {
     if (Array.isArray(menu?.categories) && menu.categories.length) {
       return menu.categories;
@@ -102,7 +90,11 @@ export default function CreateOrder() {
         }
       });
     });
-    return ['All', ...Array.from(set).sort((a, b) => a.localeCompare(b))];
+    // Replace 'All' with the translated value from I18n
+    return [
+      I18n.t('createOrderScreen.modalCategoryAll'),
+      ...Array.from(set).sort((a, b) => a.localeCompare(b)),
+    ];
   }, [menus]);
 
   const branchFilteredMenus = useMemo(() => {
@@ -142,7 +134,7 @@ export default function CreateOrder() {
     }
     const categories = getMenuCategories(menu);
     const matchesCategory =
-      modalSelectedCategory === 'All' ||
+      modalSelectedCategory === I18n.t('createOrderScreen.modalCategoryAll') || // Check against translated 'All'
       categories.includes(modalSelectedCategory);
     const categoryText = categories.join(' ');
 
@@ -156,7 +148,7 @@ export default function CreateOrder() {
   const openRelatedModal = (menu: any) => {
     setCurrentMenuItem(menu);
     setModalSearchQuery('');
-    setModalSelectedCategory('All');
+    setModalSelectedCategory(I18n.t('createOrderScreen.modalCategoryAll')); // Use translated 'All'
     setShowRelatedModal(true);
   };
 
@@ -232,12 +224,14 @@ export default function CreateOrder() {
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.header}>Create order</Text>
+      <Text style={styles.header}>
+        {I18n.t('createOrderScreen.headerTitle')}
+      </Text>
 
       {/* Customer Info */}
       <View style={styles.row}>
         <TextInput
-          placeholder="Contact number"
+          placeholder={I18n.t('createOrderScreen.contactNumberPlaceholder')}
           style={styles.input}
           keyboardType="phone-pad"
           value={cart.contactNumber}
@@ -247,7 +241,7 @@ export default function CreateOrder() {
           }}
         />
         <TextInput
-          placeholder="Customer name"
+          placeholder={I18n.t('createOrderScreen.customerNamePlaceholder')}
           value={cart.customerName}
           style={styles.input}
           onChangeText={(text) => {
@@ -255,7 +249,7 @@ export default function CreateOrder() {
           }}
         />
         <TextInput
-          placeholder="TIN number"
+          placeholder={I18n.t('createOrderScreen.tinNumberPlaceholder')}
           style={styles.input}
           value={cart.tinNumber}
           onChangeText={(text) => {
@@ -266,14 +260,20 @@ export default function CreateOrder() {
 
       {/* Filters */}
       <View style={styles.filterRow}>
-        <TextInput placeholder="By Item name" style={styles.filterInput} />
-        <TextInput placeholder="By category" style={styles.filterInput} />
+        <TextInput
+          placeholder={I18n.t('createOrderScreen.filterItemNamePlaceholder')}
+          style={styles.filterInput}
+        />
+        <TextInput
+          placeholder={I18n.t('createOrderScreen.filterCategoryPlaceholder')}
+          style={styles.filterInput}
+        />
         <Button
           mode="contained"
           style={styles.applyButton}
           labelStyle={{ color: '#fff' }}
         >
-          Apply
+          {I18n.t('createOrderScreen.applyButton')}
         </Button>
       </View>
 
@@ -290,7 +290,7 @@ export default function CreateOrder() {
                 activeTab === 'all' && styles.activeTabLabel,
               ]}
             >
-              All items
+              {I18n.t('createOrderScreen.allTab')}
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
@@ -306,7 +306,7 @@ export default function CreateOrder() {
                 activeTab === 'combos' && styles.activeTabLabel,
               ]}
             >
-              Combos
+              {I18n.t('createOrderScreen.combosTab')}
             </Text>
           </TouchableOpacity>
         </View>
@@ -319,6 +319,7 @@ export default function CreateOrder() {
           size="large"
           color="#91B275"
           style={styles.loader}
+          accessibilityLabel={I18n.t('createOrderScreen.loading')}
         />
       )}
 
@@ -329,35 +330,51 @@ export default function CreateOrder() {
             <DataTable.Header style={styles.tableHeader}>
               <DataTable.Title style={styles.imageHeader}>
                 {' '}
-                <Text style={styles.tableTitle}>Image</Text>
+                <Text style={styles.tableTitle}>
+                  {I18n.t('createOrderScreen.tableHeaderImage')}
+                </Text>
               </DataTable.Title>
               <DataTable.Title>
                 {' '}
-                <Text style={styles.tableTitle}>Name</Text>
+                <Text style={styles.tableTitle}>
+                  {I18n.t('createOrderScreen.tableHeaderName')}
+                </Text>
               </DataTable.Title>
               <DataTable.Title>
                 {' '}
-                <Text style={styles.tableTitle}>Category</Text>
+                <Text style={styles.tableTitle}>
+                  {I18n.t('createOrderScreen.tableHeaderCategory')}
+                </Text>
               </DataTable.Title>
               <DataTable.Title>
                 {' '}
-                <Text style={styles.tableTitle}>Price</Text>
+                <Text style={styles.tableTitle}>
+                  {I18n.t('createOrderScreen.tableHeaderPrice')}
+                </Text>
               </DataTable.Title>
               <DataTable.Title>
                 {' '}
-                <Text style={styles.tableTitle}>Remark</Text>
+                <Text style={styles.tableTitle}>
+                  {I18n.t('createOrderScreen.tableHeaderRemark')}
+                </Text>
               </DataTable.Title>
               <DataTable.Title>
                 {' '}
-                <Text style={styles.tableTitle}>Quantity</Text>
+                <Text style={styles.tableTitle}>
+                  {I18n.t('createOrderScreen.tableHeaderQuantity')}
+                </Text>
               </DataTable.Title>
               <DataTable.Title>
                 {' '}
-                <Text style={styles.tableTitle}>Related items</Text>
+                <Text style={styles.tableTitle}>
+                  {I18n.t('createOrderScreen.tableHeaderRelatedItems')}
+                </Text>
               </DataTable.Title>
               <DataTable.Title>
                 {' '}
-                <Text style={styles.tableTitle}>Actions</Text>
+                <Text style={styles.tableTitle}>
+                  {I18n.t('createOrderScreen.tableHeaderActions')}
+                </Text>
               </DataTable.Title>
             </DataTable.Header>
 
@@ -365,7 +382,7 @@ export default function CreateOrder() {
               const categories = getMenuCategories(menu);
               const categoriesLabel = categories.length
                 ? categories.join(', ')
-                : '—';
+                : I18n.t('createOrderScreen.noCategory'); // Translated '—'
 
               return (
                 <DataTable.Row key={menu.id} style={styles.tableRow}>
@@ -386,7 +403,9 @@ export default function CreateOrder() {
                   </DataTable.Cell>
                   <DataTable.Cell>
                     <TextInput
-                      placeholder="Remark"
+                      placeholder={I18n.t(
+                        'createOrderScreen.remarkPlaceholder'
+                      )}
                       style={{ ...styles.input, height: 50, maxWidth: 80 }}
                       value={remarks[menu.id!] || ''}
                       onChangeText={(text) =>
@@ -429,8 +448,8 @@ export default function CreateOrder() {
                       labelStyle={styles.relatedButtonLabel}
                     >
                       {selectedItems.length != 0
-                        ? 'Update Related item'
-                        : '+ Related item'}
+                        ? I18n.t('createOrderScreen.relatedItemUpdate')
+                        : I18n.t('createOrderScreen.relatedItemAdd')}
                     </Button>
                   </DataTable.Cell>
                   <DataTable.Cell>
@@ -463,7 +482,7 @@ export default function CreateOrder() {
                         labelStyle={styles.deleteButtonLabel}
                         style={styles.actionButton}
                       >
-                        Order
+                        {I18n.t('createOrderScreen.orderButton')}
                       </Button>
                     </View>
                   </DataTable.Cell>
@@ -486,23 +505,33 @@ export default function CreateOrder() {
             <DataTable.Header style={styles.tableHeader}>
               <DataTable.Title>
                 {' '}
-                <Text style={styles.tableTitle}>Name</Text>
+                <Text style={styles.tableTitle}>
+                  {I18n.t('createOrderScreen.tableHeaderName')}
+                </Text>
               </DataTable.Title>
               <DataTable.Title>
                 {' '}
-                <Text style={styles.tableTitle}>Branch</Text>
+                <Text style={styles.tableTitle}>
+                  {I18n.t('createOrderScreen.comboHeaderBranch')}
+                </Text>
               </DataTable.Title>
               <DataTable.Title>
                 {' '}
-                <Text style={styles.tableTitle}>Price</Text>
+                <Text style={styles.tableTitle}>
+                  {I18n.t('createOrderScreen.tableHeaderPrice')}
+                </Text>
               </DataTable.Title>
               <DataTable.Title>
                 {' '}
-                <Text style={styles.tableTitle}>Custom</Text>
+                <Text style={styles.tableTitle}>
+                  {I18n.t('createOrderScreen.comboHeaderCustom')}
+                </Text>
               </DataTable.Title>
               <DataTable.Title>
                 {' '}
-                <Text style={styles.tableTitle}>Actions</Text>
+                <Text style={styles.tableTitle}>
+                  {I18n.t('createOrderScreen.tableHeaderActions')}
+                </Text>
               </DataTable.Title>
             </DataTable.Header>
 
@@ -527,7 +556,9 @@ export default function CreateOrder() {
                     style={styles.customChip}
                     textStyle={styles.customChipText}
                   >
-                    {combo.is_custom ? 'Yes' : 'No'}
+                    {combo.is_custom
+                      ? I18n.t('createOrderScreen.comboCustomYes')
+                      : I18n.t('createOrderScreen.comboCustomNo')}
                   </Chip>
                 </DataTable.Cell>
                 <DataTable.Cell>
@@ -561,7 +592,7 @@ export default function CreateOrder() {
                       icon="delete-outline"
                       style={styles.actionButton}
                     >
-                      Order
+                      {I18n.t('createOrderScreen.orderButton')}
                     </Button>
                   </View>
                 </DataTable.Cell>
@@ -584,13 +615,15 @@ export default function CreateOrder() {
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalHeaderText}>
-                For: {currentMenuItem?.name}
+                {I18n.t('createOrderScreen.modalHeaderFor', {
+                  itemName: currentMenuItem?.name,
+                })}
               </Text>
             </View>
 
             <View style={styles.searchContainer}>
               <Searchbar
-                placeholder="Search by Item name"
+                placeholder={I18n.t('createOrderScreen.modalSearchPlaceholder')}
                 onChangeText={setModalSearchQuery}
                 value={modalSearchQuery}
                 style={styles.searchBar}
@@ -631,7 +664,7 @@ export default function CreateOrder() {
                 const categories = getMenuCategories(menu);
                 const categoriesLabel = categories.length
                   ? categories.join(', ')
-                  : '—';
+                  : I18n.t('createOrderScreen.noCategory');
 
                 return (
                   <View key={menu.id} style={styles.itemRow}>
@@ -668,10 +701,12 @@ export default function CreateOrder() {
                 labelStyle={{ color: '#fff', fontWeight: '600', fontSize: 17 }}
                 disabled={selectedItems.length === 0}
               >
-                Add Item
+                {I18n.t('createOrderScreen.modalAddItemButton')}
               </Button>
               <Text style={styles.selectedItemsText}>
-                {selectedItems.length} items selected
+                {I18n.t('createOrderScreen.modalItemsSelected', {
+                  count: selectedItems.length,
+                })}
               </Text>
             </View>
           </View>
@@ -683,10 +718,12 @@ export default function CreateOrder() {
         <View style={styles.footer}>
           <View>
             <Text style={styles.footerText}>
-              {cart.items.length} Items Added
+              {I18n.t('createOrderScreen.footerItemsAdded', {
+                count: cart.items.length,
+              })}
             </Text>
             <Text style={styles.footerTextDescription}>
-              Click “review orders” to view the summary and confirm your order
+              {I18n.t('createOrderScreen.footerDescription')}
             </Text>
           </View>
           <Button
@@ -695,7 +732,7 @@ export default function CreateOrder() {
             labelStyle={{ color: '#fff' }}
             onPress={() => router.push('/(protected)/orders/orderReview')}
           >
-            Review orders
+            {I18n.t('createOrderScreen.reviewOrdersButton')}
           </Button>
         </View>
       )}

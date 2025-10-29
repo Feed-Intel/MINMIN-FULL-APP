@@ -4,6 +4,7 @@ import { Button, Menu, Text } from 'react-native-paper';
 
 import { useRestaurantIdentity } from '@/hooks/useRestaurantIdentity';
 import { useGetBranches } from '@/services/mutation/branchMutation';
+import { i18n as I18n } from '@/app/_layout';
 
 type Props = {
   selectedBranch: string | null;
@@ -18,7 +19,7 @@ const BranchSelector: React.FC<Props> = ({
   onChange,
   includeAllOption = true,
   style,
-  label = 'Branch',
+  label = I18n.t('branch_selector.label_branch'), // Replaced static default 'Branch'
 }) => {
   const { isRestaurant, isBranch, branchId } = useRestaurantIdentity();
   const { data: branches, isLoading } = useGetBranches(undefined, true);
@@ -45,15 +46,23 @@ const BranchSelector: React.FC<Props> = ({
   const currentLabel = useMemo(() => {
     if (isBranch) {
       const branch = branches?.results?.find((b) => b.id === branchId);
-      return branch?.address ?? 'My Branch';
+      // Replaced static 'My Branch'
+      return branch?.address ?? I18n.t('branch_selector.my_branch');
     }
 
     if (selectedBranch === 'all') {
-      return 'All Branches';
+      // Replaced static 'All Branches'
+      return I18n.t('branch_selector.all_branches');
     }
 
     const branch = branches?.results.find((b) => b.id === selectedBranch);
-    return branch?.address ?? (isLoading ? 'Loading...' : 'Select Branch');
+    return (
+      branch?.address ??
+      // Replaced static 'Loading...' and 'Select Branch'
+      (isLoading
+        ? I18n.t('branch_selector.loading')
+        : I18n.t('branch_selector.select_branch'))
+    );
   }, [branches, branchId, isBranch, isLoading, selectedBranch]);
 
   if (isBranch) {
@@ -94,7 +103,8 @@ const BranchSelector: React.FC<Props> = ({
       >
         {includeAllOption && (
           <Menu.Item
-            title="All Branches"
+            // Replaced static 'All Branches'
+            title={I18n.t('branch_selector.all_branches')}
             onPress={() => {
               onChange('all');
               setMenuVisible(false);

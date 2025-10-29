@@ -1,11 +1,11 @@
-import React, { useEffect } from "react";
+import React from 'react';
 import {
   ScrollView,
   View,
   useWindowDimensions,
   StyleSheet,
-} from "react-native";
-import { useAppSelector } from "@/lib/reduxStore/hooks";
+} from 'react-native';
+import { useAppSelector } from '@/lib/reduxStore/hooks';
 import {
   List,
   Badge,
@@ -15,9 +15,10 @@ import {
   Divider,
   Caption,
   Title,
-} from "react-native-paper";
-import { useDispatch } from "react-redux";
-import { markAllNotificationsRead } from "@/lib/reduxStore/notificationSlice";
+} from 'react-native-paper';
+import { useDispatch } from 'react-redux';
+import { markAllNotificationsRead } from '@/lib/reduxStore/notificationSlice';
+import { i18n as I18n } from '@/app/_layout';
 
 const NotificationScreen = () => {
   const theme = useTheme();
@@ -47,7 +48,7 @@ const NotificationScreen = () => {
         ]}
       >
         <Title style={[styles.title, { fontSize: isSmallScreen ? 20 : 24 }]}>
-          Notifications
+          {I18n.t('notifications.title')}
         </Title>
         <View style={styles.headerActions}>
           <Badge
@@ -72,7 +73,7 @@ const NotificationScreen = () => {
             style={[styles.emptyState, { padding: isSmallScreen ? 20 : 32 }]}
           >
             <Text style={{ fontSize: isSmallScreen ? 14 : 16 }}>
-              No notifications yet
+              {I18n.t('notifications.empty_state')}
             </Text>
           </View>
         ) : (
@@ -84,66 +85,79 @@ const NotificationScreen = () => {
                   new Date(b.timestamp).getTime() -
                   new Date(a.timestamp).getTime()
               )
-              .map((notification, index) => (
-                <React.Fragment key={notification.id}>
-                  <List.Item
-                    title={notification.type}
-                    description={notification.message}
-                    titleStyle={{ fontSize: isSmallScreen ? 14 : 16 }}
-                    descriptionStyle={{ fontSize: isSmallScreen ? 12 : 14 }}
-                    left={() => (
-                      <List.Icon
-                        icon={
-                          notification.type === "Waiter Call" ? "bell" : "food"
-                        }
-                        color={
-                          notification.read
-                            ? theme.colors.onSurface
-                            : theme.colors.primary
-                        }
-                      />
-                    )}
-                    right={() => (
-                      <Caption
-                        style={[
-                          styles.timestamp,
-                          { fontSize: isSmallScreen ? 12 : 14 },
-                        ]}
-                      >
-                        {new Date(notification.timestamp).toLocaleTimeString(
-                          [],
-                          {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                            hour12: !isSmallScreen,
+              .map((notification, index) => {
+                // Determine translated title and icon
+                let translatedTitle = notification.type;
+                let iconName = 'food';
+                if (notification.type === 'Waiter Call') {
+                  translatedTitle = I18n.t('notifications.type_waiter_call');
+                  iconName = 'bell';
+                } else {
+                  // Assuming 'food' type is the default/other type
+                  // If you have other known types, you'd add more checks
+                  translatedTitle = I18n.t('notifications.type_food');
+                  iconName = 'food';
+                }
+
+                return (
+                  <React.Fragment key={notification.id}>
+                    <List.Item
+                      title={translatedTitle}
+                      description={notification.message}
+                      titleStyle={{ fontSize: isSmallScreen ? 14 : 16 }}
+                      descriptionStyle={{ fontSize: isSmallScreen ? 12 : 14 }}
+                      left={() => (
+                        <List.Icon
+                          icon={iconName}
+                          color={
+                            notification.read
+                              ? theme.colors.onSurface
+                              : theme.colors.primary
                           }
-                        )}
-                      </Caption>
-                    )}
-                    style={[
-                      styles.listItem,
-                      {
-                        backgroundColor: notification.read
-                          ? theme.colors.background
-                          : theme.colors.surface,
-                        paddingLeft: isSmallScreen ? 16 : 24,
-                        paddingRight: isSmallScreen ? 8 : 16,
-                      },
-                    ]}
-                    onPress={() => {
-                      // Handle notification press (mark as read)
-                    }}
-                  />
-                  {index < notifications.length - 1 && (
-                    <Divider
-                      style={{
-                        marginLeft: isSmallScreen ? 16 : 24,
-                        marginRight: isSmallScreen ? 16 : 24,
+                        />
+                      )}
+                      right={() => (
+                        <Caption
+                          style={[
+                            styles.timestamp,
+                            { fontSize: isSmallScreen ? 12 : 14 },
+                          ]}
+                        >
+                          {new Date(notification.timestamp).toLocaleTimeString(
+                            [],
+                            {
+                              hour: '2-digit',
+                              minute: '2-digit',
+                              hour12: !isSmallScreen,
+                            }
+                          )}
+                        </Caption>
+                      )}
+                      style={[
+                        styles.listItem,
+                        {
+                          backgroundColor: notification.read
+                            ? theme.colors.background
+                            : theme.colors.surface,
+                          paddingLeft: isSmallScreen ? 16 : 24,
+                          paddingRight: isSmallScreen ? 8 : 16,
+                        },
+                      ]}
+                      onPress={() => {
+                        // Handle notification press (mark as read)
                       }}
                     />
-                  )}
-                </React.Fragment>
-              ))}
+                    {index < notifications.length - 1 && (
+                      <Divider
+                        style={{
+                          marginLeft: isSmallScreen ? 16 : 24,
+                          marginRight: isSmallScreen ? 16 : 24,
+                        }}
+                      />
+                    )}
+                  </React.Fragment>
+                );
+              })}
           </List.Section>
         )}
       </ScrollView>
@@ -155,20 +169,20 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     maxWidth: 1200,
-    alignSelf: "center",
-    width: "100%",
+    alignSelf: 'center',
+    width: '100%',
   },
   header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   title: {
-    fontWeight: "600",
+    fontWeight: '600',
   },
   headerActions: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 8,
   },
   badge: {
@@ -178,8 +192,8 @@ const styles = StyleSheet.create({
     flexGrow: 1,
   },
   emptyState: {
-    alignItems: "center",
-    justifyContent: "center",
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   listSection: {
     marginHorizontal: 8,
@@ -188,7 +202,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   timestamp: {
-    alignSelf: "center",
+    alignSelf: 'center',
     marginRight: 8,
   },
 });

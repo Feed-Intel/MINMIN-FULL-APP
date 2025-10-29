@@ -11,10 +11,12 @@ import { Order, OrderQueryParams } from '@/types/orderTypes';
 import { useDispatch } from 'react-redux';
 import { AppDispatch } from '@/lib/reduxStore/store';
 import { hideLoader, showLoader } from '@/lib/reduxStore/loaderSlice';
+import { useTime } from '@/context/time';
 
-export const useOrders = (params?: OrderQueryParams) =>
-  useQuery<{ next: string | null; results: Order[]; count: number }>({
-    queryKey: ['orders', params],
+export const useOrders = (params?: OrderQueryParams) => {
+  const { time } = useTime();
+  return useQuery<{ next: string | null; results: Order[]; count: number }>({
+    queryKey: ['orders', params, time],
     queryFn: () => {
       const searchParams = new URLSearchParams();
       Object.entries(params ?? {}).forEach(([key, value]) => {
@@ -31,10 +33,12 @@ export const useOrders = (params?: OrderQueryParams) =>
     refetchOnReconnect: true,
     refetchInterval: 60000,
   });
+};
 
-export const useGetOrder = (id: string) =>
-  useQuery<Order>({
-    queryKey: ['order', id],
+export const useGetOrder = (id: string) => {
+  const { time } = useTime();
+  return useQuery<Order>({
+    queryKey: ['order', id, time],
     queryFn: () => fetchOrder(id),
     gcTime: 0,
     staleTime: 0,
@@ -43,9 +47,11 @@ export const useGetOrder = (id: string) =>
     refetchOnReconnect: true,
     refetchInterval: 60000,
   });
+};
 
 export function useCreateOrder() {
   const queryClient = useQueryClient();
+  const { setTime } = useTime();
   return useMutation({
     mutationFn: (data: Partial<any>) => {
       return createOrder(data);
@@ -59,6 +65,7 @@ export function useCreateOrder() {
         queryKey: ['orders'],
         type: 'active',
       });
+      setTime(Date.now());
     },
     onSettled: async (_: any, error: any) => {
       if (error) {
@@ -70,9 +77,10 @@ export function useCreateOrder() {
   });
 }
 
-export const useTenant = () =>
-  useQuery({
-    queryKey: ['tenant'],
+export const useTenant = () => {
+  const { time } = useTime();
+  return useQuery({
+    queryKey: ['tenant', time],
     queryFn: fetchTenant,
     gcTime: 0,
     staleTime: 0,
@@ -81,10 +89,12 @@ export const useTenant = () =>
     refetchOnReconnect: true,
     refetchInterval: 60000,
   });
+};
 
 export function useUpdateOrder() {
   const queryClient = useQueryClient();
   const dispatch = useDispatch<AppDispatch>();
+  const { setTime } = useTime();
   return useMutation({
     mutationFn: (data: { id: string; order: any }) => {
       dispatch(showLoader());
@@ -100,6 +110,7 @@ export function useUpdateOrder() {
         queryKey: ['orders'],
         type: 'active',
       });
+      setTime(Date.now());
     },
     onSettled: () => {
       dispatch(hideLoader());
@@ -110,6 +121,7 @@ export function useUpdateOrder() {
 export function useDeleteOrder() {
   const queryClient = useQueryClient();
   const dispatch = useDispatch<AppDispatch>();
+  const { setTime } = useTime();
   return useMutation({
     mutationFn: (id: string) => {
       dispatch(showLoader());
@@ -124,6 +136,7 @@ export function useDeleteOrder() {
         queryKey: ['orders'],
         type: 'active',
       });
+      setTime(Date.now());
     },
     onSettled: async (_: any, error: any) => {
       if (error) {

@@ -1,6 +1,6 @@
-import axios from "axios";
+import axios from 'axios';
 
-const url = "https://api.chapa.co/v1/transaction/initialize";
+const url = 'https://api.chapa.co/v1/transaction/initialize';
 
 interface Customer {
   full_name: string;
@@ -30,21 +30,21 @@ export async function initializePayment(
   transaction_id: string,
   APIKEY: string
 ): Promise<PaymentResponse> {
-  const nameParts = user?.full_name?.split(" ");
-  const firstName = nameParts && nameParts?.length > 0 ? nameParts[0] : "";
-  const lastName = nameParts && nameParts.length > 1 ? nameParts[1] : "";
+  const nameParts = user?.full_name?.split(' ');
+  const firstName = nameParts && nameParts?.length > 0 ? nameParts[0] : '';
+  const lastName = nameParts && nameParts.length > 1 ? nameParts[1] : '';
 
   const payload = {
     amount: amount.toFixed(2).toString(),
-    currency: "ETB",
+    currency: 'ETB',
     email: user.email,
     first_name: firstName,
     last_name: lastName,
     phone_number: user.phone,
     tx_ref: transaction_id,
-    callback_url: `https://alpha.feed-intel.com/api/v1/payment-check/${transaction_id}/verify/`,
+    callback_url: `https://stg.api.feed-intel.com/api/v1/payment-check/${transaction_id}/verify/`,
     customization: {
-      title: "Your Payment",
+      title: 'Your Payment',
     },
   };
 
@@ -52,14 +52,14 @@ export async function initializePayment(
     const response = await axios.post<PaymentResponse>(url, payload, {
       headers: {
         Authorization: `Bearer ${APIKEY}`,
-        "Content-Type": "application/json",
+        'Content-Type': 'application/json',
       },
     });
     return response.data;
   } catch (error: any) {
     return {
-      status: "error",
-      message: error.response?.data?.message || "An error occurred",
+      status: 'error',
+      message: error.response?.data?.message || 'An error occurred',
     };
   }
 }

@@ -410,8 +410,6 @@ class GoogleLoginView(APIView):
         redirect_uri = request.data.get("redirect_uri")
         code_verifier = request.data.get("code_verifier")
         token = request.data.get("id_token")
-        print(GOOGLE_CLIENT_ID)
-        print(GOOGLE_CLIENT_SECRET)
         if not code and not token:
             return Response(
                 {"error": "Missing authorization code"},
@@ -461,6 +459,7 @@ class GoogleLoginView(APIView):
                 user, created = User.objects.get_or_create(email=email, defaults={
                     "full_name": f"{first_name} {last_name}",
                     "user_type": "customer",
+                    "is_active": True,
                 })
 
                 # Create the SocialAccount for the user
@@ -523,7 +522,7 @@ class FacebookLoginView(APIView):
                 # Create a new user or fetch existing user by email
                 user, created = User.objects.get_or_create(
                     email=email,
-                    defaults={"full_name": name, "user_type": "customer"}
+                    defaults={"full_name": name, "user_type": "customer","is_active": True}
                 )
 
                 # Create a new SocialAccount linked to the user

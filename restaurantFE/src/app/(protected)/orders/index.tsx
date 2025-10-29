@@ -37,6 +37,7 @@ import { resetPendingOrders } from '@/lib/reduxStore/orderSlice';
 import { useOrders, useUpdateOrder } from '@/services/mutation/orderMutation';
 import { ChannelFilterId, Order } from '@/types/orderTypes';
 import Pagination from '@/components/Pagination';
+import { i18n as I18n } from '@/app/_layout';
 
 type StatusFilterId =
   | 'ALL'
@@ -59,42 +60,63 @@ const STATUS_FILTERS: Array<{
   label: string;
   statuses?: Array<Order['status']>;
 }> = [
-  { id: 'ALL', label: 'All' },
-  { id: 'NEW', label: 'New', statuses: ['pending_payment', 'placed'] },
-  { id: 'IN_PROGRESS', label: 'In Progress', statuses: ['progress'] },
-  { id: 'READY', label: 'Ready', statuses: ['payment_complete'] },
+  { id: 'ALL', label: I18n.t('menus.category.All') },
+  {
+    id: 'NEW',
+    label: I18n.t('Common.new'),
+    statuses: ['placed'],
+  },
+  {
+    id: 'IN_PROGRESS',
+    label: I18n.t('Common.in_progress'),
+    statuses: ['progress'],
+  },
+  {
+    id: 'READY',
+    label: I18n.t('Common.ready'),
+    statuses: ['payment_complete'],
+  },
   {
     id: 'COMPLETED',
-    label: 'Completed',
+    label: I18n.t('Common.completed'),
     statuses: ['delivered'],
   },
-  { id: 'CANCELLED', label: 'Cancelled', statuses: ['cancelled'] },
+  {
+    id: 'CANCELLED',
+    label: I18n.t('Common.cancelled'),
+    statuses: ['cancelled'],
+  },
 ];
 
 const CHANNEL_FILTERS: Array<{ id: ChannelFilterId; label: string }> = [
-  { id: 'ALL', label: 'All Channels' },
-  { id: 'DINE_IN', label: 'Dine-in' },
-  { id: 'TAKEAWAY', label: 'Takeaway' },
-  { id: 'DELIVERY', label: 'Delivery' },
+  { id: 'ALL', label: I18n.t('Common.all_channels') },
+  { id: 'DINE_IN', label: I18n.t('Common.dine_in') },
+  { id: 'TAKEAWAY', label: I18n.t('Common.take_away') },
+  { id: 'DELIVERY', label: I18n.t('Common.delivery') },
 ];
 
 const STATUS_OVERVIEW = [
   {
     id: 'new',
-    label: 'New',
+    label: I18n.t('Common.new'),
     statuses: ['pending_payment', 'placed'],
     icon: 'clock-outline',
   },
   {
     id: 'inProgress',
-    label: 'In Progress',
+    label: I18n.t('Common.in_progress'),
     statuses: ['progress'],
     icon: 'progress-clock',
   },
-  { id: 'ready', label: 'Ready', statuses: ['payment_complete'], icon: 'tray' },
+  {
+    id: 'ready',
+    label: I18n.t('Common.ready'),
+    statuses: ['payment_complete'],
+    icon: 'tray',
+  },
   {
     id: 'completed',
-    label: 'Completed',
+    label: I18n.t('Common.completed'),
     statuses: ['delivered'],
     icon: 'check-circle-outline',
   },
@@ -171,6 +193,9 @@ const channelLabel = (channel: ChannelFilterId) => {
   const option = CHANNEL_FILTERS.find((item) => item.id === channel);
   return option ? option.label : 'Unknown';
 };
+
+// This component assumes I18n is available and configured
+// E.g., import I18n from 'i18n-js';
 
 export default function Orders() {
   const { width } = useWindowDimensions();
@@ -363,10 +388,10 @@ export default function Orders() {
       try {
         await updateOrderStatus.mutateAsync({ id: orderId, order: { status } });
         queryClient.invalidateQueries({ queryKey: ['orders'] });
-        setSnackbarMessage('Order status updated successfully');
+        setSnackbarMessage(I18n.t('orders.snackbarSuccess'));
         setSnackbarVisible(true);
       } catch (error) {
-        setSnackbarMessage('Failed to update order status');
+        setSnackbarMessage(I18n.t('orders.snackbarFailure'));
         setSnackbarVisible(true);
       }
     },
@@ -377,22 +402,22 @@ export default function Orders() {
     switch (currentStatus) {
       case 'pending_payment':
         return {
-          label: 'Record Payment',
+          label: I18n.t('orders.actionRecordPayment'),
           value: 'payment_complete' as Order['status'],
         };
       case 'placed':
         return {
-          label: 'Start Preparing',
+          label: I18n.t('orders.actionStartPreparing'),
           value: 'progress' as Order['status'],
         };
       case 'progress':
         return {
-          label: 'Mark Ready',
+          label: I18n.t('orders.actionMarkReady'),
           value: 'payment_complete' as Order['status'],
         };
       case 'payment_complete':
         return {
-          label: 'Mark Delivered',
+          label: I18n.t('orders.actionMarkDelivered'),
           value: 'delivered' as Order['status'],
         };
       default:
@@ -420,6 +445,7 @@ export default function Orders() {
       {STATUS_FILTERS.map((status) => {
         const isSelected = filters.status === status.id;
         return (
+          // NOTE: status.label is assumed to be translated at the source of STATUS_FILTERS
           <Button
             key={status.id}
             mode={isSelected ? 'contained' : 'outlined'}
@@ -453,11 +479,10 @@ export default function Orders() {
             >
               <View style={styles.titleGroup}>
                 <Text variant="headlineSmall" style={styles.title}>
-                  Orders
+                  {I18n.t('orders.title')}
                 </Text>
                 <Text variant="bodyMedium" style={styles.subtitle}>
-                  Track and manage orders in real-time across every service
-                  channel.
+                  {I18n.t('orders.subtitle')}
                 </Text>
               </View>
               <Button
@@ -467,7 +492,7 @@ export default function Orders() {
                 icon="plus"
                 labelStyle={styles.addButtonLabel}
               >
-                Add Order
+                {I18n.t('orders.addButton')}
               </Button>
             </View>
 
@@ -486,7 +511,7 @@ export default function Orders() {
               <View style={styles.searchContainer}>
                 <TextInput
                   mode="outlined"
-                  placeholder="Search by customer, branch, or order ID"
+                  placeholder={I18n.t('orders.searchPlaceholder')}
                   value={searchTerm}
                   onChangeText={(text) => {
                     setCurrentPage(1);
@@ -508,7 +533,7 @@ export default function Orders() {
                   style={styles.filterButton}
                   labelStyle={styles.filterButtonLabel}
                 >
-                  Filters
+                  {I18n.t('orders.filterButton')}
                 </Button>
                 {activeFiltersCount > 0 && (
                   <Badge style={styles.filterBadge}>{activeFiltersCount}</Badge>
@@ -518,6 +543,7 @@ export default function Orders() {
 
             <View style={styles.statusOverviewRow}>
               {STATUS_OVERVIEW.map((item) => (
+                // NOTE: item.label is assumed to be translated at the source of STATUS_OVERVIEW
                 <Chip
                   key={item.id}
                   mode="outlined"
@@ -542,48 +568,50 @@ export default function Orders() {
                   <DataTable.Header style={styles.tableHeader}>
                     <DataTable.Title style={[styles.headerCell, { flex: 1.6 }]}>
                       <Text variant="bodyMedium" style={styles.headerCellText}>
-                        Order
+                        {I18n.t('orders.tableHeaderOrder')}
                       </Text>
                     </DataTable.Title>
                     <DataTable.Title style={[styles.headerCell, { flex: 1.2 }]}>
                       <Text variant="bodyMedium" style={styles.headerCellText}>
-                        Placed
+                        {I18n.t('orders.tableHeaderPlaced')}
                       </Text>
                     </DataTable.Title>
                     <DataTable.Title style={[styles.headerCell, { flex: 1.1 }]}>
                       <Text variant="bodyMedium" style={styles.headerCellText}>
-                        Channel
+                        {I18n.t('orders.tableHeaderChannel')}
                       </Text>
                     </DataTable.Title>
                     <DataTable.Title style={[styles.headerCell, { flex: 1 }]}>
                       <Text variant="bodyMedium" style={styles.headerCellText}>
-                        Items
+                        {I18n.t('orders.tableHeaderItems')}
                       </Text>
                     </DataTable.Title>
                     <DataTable.Title style={[styles.headerCell, { flex: 1.6 }]}>
                       <Text variant="bodyMedium" style={styles.headerCellText}>
-                        Customer
+                        {I18n.t('orders.tableHeaderCustomer')}
                       </Text>
                     </DataTable.Title>
                     <DataTable.Title style={[styles.headerCell, { flex: 1.6 }]}>
                       <Text variant="bodyMedium" style={styles.headerCellText}>
-                        Branch
+                        {I18n.t('orders.tableHeaderBranch')}
                       </Text>
                     </DataTable.Title>
                     <DataTable.Title style={[styles.headerCell, { flex: 1.4 }]}>
                       <Text variant="bodyMedium" style={styles.headerCellText}>
-                        Total
+                        {I18n.t('orders.tableHeaderTotal')}
                       </Text>
                     </DataTable.Title>
                     <DataTable.Title style={[styles.headerCell, { flex: 1.5 }]}>
                       <Text variant="bodyMedium" style={styles.headerCellText}>
-                        Status
+                        {I18n.t('orders.tableHeaderStatus')}
                       </Text>
                     </DataTable.Title>
                   </DataTable.Header>
                   {filteredOrders.map((order) => {
                     const nextStatus = getNextStatus(order.status);
                     const statusMeta = STATUS_DISPLAY[order.status] ?? {
+                      // NOTE: If statusMeta is dynamically derived, it will need to be wrapped in I18n.t() at its source or here.
+                      // Assuming statusMeta.label is a direct string from a lookup table.
                       label: order.status.replace(/_/g, ' '),
                       borderColor: '#D6DCCD',
                       backgroundColor: '#EEF1EB',
@@ -631,6 +659,7 @@ export default function Orders() {
                         <DataTable.Cell style={[styles.cell, { flex: 1.1 }]}>
                           <View style={styles.channelBadge}>
                             <Text style={styles.channelBadgeText}>
+                              {/* channelLabel is an external function, assuming it's translated */}
                               {channelLabel(orderChannel)}
                             </Text>
                           </View>
@@ -648,7 +677,8 @@ export default function Orders() {
                           >
                             {typeof order.customer === 'string'
                               ? order.customer
-                              : order.customer?.full_name ?? 'N/A'}
+                              : order.customer?.full_name ??
+                                I18n.t('Common.na')}
                           </Text>
                         </DataTable.Cell>
                         <DataTable.Cell style={[styles.cell, { flex: 1.6 }]}>
@@ -659,7 +689,7 @@ export default function Orders() {
                           >
                             {typeof order.branch === 'string'
                               ? order.branch
-                              : order.branch?.address ?? 'N/A'}
+                              : order.branch?.address ?? I18n.t('Common.na')}
                           </Text>
                         </DataTable.Cell>
                         <DataTable.Cell style={[styles.cell, { flex: 1.4 }]}>
@@ -725,11 +755,15 @@ export default function Orders() {
         onApply={() => {
           setFiltersVisible(false);
         }}
+        title={I18n.t('orders.filterButton')}
       >
         <View style={styles.filtersSection}>
-          <Text style={styles.filtersLabel}>Status</Text>
+          <Text style={styles.filtersLabel}>
+            {I18n.t('filters.statusLabel')}
+          </Text>
           <View style={styles.filtersChipRow}>
             {STATUS_FILTERS.map((status) => (
+              // NOTE: status.label is assumed to be translated at the source of STATUS_FILTERS
               <Chip
                 key={status.id}
                 mode={filters.status === status.id ? 'flat' : 'outlined'}
@@ -749,9 +783,12 @@ export default function Orders() {
         </View>
 
         <View style={styles.filtersSection}>
-          <Text style={styles.filtersLabel}>Channel</Text>
+          <Text style={styles.filtersLabel}>
+            {I18n.t('filters.channelLabel')}
+          </Text>
           <View style={styles.filtersChipRow}>
             {CHANNEL_FILTERS.map((channel) => (
+              // NOTE: channel.label is assumed to be translated at the source of CHANNEL_FILTERS
               <Chip
                 key={channel.id}
                 mode={filters.channel === channel.id ? 'flat' : 'outlined'}
@@ -771,7 +808,9 @@ export default function Orders() {
         </View>
 
         <View style={styles.filtersSection}>
-          <Text style={styles.filtersLabel}>Date range</Text>
+          <Text style={styles.filtersLabel}>
+            {I18n.t('filters.dateRangeLabel')}
+          </Text>
           <View style={styles.dateRow}>
             <Button
               mode="outlined"
@@ -782,7 +821,7 @@ export default function Orders() {
             >
               {filters.from
                 ? dayjs(filters.from).format('MMM D, YYYY')
-                : 'Start date'}
+                : I18n.t('filters.startDatePlaceholder')}
             </Button>
             <Button
               mode="outlined"
@@ -793,7 +832,7 @@ export default function Orders() {
             >
               {filters.to
                 ? dayjs(filters.to).format('MMM D, YYYY')
-                : 'End date'}
+                : I18n.t('filters.endDatePlaceholder')}
             </Button>
           </View>
           {(filters.from || filters.to) && (
@@ -805,14 +844,16 @@ export default function Orders() {
               }
               style={styles.clearDateButton}
             >
-              Clear dates
+              {I18n.t('filters.clearDatesButton')}
             </Button>
           )}
         </View>
 
         {!isBranch && (
           <View style={styles.filtersSection}>
-            <Text style={styles.filtersLabel}>Branch</Text>
+            <Text style={styles.filtersLabel}>
+              {I18n.t('filters.branchLabel')}
+            </Text>
             <BranchSelector
               selectedBranch={filters.branchId}
               onChange={(branchId) => {
@@ -863,7 +904,7 @@ export default function Orders() {
         style={styles.toastSnackbar}
         duration={3500}
         action={{
-          label: 'View',
+          label: I18n.t('orders.toastViewAction'),
           onPress: () => {
             if (newOrderToast) {
               openOrderDetail(newOrderToast.id);
@@ -872,7 +913,10 @@ export default function Orders() {
         }}
       >
         {newOrderToast
-          ? `New order ${newOrderToast.orderCode} — ${newOrderToast.items} items`
+          ? I18n.t('orders.newOrderToast', {
+              orderCode: newOrderToast.orderCode,
+              items: newOrderToast.items,
+            })
           : ''}
       </Snackbar>
 
@@ -887,6 +931,7 @@ export default function Orders() {
     </View>
   );
 }
+
 const rootStyles = StyleSheet.create({
   container: {
     flex: 1,

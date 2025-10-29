@@ -4,10 +4,12 @@ import { QRCodeType } from '@/types/qrCodeType';
 import { hideLoader, showLoader } from '@/lib/reduxStore/loaderSlice';
 import { useDispatch } from 'react-redux';
 import { AppDispatch } from '@/lib/reduxStore/store';
+import { useTime } from '@/context/time';
 
 export const useGetQRCodes = () => {
+  const { time } = useTime();
   return useQuery<QRCodeType[]>({
-    queryKey: ['qrCodes'],
+    queryKey: ['qrCodes', time],
     queryFn: getQRCodes,
     staleTime: 0,
     refetchOnMount: true,
@@ -17,6 +19,7 @@ export const useGetQRCodes = () => {
 export const useDeleteQRCode = () => {
   const queryClient = useQueryClient();
   const dispatch = useDispatch<AppDispatch>();
+  const { setTime } = useTime();
   return useMutation({
     mutationFn: deleteQRCode,
     onMutate: () => {
@@ -27,6 +30,7 @@ export const useDeleteQRCode = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['qrCodes'] });
+      setTime(Date.now());
     },
     onSettled: async (_: any, error: any) => {
       if (error) {

@@ -44,8 +44,7 @@ import EditComboDialog from '../combos/[comboId]';
 import Pagination from '@/components/Pagination';
 import debounce from 'lodash.debounce';
 import { MenuType } from '@/types/menuType';
-
-const DEFAULT_CATEGORIES = ['Main course', 'Pasta', 'Dessert', 'Drink'];
+import { i18n as I18n } from '@/app/_layout';
 
 export default function Menus() {
   const [currentPage, setCurrentPage] = useState<number>(1);
@@ -90,6 +89,7 @@ export default function Menus() {
   const [selectedItem, setSelectedItem] = useState<any>(null);
   const { mutateAsync: createRelatedItem } = useAddRelatedMenuItem();
   const { mutateAsync: deleteCombo } = useDeleteCombo();
+  const DEFAULT_CATEGORIES = ['Main course', 'Pasta', 'Dessert', 'Drink'];
 
   const queryParams = useMemo(() => {
     const category = mainSelectedCategory === 'All' ? '' : mainSelectedCategory;
@@ -204,7 +204,7 @@ export default function Menus() {
     <ScrollView style={styles.container}>
       <View style={styles.header}>
         <Text variant="headlineSmall" style={styles.title}>
-          Menus
+          {I18n.t('menus.title')}
         </Text>
         <BranchSelector
           selectedBranch={selectedBranch}
@@ -219,8 +219,8 @@ export default function Menus() {
           <Searchbar
             placeholder={
               activeTab === 'all'
-                ? 'Search by Item name or Category'
-                : 'Search by Combo name or Branch'
+                ? I18n.t('menus.search.placeholder_item')
+                : I18n.t('menus.search.placeholder_combo')
             }
             value={activeTab === 'all' ? mainSearchQuery : combosSearchQuery}
             onChangeText={(text) => {
@@ -248,7 +248,10 @@ export default function Menus() {
             style={styles.addButton}
             labelStyle={styles.addButtonLabel}
           >
-            + Add {activeTab === 'all' ? 'Item' : 'Combo'}
+            +{' '}
+            {activeTab === 'all'
+              ? I18n.t('menus.button.add_item_text')
+              : I18n.t('menus.button.add_combo_text')}
           </Button>
         </View>
       </View>
@@ -275,7 +278,7 @@ export default function Menus() {
                 styles.selectedCategoryChipText,
             ]}
           >
-            {category}
+            {I18n.t('menus.category.' + category)}
           </Chip>
         ))}
       </ScrollView>
@@ -293,7 +296,7 @@ export default function Menus() {
                 activeTab === 'all' && styles.activeTabLabel,
               ]}
             >
-              All items
+              {I18n.t('menus.tabs.all_items')}
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
@@ -309,7 +312,7 @@ export default function Menus() {
                 activeTab === 'combos' && styles.activeTabLabel,
               ]}
             >
-              Combos
+              {I18n.t('menus.tabs.combos')}
             </Text>
           </TouchableOpacity>
         </View>
@@ -332,27 +335,39 @@ export default function Menus() {
             <DataTable.Header style={styles.tableHeader}>
               <DataTable.Title style={styles.imageHeader}>
                 {' '}
-                <Text style={styles.tableTitle}>Image</Text>
+                <Text style={styles.tableTitle}>
+                  {I18n.t('menus.table.image')}
+                </Text>
               </DataTable.Title>
               <DataTable.Title>
                 {' '}
-                <Text style={styles.tableTitle}>Name</Text>
+                <Text style={styles.tableTitle}>
+                  {I18n.t('menus.table.name')}
+                </Text>
               </DataTable.Title>
               <DataTable.Title>
                 {' '}
-                <Text style={styles.tableTitle}>Category</Text>
+                <Text style={styles.tableTitle}>
+                  {I18n.t('menus.table.category')}
+                </Text>
               </DataTable.Title>
               <DataTable.Title>
                 {' '}
-                <Text style={styles.tableTitle}>Price</Text>
+                <Text style={styles.tableTitle}>
+                  {I18n.t('menus.table.price')}
+                </Text>
               </DataTable.Title>
               <DataTable.Title>
                 {' '}
-                <Text style={styles.tableTitle}>Related items</Text>
+                <Text style={styles.tableTitle}>
+                  {I18n.t('menus.table.related_items')}
+                </Text>
               </DataTable.Title>
               <DataTable.Title>
                 {' '}
-                <Text style={styles.tableTitle}>Actions</Text>
+                <Text style={styles.tableTitle}>
+                  {I18n.t('menus.table.actions')}
+                </Text>
               </DataTable.Title>
             </DataTable.Header>
 
@@ -388,8 +403,8 @@ export default function Menus() {
                       {relatedMenus?.find(
                         (it) => (it.menu_item as any).id == menu.id
                       )
-                        ? 'Update Related item'
-                        : '+ Related Item'}
+                        ? I18n.t('menus.button.update_related_item')
+                        : I18n.t('menus.button.add_related_item')}
                     </Button>
                   </DataTable.Cell>
                   <DataTable.Cell>
@@ -432,23 +447,33 @@ export default function Menus() {
             <DataTable.Header style={styles.tableHeader}>
               <DataTable.Title>
                 {' '}
-                <Text style={styles.tableTitle}>Name</Text>
+                <Text style={styles.tableTitle}>
+                  {I18n.t('menus.table.name')}
+                </Text>
               </DataTable.Title>
               <DataTable.Title>
                 {' '}
-                <Text style={styles.tableTitle}>Branch</Text>
+                <Text style={styles.tableTitle}>
+                  {I18n.t('menus.table.branch')}
+                </Text>
               </DataTable.Title>
               <DataTable.Title>
                 {' '}
-                <Text style={styles.tableTitle}>Price</Text>
+                <Text style={styles.tableTitle}>
+                  {I18n.t('menus.table.price')}
+                </Text>
               </DataTable.Title>
               <DataTable.Title>
                 {' '}
-                <Text style={styles.tableTitle}>Custom</Text>
+                <Text style={styles.tableTitle}>
+                  {I18n.t('menus.table.custom')}
+                </Text>
               </DataTable.Title>
               <DataTable.Title>
                 {' '}
-                <Text style={styles.tableTitle}>Actions</Text>
+                <Text style={styles.tableTitle}>
+                  {I18n.t('menus.table.actions')}
+                </Text>
               </DataTable.Title>
             </DataTable.Header>
 
@@ -473,7 +498,9 @@ export default function Menus() {
                     style={styles.customChip}
                     textStyle={styles.customChipText}
                   >
-                    {combo.is_custom ? 'Yes' : 'No'}
+                    {combo.is_custom
+                      ? I18n.t('menus.combo.custom_yes')
+                      : I18n.t('menus.combo.custom_no')}
                   </Chip>
                 </DataTable.Cell>
                 <DataTable.Cell>
@@ -552,7 +579,7 @@ export default function Menus() {
 
             <View style={styles.searchContainer}>
               <Searchbar
-                placeholder="Search by Item name"
+                placeholder={I18n.t('menus.related_modal.search_placeholder')}
                 onChangeText={(text) => {
                   setCurrentPage(1);
                   setModalSearchQuery(text);
@@ -637,11 +664,14 @@ export default function Menus() {
                 relatedMenus?.find(
                   (it) => (it.menu_item as any).id == currentMenuItem.id
                 )
-                  ? 'Update Item'
-                  : 'Add Item'}
+                  ? I18n.t('menus.button.update_item')
+                  : I18n.t('menus.button.add_item')}
               </Button>
               <Text style={styles.selectedItemsText}>
-                {selectedItems.length} items selected
+                {selectedItems.length}{' '}
+                {I18n.t('menus.related_modal.selected_count', {
+                  count: selectedItems.length,
+                })}
               </Text>
             </View>
           </View>
@@ -655,12 +685,14 @@ export default function Menus() {
           onDismiss={() => setShowDialog(false)}
           style={styles.dialog}
         >
-          <Dialog.Title style={{ color: '#000' }}>Confirm Delete</Dialog.Title>
+          <Dialog.Title style={{ color: '#000' }}>
+            {I18n.t('menus.dialog.delete_title')}
+          </Dialog.Title>
           <Dialog.Content>
             <Paragraph style={{ color: '#000' }}>
-              Are you sure you want to delete this{' '}
-              {activeTab === 'all' ? 'menu item' : 'combo'}? This action cannot
-              be undone.
+              {I18n.t('menus.dialog.delete_confirmation', {
+                type: activeTab === 'all' ? 'menu item' : 'combo',
+              })}
             </Paragraph>
           </Dialog.Content>
           <Dialog.Actions>
@@ -668,7 +700,7 @@ export default function Menus() {
               onPress={() => setShowDialog(false)}
               labelStyle={{ color: '#000' }}
             >
-              Cancel
+              {I18n.t('menus.dialog.cancel_button')}
             </Button>
             <Button
               onPress={
@@ -676,7 +708,7 @@ export default function Menus() {
               }
               labelStyle={{ color: 'red' }}
             >
-              Delete
+              {I18n.t('menus.dialog.delete_button')}
             </Button>
           </Dialog.Actions>
         </Dialog>

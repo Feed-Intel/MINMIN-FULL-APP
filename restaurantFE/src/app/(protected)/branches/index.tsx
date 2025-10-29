@@ -27,6 +27,7 @@ import AddBranchDialog from './addBranch';
 import EditBranchDialog from './[branchId]';
 import { useRestaurantIdentity } from '@/hooks/useRestaurantIdentity';
 import Pagination from '@/components/Pagination';
+import { i18n as I18n } from '@/app/_layout';
 
 export default function Branches() {
   const [currentPage, setCurrentPage] = useState<number>(1);
@@ -116,7 +117,7 @@ export default function Branches() {
             color: '#21281B',
           }}
         >
-          Branches
+          {I18n.t('Branch.branches_title')}
         </Text>
         <View
           style={[
@@ -131,7 +132,7 @@ export default function Branches() {
           <View style={styles.searchContainer}>
             <TextInput
               style={styles.searchInput}
-              placeholder="search by address"
+              placeholder={I18n.t('Branch.search_placeholder_address')}
               placeholderTextColor="#2E191466"
               value={searchQuery}
               onChangeText={(text) => {
@@ -146,7 +147,7 @@ export default function Branches() {
                 style={styles.addButton}
                 textColor="#fff"
               >
-                + Add branch
+                {I18n.t('Branch.button_add_branch')}
               </Button>
             )}
           </View>
@@ -160,19 +161,29 @@ export default function Branches() {
                 }}
               >
                 <DataTable.Title>
-                  <Text style={styles.tableTitle}>Branch</Text>
+                  <Text style={styles.tableTitle}>
+                    {I18n.t('Branch.table_header_branch')}
+                  </Text>
                 </DataTable.Title>
                 <DataTable.Title>
-                  <Text style={styles.tableTitle}>Latitude</Text>
+                  <Text style={styles.tableTitle}>
+                    {I18n.t('Branch.table_header_latitude')}
+                  </Text>
                 </DataTable.Title>
                 <DataTable.Title>
-                  <Text style={styles.tableTitle}>Longitude</Text>
+                  <Text style={styles.tableTitle}>
+                    {I18n.t('Branch.table_header_longitude')}
+                  </Text>
                 </DataTable.Title>
                 <DataTable.Title>
-                  <Text style={styles.tableTitle}>Set on map</Text>
+                  <Text style={styles.tableTitle}>
+                    {I18n.t('Branch.table_header_set_on_map')}
+                  </Text>
                 </DataTable.Title>
                 <DataTable.Title>
-                  <Text style={styles.tableTitle}>Actions</Text>
+                  <Text style={styles.tableTitle}>
+                    {I18n.t('Branch.table_header_actions')}
+                  </Text>
                 </DataTable.Title>
               </DataTable.Header>
 
@@ -193,7 +204,9 @@ export default function Branches() {
                       <Text style={styles.tableTitle2}>{longitude}</Text>
                     </DataTable.Cell>
                     <DataTable.Cell>
-                      <Text style={styles.tableTitle2}>Set on map</Text>
+                      <Text style={styles.tableTitle2}>
+                        {I18n.t('Branch.table_cell_set_on_map')}
+                      </Text>
                     </DataTable.Cell>
                     <DataTable.Cell>
                       {!isBranch ? (
@@ -235,7 +248,9 @@ export default function Branches() {
                           />
                         </View>
                       ) : (
-                        <Text style={styles.tableTitle2}>View only</Text>
+                        <Text style={styles.tableTitle2}>
+                          {I18n.t('Branch.table_cell_view_only')}
+                        </Text>
                       )}
                     </DataTable.Cell>
                   </DataTable.Row>
@@ -262,23 +277,22 @@ export default function Branches() {
             backgroundColor: '#EFF4EB',
           }}
         >
-          <Dialog.Title>Confirm Deletion</Dialog.Title>
+          <Dialog.Title>{I18n.t('Branch.dialog_delete_title')}</Dialog.Title>
           <Dialog.Content>
-            <Text>
-              Are you sure you want to delete this branch? This action cannot be
-              undone.
-            </Text>
+            <Text>{I18n.t('Branch.dialog_delete_message')}</Text>
           </Dialog.Content>
           <Dialog.Actions>
-            <Button onPress={() => setShowDeleteDialog(false)}>Cancel</Button>
+            <Button onPress={() => setShowDeleteDialog(false)}>
+              {I18n.t('Branch.button_cancel')}
+            </Button>
             <Button onPress={handleDeleteBranch} labelStyle={{ color: 'red' }}>
-              Delete
+              {I18n.t('Branch.button_delete')}
             </Button>
           </Dialog.Actions>
         </Dialog>
       </Portal>
 
-      {/* Add Branch Dialog */}
+      {/* Add Branch Dialog (Content not shown/modified) */}
       <AddBranchDialog
         visible={showAddDialog}
         onClose={() => setShowAddDialog(false)}
@@ -290,7 +304,7 @@ export default function Branches() {
         }}
       />
 
-      {/* Edit Branch Dialog */}
+      {/* Edit Branch Dialog (Content not shown/modified) */}
       <EditBranchDialog
         visible={showEditDialog}
         branch={selectedBranch}

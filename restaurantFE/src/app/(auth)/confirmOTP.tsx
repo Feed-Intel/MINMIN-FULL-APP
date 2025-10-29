@@ -1,25 +1,26 @@
-import React from "react";
-import { View, StyleSheet, Animated } from "react-native";
-import { setOTP } from "@/lib/reduxStore/authSlice";
-import { OtpInput } from "react-native-otp-entry";
-import { useAppSelector } from "@/lib/reduxStore/hooks";
-import { useDispatch } from "react-redux";
-import { Text, Button } from "react-native-paper";
-import { router } from "expo-router";
+import React from 'react';
+import { View, StyleSheet, Animated } from 'react-native';
+import { setOTP } from '@/lib/reduxStore/authSlice';
+import { OtpInput } from 'react-native-otp-entry';
+import { useAppSelector } from '@/lib/reduxStore/hooks';
+import { useDispatch } from 'react-redux';
+import { Text, Button } from 'react-native-paper';
+import { router } from 'expo-router';
 import {
   useConfirmOTP,
   useResetPassword,
-} from "@/services/mutation/authMutation";
+} from '@/services/mutation/authMutation';
+import { i18n as I18n } from '../_layout';
 
 const ConfirmOTPScreen = () => {
   const logoAnimation = React.useRef(new Animated.Value(0)).current;
-  const [OTP, setOTPText] = React.useState("");
+  const [OTP, setOTPText] = React.useState('');
   const email = useAppSelector((state) => state.auth.restaurant?.email);
   const dispatch = useDispatch();
 
   const onSuccessConfirmOTP = () => {
     dispatch(setOTP(OTP));
-    router.push("/(auth)/resetPassword");
+    router.push('/(auth)/resetPassword');
   };
 
   const { mutate: checkOTPFn } = useConfirmOTP(onSuccessConfirmOTP);
@@ -37,7 +38,7 @@ const ConfirmOTPScreen = () => {
 
   return (
     <View style={styles.container}>
-      {/* Logo Animation */}
+      {/* Logo Animation */}{' '}
       <Animated.View
         style={{
           opacity: logoAnimation,
@@ -51,50 +52,40 @@ const ConfirmOTPScreen = () => {
           ],
         }}
       >
-        <Text style={styles.logoText}>Restaurant Logo</Text>
+        {' '}
+        <Text style={styles.logoText}>
+          {I18n.t('ConfirmOTP.logo_text')}
+        </Text>{' '}
       </Animated.View>
-
-      {/* Title and Subtitle */}
+      {/* Title and Subtitle */}{' '}
       <Text variant="headlineLarge" style={styles.titleText}>
-        OTP Verification
-      </Text>
+        {I18n.t('ConfirmOTP.title')}{' '}
+      </Text>{' '}
       <Text variant="bodyLarge" style={styles.subtitleText}>
-        Please enter the OTP sent to your email address
-      </Text>
-
-      {/* OTP Input */}
-      {/* <TextInput
-        label="Enter OTP"
-        value={OTP}
-        onChangeText={setOTPText}
-        keyboardType="numeric"
-        mode="outlined"
-        style={styles.input}
-      /> */}
+        {I18n.t('ConfirmOTP.subtitle')}{' '}
+      </Text>{' '}
       <OtpInput
         numberOfDigits={6}
         onTextChange={setOTPText}
-        focusColor={"gray"}
+        focusColor={'gray'}
         type="numeric"
         theme={{
           pinCodeContainerStyle: styles.pinCodeStyle,
           pinCodeTextStyle: styles.textStyle,
         }}
       />
-
-      {/* Verify OTP Button */}
+      {/* Verify OTP Button */}{' '}
       <Button mode="contained" onPress={handleOTPConfirm} style={styles.button}>
-        Verify OTP
+        {I18n.t('ConfirmOTP.verify_button')}{' '}
       </Button>
-
-      {/* Resend OTP Button */}
+      {/* Resend OTP Button */}{' '}
       <Button
         mode="outlined"
         onPress={sendOTPAgain}
         style={styles.resendButton}
       >
-        Send OTP Again
-      </Button>
+        {I18n.t('ConfirmOTP.resend_button')}{' '}
+      </Button>{' '}
     </View>
   );
 };
@@ -102,35 +93,35 @@ const ConfirmOTPScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: "center",
+    justifyContent: 'center',
     padding: 16,
     //
   },
   logoText: {
     fontSize: 24,
-    fontWeight: "bold",
-    textAlign: "center",
+    fontWeight: 'bold',
+    textAlign: 'center',
     marginBottom: 32,
   },
   titleText: {
-    textAlign: "center",
+    textAlign: 'center',
     marginBottom: 8,
   },
   subtitleText: {
-    textAlign: "center",
+    textAlign: 'center',
     marginBottom: 16,
-    color: "gray",
+    color: 'gray',
   },
   input: {
     marginBottom: 16,
   },
   textStyle: {
-    color: "var(--color-typography-700)", // Replace with your desired CSS variable
+    color: 'var(--color-typography-700)', // Replace with your desired CSS variable
   },
   pinCodeStyle: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
+    justifyContent: 'center',
+    alignItems: 'center',
     borderRadius: 15,
     minHeight: 50,
     minWidth: 50,
@@ -140,7 +131,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   resendButton: {
-    borderColor: "#6200ee",
+    borderColor: '#6200ee',
   },
 });
 

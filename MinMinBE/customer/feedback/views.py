@@ -6,7 +6,8 @@ from django_filters.rest_framework import DjangoFilterBackend
 from customer.feedback.models import Feedback
 from rest_framework.exceptions import PermissionDenied
 from customer.feedback.serializers import FeedbackSerializer
-from accounts.permissions import IsAdminOrCustomer, HasCustomAPIKey
+from accounts.permissions import HasCustomAPIKey
+from accounts.utils import get_user_tenant
 
 class FeedbackPagination(PageNumberPagination):
     page_size = 10
@@ -24,11 +25,10 @@ class FeedbackViewSet(ModelViewSet):
     # Caching the feedback list
     def get_queryset(self):
         user = self.request.user
-
         if user.user_type == 'admin':
             queryset = Feedback.objects.all().select_related('order', 'customer')
         elif user.user_type == 'restaurant':
-            queryset = Feedback.objects.filter(restaurant=user).select_related('order', 'customer')
+            queryset = Feedback.objects.filter(restaurant=get_user_tenant(user)).select_related('order', 'customer')
         else:
             queryset = Feedback.objects.filter(customer=user).select_related('order', 'customer')
         return queryset

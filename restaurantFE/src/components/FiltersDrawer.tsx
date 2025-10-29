@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, StyleSheet, ScrollView } from 'react-native';
 import { Dialog, Text, IconButton, Button, Divider } from 'react-native-paper';
-
+import { i18n as I18n } from '@/app/_layout';
 export type FiltersDrawerProps = {
   title?: string;
   visible: boolean;
@@ -56,12 +56,12 @@ export default function FiltersDrawer({
             textColor="#4A4A4A"
             style={styles.resetButton}
           >
-            Reset
+            {I18n.t('Common.reset')}
           </Button>
         )}
         {onApply && (
           <Button mode="contained" onPress={onApply} style={styles.applyButton}>
-            Apply
+            {I18n.t('Common.apply')}
           </Button>
         )}
       </View>

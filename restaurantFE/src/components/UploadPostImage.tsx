@@ -15,6 +15,7 @@ import {
   MultiSelectDropdown,
   Option,
 } from 'react-native-paper-dropdown';
+import { i18n as I18n } from '@/app/_layout';
 
 export default function AddPostModal({
   visible,
@@ -90,8 +91,8 @@ export default function AddPostModal({
               }}
             >
               {uploadedImage
-                ? 'File Uploaded'
-                : 'Choose a file or drag and drop here'}
+                ? I18n.t('addPostModal.fileUploaded')
+                : I18n.t('addPostModal.chooseOrDrag')}
             </Text>
             <Button
               mode="outlined"
@@ -99,33 +100,46 @@ export default function AddPostModal({
               style={{ borderColor: '#6E504933', borderWidth: 1 }}
               onPress={pickImage}
             >
-              {uploadedImage ? 'Change Image' : 'Browse a file'}
+              {uploadedImage
+                ? I18n.t('addPostModal.changeImage')
+                : I18n.t('addPostModal.browseFile')}
             </Button>
           </View>
+
           <TextInput
-            placeholder="Caption"
+            placeholder={I18n.t('addPostModal.captionPlaceholder')}
             value={caption}
             onChangeText={setCaption}
             style={[styles.captionInput, { backgroundColor: '#D9E4D4' }]}
             placeholderTextColor={'#202B1866'}
           />
+
           <TextInput
-            placeholder="Location"
+            placeholder={I18n.t('addPostModal.locationPlaceholder')}
             value={location}
             onChangeText={setLocation}
             style={[styles.captionInput, { backgroundColor: '#D9E4D4' }]}
             placeholderTextColor={'#202B1866'}
           />
+
           <MultiSelectDropdown
-            label="Select Tags"
-            placeholder="Select Tags"
+            label={I18n.t('addPostModal.selectTagsLabel')}
+            placeholder={I18n.t('addPostModal.selectTagsPlaceholder')}
             options={
-              (['Breakfast', 'Lunch', 'Dinner', 'Dessert'].map((tg) => ({
-                label: tg,
-                value: tg,
-              })) as Option[]) || []
+              [
+                {
+                  label: I18n.t('addPostModal.tags.breakfast'),
+                  value: 'Breakfast',
+                },
+                { label: I18n.t('addPostModal.tags.lunch'), value: 'Lunch' },
+                { label: I18n.t('addPostModal.tags.dinner'), value: 'Dinner' },
+                {
+                  label: I18n.t('addPostModal.tags.dessert'),
+                  value: 'Dessert',
+                },
+              ] as Option[]
             }
-            value={selectedTags || []}
+            value={selectedTags}
             onSelect={(values) => setSelectedTags(values)}
             menuContentStyle={{
               backgroundColor: '#fff',
@@ -144,7 +158,6 @@ export default function AddPostModal({
                 style={{
                   backgroundColor: '#50693A17',
                   maxHeight: 50,
-                  // minWidth: 400,
                 }}
                 contentStyle={{
                   borderColor: '#ccc',
@@ -157,6 +170,7 @@ export default function AddPostModal({
             )}
           />
         </View>
+
         <Button
           icon="plus"
           style={{
@@ -170,7 +184,7 @@ export default function AddPostModal({
           }}
           onPress={onSubmit}
         >
-          Add Posts
+          {I18n.t('addPostModal.addPosts')}
         </Button>
       </Modal>
     </Portal>
