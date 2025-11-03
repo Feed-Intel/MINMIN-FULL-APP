@@ -23,6 +23,11 @@ export default function LanguageSelector({
   const handleChangeLanguage = async (locale: 'en' | 'am') => {
     setSelectedLanguage(locale);
     dispatch(setLanguage(locale));
+    if (Platform.OS === 'web') {
+      await AsyncStorage.setItem('language', locale);
+    } else {
+      await SecureStore.setItemAsync('language', locale);
+    }
     setShowLanguageModal(false);
   };
 
