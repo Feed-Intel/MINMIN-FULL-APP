@@ -1,7 +1,9 @@
-import { useState } from 'react';
-import { TouchableOpacity, StyleSheet } from 'react-native';
+import { useEffect, useState } from 'react';
+import { TouchableOpacity, StyleSheet, Platform } from 'react-native';
 import { Button, Dialog, Portal, Text } from 'react-native-paper';
 import { useDispatch, useSelector } from 'react-redux';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
 import { setLanguage } from '@/lib/reduxStore/localeSlice';
 import { i18n as I18n } from '@/app/_layout';
 import { RootState } from '@/lib/reduxStore/store';
@@ -23,6 +25,19 @@ export default function LanguageSelector({
     dispatch(setLanguage(locale));
     setShowLanguageModal(false);
   };
+
+  useEffect(() => {
+    async function checkLanguage() {
+      let storedLanguage = null;
+      if (Platform.OS === 'web') {
+        storedLanguage = (await AsyncStorage.getItem('language')) || 'am';
+      } else {
+        storedLanguage = (await SecureStore.getItemAsync('language')) || 'am';
+      }
+      setSelectedLanguage(storedLanguage as 'en' | 'am');
+    }
+    checkLanguage();
+  }, []);
   return (
     <Portal>
       <Dialog

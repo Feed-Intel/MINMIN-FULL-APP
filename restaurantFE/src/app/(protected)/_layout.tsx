@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, View, TouchableOpacity } from 'react-native';
 import { Slot } from 'expo-router';
 import { Surface } from 'react-native-paper';
 import Sidebar from '@/components/dashboard/Sidebar';
@@ -84,7 +84,11 @@ export default function ProtectedLayout() {
             alignItems: 'center',
           }}
         >
-          <Logo height={60} color={'#91B275'} />
+          <TouchableOpacity
+            onPress={() => router.replace('/(protected)/dashboard')}
+          >
+            <Logo height={60} color={'#91B275'} />
+          </TouchableOpacity>
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
             <NotificationIcon notification={notifications} />
             <ProfileIcon />
