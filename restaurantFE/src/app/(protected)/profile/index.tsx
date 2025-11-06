@@ -26,6 +26,7 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useQueryClient } from '@tanstack/react-query';
+import { router } from 'expo-router';
 
 import {
   useGetTenantProfile,
@@ -41,6 +42,7 @@ import PostGallery from '@/components/PostGallery';
 import AddPostModal from '@/components/UploadPostImage';
 import CustomerFeedback from '@/components/CustomerFeedback';
 import { i18n as I18n } from '@/app/_layout';
+import { useRestaurantIdentity } from '@/hooks/useRestaurantIdentity';
 
 const LANGUAGE_STORAGE_KEY = 'restaurant-language-preference';
 const PRIVACY_POLICY_URL = 'https://stg.api.feed-intel.com/privacy/';
@@ -83,7 +85,7 @@ const ProfileScreen = () => {
   const tenantId = restaurant?.id;
   const userEmail = restaurant?.email;
   const branchName = restaurant?.branch;
-
+  const { isBranch } = useRestaurantIdentity();
   const { data: tenant, isLoading } = useGetTenantProfile(tenantId);
   const { data: topMenuItems, isLoading: isLoadingTopItems } =
     useTopMenuItems();
@@ -110,6 +112,12 @@ const ProfileScreen = () => {
     I18n.t('profile.tab_business_detail')
   );
   const [addPost, setAddPost] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (isBranch) {
+      router.replace('/(protected)/dashboard');
+    }
+  }, [isBranch]);
 
   useEffect(() => {
     if (tenant) {

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   ScrollView,
@@ -11,30 +11,30 @@ import {
   ViewStyle,
   TextStyle,
   Animated,
-} from "react-native";
+} from 'react-native';
 import {
   RelativePathString,
   useLocalSearchParams,
   useRouter,
-} from "expo-router";
+} from 'expo-router';
 
-import { useSelector } from "react-redux";
-import { RootState } from "@/lib/reduxStore/store";
-import { Appbar, Searchbar, Text } from "react-native-paper";
-import { Feather } from "@expo/vector-icons";
-import { Colors } from "@/constants/Colors";
+import { useSelector } from 'react-redux';
+import { RootState } from '@/lib/reduxStore/store';
+import { Appbar, Searchbar, Text } from 'react-native-paper';
+import { Feather } from '@expo/vector-icons';
+import { Colors } from '@/constants/Colors';
 import {
   useGetRelatedMenus,
   useSearchMenuAvailabilities,
-} from "@/services/mutation/menuMutation";
-import * as Haptics from "expo-haptics";
-import { useCreateAWaiterCall } from "@/services/mutation/branchMutation";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { DishRow } from "@/components/restaurant/Dish";
-import { StarRating } from "@/components/stars/ratingStars";
-import { i18n } from "@/app/_layout";
+} from '@/services/mutation/menuMutation';
+import * as Haptics from 'expo-haptics';
+import { useCreateAWaiterCall } from '@/services/mutation/branchMutation';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { DishRow } from '@/components/restaurant/Dish';
+import { StarRating } from '@/components/stars/ratingStars';
+import { i18n } from '@/app/_layout';
 
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 interface MenuItem {
   id: string;
@@ -63,13 +63,13 @@ interface Branch {
 
 const useResponsive = () => {
   const [screenWidth, setScreenWidth] = useState(SCREEN_WIDTH);
-  const isWeb = Platform.OS === "web";
+  const isWeb = Platform.OS === 'web';
 
   useEffect(() => {
     if (isWeb) {
       const updateWidth = () => setScreenWidth(window.innerWidth);
-      window.addEventListener("resize", updateWidth);
-      return () => window.removeEventListener("resize", updateWidth);
+      window.addEventListener('resize', updateWidth);
+      return () => window.removeEventListener('resize', updateWidth);
     }
   }, [isWeb]);
 
@@ -118,18 +118,16 @@ const BellComponent = ({ tableId }: any) => {
     setIsBellDisabled(true);
     try {
       callWaiter.mutate({ table_id: tableId });
-      await Haptics.notificationAsync(
-        Haptics.NotificationFeedbackType.Success
-      );
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       Alert.alert(
-        i18n.t("waiter_called_alert_title"),
-        i18n.t("waiter_called_alert_message")
+        i18n.t('waiter_called_alert_title'),
+        i18n.t('waiter_called_alert_message')
       );
     } catch (error) {
-      console.error(i18n.t("error_playing_sound_console_message"), error);
+      console.error(i18n.t('error_playing_sound_console_message'), error);
       Alert.alert(
-        i18n.t("notice_alert_title"),
-        i18n.t("could_not_play_sound_alert_message")
+        i18n.t('notice_alert_title'),
+        i18n.t('could_not_play_sound_alert_message')
       );
     }
 
@@ -159,21 +157,25 @@ const BranchDetailsScreen = () => {
   const {
     restaurantId,
     rating = 0,
-    branchId = "{}",
-    tableId = "null",
+    branchId = '{}',
+    tableId = 'null',
     from,
+    service_charge,
+    tax,
+    CHAPA_API_KEY,
+    CHAPA_PUBLIC_KEY,
   } = useLocalSearchParams();
   const parsedBranches: Branch = useMemo(() => {
     try {
       return JSON.parse(branchId as string);
     } catch (e) {
-      console.error(i18n.t("failed_to_parse_branch_id_console_message"), e);
+      console.error(i18n.t('failed_to_parse_branch_id_console_message'), e);
       return {} as Branch;
     }
   }, [branchId]);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState<string>(
-    i18n.t("all_category_tab")
+    i18n.t('all_category_tab')
   );
 
   const {
@@ -219,11 +221,12 @@ const BranchDetailsScreen = () => {
   const categories = useMemo(() => {
     const uniqueCategories = new Set<string>();
     parsedMenus.forEach((menu) => {
-      const categoryList = menu.categories && menu.categories.length
-        ? menu.categories
-        : menu.category
-        ? [menu.category]
-        : [];
+      const categoryList =
+        menu.categories && menu.categories.length
+          ? menu.categories
+          : menu.category
+          ? [menu.category]
+          : [];
 
       categoryList.forEach((category) => {
         if (category) {
@@ -232,7 +235,7 @@ const BranchDetailsScreen = () => {
       });
     });
 
-    return [i18n.t("all_category_tab"), ...Array.from(uniqueCategories)];
+    return [i18n.t('all_category_tab'), ...Array.from(uniqueCategories)];
   }, [parsedMenus]);
 
   // Filter menus based on active category and search query
@@ -240,17 +243,18 @@ const BranchDetailsScreen = () => {
     const lowerSearchQuery = searchQuery.toLowerCase();
 
     return parsedMenus.filter((menu) => {
-      const categoryList = menu.categories && menu.categories.length
-        ? menu.categories
-        : menu.category
-        ? [menu.category]
-        : [];
+      const categoryList =
+        menu.categories && menu.categories.length
+          ? menu.categories
+          : menu.category
+          ? [menu.category]
+          : [];
 
       const matchesCategory =
-        activeCategory === i18n.t("all_category_tab") ||
+        activeCategory === i18n.t('all_category_tab') ||
         categoryList.includes(activeCategory);
       const matchesSearch =
-        searchQuery === "" ||
+        searchQuery === '' ||
         menu.name.toLowerCase().includes(lowerSearchQuery) ||
         menu.description.toLowerCase().includes(lowerSearchQuery) ||
         categoryList.some((category) =>
@@ -266,12 +270,13 @@ const BranchDetailsScreen = () => {
     const categoriesMap: { [key: string]: MenuItem[] } = {};
 
     filteredMenus.forEach((menu) => {
-      const categoryList = menu.categories && menu.categories.length
-        ? menu.categories
-        : menu.category
-        ? [menu.category]
-        : [];
-      const primaryCategory = categoryList[0] ?? "Others";
+      const categoryList =
+        menu.categories && menu.categories.length
+          ? menu.categories
+          : menu.category
+          ? [menu.category]
+          : [];
+      const primaryCategory = categoryList[0] ?? 'Others';
 
       if (!categoriesMap[primaryCategory]) {
         categoriesMap[primaryCategory] = [];
@@ -307,9 +312,9 @@ const BranchDetailsScreen = () => {
   if (isLoading)
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={"#96B76E"} />
+        <ActivityIndicator size="large" color={'#96B76E'} />
         <Text style={styles.loadingText}>
-          {i18n.t("loading_branch_details_text")}
+          {i18n.t('loading_branch_details_text')}
         </Text>
       </View>
     );
@@ -318,7 +323,7 @@ const BranchDetailsScreen = () => {
     return (
       <View style={styles.errorContainer}>
         <Text style={styles.errorText}>
-          {i18n.t("failed_to_load_branch_details_error")}
+          {i18n.t('failed_to_load_branch_details_error')}
         </Text>
       </View>
     );
@@ -339,7 +344,7 @@ const BranchDetailsScreen = () => {
           }
         />
         <Appbar.Content
-          title={i18n.t("menus_screen_title")}
+          title={i18n.t('menus_screen_title')}
           titleStyle={styles.headerTitle}
         />
       </Appbar.Header>
@@ -357,7 +362,7 @@ const BranchDetailsScreen = () => {
             isWeb && !isMobile && styles.webBranchHeader,
           ]}
         >
-          <Text style={styles.branchTitle}>{branch?.name || ""}</Text>
+          <Text style={styles.branchTitle}>{branch?.name || ''}</Text>
           <Text style={styles.branchAddress}>{branch?.address}</Text>
           <View style={styles.locationContainer}>
             <StarRating rating={parseInt(rating as string) || 0} />
@@ -372,7 +377,7 @@ const BranchDetailsScreen = () => {
           ]}
         >
           <Searchbar
-            placeholder={i18n.t("search_dishes_placeholder")}
+            placeholder={i18n.t('search_dishes_placeholder')}
             onChangeText={setSearchQuery}
             value={searchQuery}
             style={[
@@ -415,7 +420,7 @@ const BranchDetailsScreen = () => {
           {filteredMenus.length === 0 ? (
             <View style={styles.noResultsContainer}>
               <Text style={styles.noResultsText}>
-                {i18n.t("no_items_found_search_text")}
+                {i18n.t('no_items_found_search_text')}
               </Text>
             </View>
           ) : (
@@ -436,7 +441,7 @@ const BranchDetailsScreen = () => {
                         style={[
                           styles.menuItem,
                           isWeb && !isMobile && styles.webMenuItem,
-                          { width: isWeb && !isMobile ? "48%" : "100%" },
+                          { width: isWeb && !isMobile ? '48%' : '100%' },
                         ]}
                       >
                         <DishRow
@@ -446,6 +451,10 @@ const BranchDetailsScreen = () => {
                           tableId={tableId as string}
                           onAddItem={() => setSelectedItemId(menu.id)}
                           relatedItems={relatedItemsForThisMenu}
+                          service_charge={parseFloat(service_charge as string)}
+                          tax={parseFloat(tax as string)}
+                          CHAPA_API_KEY={CHAPA_API_KEY as string}
+                          CHAPA_PUBLIC_KEY={CHAPA_PUBLIC_KEY as string}
                         />
                       </View>
                     );
@@ -463,11 +472,11 @@ const BranchDetailsScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#FFFCF5",
+    backgroundColor: '#FFFCF5',
   },
   webContainer: {
-    alignSelf: "center",
-    width: "100%",
+    alignSelf: 'center',
+    width: '100%',
     maxWidth: 1200,
   } as ViewStyle,
   scrollContainer: {
@@ -481,8 +490,8 @@ const styles = StyleSheet.create({
   } as ViewStyle,
   loadingContainer: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   loadingText: {
     marginTop: 16,
@@ -491,8 +500,8 @@ const styles = StyleSheet.create({
   },
   errorContainer: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   errorText: {
     fontSize: 18,
@@ -501,9 +510,9 @@ const styles = StyleSheet.create({
   branchHeader: {
     padding: 20,
     paddingTop: 0,
-    backgroundColor: "#FFFCF5",
+    backgroundColor: '#FFFCF5',
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "#D3D3D3",
+    borderBottomColor: '#D3D3D3',
   } as ViewStyle,
   webBranchHeader: {
     marginHorizontal: 20,
@@ -511,8 +520,8 @@ const styles = StyleSheet.create({
   } as ViewStyle,
   branchTitle: {
     fontSize: 24,
-    fontWeight: "bold",
-    color: "#000",
+    fontWeight: 'bold',
+    color: '#000',
   },
   branchAddress: {
     fontSize: 16,
@@ -520,8 +529,8 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   locationContainer: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     marginTop: 8,
   },
   locationText: {
@@ -535,40 +544,40 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   defaultBranchValue: {
-    fontWeight: "bold",
+    fontWeight: 'bold',
   },
   searchContainer: {
     padding: 16,
-    backgroundColor: "#FFFCF5",
+    backgroundColor: '#FFFCF5',
   },
   webSearchContainer: {
     paddingHorizontal: 50,
   } as ViewStyle,
   searchBar: {
     borderRadius: 30,
-    backgroundColor: "#546D3617",
+    backgroundColor: '#546D3617',
     height: 45,
   } as ViewStyle,
   webSearchBar: {
     maxWidth: 600,
-    alignSelf: "center",
+    alignSelf: 'center',
   } as ViewStyle,
   searchInput: {
     color: Colors.light.text,
   },
   menuSection: {
     paddingHorizontal: 0,
-    backgroundColor: "#FFFCF5",
+    backgroundColor: '#FFFCF5',
   },
   menuTitle: {
     fontSize: 22,
-    fontWeight: "bold",
+    fontWeight: 'bold',
     color: Colors.light.text,
     marginBottom: 16,
   },
   webMenuTitle: {
     fontSize: 28,
-    textAlign: "center",
+    textAlign: 'center',
     marginVertical: 30,
   } as TextStyle,
   categoryContainer: {
@@ -576,7 +585,7 @@ const styles = StyleSheet.create({
   },
   categoryTitle: {
     fontSize: 20,
-    fontWeight: "bold",
+    fontWeight: 'bold',
     color: Colors.light.tint,
     marginBottom: 12,
     paddingBottom: 8,
@@ -588,22 +597,22 @@ const styles = StyleSheet.create({
     marginVertical: 20,
   } as TextStyle,
   itemsContainer: {
-    flexDirection: "column",
+    flexDirection: 'column',
   },
   webItemsContainer: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "space-between",
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
   } as ViewStyle,
   menuItem: {
     marginBottom: 0,
   },
   webMenuItem: {
-    marginHorizontal: "1%",
+    marginHorizontal: '1%',
   } as ViewStyle,
   recommendedTitle: {
     fontSize: 18,
-    fontWeight: "bold",
+    fontWeight: 'bold',
     color: Colors.light.text,
     marginTop: 20,
     marginBottom: 16,
@@ -611,54 +620,54 @@ const styles = StyleSheet.create({
   relatedItemContainer: {
     width: 280,
     marginRight: 15,
-    backgroundColor: "#f5f5f5",
+    backgroundColor: '#f5f5f5',
     borderRadius: 16,
     padding: 10,
     marginBottom: 10,
-    shadowColor: "#000",
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 3,
   } as ViewStyle,
   header: {
-    backgroundColor: "#FFFCF5",
+    backgroundColor: '#FFFCF5',
   },
   webHeader: {
     paddingHorizontal: 50,
   },
   headerTitle: {
     fontSize: 20,
-    fontWeight: "600",
+    fontWeight: '600',
     color: Colors.light.text,
-    alignSelf: "center",
+    alignSelf: 'center',
     marginLeft: -20,
   },
   bellContainer: {
-    position: "absolute",
+    position: 'absolute',
     right: 20,
     top: 60,
     zIndex: 999,
-    alignItems: "flex-end",
+    alignItems: 'flex-end',
   },
   bellButton: {
-    backgroundColor: "#E65C2D",
+    backgroundColor: '#E65C2D',
     width: 60,
     height: 60,
     borderRadius: 30,
-    justifyContent: "center",
-    alignItems: "center",
-    shadowColor: "#fff",
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#fff',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 4,
     elevation: 5,
     borderWidth: 1,
-    borderColor: "#fff",
+    borderColor: '#fff',
   } as ViewStyle,
   pulse: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "#E65C2D",
+    backgroundColor: '#E65C2D',
     borderRadius: 30,
   } as ViewStyle,
   disabledBell: {
@@ -666,8 +675,8 @@ const styles = StyleSheet.create({
   } as ViewStyle,
   noResultsContainer: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
+    justifyContent: 'center',
+    alignItems: 'center',
     minHeight: 200,
   },
   noResultsText: {
@@ -687,30 +696,30 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     marginRight: 10,
     borderRadius: 20,
-    backgroundColor: "#FAF3E9",
+    backgroundColor: '#FAF3E9',
   },
   activeCategoryTab: {
-    backgroundColor: "#9AC26B",
+    backgroundColor: '#9AC26B',
   },
   categoryTabText: {
-    color: "#666",
-    fontWeight: "500",
+    color: '#666',
+    fontWeight: '500',
   },
   activeCategoryTabText: {
-    color: "white",
-    fontWeight: "bold",
+    color: 'white',
+    fontWeight: 'bold',
   },
   // Order button styles
   orderButton: {
-    position: "absolute",
+    position: 'absolute',
     bottom: 20,
     left: 20,
     right: 20,
     backgroundColor: Colors.light.tint,
     borderRadius: 8,
     paddingVertical: 15,
-    alignItems: "center",
-    shadowColor: "#000",
+    alignItems: 'center',
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
@@ -720,9 +729,9 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.light.tabIconDefault,
   },
   orderButtonText: {
-    color: "white",
+    color: 'white',
     fontSize: 18,
-    fontWeight: "bold",
+    fontWeight: 'bold',
   },
 });
 

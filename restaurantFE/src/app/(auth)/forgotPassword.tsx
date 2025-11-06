@@ -16,7 +16,9 @@ const ForgotPasswordScreen = () => {
     router.push('/(auth)/confirmOTP');
   };
 
-  const { mutate: ResetPasswordFn } = useResetPassword(onSuccessResetPassword);
+  const { mutate: ResetPasswordFn, isPending } = useResetPassword(
+    onSuccessResetPassword
+  );
 
   const handlePasswordReset = () => {
     const data = { email };
@@ -58,6 +60,7 @@ const ForgotPasswordScreen = () => {
           mode="contained"
           onPress={handlePasswordReset}
           style={styles.button}
+          loading={isPending}
           // The labelStyle prop is ignored in this web simulation but kept for context
         >
           {I18n.t('ForgotPassword.reset_button')}

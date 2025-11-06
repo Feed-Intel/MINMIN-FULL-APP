@@ -120,12 +120,14 @@ export default function Menus() {
   useEffect(() => {
     if (currentMenuItem) {
       const relatedItemExists = relatedMenus?.find(
-        (it) => (it.menu_item as any).id == currentMenuItem.id
+        (it) => (it.menu_item as any).id == currentMenuItem?.menu_item.id
       );
       if (relatedItemExists) {
         setSelectedItems(
           relatedMenus!
-            .filter((it) => (it.menu_item as any).id == currentMenuItem.id)
+            .filter(
+              (it) => (it.menu_item as any).id == currentMenuItem?.menu_item.id
+            )
             .map((it) => (it.related_item as any).id)
         );
       }
@@ -194,7 +196,7 @@ export default function Menus() {
   const handleRelatedItemsActions = async () => {
     setShowRelatedModal(false);
     await createRelatedItem({
-      menu_item: currentMenuItem.id,
+      menu_item: currentMenuItem.menu_item.id,
       related_items: selectedItems,
     });
     await queryClient.invalidateQueries({ queryKey: ['relatedMenus'] });
@@ -238,21 +240,23 @@ export default function Menus() {
             inputStyle={styles.searchInput}
             placeholderTextColor="#8D8D8D"
           />
-          <Button
-            mode="contained"
-            onPress={() =>
-              activeTab === 'all'
-                ? setShowAddMenuModal(true)
-                : setShowAddComboModal(true)
-            }
-            style={styles.addButton}
-            labelStyle={styles.addButtonLabel}
-          >
-            +{' '}
-            {activeTab === 'all'
-              ? I18n.t('menus.button.add_item_text')
-              : I18n.t('menus.button.add_combo_text')}
-          </Button>
+          {!isBranch && (
+            <Button
+              mode="contained"
+              onPress={() =>
+                activeTab === 'all'
+                  ? setShowAddMenuModal(true)
+                  : setShowAddComboModal(true)
+              }
+              style={styles.addButton}
+              labelStyle={styles.addButtonLabel}
+            >
+              +{' '}
+              {activeTab === 'all'
+                ? I18n.t('menus.button.add_item_text')
+                : I18n.t('menus.button.add_combo_text')}
+            </Button>
+          )}
         </View>
       </View>
 
@@ -394,44 +398,48 @@ export default function Menus() {
                     </Text>
                   </DataTable.Cell>
                   <DataTable.Cell>
-                    <Button
-                      mode="outlined"
-                      onPress={() => openRelatedModal(menu)}
-                      style={styles.relatedButton}
-                      labelStyle={styles.relatedButtonLabel}
-                    >
-                      {relatedMenus?.find(
-                        (it) => (it.menu_item as any).id == menu.id
-                      )
-                        ? I18n.t('menus.button.update_related_item')
-                        : I18n.t('menus.button.add_related_item')}
-                    </Button>
+                    {!isBranch && (
+                      <Button
+                        mode="outlined"
+                        onPress={() => openRelatedModal(menu)}
+                        style={styles.relatedButton}
+                        labelStyle={styles.relatedButtonLabel}
+                      >
+                        {relatedMenus?.find(
+                          (it) => (it.menu_item as any).id == menu.id
+                        )
+                          ? I18n.t('menus.button.update_related_item')
+                          : I18n.t('menus.button.add_related_item')}
+                      </Button>
+                    )}
                   </DataTable.Cell>
                   <DataTable.Cell>
-                    <View style={styles.actionsContainer}>
-                      <Button
-                        mode="text"
-                        onPress={() => {
-                          setSelectedItem(menu.menu_item);
-                          setShowEditMenuDialog(true);
-                        }}
-                        icon="pencil-outline"
-                        contentStyle={styles.deleteButtonContent}
-                        labelStyle={styles.deleteButtonLabel}
-                        style={styles.actionButton}
-                      />
-                      <Button
-                        mode="text"
-                        onPress={() => {
-                          setMenuID(menu.menu_item.id!);
-                          setShowDialog(true);
-                        }}
-                        contentStyle={styles.deleteButtonContent}
-                        labelStyle={styles.deleteButtonLabel}
-                        icon="delete-outline"
-                        style={styles.actionButton}
-                      />
-                    </View>
+                    {!isBranch && (
+                      <View style={styles.actionsContainer}>
+                        <Button
+                          mode="text"
+                          onPress={() => {
+                            setSelectedItem(menu.menu_item);
+                            setShowEditMenuDialog(true);
+                          }}
+                          icon="pencil-outline"
+                          contentStyle={styles.deleteButtonContent}
+                          labelStyle={styles.deleteButtonLabel}
+                          style={styles.actionButton}
+                        />
+                        <Button
+                          mode="text"
+                          onPress={() => {
+                            setMenuID(menu.menu_item.id!);
+                            setShowDialog(true);
+                          }}
+                          contentStyle={styles.deleteButtonContent}
+                          labelStyle={styles.deleteButtonLabel}
+                          icon="delete-outline"
+                          style={styles.actionButton}
+                        />
+                      </View>
+                    )}
                   </DataTable.Cell>
                 </DataTable.Row>
               );
@@ -504,30 +512,32 @@ export default function Menus() {
                   </Chip>
                 </DataTable.Cell>
                 <DataTable.Cell>
-                  <View style={styles.actionsContainer}>
-                    <Button
-                      mode="text"
-                      onPress={() => {
-                        setSelectedItem(combo);
-                        setShowEditComboDialog(true);
-                      }}
-                      icon="pencil-outline"
-                      contentStyle={styles.deleteButtonContent}
-                      labelStyle={styles.deleteButtonLabel}
-                      style={styles.actionButton}
-                    />
-                    <Button
-                      mode="text"
-                      onPress={() => {
-                        setMenuID(combo.id!);
-                        setShowDialog(true);
-                      }}
-                      contentStyle={styles.deleteButtonContent}
-                      labelStyle={styles.deleteButtonLabel}
-                      icon="delete-outline"
-                      style={styles.actionButton}
-                    />
-                  </View>
+                  {!isBranch && (
+                    <View style={styles.actionsContainer}>
+                      <Button
+                        mode="text"
+                        onPress={() => {
+                          setSelectedItem(combo);
+                          setShowEditComboDialog(true);
+                        }}
+                        icon="pencil-outline"
+                        contentStyle={styles.deleteButtonContent}
+                        labelStyle={styles.deleteButtonLabel}
+                        style={styles.actionButton}
+                      />
+                      <Button
+                        mode="text"
+                        onPress={() => {
+                          setMenuID(combo.id!);
+                          setShowDialog(true);
+                        }}
+                        contentStyle={styles.deleteButtonContent}
+                        labelStyle={styles.deleteButtonLabel}
+                        icon="delete-outline"
+                        style={styles.actionButton}
+                      />
+                    </View>
+                  )}
                 </DataTable.Cell>
               </DataTable.Row>
             ))}
@@ -573,13 +583,13 @@ export default function Menus() {
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalHeaderText}>
-                For: {currentMenuItem?.name}
+                For: {currentMenuItem?.menu_item.name}
               </Text>
             </View>
 
             <View style={styles.searchContainer}>
               <Searchbar
-                placeholder={I18n.t('menus.related_modal.search_placeholder')}
+                placeholder={I18n.t('menus.modal.search_placeholder')}
                 onChangeText={(text) => {
                   setCurrentPage(1);
                   setModalSearchQuery(text);
@@ -613,40 +623,46 @@ export default function Menus() {
                       styles.selectedCategoryChipText,
                   ]}
                 >
-                  {category}
+                  {I18n.t(`menus.category.${category}`)}
                 </Chip>
               ))}
             </ScrollView>
 
             <ScrollView style={styles.itemsContainer}>
-              {rawMenu?.results?.map((menu: any) => {
-                const categories = getMenuCategories(menu);
-                const categoriesLabel = categories.length
-                  ? categories.join(', ')
-                  : '—';
+              {rawMenu?.results
+                ?.filter(
+                  (menu: any) => menu.id != currentMenuItem?.menu_item.id
+                )
+                .map((menu: any) => {
+                  const categories = getMenuCategories(menu);
+                  const categoriesLabel = categories.length
+                    ? categories.join(', ')
+                    : '—';
 
-                return (
-                  <View key={menu.id} style={styles.itemRow}>
-                    <Checkbox.Android
-                      status={
-                        selectedItems.includes(menu.id || '')
-                          ? 'checked'
-                          : 'unchecked'
-                      }
-                      onPress={() => toggleItemSelection(menu.id || '')}
-                    />
-                    <Image
-                      source={{ uri: menu.image }}
-                      style={styles.itemImage}
-                    />
-                    <View style={styles.itemDetails}>
-                      <Text style={styles.itemName}>{menu.name}</Text>
-                      <Text style={styles.categoryText}>{categoriesLabel}</Text>
+                  return (
+                    <View key={menu.id} style={styles.itemRow}>
+                      <Checkbox.Android
+                        status={
+                          selectedItems.includes(menu.id || '')
+                            ? 'checked'
+                            : 'unchecked'
+                        }
+                        onPress={() => toggleItemSelection(menu.id || '')}
+                      />
+                      <Image
+                        source={{ uri: menu.image }}
+                        style={styles.itemImage}
+                      />
+                      <View style={styles.itemDetails}>
+                        <Text style={styles.itemName}>{menu.name}</Text>
+                        <Text style={styles.categoryText}>
+                          {categoriesLabel}
+                        </Text>
+                      </View>
+                      <Text style={styles.itemPrice}>${menu.price}</Text>
                     </View>
-                    <Text style={styles.itemPrice}>${menu.price}</Text>
-                  </View>
-                );
-              })}
+                  );
+                })}
             </ScrollView>
           </View>
           <View style={styles.modalFooter}>
@@ -662,14 +678,14 @@ export default function Menus() {
               >
                 {currentMenuItem &&
                 relatedMenus?.find(
-                  (it) => (it.menu_item as any).id == currentMenuItem.id
+                  (it) =>
+                    (it.menu_item as any).id == currentMenuItem.menu_item.id
                 )
-                  ? I18n.t('menus.button.update_item')
-                  : I18n.t('menus.button.add_item')}
+                  ? I18n.t('menus.modal.update_button')
+                  : I18n.t('menus.modal.add_button')}
               </Button>
               <Text style={styles.selectedItemsText}>
-                {selectedItems.length}{' '}
-                {I18n.t('menus.related_modal.selected_count', {
+                {I18n.t('menus.modal.selected_count', {
                   count: selectedItems.length,
                 })}
               </Text>

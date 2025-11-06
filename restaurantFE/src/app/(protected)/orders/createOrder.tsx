@@ -5,7 +5,7 @@ import {
   useGetMenus,
 } from '@/services/mutation/menuMutation';
 import { router } from 'expo-router';
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   View,
   ScrollView,
@@ -26,6 +26,7 @@ import {
   Chip,
   Checkbox,
 } from 'react-native-paper';
+import SelectItemMenu from '@/components/MenuSelector';
 import Trash from '@/assets/icons/Trash.svg';
 import Plus from '@/assets/icons/Plus.svg';
 import { useAppSelector } from '@/lib/reduxStore/hooks';
@@ -39,15 +40,19 @@ import {
 } from '@/lib/reduxStore/cartSlice';
 import Pagination from '@/components/Pagination';
 import { i18n as I18n } from '@/app/_layout';
+import Toast from 'react-native-toast-message';
 
 const DEFAULT_CATEGORIES = ['Main course', 'Pasta', 'Dessert', 'Drinks'];
+const categories = ['Appetizer', 'Breakfast', 'Lunch', 'Dinner'];
 
 export default function CreateOrder() {
   const [activeTab, setActiveTab] = useState<'all' | 'combos'>('all');
   const [currentPage, setCurrentPage] = useState<number>(1);
-  const { data: menus, isLoading: isMenusLoading } = useGetMenus(currentPage);
+  const { data: menus, isLoading: isMenusLoading } = useGetMenus(
+    undefined,
+    true
+  );
   const [currentMenuItem, setCurrentMenuItem] = useState<any>(null);
-  const { data: combos, isLoading: isCombosLoading } = useGetCombos();
   const { isRestaurant, isBranch, branchId, tenantId } =
     useRestaurantIdentity();
   const [selectedBranch, setSelectedBranch] = useState<string | null>(
@@ -57,7 +62,32 @@ export default function CreateOrder() {
   const [modalSearchQuery, setModalSearchQuery] = useState('');
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [showRelatedModal, setShowRelatedModal] = useState(false);
-  const { data: availabilityData } = useGetMenuAvailabilities();
+  const [searchTerm, setSearchTerm] = useState('');
+  const [mainSelectedCategory, setMainSelectedCategory] = useState('All');
+  const [apply, setApply] = useState<number>(Date.now());
+  const queryParams = useMemo(() => {
+    const category = mainSelectedCategory === 'All' ? '' : mainSelectedCategory;
+    return {
+      page: currentPage,
+      category,
+      branch:
+        selectedBranch === 'all' || isRestaurant ? undefined : selectedBranch,
+      search: searchTerm,
+    };
+  }, [currentPage, selectedBranch, apply]);
+  const { data: availableMenus } = useGetMenuAvailabilities(queryParams);
+  const queryParamsCombo = useMemo(() => {
+    return {
+      page: currentPage,
+      branch:
+        selectedBranch === 'all' || isRestaurant ? undefined : selectedBranch,
+      search: searchTerm,
+    };
+  }, [currentPage, selectedBranch, apply]);
+  const { data: combos, isLoading: isCombosLoading } = useGetCombos(
+    queryParamsCombo,
+    activeTab === 'combos'
+  );
   const cart = useAppSelector((state: RootState) => state.cart);
   const dispatch = useDispatch();
 
@@ -81,6 +111,10 @@ export default function CreateOrder() {
     return [];
   };
 
+  useEffect(() => {
+    setSelectedItems(cart.items.map((item) => item.id));
+  }, [cart.items]);
+
   const categoryOptions = useMemo(() => {
     const set = new Set<string>(DEFAULT_CATEGORIES);
     menus?.results?.forEach((menuItem) => {
@@ -90,51 +124,16 @@ export default function CreateOrder() {
         }
       });
     });
-    // Replace 'All' with the translated value from I18n
-    return [
-      I18n.t('createOrderScreen.modalCategoryAll'),
-      ...Array.from(set).sort((a, b) => a.localeCompare(b)),
-    ];
+    return ['All', ...Array.from(set).sort((a, b) => a.localeCompare(b))];
   }, [menus]);
 
-  const branchFilteredMenus = useMemo(() => {
-    if (!menus?.results) return [] as unknown as typeof menus;
-    if (!selectedBranch || selectedBranch === 'all') return menus.results;
-
-    if (!availabilityData?.results) return menus.results;
-
-    return menus.results.filter((menu) =>
-      availabilityData.results.some((avail) => {
-        const branchValue =
-          typeof avail.branch === 'object' ? avail.branch?.id : avail.branch;
-        const menuValue =
-          typeof avail.menu_item === 'object'
-            ? avail.menu_item?.id
-            : avail.menu_item;
-
-        return branchValue === selectedBranch && menuValue === menu.id;
-      })
-    );
-  }, [menus, selectedBranch, availabilityData]);
-
-  const branchFilteredCombos = useMemo(() => {
-    if (!combos) return [] as unknown as typeof combos;
-    if (!selectedBranch || selectedBranch === 'all') return combos.results;
-
-    return combos.results.filter((combo) => {
-      const branchValue =
-        typeof combo.branch === 'object' ? combo.branch?.id : combo.branch;
-      return branchValue === selectedBranch;
-    });
-  }, [combos, selectedBranch]);
-
-  const modalFilteredMenus = branchFilteredMenus?.filter((menu) => {
+  const modalFilteredMenus = menus?.filter((menu) => {
     if (menu.id === currentMenuItem?.id) {
       return false;
     }
     const categories = getMenuCategories(menu);
     const matchesCategory =
-      modalSelectedCategory === I18n.t('createOrderScreen.modalCategoryAll') || // Check against translated 'All'
+      modalSelectedCategory === 'All' || // Check against translated 'All'
       categories.includes(modalSelectedCategory);
     const categoryText = categories.join(' ');
 
@@ -148,7 +147,7 @@ export default function CreateOrder() {
   const openRelatedModal = (menu: any) => {
     setCurrentMenuItem(menu);
     setModalSearchQuery('');
-    setModalSelectedCategory(I18n.t('createOrderScreen.modalCategoryAll')); // Use translated 'All'
+    setModalSelectedCategory('All'); // Use translated 'All'
     setShowRelatedModal(true);
   };
 
@@ -263,15 +262,25 @@ export default function CreateOrder() {
         <TextInput
           placeholder={I18n.t('createOrderScreen.filterItemNamePlaceholder')}
           style={styles.filterInput}
+          value={searchTerm}
+          onChangeText={(text: string) => setSearchTerm(text)}
         />
-        <TextInput
+        <SelectItemMenu
+          onSelectColor={setMainSelectedCategory}
+          OPTIONS={categories.map((item) => ({
+            value: item,
+            label: I18n.t(`categories.${item.toLowerCase()}`),
+          }))}
           placeholder={I18n.t('createOrderScreen.filterCategoryPlaceholder')}
-          style={styles.filterInput}
         />
+        {/* <TextInput placeholder={} style={styles.filterInput} /> */}
         <Button
           mode="contained"
           style={styles.applyButton}
           labelStyle={{ color: '#fff' }}
+          onPress={() => {
+            setApply(Date.now());
+          }}
         >
           {I18n.t('createOrderScreen.applyButton')}
         </Button>
@@ -378,8 +387,8 @@ export default function CreateOrder() {
               </DataTable.Title>
             </DataTable.Header>
 
-            {branchFilteredMenus?.map((menu: any) => {
-              const categories = getMenuCategories(menu);
+            {availableMenus?.results?.map((menu: any) => {
+              const categories = getMenuCategories(menu.menu_item);
               const categoriesLabel = categories.length
                 ? categories.join(', ')
                 : I18n.t('createOrderScreen.noCategory'); // Translated '—'
@@ -388,18 +397,20 @@ export default function CreateOrder() {
                 <DataTable.Row key={menu.id} style={styles.tableRow}>
                   <DataTable.Cell style={styles.imageCell}>
                     <Image
-                      source={{ uri: menu.image }}
+                      source={{ uri: menu.menu_item.image }}
                       style={styles.menuImage}
                     />
                   </DataTable.Cell>
                   <DataTable.Cell style={{ flex: 1 }}>
-                    <Text style={styles.menuName}>{menu.name}</Text>
+                    <Text style={styles.menuName}>{menu.menu_item.name}</Text>
                   </DataTable.Cell>
                   <DataTable.Cell style={{ flex: 0.9 }}>
                     <Text style={styles.categoryTag}>{categoriesLabel}</Text>
                   </DataTable.Cell>
                   <DataTable.Cell style={{ flex: 0.9 }}>
-                    <Text style={styles.menuPrice}>${menu.price}</Text>
+                    <Text style={styles.menuPrice}>
+                      ${menu.menu_item.price}
+                    </Text>
                   </DataTable.Cell>
                   <DataTable.Cell>
                     <TextInput
@@ -407,9 +418,9 @@ export default function CreateOrder() {
                         'createOrderScreen.remarkPlaceholder'
                       )}
                       style={{ ...styles.input, height: 50, maxWidth: 80 }}
-                      value={remarks[menu.id!] || ''}
+                      value={remarks[menu.menu_item.id!] || ''}
                       onChangeText={(text) =>
-                        dispatch(setRemarks({ [menu.id!]: text }))
+                        dispatch(setRemarks({ [menu.menu_item.id!]: text }))
                       }
                     />
                   </DataTable.Cell>
@@ -426,15 +437,19 @@ export default function CreateOrder() {
                       }}
                     >
                       <TouchableOpacity
-                        onPress={() => handleQuantityChange(menu, false)}
+                        onPress={() =>
+                          handleQuantityChange(menu.menu_item, false)
+                        }
                       >
                         <Trash color={'#22281B'} height={16} />
                       </TouchableOpacity>
                       <Text style={{ color: '#22281B', fontWeight: 'bold' }}>
-                        {newQuantities[menu.id!] || 0}
+                        {newQuantities[menu.menu_item.id!] || 0}
                       </Text>
                       <TouchableOpacity
-                        onPress={() => handleQuantityChange(menu, true)}
+                        onPress={() =>
+                          handleQuantityChange(menu.menu_item, true)
+                        }
                       >
                         <Plus color={'#22281B'} height={16} />
                       </TouchableOpacity>
@@ -443,7 +458,7 @@ export default function CreateOrder() {
                   <DataTable.Cell>
                     <Button
                       mode="outlined"
-                      onPress={() => openRelatedModal(menu)}
+                      onPress={() => openRelatedModal(menu.menu_item)}
                       style={styles.relatedButton}
                       labelStyle={styles.relatedButtonLabel}
                     >
@@ -460,21 +475,23 @@ export default function CreateOrder() {
                           dispatch(
                             addToCart({
                               item: {
-                                id: menu.id!,
-                                name: menu.name,
-                                description: menu.description,
-                                price: parseFloat(menu.price),
+                                id: menu.menu_item.id!,
+                                name: menu.menu_item.name,
+                                description: menu.menu_item.description,
+                                price: parseFloat(menu.menu_item.price),
                                 quantity: 1,
-                                image: menu.image,
+                                image: menu.menu_item.image,
                               },
                               restaurantId: tenantId!,
                               branchId: branchId!,
                               tableId: '',
-                              paymentAPIKEY: menu?.tenant.CHAPA_API_KEY,
+                              paymentAPIKEY:
+                                menu?.menu_item.tenant.CHAPA_API_KEY,
                               paymentPUBLICKEY:
-                                menu?.tenant.CHAPA_PUBLIC_KEY || '',
-                              tax: menu.tenant.tax || 0,
-                              serviceCharge: menu.tenant.service_charge || 0,
+                                menu?.menu_item.tenant.CHAPA_PUBLIC_KEY || '',
+                              tax: menu.menu_item.tenant.tax || 0,
+                              serviceCharge:
+                                menu.menu_item.tenant.service_charge || 0,
                             })
                           );
                         }}
@@ -491,7 +508,7 @@ export default function CreateOrder() {
             })}
           </DataTable>
           <Pagination
-            totalPages={Math.round(menus?.count! / 10) || 0}
+            totalPages={Math.round(availableMenus?.count! / 10) || 0}
             currentPage={currentPage}
             onPageChange={setCurrentPage}
           />
@@ -535,7 +552,7 @@ export default function CreateOrder() {
               </DataTable.Title>
             </DataTable.Header>
 
-            {branchFilteredCombos?.map((combo) => (
+            {combos?.results?.map((combo) => (
               <DataTable.Row key={combo.id}>
                 <DataTable.Cell>
                   <Text style={styles.menuName}>{combo.name}</Text>
@@ -654,7 +671,7 @@ export default function CreateOrder() {
                       styles.selectedCategoryChipText,
                   ]}
                 >
-                  {category}
+                  {I18n.t('menus.category.' + category)}
                 </Chip>
               ))}
             </ScrollView>
@@ -730,7 +747,21 @@ export default function CreateOrder() {
             mode="contained"
             style={{ backgroundColor: '#91B275' }}
             labelStyle={{ color: '#fff' }}
-            onPress={() => router.push('/(protected)/orders/orderReview')}
+            onPress={() => {
+              if (
+                !cart.contactNumber ||
+                !cart.customerName ||
+                !cart.tinNumber
+              ) {
+                Toast.show({
+                  type: 'error',
+                  text1: I18n.t('Common.error_title'),
+                  text2: I18n.t('createOrderScreen.errorCustomerInfo'),
+                });
+                return;
+              }
+              router.push('/(protected)/orders/orderReview');
+            }}
           >
             {I18n.t('createOrderScreen.reviewOrdersButton')}
           </Button>

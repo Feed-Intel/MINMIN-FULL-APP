@@ -1,11 +1,11 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Image,
   ScrollView,
   StyleSheet,
   TouchableOpacity,
   View,
-} from "react-native";
+} from 'react-native';
 import {
   Card,
   Text,
@@ -13,24 +13,24 @@ import {
   Divider,
   Avatar,
   IconButton,
-} from "react-native-paper";
-import { useNavigation } from "@react-navigation/native";
-import { router, useLocalSearchParams } from "expo-router";
-import { addToCart } from "@/lib/reduxStore/cartSlice";
-import { useDispatch, useSelector } from "react-redux";
-import { RootState } from "@/lib/reduxStore/store";
-import SwipeButton from "rn-swipe-button";
-import { Colors } from "@/constants/Colors";
-import { useGetRelatedMenus } from "@/services/mutation/menuMutation";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { i18n } from "@/app/_layout";
-import { normalizeImageUrl } from "@/utils/imageUrl";
+} from 'react-native-paper';
+import { useNavigation } from '@react-navigation/native';
+import { router, useLocalSearchParams } from 'expo-router';
+import { addToCart } from '@/lib/reduxStore/cartSlice';
+import { useDispatch, useSelector } from 'react-redux';
+import { RootState } from '@/lib/reduxStore/store';
+import SwipeButton from 'rn-swipe-button';
+import { Colors } from '@/constants/Colors';
+import { useGetRelatedMenus } from '@/services/mutation/menuMutation';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { i18n } from '@/app/_layout';
+import { normalizeImageUrl } from '@/utils/imageUrl';
 
 export default function DishDetailsScreen() {
   const dispatch = useDispatch();
   const navigation = useNavigation();
   const params = useLocalSearchParams();
-  const item = JSON.parse((params?.item as string) || "{}"); // Changed default to empty object
+  const item = JSON.parse((params?.item as string) || '{}'); // Changed default to empty object
   const cartItems = useSelector((state: RootState) => state.cart.items.length);
 
   const { restaurantId, branchId, tableId } = useLocalSearchParams();
@@ -62,7 +62,7 @@ export default function DishDetailsScreen() {
   };
   const handleRelatedItemPress = (selectedItem: any) => {
     router.push({
-      pathname: "/(protected)/restaurant/(branch)/(menu)",
+      pathname: '/(protected)/restaurant/(branch)/(menu)',
       params: {
         item: JSON.stringify(selectedItem),
         restaurantId,
@@ -72,14 +72,15 @@ export default function DishDetailsScreen() {
     });
   };
   const handleAddToCart = () => {
+    console.log(item);
     dispatch(
       addToCart({
         item: { ...item, quantity: 1 }, // Add quantity to the item
         restaurantId: restaurantId as string, // Pass restaurantId
         branchId: branchId as string, // Pass branchId
         tableId: tableId as string, // Pass tableId
-        paymentAPIKEY: item?.tenant?.CHAPA_API_KEY || "", // Added nullish coalescing
-        paymentPUBLICKEY: item?.tenant?.CHAPA_PUBLIC_KEY || "", // Added nullish coalescing
+        paymentAPIKEY: item?.tenant?.CHAPA_API_KEY || '', // Added nullish coalescing
+        paymentPUBLICKEY: item?.tenant?.CHAPA_PUBLIC_KEY || '', // Added nullish coalescing
       })
     );
   };
@@ -101,7 +102,7 @@ export default function DishDetailsScreen() {
     return (
       <Card style={styles.sidesCard}>
         <Text style={styles.sidesTitle}>
-          {i18n.t("recommended_sides_title")}
+          {i18n.t('recommended_sides_title')}
         </Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
           {(filteredRelatedItems as any)?.map((relatedItem: any) => (
@@ -146,7 +147,7 @@ export default function DishDetailsScreen() {
             <Text style={styles.description}>{item.description}</Text>
             <Divider style={styles.divider} />
             <Text style={styles.price}>
-              {i18n.t("price_label")}: {i18n.t("currency_symbol")}
+              {i18n.t('price_label')}: {i18n.t('currency_symbol')}
               {item.price}
             </Text>
           </Card.Content>
@@ -160,7 +161,7 @@ export default function DishDetailsScreen() {
             style={styles.addToCartButton}
             onPress={handleAddToCart}
           >
-            {i18n.t("add_to_cart_button")}
+            {i18n.t('add_to_cart_button')}
           </Button>
         </Card.Actions>
 
@@ -172,7 +173,7 @@ export default function DishDetailsScreen() {
             thumbIconBorderColor={Colors.light.tint}
             railBackgroundColor={Colors.light.background}
             railBorderColor={Colors.light.icon}
-            title={i18n.t("swipe_to_add_to_order_title")}
+            title={i18n.t('swipe_to_add_to_order_title')}
             titleColor={
               cartItems === 0 ? Colors.light.tabIconDefault : Colors.light.tint
             }
@@ -180,7 +181,7 @@ export default function DishDetailsScreen() {
             railFillBorderColor={Colors.light.tint}
             shouldResetAfterSuccess={true}
             resetAfterSuccessAnimDelay={300}
-            key={resetTrigger ? "swipe-reset-trigger" : "swipe-normal"}
+            key={resetTrigger ? 'swipe-reset-trigger' : 'swipe-normal'}
           />
         </View>
       </ScrollView>
@@ -191,38 +192,38 @@ export default function DishDetailsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F8FAFC",
+    backgroundColor: '#F8FAFC',
   },
   imageCard: {
     borderRadius: 0,
-    position: "relative",
+    position: 'relative',
   },
   mainImage: {
     height: 250,
-    width: "100%",
+    width: '100%',
   },
   backButton: {
-    position: "absolute",
+    position: 'absolute',
     top: 10,
     left: 10,
-    backgroundColor: "#00000099",
+    backgroundColor: '#00000099',
   },
   infoCard: {
     marginHorizontal: 16,
     marginTop: -30,
     borderRadius: 16,
     elevation: 4,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: '#FFFFFF',
     padding: 16,
   },
   title: {
     fontSize: 24,
-    fontWeight: "700",
-    color: "#1E293B",
+    fontWeight: '700',
+    color: '#1E293B',
   },
   description: {
     fontSize: 16,
-    color: "#64748B",
+    color: '#64748B',
     marginTop: 8,
   },
   divider: {
@@ -230,8 +231,8 @@ const styles = StyleSheet.create({
   },
   price: {
     fontSize: 18,
-    fontWeight: "600",
-    color: "#4CAF50",
+    fontWeight: '600',
+    color: '#4CAF50',
   },
   sidesCard: {
     marginHorizontal: 16,
@@ -239,28 +240,28 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 16,
     elevation: 2,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: '#FFFFFF',
   },
   sidesTitle: {
     fontSize: 18,
-    fontWeight: "700",
-    color: "#1E293B",
+    fontWeight: '700',
+    color: '#1E293B',
     marginBottom: 8,
   },
   sideAvatar: {
     marginRight: 12,
   },
   actions: {
-    justifyContent: "space-between",
+    justifyContent: 'space-between',
     marginHorizontal: 16,
     marginBottom: 16,
   },
   addToCartButton: {
-    backgroundColor: "black",
+    backgroundColor: 'black',
   },
   relatedItemName: {
     fontSize: 12,
-    textAlign: "center",
+    textAlign: 'center',
     marginTop: 4,
     width: 60,
     color: Colors.light.text,

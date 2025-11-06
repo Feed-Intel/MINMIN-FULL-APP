@@ -76,7 +76,17 @@ class MenuAvailabilitySerializer(serializers.ModelSerializer):
             'is_side': obj.menu_item.is_side,
             'average_rating': obj.menu_item.average_rating,
             'is_global': self.get_is_global(obj.menu_item),
-            'branches': self.get_branches(obj.menu_item)
+            'branches': self.get_branches(obj.menu_item),
+            'tenant': self.get_tenant(obj.menu_item)    
+        }
+    def get_tenant(self, obj):
+        return {
+            'id': obj.tenant.id,
+            'restaurant_name': obj.tenant.restaurant_name,
+            'CHAPA_API_KEY': obj.tenant.CHAPA_API_KEY,
+            'CHAPA_PUBLIC_KEY':obj.tenant.CHAPA_PUBLIC_KEY,
+            'tax': obj.tenant.tax,
+            'service_charge': obj.tenant.service_charge
         }
     
     def get_tenant_image_url(self, tenant):
