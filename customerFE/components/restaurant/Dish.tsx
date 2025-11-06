@@ -9,23 +9,23 @@ import {
   TouchableWithoutFeedback,
   Modal,
   ScrollView,
-} from "react-native";
-import React, { useState } from "react";
-import { useDispatch, useSelector } from "react-redux";
+} from 'react-native';
+import React, { useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import {
   addToCart,
   removeFromCart,
   updateQuantity,
   setRemarks as addRemarks,
-} from "@/lib/reduxStore/cartSlice";
-import { router } from "expo-router";
-import { Feather } from "@expo/vector-icons";
-import { Colors } from "@/constants/Colors";
-import { RootState } from "@/lib/reduxStore/store";
-import { useGetMenu } from "@/services/mutation/menuMutation";
-import { StarRating } from "../stars/ratingStars";
-import { TextInput } from "react-native";
-import { normalizeImageUrl } from "@/utils/imageUrl";
+} from '@/lib/reduxStore/cartSlice';
+import { router } from 'expo-router';
+import { Feather } from '@expo/vector-icons';
+import { Colors } from '@/constants/Colors';
+import { RootState } from '@/lib/reduxStore/store';
+import { useGetMenu } from '@/services/mutation/menuMutation';
+import { StarRating } from '../stars/ratingStars';
+import { TextInput } from 'react-native';
+import { normalizeImageUrl } from '@/utils/imageUrl';
 
 type Dish = {
   id: string;
@@ -47,7 +47,11 @@ type DishRowProps = {
   tableId: string;
   onAddItem?: (itemId: string) => void;
   isRelated?: boolean;
-  relatedItems?: Dish[]; // Related items prop
+  relatedItems?: Dish[];
+  service_charge?: number;
+  tax?: number;
+  CHAPA_API_KEY?: string;
+  CHAPA_PUBLIC_KEY?: string;
 };
 
 export const DishRow = ({
@@ -57,7 +61,11 @@ export const DishRow = ({
   tableId,
   onAddItem,
   isRelated = false,
-  relatedItems = [], // Default to empty array
+  relatedItems = [],
+  service_charge,
+  tax,
+  CHAPA_API_KEY,
+  CHAPA_PUBLIC_KEY,
 }: DishRowProps) => {
   const dispatch = useDispatch();
   const [remarks, setRemarks] = useState<Record<string, string>>({});
@@ -122,10 +130,10 @@ export const DishRow = ({
           restaurantId,
           branchId,
           tableId,
-          paymentAPIKEY: "",
-          paymentPUBLICKEY: "",
+          paymentAPIKEY: CHAPA_API_KEY,
+          paymentPUBLICKEY: CHAPA_PUBLIC_KEY,
           tax: 0,
-          serviceCharge: 0,
+          serviceCharge: service_charge,
         })
       );
     }
@@ -166,8 +174,8 @@ export const DishRow = ({
           restaurantId,
           branchId,
           tableId,
-          paymentAPIKEY: "",
-          paymentPUBLICKEY: "",
+          paymentAPIKEY: '',
+          paymentPUBLICKEY: '',
           tax: 0,
           serviceCharge: 0,
         })
@@ -196,7 +204,7 @@ export const DishRow = ({
   const truncateDescription = (text: string) => {
     const maxLength = 70; // Adjust based on your font size and container width
     if (text?.length > maxLength) {
-      return text.substring(0, maxLength) + "...";
+      return text.substring(0, maxLength) + '...';
     }
     return text;
   };
@@ -303,14 +311,14 @@ export const DishRow = ({
                             style={styles.quantityButton}
                             disabled={quantity === 0}
                           >
-                            <Feather name="minus" size={20} color={"black"} />
+                            <Feather name="minus" size={20} color={'black'} />
                           </TouchableOpacity>
                           <Text style={styles.quantityText}>{quantity}</Text>
                           <TouchableOpacity
                             onPress={handleAddItem}
                             style={styles.quantityButton}
                           >
-                            <Feather name="plus" size={20} color={"black"} />
+                            <Feather name="plus" size={20} color={'black'} />
                           </TouchableOpacity>
                         </View>
                       </View>
@@ -324,7 +332,7 @@ export const DishRow = ({
                       style={styles.instructionsInput}
                       placeholder="Add special instructions here..."
                       placeholderTextColor="#999"
-                      value={remarks[item.id] || ""}
+                      value={remarks[item.id] || ''}
                       onChangeText={(text) =>
                         setRemarks((prev) => ({ ...prev, [item.id]: text }))
                       }
@@ -349,16 +357,16 @@ export const DishRow = ({
                               >
                                 <View
                                   style={{
-                                    flexDirection: "row",
-                                    alignItems: "center",
+                                    flexDirection: 'row',
+                                    alignItems: 'center',
                                   }}
                                 >
                                   {relatedItem.image && (
                                     <Image
                                       source={{
                                         uri: relatedItem.image.replace(
-                                          "http://",
-                                          "https://"
+                                          'http://',
+                                          'https://'
                                         ),
                                       }}
                                       style={{
@@ -407,7 +415,7 @@ export const DishRow = ({
                                       name="minus"
                                       size={16}
                                       color={
-                                        relatedQuantity > 0 ? "black" : "black"
+                                        relatedQuantity > 0 ? 'black' : 'black'
                                       }
                                     />
                                   </TouchableOpacity>
@@ -423,7 +431,7 @@ export const DishRow = ({
                                     <Feather
                                       name="plus"
                                       size={16}
-                                      color={"black"}
+                                      color={'black'}
                                     />
                                   </TouchableOpacity>
                                 </View>
@@ -440,7 +448,7 @@ export const DishRow = ({
                       style={styles.cartButton}
                     >
                       <Text style={styles.cartButtonText}>
-                        {quantity > 0 ? "Update Bowl" : "Add to Bowl"}
+                        {quantity > 0 ? 'Update Bowl' : 'Add to Bowl'}
                       </Text>
                     </TouchableOpacity>
                   </View>
@@ -456,17 +464,17 @@ export const DishRow = ({
 
 const styles = StyleSheet.create({
   container: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#FFFCF5",
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFCF5',
     marginBottom: 1,
     padding: 6,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "#D3D3D3",
+    borderBottomColor: '#D3D3D3',
     height: 120,
   },
   relatedContainer: {
-    backgroundColor: "#E9E9E9",
+    backgroundColor: '#E9E9E9',
   },
   image: {
     width: 100,
@@ -474,151 +482,151 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginRight: 16,
   },
-    detailsContainer: {
-      flex: 1,
-      justifyContent: "space-between",
-      paddingVertical: 4,
-    },
+  detailsContainer: {
+    flex: 1,
+    justifyContent: 'space-between',
+    paddingVertical: 4,
+  },
   name: {
     fontSize: 18,
-    fontWeight: "bold",
+    fontWeight: 'bold',
     marginBottom: 4,
-    color: "#333",
+    color: '#333',
   },
   description: {
     fontSize: 14,
-    color: "#666",
+    color: '#666',
     marginBottom: 12,
     lineHeight: 18,
     height: 36, // 2 lines * 18 lineHeight
   },
   footer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginTop: -8,
   },
   price: {
     fontSize: 16,
-    fontWeight: "bold",
-    color: "black",
+    fontWeight: 'bold',
+    color: 'black',
   },
   orderNowButton: {
-    backgroundColor: "#9AC26B",
+    backgroundColor: '#9AC26B',
     paddingVertical: 6,
     paddingHorizontal: 16,
     borderRadius: 20,
   },
   orderNowText: {
-    color: "black",
-    fontWeight: "500",
+    color: 'black',
+    fontWeight: '500',
     fontSize: 14,
   },
   quantityContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#FFF",
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFF',
     borderRadius: 25,
     borderWidth: 1,
-    borderColor: "#E0E0E0",
+    borderColor: '#E0E0E0',
     padding: 4,
   },
   quantityButton: {
     width: 20,
     height: 20,
     borderRadius: 18,
-    backgroundColor: "#FFF",
-    justifyContent: "center",
-    alignItems: "center",
+    backgroundColor: '#FFF',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   quantityText: {
     fontSize: 16,
-    fontWeight: "bold",
+    fontWeight: 'bold',
     minWidth: 40,
-    textAlign: "center",
-    color: "#333",
+    textAlign: 'center',
+    color: '#333',
   },
   modalBackdrop: {
     ...StyleSheet.absoluteFillObject,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.5)',
   },
   modalContainer: {
-    width: "90%",
+    width: '90%',
     maxWidth: 500,
-    maxHeight: "90%",
+    maxHeight: '90%',
     borderRadius: 24,
-    overflow: "hidden",
+    overflow: 'hidden',
   },
   modalContent: {
-    backgroundColor: "#FAFAFA",
+    backgroundColor: '#FAFAFA',
     borderRadius: 16,
-    overflow: "hidden",
-    maxHeight: "90%",
+    overflow: 'hidden',
+    maxHeight: '90%',
   },
   modalHeader: {
-    flexDirection: "row",
+    flexDirection: 'row',
     padding: 6,
     borderBottomWidth: 1,
-    borderBottomColor: "#eee",
-    backgroundColor: "#FFFCF5",
+    borderBottomColor: '#eee',
+    backgroundColor: '#FFFCF5',
   },
-    modalImage: {
-      width: 120,
-      height: 120,
-      borderRadius: 12,
-      marginRight: 16,
-    },
+  modalImage: {
+    width: 120,
+    height: 120,
+    borderRadius: 12,
+    marginRight: 16,
+  },
   modalHeaderDetails: {
     flex: 1,
   },
   modalTitle: {
     fontSize: 18,
-    fontWeight: "bold",
+    fontWeight: 'bold',
     marginBottom: 6,
-    color: "#333",
+    color: '#333',
   },
   modalDescription: {
     fontSize: 15,
-    color: "#666",
+    color: '#666',
     marginBottom: 10,
     lineHeight: 22,
   },
   modalPrice: {
     fontSize: 14,
-    fontWeight: "bold",
+    fontWeight: 'bold',
     marginBottom: 0,
   },
   modalQuantityContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     padding: 5,
     borderRadius: 12,
   },
   modalQuantityControls: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#FFF",
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFF',
     borderRadius: 25,
     borderWidth: 1,
-    borderColor: "#E0E0E0",
+    borderColor: '#E0E0E0',
     padding: 2,
   },
   closeButton: {
-    position: "absolute",
+    position: 'absolute',
     top: 16,
     right: 16,
     zIndex: 1,
-    backgroundColor: "rgba(255,255,255,0.8)",
+    backgroundColor: 'rgba(255,255,255,0.8)',
     borderRadius: 20,
     padding: 8,
   },
   quantityLabel: {
     fontSize: 16,
-    fontWeight: "500",
-    color: "#333",
+    fontWeight: '500',
+    color: '#333',
   },
   modalDetails: {
     padding: 10,
@@ -626,17 +634,17 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 16,
-    fontWeight: "bold",
+    fontWeight: 'bold',
     marginBottom: 10,
-    color: "#333",
+    color: '#333',
     marginTop: 2,
   },
   instructionsInput: {
-    backgroundColor: "#E9E9E9",
+    backgroundColor: '#E9E9E9',
     fontSize: 16,
-    color: "#333",
+    color: '#333',
     marginBottom: 24,
-    textAlignVertical: "top",
+    textAlignVertical: 'top',
     borderRadius: 30,
     padding: 12,
     borderWidth: 0,
@@ -645,27 +653,27 @@ const styles = StyleSheet.create({
     marginBottom: 50,
   },
   relatedItem: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    backgroundColor: "#E9E9E9",
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#E9E9E9',
     borderRadius: 12,
     padding: 5,
     marginBottom: 12,
   },
-    relatedItemText: {
-      flex: 1,
-      justifyContent: "space-between",
-    },
+  relatedItemText: {
+    flex: 1,
+    justifyContent: 'space-between',
+  },
   relatedItemName: {
     fontSize: 16,
-    fontWeight: "500",
-    color: "#333",
+    fontWeight: '500',
+    color: '#333',
     marginBottom: 4,
   },
   relatedItemDescription: {
     fontSize: 14,
-    color: "#666",
+    color: '#666',
     marginBottom: 4,
     lineHeight: 18,
     height: 36, // 2 lines * 18 lineHeight
@@ -673,16 +681,16 @@ const styles = StyleSheet.create({
   },
   relatedItemPrice: {
     fontSize: 14,
-    color: "#9AC26B",
+    color: '#9AC26B',
   },
   relatedItemControls: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    backgroundColor: "#E9E9E9",
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#E9E9E9',
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: "#E0E0E0",
+    borderColor: '#E0E0E0',
     paddingHorizontal: 0,
     paddingVertical: 4,
     minWidth: 80,
@@ -692,30 +700,30 @@ const styles = StyleSheet.create({
   },
   relatedQuantityText: {
     fontSize: 16,
-    fontWeight: "bold",
+    fontWeight: 'bold',
     minWidth: 30,
-    textAlign: "center",
-    color: "black",
+    textAlign: 'center',
+    color: 'black',
   },
   disabledButton: {
     opacity: 0.5,
   },
   cartButtonContainer: {
-    position: "absolute",
+    position: 'absolute',
     bottom: 16,
     left: 16,
     right: 16,
   },
   cartButton: {
-    backgroundColor: "#9AC26B",
+    backgroundColor: '#9AC26B',
     paddingVertical: 10,
     borderRadius: 30,
-    alignItems: "center",
-    justifyContent: "center",
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   cartButtonText: {
-    color: "#FFF",
+    color: '#FFF',
     fontSize: 18,
-    fontWeight: "bold",
+    fontWeight: 'bold',
   },
 });

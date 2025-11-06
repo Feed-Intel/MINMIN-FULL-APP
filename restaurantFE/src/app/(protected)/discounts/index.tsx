@@ -63,7 +63,7 @@ const ManageDiscounts: React.FC = () => {
   const queryParams = useMemo(() => {
     return {
       page: currentPage,
-      branch: selectedBranch === 'all' ? undefined : selectedBranch,
+      branches: selectedBranch === 'all' ? undefined : selectedBranch,
       search: searchTerm,
     };
   }, [currentPage, selectedBranch, searchTerm]);
@@ -139,24 +139,26 @@ const ManageDiscounts: React.FC = () => {
                   setSearchTerm(text);
                 }}
               />
-              <Button
-                mode="contained"
-                onPress={() => {
-                  if (isCouponCategory) {
-                    setAddCouponModalVisible(true);
-                  } else {
-                    setAddDiscountModalVisible(true);
-                  }
-                }}
-                style={styles.addButton}
-                labelStyle={{ fontSize: 14, color: '#fff' }}
-              >
-                {I18n.t(
-                  isCouponCategory
-                    ? 'manageDiscounts.addCouponButton'
-                    : 'manageDiscounts.addDiscountButton'
-                )}
-              </Button>
+              {!isBranch && (
+                <Button
+                  mode="contained"
+                  onPress={() => {
+                    if (isCouponCategory) {
+                      setAddCouponModalVisible(true);
+                    } else {
+                      setAddDiscountModalVisible(true);
+                    }
+                  }}
+                  style={styles.addButton}
+                  labelStyle={{ fontSize: 14, color: '#fff' }}
+                >
+                  {I18n.t(
+                    isCouponCategory
+                      ? 'manageDiscounts.addCouponButton'
+                      : 'manageDiscounts.addDiscountButton'
+                  )}
+                </Button>
+              )}
             </View>
             <View style={styles.tabContainer}>
               <TouchableOpacity
@@ -299,29 +301,39 @@ const ManageDiscounts: React.FC = () => {
                         </Text>
 
                         <Text style={[styles.cell, { flex: COLUMN_WIDTHS[5] }]}>
-                          <View style={styles.actionContainer}>
-                            <Switch
-                              value={Boolean(disc?.is_active ?? true)}
-                              color="#91B275"
-                            />
-                            <TouchableOpacity
-                              onPress={() => {
-                                setDiscount(disc);
-                                setSelectedDiscountRule(relatedRule ?? null);
-                                setEditDiscountModalVisible(true);
-                              }}
-                            >
-                              <Pencil height={40} width={40} color="#91B275" />
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                              onPress={() => {
-                                setDiscount(disc);
-                                setShowDialog(true);
-                              }}
-                            >
-                              <Delete height={40} width={40} color="#91B275" />
-                            </TouchableOpacity>
-                          </View>
+                          {!isBranch && (
+                            <View style={styles.actionContainer}>
+                              <Switch
+                                value={Boolean(disc?.is_active ?? true)}
+                                color="#91B275"
+                              />
+                              <TouchableOpacity
+                                onPress={() => {
+                                  setDiscount(disc);
+                                  setSelectedDiscountRule(relatedRule ?? null);
+                                  setEditDiscountModalVisible(true);
+                                }}
+                              >
+                                <Pencil
+                                  height={40}
+                                  width={40}
+                                  color="#91B275"
+                                />
+                              </TouchableOpacity>
+                              <TouchableOpacity
+                                onPress={() => {
+                                  setDiscount(disc);
+                                  setShowDialog(true);
+                                }}
+                              >
+                                <Delete
+                                  height={40}
+                                  width={40}
+                                  color="#91B275"
+                                />
+                              </TouchableOpacity>
+                            </View>
+                          )}
                         </Text>
                       </View>
                     );
@@ -378,30 +390,32 @@ const ManageDiscounts: React.FC = () => {
 
                       {/* Actions */}
                       <Text style={[styles.cell, { flex: 1 }]}>
-                        <View style={styles.actionContainer}>
-                          <Switch
-                            value={cp.is_valid}
-                            // onValueChange={
-                            // }
-                            color="#91B275"
-                          />
-                          <TouchableOpacity
-                            onPress={() => {
-                              setCoupon(cp);
-                              setEditCouponModalVisible(true);
-                            }}
-                          >
-                            <Pencil height={40} width={40} color="#91B275" />
-                          </TouchableOpacity>
-                          <TouchableOpacity
-                            onPress={() => {
-                              setCoupon(cp);
-                              setShowDialog(true);
-                            }}
-                          >
-                            <Delete height={40} width={40} color="#91B275" />
-                          </TouchableOpacity>
-                        </View>
+                        {!isBranch && (
+                          <View style={styles.actionContainer}>
+                            <Switch
+                              value={cp.is_valid}
+                              // onValueChange={
+                              // }
+                              color="#91B275"
+                            />
+                            <TouchableOpacity
+                              onPress={() => {
+                                setCoupon(cp);
+                                setEditCouponModalVisible(true);
+                              }}
+                            >
+                              <Pencil height={40} width={40} color="#91B275" />
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                              onPress={() => {
+                                setCoupon(cp);
+                                setShowDialog(true);
+                              }}
+                            >
+                              <Delete height={40} width={40} color="#91B275" />
+                            </TouchableOpacity>
+                          </View>
+                        )}
                       </Text>
                     </View>
                   ))}

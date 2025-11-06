@@ -11,13 +11,14 @@
     "loading": "Loading...",
     "na": "N/A",
     "delete": "Delete",
+    "all": "All",
     "new":"New",
     "in_progress":"In Progress",
     "completed":"Completed",
     "ready":"Ready",
     "all_channels":"All Channels",
-    "dine_in":"Dine-in",
-    "take_away":"Takeaway",
+    "dine-in":"Dine-in",
+    "takeaway":"Takeaway",
     "delivery":"Delivery",
     "cancelled":"Cancelled",
     "see_more":"See more"
@@ -49,7 +50,15 @@
     "resend_button": "Send OTP Again",
     "logo_text": "Restaurant Logo"
   },
-    "BranchAdmins": {
+  "resetPassword": {
+    "reset_password_title": "Reset your Password",
+    "reset_password_subtitle": "Please enter a new password and confirm it",
+    "label_new_password": "New Password",
+    "label_confirm_password": "Confirm Password",
+    "button_change_password": "Change Password",
+    "error_passwords_do_not_match": "Passwords do not match!"
+  },
+  "BranchAdmins": {
     "header_title": "Branch Admins",
     "search_placeholder": "Search by full name, email, or phone number",
     "add_button": "+ Add Admin",
@@ -155,11 +164,12 @@
       "combos": "Combos"
     },
     "category":{
-      "All": "ሁሉም",
-      "Dessert": "ጣፋጭ",
-      "Drink": "መጠጥ",
-      "Main course": "ዋና ምግብ",
-      "Pasta": "ፓስታ"
+      "All": "All",
+      "Dessert": "Dessert",
+      "Drink": "Drink",
+      "Drinks": "Drinks",
+      "Main course": "Main Course",
+      "Pasta": "Pasta"
     },
     "type": {
       "item": "Item",
@@ -242,6 +252,7 @@
   "categories": {
     "appetizer": "Appetizer",
     "breakfast": "Breakfast",
+    "drinks":"Drinks",
     "lunch": "Lunch",
     "dinner": "Dinner"
   },
@@ -395,7 +406,8 @@
     "modalItemsSelected": "{{count}} items selected",
     "footerItemsAdded": "{{count}} Items Added",
     "footerDescription": "Click “review orders” to view the summary and confirm your order",
-    "reviewOrdersButton": "Review orders"
+    "reviewOrdersButton": "Review orders",
+    "errorCustomerInfo": "Please enter your contact number, customer name, and TIN number."
   },
   "acceptOrders": {
     "header": "Accept Orders",
@@ -434,6 +446,7 @@
     "tableRemark": "Remark",
     "tableTax": "TAX",
     "tableTotal": "Total",
+    "tableAction": "Action",
     "summaryTitle": "Order Summary",
     "summarySubtotal": "Subtotal",
     "summaryShipping": "Shipping",

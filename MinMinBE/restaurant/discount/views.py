@@ -43,7 +43,7 @@ class DiscountViewSet(CachedModelViewSet):
 
         if user.user_type == 'branch':
             branch = get_user_branch(user)
-            return Discount.objects.filter(branch=branch).prefetch_related('branches', 'tenant').distinct() if branch else Discount.objects.none()
+            return Discount.objects.filter(branches=branch).prefetch_related('branches', 'tenant').distinct() if branch else Discount.objects.none()
 
         return Discount.objects.none()
     

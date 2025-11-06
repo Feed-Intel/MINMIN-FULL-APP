@@ -11,13 +11,14 @@
     "loading": "እየጫነ ነው...",
     "na": "አይመለከትም",
     "delete": "ሰርዝ",
+    "all": "ሁሉም",
     "new": "አዲስ",
     "in_progress": "በሂደት ላይ",
     "completed": "ተጠናቋል",
     "ready":"ተዘጋጅቷል",
     "all_channels": "ሁሉም መንገዶች",
-    "dine_in": "ውስጥ መመገብ",
-    "take_away": "በጥቅል መውሰድ",
+    "dine-in": "ውስጥ መመገብ",
+    "takeaway": "በጥቅል መውሰድ",
     "delivery": "ማድረስ",
     "cancelled":"ተሰርዟል",
     "see_more":"ተጨማሪ ይመልከቱ"
@@ -42,14 +43,22 @@
     "reset_button": "የይለፍ ቃል ዳግም ያስጀምሩ",
     "sign_in_link": "ይግቡ"
   },
-    "ConfirmOTP": {
+  "ConfirmOTP": {
     "title": "OTP ማረጋገጫ",
     "subtitle": "እባክዎ ወደ ኢሜይል አድራሻዎ የተላከውን OTP ያስገቡ",
     "verify_button": "OTP ያረጋግጡ",
     "resend_button": "OTP እንደገና ይላኩ",
     "logo_text": "የሬስቶራንት አርማ"
   },
-    "BranchAdmins": {
+  "resetPassword": {
+    "reset_password_title": "የይለፍ ቃልዎን ዳግም ያስጀምሩ",
+    "reset_password_subtitle": "እባክዎ አዲስ የይለፍ ቃል አስገብተው ያረጋግጡ",
+    "label_new_password": "አዲስ የይለፍ ቃል",
+    "label_confirm_password": "የይለፍ ቃል ያረጋግጡ",
+    "button_change_password": "የይለፍ ቃል ይቀይሩ",
+    "error_passwords_do_not_match": "የይለፍ ቃሎች አይዛመዱም!"
+  },
+  "BranchAdmins": {
     "header_title": "ቅርንጫፍ አስተዳዳሪዎች",
     "search_placeholder": "በሙሉ ስም፣ ኢሜይል፣ ወይም ስልክ ቁጥር ይፈልጉ",
     "add_button": "+ አስተዳዳሪ ጨምር",
@@ -158,6 +167,7 @@
       "All": "ሁሉም",
       "Dessert": "ጣፋጭ",
       "Drink": "መጠጥ",
+      "Drinks": "መጠጦች",
       "Main course": "ዋና ምግብ",
       "Pasta": "ፓስታ"
     },
@@ -242,6 +252,7 @@
   "categories": {
     "appetizer": "የምግብ ፍላጎት ከፋች",
     "breakfast": "ቁርስ",
+    "drinks":"መጠጦች",
     "lunch": "ምሳ",
     "dinner": "እራት"
   },
@@ -362,9 +373,9 @@
   },
   "createOrderScreen": {
     "headerTitle": "ትዕዛዝ ይፍጠሩ",
-    "contactNumberPlaceholder": "የእውቂያ ቁጥር",
+    "contactNumberPlaceholder": "ስልክ ቁጥር",
     "customerNamePlaceholder": "የደንበኛ ስም",
-    "tinNumberPlaceholder": "ቲአይኤን ቁጥር",
+    "tinNumberPlaceholder": "TIN ቁጥር",
     "filterItemNamePlaceholder": "በዕቃ ስም",
     "filterCategoryPlaceholder": "በምድብ",
     "applyButton": "ተግብር",
@@ -395,7 +406,8 @@
     "modalItemsSelected": "{{count}} ዕቃዎች ተመርጠዋል",
     "footerItemsAdded": "{{count}} ዕቃዎች ታክለዋል",
     "footerDescription": "ማጠቃለያውን ለማየት እና ትዕዛዝዎን ለማረጋገጥ “ትዕዛዞችን ይገምግሙ” የሚለውን ይጫኑ",
-    "reviewOrdersButton": "ትዕዛዞችን ይገምግሙ"
+    "reviewOrdersButton": "ትዕዛዞችን ይገምግሙ",
+    "errorCustomerInfo": "እባክዎ ስልክ ቁጥርዎን, ስም እና TIN ቁጥር ያስገቡ።"
   },
   "acceptOrders": {
     "header": "ትዕዛዞችን ተቀበል",
@@ -434,6 +446,7 @@
     "tableRemark": "አስተያየት",
     "tableTax": "ግብር",
     "tableTotal": "ጠቅላላ",
+    "tableAction": "ተግባር",
     "summaryTitle": "የትዕዛዝ ማጠቃለያ",
     "summarySubtotal": "ንኡስ ጠቅላላ",
     "summaryShipping": "የመላኪያ",

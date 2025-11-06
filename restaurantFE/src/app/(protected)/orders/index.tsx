@@ -60,63 +60,42 @@ const STATUS_FILTERS: Array<{
   label: string;
   statuses?: Array<Order['status']>;
 }> = [
-  { id: 'ALL', label: I18n.t('menus.category.All') },
-  {
-    id: 'NEW',
-    label: I18n.t('Common.new'),
-    statuses: ['placed'],
-  },
-  {
-    id: 'IN_PROGRESS',
-    label: I18n.t('Common.in_progress'),
-    statuses: ['progress'],
-  },
-  {
-    id: 'READY',
-    label: I18n.t('Common.ready'),
-    statuses: ['payment_complete'],
-  },
+  { id: 'ALL', label: 'All' },
+  { id: 'NEW', label: 'New', statuses: ['placed'] },
+  { id: 'IN_PROGRESS', label: 'In Progress', statuses: ['progress'] },
+  { id: 'READY', label: 'Ready', statuses: ['payment_complete'] },
   {
     id: 'COMPLETED',
-    label: I18n.t('Common.completed'),
+    label: 'Completed',
     statuses: ['delivered'],
   },
-  {
-    id: 'CANCELLED',
-    label: I18n.t('Common.cancelled'),
-    statuses: ['cancelled'],
-  },
+  { id: 'CANCELLED', label: 'Cancelled', statuses: ['cancelled'] },
 ];
 
 const CHANNEL_FILTERS: Array<{ id: ChannelFilterId; label: string }> = [
-  { id: 'ALL', label: I18n.t('Common.all_channels') },
-  { id: 'DINE_IN', label: I18n.t('Common.dine_in') },
-  { id: 'TAKEAWAY', label: I18n.t('Common.take_away') },
-  { id: 'DELIVERY', label: I18n.t('Common.delivery') },
+  { id: 'ALL', label: 'All Channels' },
+  { id: 'DINE_IN', label: 'Dine-in' },
+  { id: 'TAKEAWAY', label: 'Takeaway' },
+  { id: 'DELIVERY', label: 'Delivery' },
 ];
 
 const STATUS_OVERVIEW = [
   {
     id: 'new',
-    label: I18n.t('Common.new'),
+    label: 'New',
     statuses: ['pending_payment', 'placed'],
     icon: 'clock-outline',
   },
   {
     id: 'inProgress',
-    label: I18n.t('Common.in_progress'),
+    label: 'In Progress',
     statuses: ['progress'],
     icon: 'progress-clock',
   },
-  {
-    id: 'ready',
-    label: I18n.t('Common.ready'),
-    statuses: ['payment_complete'],
-    icon: 'tray',
-  },
+  { id: 'ready', label: 'Ready', statuses: ['payment_complete'], icon: 'tray' },
   {
     id: 'completed',
-    label: I18n.t('Common.completed'),
+    label: 'Completed',
     statuses: ['delivered'],
     icon: 'check-circle-outline',
   },
@@ -138,31 +117,31 @@ const STATUS_DISPLAY: Record<
     textColor: '#8A5C0A',
   },
   placed: {
-    label: I18n.t('Common.placed'),
+    label: 'New',
     borderColor: '#91B275',
     backgroundColor: '#E9F5E6',
     textColor: '#305535',
   },
   progress: {
-    label: I18n.t('Common.in_progress'),
+    label: 'In Progress',
     borderColor: '#3F8AE0',
     backgroundColor: '#E4F0FF',
     textColor: '#114A9F',
   },
   payment_complete: {
-    label: I18n.t('Common.ready'),
+    label: 'Ready',
     borderColor: '#AA68C7',
     backgroundColor: '#F2E8FB',
     textColor: '#5A2E7A',
   },
   delivered: {
-    label: I18n.t('Common.completed'),
+    label: 'Completed',
     borderColor: '#5CB85C',
     backgroundColor: '#E5F6E5',
     textColor: '#1E5F1E',
   },
   cancelled: {
-    label: I18n.t('Common.cancelled'),
+    label: 'Cancelled',
     borderColor: '#E55353',
     backgroundColor: '#FBE9E9',
     textColor: '#8A1C1C',
@@ -445,7 +424,6 @@ export default function Orders() {
       {STATUS_FILTERS.map((status) => {
         const isSelected = filters.status === status.id;
         return (
-          // NOTE: status.label is assumed to be translated at the source of STATUS_FILTERS
           <Button
             key={status.id}
             mode={isSelected ? 'contained' : 'outlined'}
@@ -459,7 +437,7 @@ export default function Orders() {
             ]}
             compact
           >
-            {status.label}
+            {I18n.t('Common.' + status.label.replace(' ', '_').toLowerCase())}
           </Button>
         );
       })}
@@ -551,7 +529,10 @@ export default function Orders() {
                   style={styles.overviewChip}
                   textStyle={styles.overviewChipLabel}
                 >
-                  {item.label} · {statusOverviewCounts[item.id] ?? 0}
+                  {I18n.t(
+                    'Common.' + item.label.replace(' ', '_').toLowerCase()
+                  )}{' '}
+                  · {statusOverviewCounts[item.id] ?? 0}
                 </Chip>
               ))}
             </View>
@@ -763,7 +744,6 @@ export default function Orders() {
           </Text>
           <View style={styles.filtersChipRow}>
             {STATUS_FILTERS.map((status) => (
-              // NOTE: status.label is assumed to be translated at the source of STATUS_FILTERS
               <Chip
                 key={status.id}
                 mode={filters.status === status.id ? 'flat' : 'outlined'}
@@ -776,7 +756,9 @@ export default function Orders() {
                     filters.status === status.id ? '#91B275' : '#fff',
                 }}
               >
-                {status.label}
+                {I18n.t(
+                  'Common.' + status.label.replace(' ', '_').toLowerCase()
+                )}
               </Chip>
             ))}
           </View>
@@ -801,7 +783,9 @@ export default function Orders() {
                     filters.channel === channel.id ? '#91B275' : '#fff',
                 }}
               >
-                {channel.label}
+                {I18n.t(
+                  'Common.' + channel.label.replace(' ', '_').toLowerCase()
+                )}
               </Chip>
             ))}
           </View>

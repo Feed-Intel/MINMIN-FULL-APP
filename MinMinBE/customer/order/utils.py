@@ -27,7 +27,6 @@ def calculate_discount_from_data(tenant, items_data, coupon, order_total, custom
     if branch:
         discounts = discounts.filter(Q(discount_id__branches=branch)|Q(discount_id__is_global=True))
     # --- Candidate Coupons ---
-    print(discounts)
     coupon_discount = 0.0
     if coupon:
         coupons = Coupon.objects.filter(
