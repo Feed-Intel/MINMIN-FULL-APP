@@ -1,4 +1,4 @@
-import { Branch } from "./branchType";
+import { Branch } from './branchType';
 
 export interface BranchAdmin {
   id?: string;
@@ -10,4 +10,5 @@ export interface BranchAdmin {
   user_type?: string;
   created_at?: string;
   updated_at?: string;
+  is_active?: boolean;
 }

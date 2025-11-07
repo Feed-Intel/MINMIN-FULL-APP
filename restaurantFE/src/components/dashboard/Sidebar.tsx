@@ -49,6 +49,7 @@ const Sidebar: React.FC = () => {
       icon: 'map-marker-outline',
     },
     { name: 'Tables', route: '/(protected)/tables', icon: 'table-chair' },
+    { name: 'Loyalty', route: '/(protected)/loyalty', icon: 'star-outline' },
     {
       name: 'Administration',
       route: '/(protected)/admins',
@@ -62,7 +63,12 @@ const Sidebar: React.FC = () => {
   ];
 
   const visibleLinks = isBranch
-    ? links.filter((link) => !['Branch', 'Administration'].includes(link.name))
+    ? links.filter(
+        (link) =>
+          !['Branch', 'Administration', 'Loyalty', 'Profile'].includes(
+            link.name
+          )
+      )
     : links;
 
   // State to manage the active link

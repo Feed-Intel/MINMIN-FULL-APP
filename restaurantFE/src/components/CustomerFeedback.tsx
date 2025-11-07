@@ -150,7 +150,7 @@ export default function CustomerFeedback() {
       ))}
       <View style={{ height: 50 }} />
       <Pagination
-        totalPages={reviewsData?.count || 0}
+        totalPages={Math.ceil((reviewsData?.count || 0) / 10)}
         currentPage={currentPage}
         onPageChange={setCurrentPage}
       />

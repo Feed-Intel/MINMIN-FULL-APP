@@ -20,15 +20,12 @@ import {
   Snackbar,
   Paragraph,
 } from 'react-native-paper';
-import { router } from 'expo-router';
 import {
   useDeleteMenu,
   useGetMenus,
-  useUpdateMenuAvailability,
   useGetMenuAvailabilities,
   useAddRelatedMenuItem,
   useGetRelatedMenus,
-  useUpdateRelatedMenuItem,
 } from '@/services/mutation/menuMutation';
 import { useQueryClient } from '@tanstack/react-query';
 import { useDispatch } from 'react-redux';
@@ -45,18 +42,14 @@ import AddComboModal from '../combos/addCombo';
 import EditMenuDialog from './[menuId]';
 import EditComboDialog from '../combos/[comboId]';
 import Pagination from '@/components/Pagination';
-
-const DEFAULT_CATEGORIES = ['Main course', 'Pasta', 'Dessert', 'Drinks'];
+import debounce from 'lodash.debounce';
+import { MenuType } from '@/types/menuType';
+import { i18n as I18n } from '@/app/_layout';
 
 export default function Menus() {
-  // const { width } = useWindowDimensions();
   const [currentPage, setCurrentPage] = useState<number>(1);
-  const { data: menus, isLoading: isMenusLoading } = useGetMenus(currentPage);
-  const { data: combos, isLoading: isCombosLoading } = useGetCombos();
-  // const { data: branches } = useGetBranches();
   const { mutateAsync: menuDelete } = useDeleteMenu();
-  // const { mutateAsync: updateAvailability } = useUpdateMenuAvailability();
-  const { data: availabilityData } = useGetMenuAvailabilities();
+
   const { data: relatedMenus } = useGetRelatedMenus(undefined, true);
   const { isRestaurant, isBranch, branchId } = useRestaurantIdentity();
 
@@ -86,23 +79,55 @@ export default function Menus() {
   const [combosSearchQuery, setCombosSearchQuery] = useState('');
   const [modalSearchQuery, setModalSearchQuery] = useState('');
   const [modalSelectedCategory, setModalSelectedCategory] = useState('All');
-
-  // Edit dialog states
+  const [debouncedQuery, setDebouncedQuery] = useState('');
+  const debouncedSearch = useMemo(
+    () => debounce((q: string) => setDebouncedQuery(q), 300),
+    []
+  );
   const [showEditMenuDialog, setShowEditMenuDialog] = useState(false);
   const [showEditComboDialog, setShowEditComboDialog] = useState(false);
   const [selectedItem, setSelectedItem] = useState<any>(null);
   const { mutateAsync: createRelatedItem } = useAddRelatedMenuItem();
   const { mutateAsync: deleteCombo } = useDeleteCombo();
+  const DEFAULT_CATEGORIES = ['Main course', 'Pasta', 'Dessert', 'Drink'];
+
+  const queryParams = useMemo(() => {
+    const category = mainSelectedCategory === 'All' ? '' : mainSelectedCategory;
+    return {
+      page: currentPage,
+      category,
+      branch: selectedBranch === 'all' ? undefined : selectedBranch,
+      search: debouncedQuery,
+    };
+  }, [currentPage, mainSelectedCategory, selectedBranch, debouncedQuery]);
+  const { data: menus, isLoading: isMenusLoading } =
+    useGetMenuAvailabilities(queryParams);
+
+  const queryParamsCombo = useMemo(() => {
+    return {
+      page: currentPage,
+      branch: selectedBranch === 'all' ? undefined : selectedBranch,
+      search: debouncedQuery,
+    };
+  }, [currentPage, selectedBranch, debouncedQuery]);
+  const { data: combos, isLoading: isCombosLoading } = useGetCombos(
+    queryParamsCombo,
+    activeTab === 'combos'
+  );
+
+  const { data: rawMenu } = useGetMenus(undefined, true);
 
   useEffect(() => {
     if (currentMenuItem) {
       const relatedItemExists = relatedMenus?.find(
-        (it) => (it.menu_item as any).id == currentMenuItem.id
+        (it) => (it.menu_item as any).id == currentMenuItem?.menu_item.id
       );
       if (relatedItemExists) {
         setSelectedItems(
           relatedMenus!
-            .filter((it) => (it.menu_item as any).id == currentMenuItem.id)
+            .filter(
+              (it) => (it.menu_item as any).id == currentMenuItem?.menu_item.id
+            )
             .map((it) => (it.related_item as any).id)
         );
       }
@@ -110,10 +135,10 @@ export default function Menus() {
   }, [currentMenuItem, showRelatedModal]);
 
   const getMenuCategories = (menu: any): string[] => {
-    if (Array.isArray(menu?.categories) && menu.categories.length) {
+    if (Array.isArray(menu?.categories) && menu?.categories?.length) {
       return menu.categories;
     }
-    if (Array.isArray(menu?.category) && menu.category.length) {
+    if (Array.isArray(menu?.category) && menu?.category?.length) {
       return menu.category.filter((value: any) => typeof value === 'string');
     }
     if (typeof menu?.category === 'string' && menu.category) {
@@ -171,137 +196,24 @@ export default function Menus() {
   const handleRelatedItemsActions = async () => {
     setShowRelatedModal(false);
     await createRelatedItem({
-      menu_item: currentMenuItem.id,
+      menu_item: currentMenuItem.menu_item.id,
       related_items: selectedItems,
     });
     await queryClient.invalidateQueries({ queryKey: ['relatedMenus'] });
   };
 
-  const branchFilteredMenus = useMemo(() => {
-    if (!menus?.results) return [] as typeof menus;
-    if (!selectedBranch || selectedBranch === 'all') return menus.results;
-
-    if (!availabilityData?.results) return menus.results;
-
-    return menus.results.filter((menu) =>
-      availabilityData.results.some((avail) => {
-        const branchValue =
-          typeof avail.branch === 'object' ? avail.branch?.id : avail.branch;
-        const menuValue =
-          typeof avail.menu_item === 'object'
-            ? avail.menu_item?.id
-            : avail.menu_item;
-
-        return branchValue === selectedBranch && menuValue === menu.id;
-      })
-    );
-  }, [menus, selectedBranch, availabilityData]);
-
-  // Filter menus for main table
-  const filteredMenus = branchFilteredMenus?.filter((menu) => {
-    const categories = getMenuCategories(menu);
-    const matchesCategory =
-      mainSelectedCategory === 'All' ||
-      categories.includes(mainSelectedCategory);
-    const categoryText = categories.join(' ');
-
-    return (
-      matchesCategory &&
-      (menu.name.toLowerCase().includes(mainSearchQuery.toLowerCase()) ||
-        categoryText.toLowerCase().includes(mainSearchQuery.toLowerCase()))
-    );
-  });
-
-  const branchFilteredCombos = useMemo(() => {
-    if (!combos?.results) return [] as typeof combos;
-    if (!selectedBranch || selectedBranch === 'all') return combos.results;
-
-    return combos.results.filter((combo) => {
-      const branchValue =
-        typeof combo.branch === 'object' ? combo.branch?.id : combo.branch;
-      return branchValue === selectedBranch;
-    });
-  }, [combos?.results, selectedBranch]);
-
-  // Filter combos for combos tab
-  const filteredCombos = branchFilteredCombos?.filter(
-    (combo) =>
-      combo.name.toLowerCase().includes(combosSearchQuery.toLowerCase()) ||
-      (typeof combo.branch === 'object'
-        ? combo.branch?.address
-            ?.toLowerCase()
-            .includes(combosSearchQuery.toLowerCase())
-        : combo.branch?.toLowerCase().includes(combosSearchQuery.toLowerCase()))
-  );
-
-  // Filter menus for modal
-  const modalFilteredMenus = branchFilteredMenus?.filter((menu) => {
-    if (menu.id === currentMenuItem?.id) {
-      return false;
-    }
-    const categories = getMenuCategories(menu);
-    const matchesCategory =
-      modalSelectedCategory === 'All' ||
-      categories.includes(modalSelectedCategory);
-    const categoryText = categories.join(' ');
-
-    return (
-      matchesCategory &&
-      (menu.name.toLowerCase().includes(modalSearchQuery.toLowerCase()) ||
-        categoryText.toLowerCase().includes(modalSearchQuery.toLowerCase()))
-    );
-  });
-
-  // // Get availability status for a menu item
-  // const getAvailabilityStatus = (menuId: string) => {
-  //   if (!selectedBranch || selectedBranch === 'all') return false;
-
-  //   const availability = availabilityData?.results.find(
-  //     (avail) =>
-  //       (typeof avail.branch === 'object' ? avail.branch.id : avail.branch) ===
-  //         selectedBranch &&
-  //       (typeof avail.menu_item === 'object'
-  //         ? avail.menu_item.id
-  //         : avail.menu_item) === menuId
-  //   );
-
-  //   return availability ? availability.is_available : false;
-  // };
-
-  // // Toggle menu availability
-  // const toggleAvailability = async (menuId: string, isAvailable: boolean) => {
-  //   if (!selectedBranch || selectedBranch === 'all') return;
-
-  //   try {
-  //     await updateAvailability({
-  //       branch: selectedBranch,
-  //       menu_item: menuId,
-  //       is_available: isAvailable,
-  //     });
-
-  //     setSnackbarMessage(
-  //       isAvailable
-  //         ? 'Menu item is now available'
-  //         : 'Menu item is now unavailable'
-  //     );
-  //     setSnackbarVisible(true);
-
-  //     queryClient.invalidateQueries({ queryKey: ['menuAvailabilities'] });
-  //   } catch (error) {
-  //     setSnackbarMessage('Failed to update availability');
-  //     setSnackbarVisible(true);
-  //   }
-  // };
-
   return (
     <ScrollView style={styles.container}>
       <View style={styles.header}>
         <Text variant="headlineSmall" style={styles.title}>
-          Menus
+          {I18n.t('menus.title')}
         </Text>
         <BranchSelector
           selectedBranch={selectedBranch}
-          onChange={setSelectedBranch}
+          onChange={(branchid) => {
+            setCurrentPage(1);
+            setSelectedBranch(branchid);
+          }}
           includeAllOption={isRestaurant}
           style={styles.branchSelector}
         />
@@ -309,31 +221,42 @@ export default function Menus() {
           <Searchbar
             placeholder={
               activeTab === 'all'
-                ? 'Search by Item name or Category'
-                : 'Search by Combo name or Branch'
+                ? I18n.t('menus.search.placeholder_item')
+                : I18n.t('menus.search.placeholder_combo')
             }
             value={activeTab === 'all' ? mainSearchQuery : combosSearchQuery}
-            onChangeText={(text) =>
-              activeTab === 'all'
-                ? setMainSearchQuery(text)
-                : setCombosSearchQuery(text)
-            }
+            onChangeText={(text) => {
+              if (activeTab === 'all') {
+                setMainSearchQuery(text);
+                debouncedSearch(text);
+                setCurrentPage(1);
+              } else {
+                setCombosSearchQuery(text);
+                debouncedSearch(text);
+                setCurrentPage(1);
+              }
+            }}
             style={styles.searchBar}
             inputStyle={styles.searchInput}
             placeholderTextColor="#8D8D8D"
           />
-          <Button
-            mode="contained"
-            onPress={() =>
-              activeTab === 'all'
-                ? setShowAddMenuModal(true)
-                : setShowAddComboModal(true)
-            }
-            style={styles.addButton}
-            labelStyle={styles.addButtonLabel}
-          >
-            + Add {activeTab === 'all' ? 'Item' : 'Combo'}
-          </Button>
+          {!isBranch && (
+            <Button
+              mode="contained"
+              onPress={() =>
+                activeTab === 'all'
+                  ? setShowAddMenuModal(true)
+                  : setShowAddComboModal(true)
+              }
+              style={styles.addButton}
+              labelStyle={styles.addButtonLabel}
+            >
+              +{' '}
+              {activeTab === 'all'
+                ? I18n.t('menus.button.add_item_text')
+                : I18n.t('menus.button.add_combo_text')}
+            </Button>
+          )}
         </View>
       </View>
 
@@ -359,7 +282,7 @@ export default function Menus() {
                 styles.selectedCategoryChipText,
             ]}
           >
-            {category}
+            {I18n.t('menus.category.' + category)}
           </Chip>
         ))}
       </ScrollView>
@@ -377,7 +300,7 @@ export default function Menus() {
                 activeTab === 'all' && styles.activeTabLabel,
               ]}
             >
-              All items
+              {I18n.t('menus.tabs.all_items')}
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
@@ -393,7 +316,7 @@ export default function Menus() {
                 activeTab === 'combos' && styles.activeTabLabel,
               ]}
             >
-              Combos
+              {I18n.t('menus.tabs.combos')}
             </Text>
           </TouchableOpacity>
         </View>
@@ -416,92 +339,107 @@ export default function Menus() {
             <DataTable.Header style={styles.tableHeader}>
               <DataTable.Title style={styles.imageHeader}>
                 {' '}
-                <Text style={styles.tableTitle}>Image</Text>
+                <Text style={styles.tableTitle}>
+                  {I18n.t('menus.table.image')}
+                </Text>
               </DataTable.Title>
               <DataTable.Title>
                 {' '}
-                <Text style={styles.tableTitle}>Name</Text>
+                <Text style={styles.tableTitle}>
+                  {I18n.t('menus.table.name')}
+                </Text>
               </DataTable.Title>
               <DataTable.Title>
                 {' '}
-                <Text style={styles.tableTitle}>Category</Text>
+                <Text style={styles.tableTitle}>
+                  {I18n.t('menus.table.category')}
+                </Text>
               </DataTable.Title>
               <DataTable.Title>
                 {' '}
-                <Text style={styles.tableTitle}>Price</Text>
+                <Text style={styles.tableTitle}>
+                  {I18n.t('menus.table.price')}
+                </Text>
               </DataTable.Title>
               <DataTable.Title>
                 {' '}
-                <Text style={styles.tableTitle}>Related items</Text>
+                <Text style={styles.tableTitle}>
+                  {I18n.t('menus.table.related_items')}
+                </Text>
               </DataTable.Title>
               <DataTable.Title>
                 {' '}
-                <Text style={styles.tableTitle}>Actions</Text>
+                <Text style={styles.tableTitle}>
+                  {I18n.t('menus.table.actions')}
+                </Text>
               </DataTable.Title>
             </DataTable.Header>
 
-            {filteredMenus?.map((menu) => {
-              const categories = getMenuCategories(menu);
-              const categoriesLabel = categories.length
-                ? categories.join(', ')
-                : '—';
-
+            {menus?.results?.map((menu) => {
               return (
                 <DataTable.Row key={menu.id} style={styles.tableRow}>
                   <DataTable.Cell style={styles.imageCell}>
                     <Image
-                      source={{ uri: menu.image }}
+                      source={{ uri: (menu.menu_item as MenuType)?.image }}
                       style={styles.menuImage}
                     />
                   </DataTable.Cell>
                   <DataTable.Cell>
-                    <Text style={styles.menuName}>{menu.name}</Text>
+                    <Text style={styles.menuName}>{menu.menu_item.name}</Text>
                   </DataTable.Cell>
                   <DataTable.Cell>
-                    <Text style={styles.categoryTag}>{categoriesLabel}</Text>
+                    <Text style={styles.categoryTag}>
+                      {menu.menu_item.category}
+                    </Text>
                   </DataTable.Cell>
                   <DataTable.Cell>
-                    <Text style={styles.menuPrice}>${menu.price}</Text>
+                    <Text style={styles.menuPrice}>
+                      ${menu.menu_item.price}
+                    </Text>
                   </DataTable.Cell>
                   <DataTable.Cell>
-                    <Button
-                      mode="outlined"
-                      onPress={() => openRelatedModal(menu)}
-                      style={styles.relatedButton}
-                      labelStyle={styles.relatedButtonLabel}
-                    >
-                      {relatedMenus?.find(
-                        (it) => (it.menu_item as any).id == menu.id
-                      )
-                        ? 'Update Related item'
-                        : '+ Related Item'}
-                    </Button>
-                  </DataTable.Cell>
-                  <DataTable.Cell>
-                    <View style={styles.actionsContainer}>
+                    {!isBranch && (
                       <Button
-                        mode="text"
-                        onPress={() => {
-                          setSelectedItem(menu);
-                          setShowEditMenuDialog(true);
-                        }}
-                        icon="pencil-outline"
-                        contentStyle={styles.deleteButtonContent}
-                        labelStyle={styles.deleteButtonLabel}
-                        style={styles.actionButton}
-                      />
-                      <Button
-                        mode="text"
-                        onPress={() => {
-                          setMenuID(menu.id!);
-                          setShowDialog(true);
-                        }}
-                        contentStyle={styles.deleteButtonContent}
-                        labelStyle={styles.deleteButtonLabel}
-                        icon="delete-outline"
-                        style={styles.actionButton}
-                      />
-                    </View>
+                        mode="outlined"
+                        onPress={() => openRelatedModal(menu)}
+                        style={styles.relatedButton}
+                        labelStyle={styles.relatedButtonLabel}
+                      >
+                        {relatedMenus?.find(
+                          (it) => (it.menu_item as any).id == menu.id
+                        )
+                          ? I18n.t('menus.button.update_related_item')
+                          : I18n.t('menus.button.add_related_item')}
+                      </Button>
+                    )}
+                  </DataTable.Cell>
+                  <DataTable.Cell>
+                    {!isBranch && (
+                      <View style={styles.actionsContainer}>
+                        <Button
+                          mode="text"
+                          onPress={() => {
+                            setSelectedItem(menu.menu_item);
+                            setShowEditMenuDialog(true);
+                          }}
+                          icon="pencil-outline"
+                          contentStyle={styles.deleteButtonContent}
+                          labelStyle={styles.deleteButtonLabel}
+                          style={styles.actionButton}
+                        />
+                        <Button
+                          mode="text"
+                          onPress={() => {
+                            setMenuID(menu.menu_item.id!);
+                            setShowDialog(true);
+                          }}
+                          contentStyle={styles.deleteButtonContent}
+                          labelStyle={styles.deleteButtonLabel}
+                          icon="delete-outline"
+                          style={styles.actionButton}
+                        />
+                      </View>
+                    )}
                   </DataTable.Cell>
                 </DataTable.Row>
               );
@@ -517,27 +455,37 @@ export default function Menus() {
             <DataTable.Header style={styles.tableHeader}>
               <DataTable.Title>
                 {' '}
-                <Text style={styles.tableTitle}>Name</Text>
+                <Text style={styles.tableTitle}>
+                  {I18n.t('menus.table.name')}
+                </Text>
               </DataTable.Title>
               <DataTable.Title>
                 {' '}
-                <Text style={styles.tableTitle}>Branch</Text>
+                <Text style={styles.tableTitle}>
+                  {I18n.t('menus.table.branch')}
+                </Text>
               </DataTable.Title>
               <DataTable.Title>
                 {' '}
-                <Text style={styles.tableTitle}>Price</Text>
+                <Text style={styles.tableTitle}>
+                  {I18n.t('menus.table.price')}
+                </Text>
               </DataTable.Title>
               <DataTable.Title>
                 {' '}
-                <Text style={styles.tableTitle}>Custom</Text>
+                <Text style={styles.tableTitle}>
+                  {I18n.t('menus.table.custom')}
+                </Text>
               </DataTable.Title>
               <DataTable.Title>
                 {' '}
-                <Text style={styles.tableTitle}>Actions</Text>
+                <Text style={styles.tableTitle}>
+                  {I18n.t('menus.table.actions')}
+                </Text>
               </DataTable.Title>
             </DataTable.Header>
 
-            {filteredCombos?.map((combo) => (
+            {combos?.results?.map((combo) => (
               <DataTable.Row key={combo.id}>
                 <DataTable.Cell>
                   <Text style={styles.menuName}>{combo.name}</Text>
@@ -558,34 +506,38 @@ export default function Menus() {
                     style={styles.customChip}
                     textStyle={styles.customChipText}
                   >
-                    {combo.is_custom ? 'Yes' : 'No'}
+                    {combo.is_custom
+                      ? I18n.t('menus.combo.custom_yes')
+                      : I18n.t('menus.combo.custom_no')}
                   </Chip>
                 </DataTable.Cell>
                 <DataTable.Cell>
-                  <View style={styles.actionsContainer}>
-                    <Button
-                      mode="text"
-                      onPress={() => {
-                        setSelectedItem(combo);
-                        setShowEditComboDialog(true);
-                      }}
-                      icon="pencil-outline"
-                      contentStyle={styles.deleteButtonContent}
-                      labelStyle={styles.deleteButtonLabel}
-                      style={styles.actionButton}
-                    />
-                    <Button
-                      mode="text"
-                      onPress={() => {
-                        setMenuID(combo.id!);
-                        setShowDialog(true);
-                      }}
-                      contentStyle={styles.deleteButtonContent}
-                      labelStyle={styles.deleteButtonLabel}
-                      icon="delete-outline"
-                      style={styles.actionButton}
-                    />
-                  </View>
+                  {!isBranch && (
+                    <View style={styles.actionsContainer}>
+                      <Button
+                        mode="text"
+                        onPress={() => {
+                          setSelectedItem(combo);
+                          setShowEditComboDialog(true);
+                        }}
+                        icon="pencil-outline"
+                        contentStyle={styles.deleteButtonContent}
+                        labelStyle={styles.deleteButtonLabel}
+                        style={styles.actionButton}
+                      />
+                      <Button
+                        mode="text"
+                        onPress={() => {
+                          setMenuID(combo.id!);
+                          setShowDialog(true);
+                        }}
+                        contentStyle={styles.deleteButtonContent}
+                        labelStyle={styles.deleteButtonLabel}
+                        icon="delete-outline"
+                        style={styles.actionButton}
+                      />
+                    </View>
+                  )}
                 </DataTable.Cell>
               </DataTable.Row>
             ))}
@@ -595,7 +547,9 @@ export default function Menus() {
       <Pagination
         totalPages={
           Math.round(
-            activeTab == 'all' ? menus?.count! / 10 : combos?.count! / 10
+            activeTab == 'all'
+              ? Math.ceil((menus?.count ?? 0) / 10)
+              : Math.ceil((combos?.count ?? 0) / 10)
           ) || 0
         }
         currentPage={currentPage}
@@ -629,14 +583,17 @@ export default function Menus() {
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalHeaderText}>
-                For: {currentMenuItem?.name}
+                For: {currentMenuItem?.menu_item.name}
               </Text>
             </View>
 
             <View style={styles.searchContainer}>
               <Searchbar
-                placeholder="Search by Item name"
-                onChangeText={setModalSearchQuery}
+                placeholder={I18n.t('menus.modal.search_placeholder')}
+                onChangeText={(text) => {
+                  setCurrentPage(1);
+                  setModalSearchQuery(text);
+                }}
                 value={modalSearchQuery}
                 style={styles.searchBar}
                 inputStyle={styles.inputStyle}
@@ -666,40 +623,46 @@ export default function Menus() {
                       styles.selectedCategoryChipText,
                   ]}
                 >
-                  {category}
+                  {I18n.t(`menus.category.${category}`)}
                 </Chip>
               ))}
             </ScrollView>
 
             <ScrollView style={styles.itemsContainer}>
-              {modalFilteredMenus?.map((menu: any) => {
-                const categories = getMenuCategories(menu);
-                const categoriesLabel = categories.length
-                  ? categories.join(', ')
-                  : '—';
+              {rawMenu?.results
+                ?.filter(
+                  (menu: any) => menu.id != currentMenuItem?.menu_item.id
+                )
+                .map((menu: any) => {
+                  const categories = getMenuCategories(menu);
+                  const categoriesLabel = categories.length
+                    ? categories.join(', ')
+                    : '—';
 
-                return (
-                  <View key={menu.id} style={styles.itemRow}>
-                    <Checkbox.Android
-                      status={
-                        selectedItems.includes(menu.id || '')
-                          ? 'checked'
-                          : 'unchecked'
-                      }
-                      onPress={() => toggleItemSelection(menu.id || '')}
-                    />
-                    <Image
-                      source={{ uri: menu.image }}
-                      style={styles.itemImage}
-                    />
-                    <View style={styles.itemDetails}>
-                      <Text style={styles.itemName}>{menu.name}</Text>
-                      <Text style={styles.categoryText}>{categoriesLabel}</Text>
+                  return (
+                    <View key={menu.id} style={styles.itemRow}>
+                      <Checkbox.Android
+                        status={
+                          selectedItems.includes(menu.id || '')
+                            ? 'checked'
+                            : 'unchecked'
+                        }
+                        onPress={() => toggleItemSelection(menu.id || '')}
+                      />
+                      <Image
+                        source={{ uri: menu.image }}
+                        style={styles.itemImage}
+                      />
+                      <View style={styles.itemDetails}>
+                        <Text style={styles.itemName}>{menu.name}</Text>
+                        <Text style={styles.categoryText}>
+                          {categoriesLabel}
+                        </Text>
+                      </View>
+                      <Text style={styles.itemPrice}>${menu.price}</Text>
                     </View>
-                    <Text style={styles.itemPrice}>${menu.price}</Text>
-                  </View>
-                );
-              })}
+                  );
+                })}
             </ScrollView>
           </View>
           <View style={styles.modalFooter}>
@@ -715,13 +678,16 @@ export default function Menus() {
               >
                 {currentMenuItem &&
                 relatedMenus?.find(
-                  (it) => (it.menu_item as any).id == currentMenuItem.id
+                  (it) =>
+                    (it.menu_item as any).id == currentMenuItem.menu_item.id
                 )
-                  ? 'Update Item'
-                  : 'Add Item'}
+                  ? I18n.t('menus.modal.update_button')
+                  : I18n.t('menus.modal.add_button')}
               </Button>
               <Text style={styles.selectedItemsText}>
-                {selectedItems.length} items selected
+                {I18n.t('menus.modal.selected_count', {
+                  count: selectedItems.length,
+                })}
               </Text>
             </View>
           </View>
@@ -735,12 +701,14 @@ export default function Menus() {
           onDismiss={() => setShowDialog(false)}
           style={styles.dialog}
         >
-          <Dialog.Title style={{ color: '#000' }}>Confirm Delete</Dialog.Title>
+          <Dialog.Title style={{ color: '#000' }}>
+            {I18n.t('menus.dialog.delete_title')}
+          </Dialog.Title>
           <Dialog.Content>
             <Paragraph style={{ color: '#000' }}>
-              Are you sure you want to delete this{' '}
-              {activeTab === 'all' ? 'menu item' : 'combo'}? This action cannot
-              be undone.
+              {I18n.t('menus.dialog.delete_confirmation', {
+                type: activeTab === 'all' ? 'menu item' : 'combo',
+              })}
             </Paragraph>
           </Dialog.Content>
           <Dialog.Actions>
@@ -748,7 +716,7 @@ export default function Menus() {
               onPress={() => setShowDialog(false)}
               labelStyle={{ color: '#000' }}
             >
-              Cancel
+              {I18n.t('menus.dialog.cancel_button')}
             </Button>
             <Button
               onPress={
@@ -756,7 +724,7 @@ export default function Menus() {
               }
               labelStyle={{ color: 'red' }}
             >
-              Delete
+              {I18n.t('menus.dialog.delete_button')}
             </Button>
           </Dialog.Actions>
         </Dialog>

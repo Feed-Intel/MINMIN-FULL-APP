@@ -69,33 +69,33 @@ class RegisterView(APIView):
 
         # Generate OTP (do not persist until email succeeds)
         otp = str(random.randint(100000, 999999))
-
-        try:
-            send_mail(
-                subject="Your OTP for Registration",
-                message=f"Your OTP is {otp}. It is valid for 10 minutes.",
-                from_email=EMAIL_HOST_USER,
-                recipient_list=[email],
-                fail_silently=False,
-            )
-        except Exception as e:
-            # Roll back created user if we cannot deliver the OTP
+        if user.user_type == 'customer':
             try:
-                user.delete()
-            except Exception:
-                pass
-            logging.getLogger(__name__).warning(
-                f"Failed to send registration OTP email to {email}: {e}"
-            )
-            return Response(
-                {"error": "Could not send OTP email. Please try again later."},
-                status=status.HTTP_502_BAD_GATEWAY,
-            )
+                send_mail(
+                    subject="Your OTP for Registration",
+                    message=f"Your OTP is {otp}. It is valid for 10 minutes.",
+                    from_email=EMAIL_HOST_USER,
+                    recipient_list=[email],
+                    fail_silently=False,
+                )
+            except Exception as e:
+                # Roll back created user if we cannot deliver the OTP
+                try:
+                    user.delete()
+                except Exception:
+                    pass
+                logging.getLogger(__name__).warning(
+                    f"Failed to send registration OTP email to {email}: {e}"
+                )
+                return Response(
+                    {"error": "Could not send OTP email. Please try again later."},
+                    status=status.HTTP_502_BAD_GATEWAY,
+                )
 
-        # Email sent OK — persist hashed OTP and expiry
-        user.otp = sha256(otp.encode()).hexdigest()
-        user.otp_expiry = now() + timedelta(minutes=10)
-        user.save(update_fields=["otp", "otp_expiry"])
+            # Email sent OK — persist hashed OTP and expiry
+            user.otp = sha256(otp.encode()).hexdigest()
+            user.otp_expiry = now() + timedelta(minutes=10)
+            user.save(update_fields=["otp", "otp_expiry"])
 
         return Response(
             {"message": "Registration successful. Please verify your OTP."},
@@ -315,7 +315,7 @@ class AdminOrRestaurantOnlyView(RoleBasedView):
     def get_queryset(self):
         user = self.request.user
         if user.user_type == 'restaurant' or user.user_type == 'admin':
-            return self.queryset.filter(branch__tenant__admin=user)
+            return self.queryset.filter(branch__tenant__admin=user,user_type='branch')
         else:
             return self.queryset.none()
 
@@ -410,8 +410,6 @@ class GoogleLoginView(APIView):
         redirect_uri = request.data.get("redirect_uri")
         code_verifier = request.data.get("code_verifier")
         token = request.data.get("id_token")
-        print(GOOGLE_CLIENT_ID)
-        print(GOOGLE_CLIENT_SECRET)
         if not code and not token:
             return Response(
                 {"error": "Missing authorization code"},
@@ -461,6 +459,7 @@ class GoogleLoginView(APIView):
                 user, created = User.objects.get_or_create(email=email, defaults={
                     "full_name": f"{first_name} {last_name}",
                     "user_type": "customer",
+                    "is_active": True,
                 })
 
                 # Create the SocialAccount for the user
@@ -523,7 +522,7 @@ class FacebookLoginView(APIView):
                 # Create a new user or fetch existing user by email
                 user, created = User.objects.get_or_create(
                     email=email,
-                    defaults={"full_name": name, "user_type": "customer"}
+                    defaults={"full_name": name, "user_type": "customer","is_active": True}
                 )
 
                 # Create a new SocialAccount linked to the user

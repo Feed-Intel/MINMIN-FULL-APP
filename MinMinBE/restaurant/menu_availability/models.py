@@ -30,4 +30,4 @@ class MenuAvailability(models.Model):
         # ]
 
     def __str__(self):
-        return f"{self.menu_item.name} at {self.branch.name} - Available: {self.is_available}"
+        return f"{self.menu_item.name} at {self.branch.address} - Available: {self.is_available}"

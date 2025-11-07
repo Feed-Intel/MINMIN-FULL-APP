@@ -77,6 +77,18 @@ class BranchSerializer(serializers.ModelSerializer):
         from restaurant.table.models import Table
         Table.objects.create(branch=branch, is_delivery_table=True)
         return branch
+    
+    def update(self, instance, validated_data):
+        lat = validated_data.pop('lat', None)
+        lng = validated_data.pop('lng', None)
+
+        if lat is not None and lng is not None:
+            instance.location = Point(lng, lat, srid=4326)
+
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+        return instance
 
     def get_tenant(self, obj):
         return {

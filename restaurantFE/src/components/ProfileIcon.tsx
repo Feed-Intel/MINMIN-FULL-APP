@@ -18,6 +18,7 @@ import {
 } from 'react-native';
 import { logoutUser } from '@/util/logoutUser';
 import LanguageSelector from './LanguageSelector';
+import { i18n as I18n } from '@/app/_layout';
 
 export default function ProfileIcon() {
   const [visible, setVisible] = useState(false);
@@ -40,49 +41,53 @@ export default function ProfileIcon() {
   const accountSettings = [
     {
       id: 2,
-      label: 'Language',
+      label: I18n.t('profileIcon.language'),
       icon: 'language',
       action: () => {
         setShowLanguageModal(true);
         setVisible(false);
       },
     },
-    { id: 3, label: 'Help and Support Setting', icon: 'help-outline' },
+    {
+      id: 3,
+      label: I18n.t('profileIcon.help_support'),
+      icon: 'help-outline',
+    },
     {
       id: 4,
-      label: 'Privacy Policy',
+      label: I18n.t('profileIcon.privacy_policy'),
       icon: 'shield-outline',
       action: () =>
         Platform.OS === 'web'
-          ? window.open('https://alpha.feed-intel.com/privacy/', '_blank')
+          ? window.open('https://stg.api.feed-intel.com/privacy/', '_blank')
           : router.push({
               pathname:
                 '/(protected)/profile/WebPageView' as RelativePathString,
               params: {
-                title: 'Privacy Policy',
-                url: 'https://alpha.feed-intel.com/privacy/',
+                title: I18n.t('profileIcon.privacy_policy'),
+                url: 'https://stg.api.feed-intel.com/privacy/',
               },
             }),
     },
     {
       id: 5,
-      label: 'Terms and Conditions',
+      label: I18n.t('profileIcon.terms_conditions'),
       icon: 'description',
       action: () =>
         Platform.OS === 'web'
-          ? window.open('https://alpha.feed-intel.com/terms/', '_blank')
+          ? window.open('https://stg.api.feed-intel.com/terms/', '_blank')
           : router.push({
               pathname:
                 '/(protected)/profile/WebPageView' as RelativePathString,
               params: {
-                title: 'Terms and Conditions Setting',
-                url: 'https://alpha.feed-intel.com/terms/',
+                title: I18n.t('profileIcon.terms_conditions'),
+                url: 'https://stg.api.feed-intel.com/terms/',
               },
             }),
     },
     {
       id: 6,
-      label: 'Log Out',
+      label: I18n.t('profileIcon.logout'),
       icon: 'logout',
       action: handleLogout,
     },
@@ -112,15 +117,15 @@ export default function ProfileIcon() {
                 onPress={() =>
                   Platform.OS === 'web'
                     ? window.open(
-                        'https://alpha.feed-intel.com/privacy/',
+                        'https://stg.api.feed-intel.com/privacy/',
                         '_blank'
                       )
                     : router.push({
                         pathname:
                           '/(protected)/profile/WebPageView' as RelativePathString,
                         params: {
-                          title: 'Terms and Conditions',
-                          url: 'https://alpha.feed-intel.com/privacy/',
+                          title: I18n.t('profileIcon.privacy_policy'),
+                          url: 'https://stg.api.feed-intel.com/privacy/',
                         },
                       })
                 }
@@ -151,7 +156,6 @@ export default function ProfileIcon() {
         <Image source={profileImageSource} style={styles.profileImage} />
       </TouchableOpacity>
 
-      {/* Dropdown Modal */}
       <Modal
         visible={visible}
         transparent
@@ -185,14 +189,11 @@ export default function ProfileIcon() {
                     </View>
                   </TouchableOpacity>
                   <Text style={styles.restaurantName}>
-                    {tenant?.name || 'Restaurant name'}
+                    {tenant?.restaurant_name ||
+                      I18n.t('profileIcon.restaurant_name')}
                   </Text>
                 </View>
               }
-              ListHeaderComponentStyle={{
-                justifyContent: 'center',
-              }}
-              // ItemSeparatorComponent={() => <View style={styles.separator} />}
             />
           </Pressable>
         </Pressable>

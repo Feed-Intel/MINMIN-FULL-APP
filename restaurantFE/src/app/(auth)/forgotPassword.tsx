@@ -5,6 +5,7 @@ import { Text, Button } from 'react-native-paper';
 import { router } from 'expo-router';
 import { useDispatch } from 'react-redux';
 import { useResetPassword } from '@/services/mutation/authMutation';
+import { i18n as I18n } from '../_layout';
 
 const ForgotPasswordScreen = () => {
   const [email, setEmail] = React.useState('');
@@ -15,7 +16,9 @@ const ForgotPasswordScreen = () => {
     router.push('/(auth)/confirmOTP');
   };
 
-  const { mutate: ResetPasswordFn } = useResetPassword(onSuccessResetPassword);
+  const { mutate: ResetPasswordFn, isPending } = useResetPassword(
+    onSuccessResetPassword
+  );
 
   const handlePasswordReset = () => {
     const data = { email };
@@ -24,7 +27,7 @@ const ForgotPasswordScreen = () => {
 
   return (
     <View style={styles.container}>
-      {/* Title and Subtitle */}
+      {/* Title and Subtitle container */}
       <View
         style={{
           width: 600,
@@ -32,20 +35,22 @@ const ForgotPasswordScreen = () => {
           backgroundColor: '#fff',
           padding: 40,
           borderRadius: 15,
+          boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+          flexDirection: 'column',
         }}
       >
         <Text variant="headlineLarge" style={styles.titleText}>
-          Forgot your Password
+          {I18n.t('ForgotPassword.title')}
         </Text>
         <Text variant="bodyLarge" style={styles.subtitleText}>
-          Please enter your email address and we will send you a password reset
-          OTP
+          {I18n.t('ForgotPassword.subtitle')}
         </Text>
+
         {/* Input Fields */}
         <TextInput
-          placeholder="Email"
+          placeholder={I18n.t('ForgotPassword.email_placeholder')}
           value={email}
-          onChangeText={setEmail}
+          onChangeText={(text: string) => setEmail(text)} // Use e.target.value for web
           keyboardType="email-address"
           style={styles.input}
         />
@@ -55,19 +60,20 @@ const ForgotPasswordScreen = () => {
           mode="contained"
           onPress={handlePasswordReset}
           style={styles.button}
-          labelStyle={{ color: '#fff' }}
+          loading={isPending}
+          // The labelStyle prop is ignored in this web simulation but kept for context
         >
-          Reset Password
+          {I18n.t('ForgotPassword.reset_button')}
         </Button>
 
         <View style={styles.bottomLinks}>
           <Button
-            labelStyle={styles.signInText}
+            // The labelStyle prop is ignored in this web simulation but kept for context
             onPress={() => {
               router.push('/(auth)');
             }}
           >
-            Sign In
+            {I18n.t('ForgotPassword.sign_in_link')}
           </Button>
         </View>
       </View>

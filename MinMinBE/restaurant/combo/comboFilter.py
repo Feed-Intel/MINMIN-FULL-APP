@@ -1,7 +1,9 @@
 from django_filters import rest_framework as filters
+from django.db.models import Q
 from .models import Combo, ComboItem
 
 class ComboFilter(filters.FilterSet):
+    search = filters.CharFilter(method='filter_search')
     tenant = filters.UUIDFilter(field_name='tenant')  # Exact match for tenant
     branch = filters.UUIDFilter(field_name='branch')  # Exact match for branch
     name = filters.CharFilter(lookup_expr='icontains')  # Case-insensitive substring match
@@ -17,6 +19,10 @@ class ComboFilter(filters.FilterSet):
             'tenant', 'branch', 'name', 'is_custom', 'min_price', 'max_price', 
             'start_date', 'end_date'
         ]
+    def filter_search(self, queryset, name, value):
+        return queryset.filter(
+            Q(name__icontains=value) | Q(tenant__restaurant_name__icontains=value) | Q(branch__address__icontains=value)
+        )
 
 
 class ComboItemFilter(filters.FilterSet):

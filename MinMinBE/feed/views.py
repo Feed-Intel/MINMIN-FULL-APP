@@ -9,7 +9,7 @@ from .models import Post, Comment, Tag, Share
 from .serializers import PostSerializer, CommentSerializer, TagSerializer, ShareSerializer, UserStatsSerializer, CommentStatsSerializer, ShareStatsSerializer
 
 class PostPagination(PageNumberPagination):
-    page_size = 20
+    page_size = 10
 
 class PostViewSet(viewsets.ModelViewSet):
     """

@@ -1,14 +1,7 @@
-import React from "react";
-import { View, StyleSheet, ScrollView } from "react-native";
-import {
-  Portal,
-  Modal,
-  Text,
-  IconButton,
-  Button,
-  Divider,
-} from "react-native-paper";
-
+import React from 'react';
+import { View, StyleSheet, ScrollView } from 'react-native';
+import { Dialog, Text, IconButton, Button, Divider } from 'react-native-paper';
+import { i18n as I18n } from '@/app/_layout';
 export type FiltersDrawerProps = {
   title?: string;
   visible: boolean;
@@ -22,7 +15,7 @@ export type FiltersDrawerProps = {
 const DEFAULT_MAX_HEIGHT = 620;
 
 export default function FiltersDrawer({
-  title = "Filters",
+  title = 'Filters',
   visible,
   onDismiss,
   onReset,
@@ -31,72 +24,72 @@ export default function FiltersDrawer({
   maxHeight = DEFAULT_MAX_HEIGHT,
 }: FiltersDrawerProps) {
   return (
-    <Portal>
-      <Modal
-        visible={visible}
-        onDismiss={onDismiss}
-        contentContainerStyle={[styles.modalContainer, { maxHeight }]}
+    <Dialog
+      visible={visible}
+      onDismiss={onDismiss}
+      style={[styles.dialog, { maxHeight }]}
+    >
+      <View style={styles.header}>
+        <Text variant="titleMedium" style={styles.titleText}>
+          {title}
+        </Text>
+        <IconButton icon="close" onPress={onDismiss} />
+      </View>
+
+      <Divider style={styles.divider} />
+
+      <ScrollView
+        style={styles.content}
+        contentContainerStyle={styles.contentContainer}
+        showsVerticalScrollIndicator={false}
       >
-        <View style={styles.header}>
-          <Text variant="titleMedium" style={styles.titleText}>
-            {title}
-          </Text>
-          <IconButton icon="close" onPress={onDismiss} />
-        </View>
-        <Divider style={styles.divider} />
-        <ScrollView
-          style={styles.content}
-          contentContainerStyle={styles.contentContainer}
-          showsVerticalScrollIndicator={false}
-        >
-          {children}
-        </ScrollView>
-        <Divider style={styles.divider} />
-        <View style={styles.footer}>
-          {onReset && (
-            <Button
-              mode="text"
-              onPress={onReset}
-              textColor="#4A4A4A"
-              style={styles.resetButton}
-            >
-              Reset
-            </Button>
-          )}
-          {onApply && (
-            <Button mode="contained" onPress={onApply} style={styles.applyButton}>
-              Apply
-            </Button>
-          )}
-        </View>
-      </Modal>
-    </Portal>
+        {children}
+      </ScrollView>
+
+      <Divider style={styles.divider} />
+
+      <View style={styles.footer}>
+        {onReset && (
+          <Button
+            mode="text"
+            onPress={onReset}
+            textColor="#4A4A4A"
+            style={styles.resetButton}
+          >
+            {I18n.t('Common.reset')}
+          </Button>
+        )}
+        {onApply && (
+          <Button mode="contained" onPress={onApply} style={styles.applyButton}>
+            {I18n.t('Common.apply')}
+          </Button>
+        )}
+      </View>
+    </Dialog>
   );
 }
 
 const styles = StyleSheet.create({
-  modalContainer: {
+  dialog: {
     marginHorizontal: 16,
-    marginVertical: 32,
     borderRadius: 20,
-    backgroundColor: "#fff",
-    paddingBottom: 12,
-    overflow: "hidden",
+    backgroundColor: '#fff',
+    overflow: 'hidden',
   },
   header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: 20,
     paddingVertical: 12,
   },
   titleText: {
-    fontWeight: "600",
-    color: "#21281B",
+    fontWeight: '600',
+    color: '#21281B',
   },
   divider: {
     height: StyleSheet.hairlineWidth,
-    backgroundColor: "#E5E9E0",
+    backgroundColor: '#E5E9E0',
   },
   content: {
     paddingHorizontal: 20,
@@ -106,11 +99,12 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   footer: {
-    flexDirection: "row",
-    justifyContent: "flex-end",
-    alignItems: "center",
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
     paddingHorizontal: 20,
     paddingTop: 12,
+    paddingBottom: 16,
     gap: 12,
   },
   resetButton: {
@@ -118,6 +112,6 @@ const styles = StyleSheet.create({
   },
   applyButton: {
     borderRadius: 999,
-    backgroundColor: "#91B275",
+    backgroundColor: '#91B275',
   },
 });

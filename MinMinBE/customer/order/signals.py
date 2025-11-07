@@ -17,6 +17,8 @@ def handle_order_save(sender, instance, created, **kwargs):
     group_name = str(instance.customer.id)
     tenant = str(instance.tenant.id)
     def send_created_notifications():
+        if not instance.customer.email:
+            return
         message = (
             f"Dear {instance.customer.email},\n\n"
             f"Your order has been successfully placed.\n"

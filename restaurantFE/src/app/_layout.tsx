@@ -6,24 +6,36 @@ import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
-import { LogBox, useColorScheme } from 'react-native';
+import { LogBox, Platform, useColorScheme } from 'react-native';
 import PlusJakartaSans from '../assets/fonts/PlusJakartaSans.ttf';
 import 'react-native-reanimated';
 import Toast from 'react-native-toast-message';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
 import { router } from 'expo-router';
 import { MD3LightTheme, Provider as PaperProvider } from 'react-native-paper';
 import Loader from '@/components/dashboard/Loader';
 import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister';
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
-import {
-  navigationDarkTheme,
-  navigationLightTheme,
-  paperDarkTheme,
-  paperLightTheme,
-} from '@/theme/minminTheme';
+import { navigationDarkTheme, navigationLightTheme } from '@/theme/minminTheme';
+import en from '@/locales/en.json';
+import am from '@/locales/am.json';
+import { I18n } from 'i18n-js';
 
-const queryClient = new QueryClient();
+export const i18n = new I18n({ en, am });
+i18n.enableFallback = true;
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      gcTime: 0,
+      staleTime: 0,
+      refetchOnMount: true,
+      refetchOnWindowFocus: true,
+      refetchOnReconnect: true,
+    },
+  },
+});
 
 const asyncStoragePersister = createAsyncStoragePersister({
   storage: AsyncStorage,
@@ -49,6 +61,20 @@ export default function RootLayout() {
     if (loaded) {
       SplashScreen.hideAsync();
     }
+    async function loadAndSetLanguage() {
+      try {
+        let storedLanguage = null;
+        if (Platform.OS === 'web') {
+          storedLanguage = (await AsyncStorage.getItem('language')) || 'am';
+        } else {
+          storedLanguage = (await SecureStore.getItemAsync('language')) || 'am';
+        }
+        i18n.locale = storedLanguage;
+      } catch (error) {
+        console.error('Failed to load language from storage:', error);
+      }
+    }
+    loadAndSetLanguage();
     checkAuth();
   }, [loaded]);
 

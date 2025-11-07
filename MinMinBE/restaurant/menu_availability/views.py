@@ -1,7 +1,7 @@
 import json
 from rest_framework import status
 from rest_framework.response import Response
-from django.db.models import Q, Prefetch, Avg, Count # Import Avg, Count for potential future use
+from django.db.models import Prefetch, Max
 from .models import MenuAvailability # Assuming your models are in the current app
 from .serializers import MenuAvailabilitySerializer
 from accounts.permissions import HasCustomAPIKey # Assuming this is correctly implemented
@@ -61,7 +61,6 @@ class MenuAvailabilityView(CachedModelViewSet):
             # --- Customer-specific QuerySet Logic with Caching ---
             user_location_str = redis_client.get(str(user.id)) # Ensure user.id is stringified here if it's a UUID
 
-            # Build a comprehensive cache key based on dynamic parameters
             cache_key_parts = [
                 f"menu_availability_qs_customer:{str(user.id)}", # Ensure user.id is a string
                 f"loc:{user_location_str or 'none'}",
@@ -73,8 +72,6 @@ class MenuAvailabilityView(CachedModelViewSet):
             filter_params.pop('page_size', None)
             
             if filter_params:
-                # IMPORTANT: Custom JSON Encoder to handle UUIDs within filter_params if any filter value is a UUID
-                # This ensures any UUIDs in your query parameters (e.g., /?branch_id=uuid_value) are handled
                 class UUIDEncoder(json.JSONEncoder):
                     def default(self, obj):
                         if isinstance(obj, uuid.UUID):
@@ -84,34 +81,7 @@ class MenuAvailabilityView(CachedModelViewSet):
                 sorted_filter_params = json.dumps(sorted(filter_params.items()), cls=UUIDEncoder)
                 cache_key_parts.append(f"filters:{sorted_filter_params}")
             
-            # The final cache key
-            cache_key = ":".join(cache_key_parts)
-
-            # Try fetching primary keys from cache
-            cached_pks_json = cache.get(cache_key)
-
-            if cached_pks_json:
-                cached_pks = json.loads(cached_pks_json)
-                # If your PKs are UUIDs, you might need to convert them back from strings to UUID objects
-                # when filtering, although Django's ORM often handles string UUIDs correctly for `pk__in`.
-                # If it errors, uncomment this line:
-                # cached_pks = [uuid.UUID(pk_str) for pk_str in cached_pks]
-                
-                queryset = base_queryset.filter(pk__in=cached_pks).select_related(
-                    'menu_item', 'branch', 'branch__tenant', 'branch__tenant__admin'
-                ).prefetch_related(
-                    Prefetch(
-                        'branch__tenant__admin__posts',
-                        queryset=Post.objects.order_by('-time_ago')[:10],
-                        to_attr='prefetched_posts'
-                    ),
-                    Prefetch(
-                        'branch__tenant__restaurant_feedbacks',
-                        queryset=Feedback.objects.order_by('-created_at')[:10],
-                        to_attr='prefetched_feedbacks'
-                    )
-                ).distinct()
-                return queryset
+            
 
             # If not in cache, build the queryset from scratch
             queryset = base_queryset.filter(is_available=True).select_related(
@@ -141,29 +111,30 @@ class MenuAvailabilityView(CachedModelViewSet):
                 except (ValueError, TypeError):
                     pass
 
-            # Cache the primary keys for later retrieval
-            # Ensure PKs are converted to strings if they are UUIDs before dumping to JSON
-            pks = [str(pk) for pk in queryset.values_list('pk', flat=True)] # Convert all PKs to strings
-            cache.set(cache_key, json.dumps(pks), CACHE_TIMEOUT_LIST_QS_SECONDS)
-            
             return queryset.order_by('-created_at')
             
         else:
             queryset = base_queryset.none()
-
             if user.user_type == 'admin':
-                queryset = base_queryset
+                latest_per_menu = base_queryset.values('menu_item').annotate(latest=Max('created_at'))
+                queryset = base_queryset.filter(created_at__in=[item['latest'] for item in latest_per_menu])
+
             elif user.user_type == 'restaurant':
                 tenant = get_user_tenant(user)
                 if tenant:
-                    queryset = base_queryset.filter(branch__tenant=tenant)
+                    tenant_availabilities = base_queryset.filter(branch__tenant=tenant)
+                    latest_per_menu = tenant_availabilities.values('menu_item').annotate(latest=Max('created_at'))
+                    queryset = tenant_availabilities.filter(created_at__in=[item['latest'] for item in latest_per_menu])
+
             elif user.user_type == 'branch':
                 branch = get_user_branch(user)
                 if branch:
-                    queryset = base_queryset.filter(branch=branch)
+                    branch_availabilities = base_queryset.filter(branch=branch)
+                    latest_per_menu = branch_availabilities.values('menu_item').annotate(latest=Max('created_at'))
+                    queryset = branch_availabilities.filter(created_at__in=[item['latest'] for item in latest_per_menu])
 
-            queryset = queryset.select_related('menu_item', 'branch').distinct()
-            return queryset.order_by('-created_at')
+            queryset = queryset.select_related('menu_item', 'branch').order_by('-created_at')
+            return queryset
 
     # --- Cache Invalidation Helpers ---
     def invalidate_menu_availability_cache(self, instance=None):

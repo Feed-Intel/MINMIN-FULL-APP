@@ -122,8 +122,9 @@ export default function CheckoutScreen() {
       dispatch(setDiscount(discountValue));
       setTotal(subtotal - discountValue);
     }
-
-    checkDiscountFN();
+    if (branch) {
+      checkDiscountFN();
+    }
   }, [headerAnimation, contentAnimation]);
 
   const handleApplyDiscount = async () => {
@@ -402,18 +403,24 @@ export default function CheckoutScreen() {
                     }}
                     style={{ marginBottom: -14, marginTop: -14 }}
                   />
-                  <RadioButton.Item
-                    label={i18n.t('chapa_payment_method')} // Replaced hardcoded string
-                    value="chapa"
-                    color="#9AC26B"
-                    rippleColor="#9AC26B"
-                    uncheckedColor="#9AC26B"
-                    labelStyle={{
-                      fontSize: 17,
-                      color: '#222C169E',
-                      opacity: 0.9,
-                    }}
-                  />
+                  {subtotal +
+                    serviceCharge +
+                    tax -
+                    (tempDiscount + redeem_amount) >
+                    0 && (
+                    <RadioButton.Item
+                      label={i18n.t('chapa_payment_method')} // Replaced hardcoded string
+                      value="chapa"
+                      color="#9AC26B"
+                      rippleColor="#9AC26B"
+                      uncheckedColor="#9AC26B"
+                      labelStyle={{
+                        fontSize: 17,
+                        color: '#222C169E',
+                        opacity: 0.9,
+                      }}
+                    />
+                  )}
                 </RadioButton.Group>
               </View>
 
@@ -422,6 +429,35 @@ export default function CheckoutScreen() {
                   method="POST"
                   action="https://api.chapa.co/v1/hosted/pay"
                   style={{ margin: '0 auto', minWidth: 353 }}
+                  onSubmit={(e: React.FormEvent) => {
+                    e.preventDefault();
+                    const orderData = {
+                      tenant: restaurant,
+                      branch: branch,
+                      table: updTable,
+                      coupon: discountCode,
+                      items: cartItems.map((item: any) => ({
+                        menu_item: item.id,
+                        quantity: newQuantities[item.id] || 1,
+                        price: item.price,
+                        remarks: remarks[item.id],
+                      })),
+                    };
+                    const stringifiedOrderData = JSON.stringify(orderData);
+                    localStorage.setItem('orderData', stringifiedOrderData);
+                    const transactionID = generateTransactionID();
+                    localStorage.setItem('transactionID', transactionID);
+                    const amount = (
+                      subtotal +
+                      serviceCharge +
+                      tax -
+                      (tempDiscount + redeem_amount)
+                    ).toFixed(2);
+                    localStorage.setItem('amount', amount);
+                    const form = e.target as HTMLFormElement;
+                    form.tx_ref.value = transactionID;
+                    form.submit();
+                  }}
                 >
                   <input
                     type="hidden"
@@ -446,7 +482,7 @@ export default function CheckoutScreen() {
                   <input
                     type="hidden"
                     name="currency"
-                    value={i18n.t('currency_unit')} // Replaced hardcoded string
+                    value={'ETB'} // Replaced hardcoded string
                   />
                   <input type="hidden" name="email" value={user.email} />
                   <input
@@ -477,7 +513,10 @@ export default function CheckoutScreen() {
                   <input
                     type="hidden"
                     name="return_url"
-                    value="https://customer.feed-intel.com/orderHistory"
+                    value={
+                      process.env.EXPO_PUBLIC_BASE_URL +
+                      '/payment/paymentSuccess'
+                    }
                   />
                   <input type="hidden" name="meta[title]" value="test" />
                   <button

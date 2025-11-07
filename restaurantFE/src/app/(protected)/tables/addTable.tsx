@@ -1,18 +1,24 @@
-import React, { useState } from "react";
-import { ScrollView, View, StyleSheet, useWindowDimensions } from "react-native";
-import { Button, Text, Switch, Divider } from "react-native-paper";
-import { Dropdown, Option } from "react-native-paper-dropdown";
-import { router } from "expo-router";
-import { useCreateTable } from "@/services/mutation/tableMutation";
-import { useGetBranches } from "@/services/mutation/branchMutation";
-import { useQueryClient } from "@tanstack/react-query";
+import React, { useState } from 'react';
+import {
+  ScrollView,
+  View,
+  StyleSheet,
+  useWindowDimensions,
+} from 'react-native';
+import { Button, Text, Switch, Divider } from 'react-native-paper';
+import { Dropdown, Option } from 'react-native-paper-dropdown';
+import { router } from 'expo-router';
+import { useCreateTable } from '@/services/mutation/tableMutation';
+import { useGetBranches } from '@/services/mutation/branchMutation';
+import { useQueryClient } from '@tanstack/react-query';
+import { i18n as I18n } from '@/app/_layout';
 
 export default function AddTableScreen() {
   const { width } = useWindowDimensions();
   const isSmallScreen = width < 600;
   const isMediumScreen = width >= 600 && width < 1024;
   const [formValues, setFormValues] = useState({
-    branch: "",
+    branch: '',
     is_fast_table: false,
     is_delivery_table: false,
     is_inside_table: false,
@@ -33,11 +39,11 @@ export default function AddTableScreen() {
       };
 
       await createTable.mutateAsync(formData);
-      queryClient.invalidateQueries({ queryKey: ["tables"] });
-      queryClient.invalidateQueries({ queryKey: ["qrCode"] });
+      queryClient.invalidateQueries({ queryKey: ['tables'] });
+      queryClient.invalidateQueries({ queryKey: ['qrCode'] });
       router.back();
     } catch (error) {
-      console.error("Error creating table:", error);
+      console.error('Error creating table:', error);
     }
   };
 
@@ -47,22 +53,22 @@ export default function AddTableScreen() {
         styles.container,
         {
           padding: isSmallScreen ? 12 : 24,
-          width: isSmallScreen ? "100%" : isMediumScreen ? "75%" : "50%",
+          width: isSmallScreen ? '100%' : isMediumScreen ? '75%' : '50%',
         },
       ]}
     >
       <Text
-        variant={isSmallScreen ? "titleLarge" : "headlineMedium"}
-        style={[styles.title, { textAlign: isSmallScreen ? "center" : "left" }]}
+        variant={isSmallScreen ? 'titleLarge' : 'headlineMedium'}
+        style={[styles.title, { textAlign: isSmallScreen ? 'center' : 'left' }]}
       >
-        Add New Table
+        {I18n.t('table_modal.title')}
       </Text>
 
       {/* Branch Selection */}
       <View style={styles.input}>
         <Dropdown
-          label="Branch"
-          placeholder="Select Branch"
+          label={I18n.t('table_modal.branch_label')}
+          placeholder={I18n.t('table_modal.branch_placeholder')}
           options={
             branches?.map((branch: any) => ({
               label: branch.address,
@@ -70,7 +76,7 @@ export default function AddTableScreen() {
             })) || []
           }
           value={formValues.branch}
-          onSelect={(value) => handleFormChange("branch", value)}
+          onSelect={(value) => handleFormChange('branch', value)}
         />
       </View>
 
@@ -81,16 +87,16 @@ export default function AddTableScreen() {
             styles.switchItem,
             {
               paddingVertical: isSmallScreen ? 8 : 12,
-              flexDirection: isSmallScreen ? "column" : "row",
+              flexDirection: isSmallScreen ? 'column' : 'row',
             },
           ]}
         >
           <Text style={{ marginBottom: isSmallScreen ? 4 : 0 }}>
-            Fast Table
+            {I18n.t('table_modal.fast_table')}
           </Text>
           <Switch
             value={formValues.is_fast_table}
-            onValueChange={(value) => handleFormChange("is_fast_table", value)}
+            onValueChange={(value) => handleFormChange('is_fast_table', value)}
           />
         </View>
 
@@ -99,17 +105,17 @@ export default function AddTableScreen() {
             styles.switchItem,
             {
               paddingVertical: isSmallScreen ? 8 : 12,
-              flexDirection: isSmallScreen ? "column" : "row",
+              flexDirection: isSmallScreen ? 'column' : 'row',
             },
           ]}
         >
           <Text style={{ marginBottom: isSmallScreen ? 4 : 0 }}>
-            Delivery Table
+            {I18n.t('table_modal.delivery_table')}
           </Text>
           <Switch
             value={formValues.is_delivery_table}
             onValueChange={(value) =>
-              handleFormChange("is_delivery_table", value)
+              handleFormChange('is_delivery_table', value)
             }
           />
         </View>
@@ -119,17 +125,17 @@ export default function AddTableScreen() {
             styles.switchItem,
             {
               paddingVertical: isSmallScreen ? 8 : 12,
-              flexDirection: isSmallScreen ? "column" : "row",
+              flexDirection: isSmallScreen ? 'column' : 'row',
             },
           ]}
         >
           <Text style={{ marginBottom: isSmallScreen ? 4 : 0 }}>
-            Inside Table
+            {I18n.t('table_modal.inside_table')}
           </Text>
           <Switch
             value={formValues.is_inside_table}
             onValueChange={(value) =>
-              handleFormChange("is_inside_table", value)
+              handleFormChange('is_inside_table', value)
             }
           />
         </View>
@@ -146,14 +152,14 @@ export default function AddTableScreen() {
         style={[
           styles.button,
           {
-            width: isSmallScreen ? "100%" : "50%",
-            alignSelf: "center",
+            width: isSmallScreen ? '100%' : '50%',
+            alignSelf: 'center',
             paddingVertical: isSmallScreen ? 6 : 8,
           },
         ]}
         labelStyle={{ fontSize: isSmallScreen ? 14 : 16 }}
       >
-        Save Table
+        {I18n.t('table_modal.save_button')}
       </Button>
     </ScrollView>
   );
@@ -162,11 +168,11 @@ export default function AddTableScreen() {
 const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
-    justifyContent: "center",
-    alignSelf: "center",
+    justifyContent: 'center',
+    alignSelf: 'center',
   },
   title: {
-    fontWeight: "bold",
+    fontWeight: 'bold',
     marginBottom: 24,
   },
   input: {
@@ -176,8 +182,8 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   switchItem: {
-    justifyContent: "space-between",
-    alignItems: "center",
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: 8,
   },
   divider: {

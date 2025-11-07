@@ -16,6 +16,7 @@ import { clearCart, updateQuantity } from '@/lib/reduxStore/cartSlice';
 import { useRestaurantIdentity } from '@/hooks/useRestaurantIdentity';
 import { useCreateOrder } from '@/services/mutation/orderMutation';
 import { useQueryClient } from '@tanstack/react-query';
+import { i18n as I18n } from '@/app/_layout';
 
 export default function AcceptOrders() {
   const cartItems = useAppSelector((state: RootState) => state.cart.items);
@@ -77,7 +78,7 @@ export default function AcceptOrders() {
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.header}>Order Review</Text>
+      <Text style={styles.header}>{I18n.t('orderReview.header')}</Text>
 
       {/* Customer Info */}
       <View
@@ -91,16 +92,16 @@ export default function AcceptOrders() {
         }}
       >
         <Text style={{ color: '#000', fontWeight: 'bold', fontSize: 18 }}>
-          Customer Information
+          {I18n.t('orderReview.customerInfoTitle')}
         </Text>
         <View style={{ flexDirection: 'row' }}>
           <Text style={{ color: '#000', fontWeight: 'bold' }}>
-            Name: {cart.customerName}
+            {I18n.t('orderReview.customerNameLabel')}: {cart.customerName}
           </Text>
         </View>
         <View style={{ flexDirection: 'row' }}>
           <Text style={{ color: '#000', fontWeight: 'bold' }}>
-            Contact: {cart.contactNumber}
+            {I18n.t('orderReview.customerContactLabel')}: {cart.contactNumber}
           </Text>
         </View>
         <View
@@ -112,7 +113,7 @@ export default function AcceptOrders() {
         >
           <View style={{ flexDirection: 'row' }}>
             <Text style={{ color: '#000', fontWeight: 'bold' }}>
-              TIN Number: {cart.tinNumber}
+              {I18n.t('orderReview.customerTinLabel')}: {cart.tinNumber}
             </Text>
           </View>
           <Button
@@ -121,7 +122,7 @@ export default function AcceptOrders() {
             labelStyle={{ color: '#fff' }}
             onPress={() => router.back()}
           >
-            Edit Info
+            {I18n.t('orderReview.editInfoButton')}
           </Button>
         </View>
       </View>
@@ -131,37 +132,37 @@ export default function AcceptOrders() {
           <DataTable.Header style={styles.tableHeader}>
             <DataTable.Title style={[styles.headerCell, { flex: 1.6 }]}>
               <Text variant="bodyMedium" style={styles.headerCellText}>
-                Name
+                {I18n.t('orderReview.tableName')}
               </Text>
             </DataTable.Title>
             <DataTable.Title style={[styles.headerCell, { flex: 1.2 }]}>
               <Text variant="bodyMedium" style={styles.headerCellText}>
-                Price
+                {I18n.t('orderReview.tablePrice')}
               </Text>
             </DataTable.Title>
             <DataTable.Title style={[styles.headerCell, { flex: 1.1 }]}>
               <Text variant="bodyMedium" style={styles.headerCellText}>
-                Qty
+                {I18n.t('orderReview.tableQty')}
               </Text>
             </DataTable.Title>
             <DataTable.Title style={[styles.headerCell, { flex: 1 }]}>
               <Text variant="bodyMedium" style={styles.headerCellText}>
-                Remark
+                {I18n.t('orderReview.tableRemark')}
               </Text>
             </DataTable.Title>
             <DataTable.Title style={[styles.headerCell, { flex: 1.6 }]}>
               <Text variant="bodyMedium" style={styles.headerCellText}>
-                TAX
+                {I18n.t('orderReview.tableTax')}
               </Text>
             </DataTable.Title>
             <DataTable.Title style={[styles.headerCell, { flex: 1.4 }]}>
               <Text variant="bodyMedium" style={styles.headerCellText}>
-                Total
+                {I18n.t('orderReview.tableTotal')}
               </Text>
             </DataTable.Title>
             <DataTable.Title style={[styles.headerCell, { flex: 1.5 }]}>
               <Text variant="bodyMedium" style={styles.headerCellText}>
-                Action
+                {I18n.t('orderReview.tableAction')}
               </Text>
             </DataTable.Title>
           </DataTable.Header>
@@ -231,23 +232,31 @@ export default function AcceptOrders() {
       <Card style={styles.summaryCard}>
         <Card.Content style={{ flex: 1 }}>
           <Text style={{ color: '#21281B', fontWeight: 'bold' }}>
-            Order Summary
+            {I18n.t('orderReview.summaryTitle')}
           </Text>
           <View style={styles.summaryRow}>
-            <Text style={{ color: '#202B189E' }}>Subtotal</Text>
+            <Text style={{ color: '#202B189E' }}>
+              {I18n.t('orderReview.summarySubtotal')}
+            </Text>
             <Text style={{ color: '#202B189E' }}>${subtotal.toFixed(2)}</Text>
           </View>
           <View style={styles.summaryRow}>
-            <Text style={{ color: '#202B189E' }}>Shipping</Text>
+            <Text style={{ color: '#202B189E' }}>
+              {I18n.t('orderReview.summaryShipping')}
+            </Text>
             <Text style={{ color: '#202B189E' }}>${shipping.toFixed(2)}</Text>
           </View>
           <View style={styles.summaryRow}>
-            <Text style={{ color: '#202B189E' }}>Tax</Text>
+            <Text style={{ color: '#202B189E' }}>
+              {I18n.t('orderReview.summaryTax')}
+            </Text>
             <Text style={{ color: '#202B189E' }}>${tax.toFixed(2)}</Text>
           </View>
           <Divider style={{ marginVertical: 6 }} />
           <View style={styles.summaryRow}>
-            <Text style={styles.totalLabel}>Total</Text>
+            <Text style={styles.totalLabel}>
+              {I18n.t('orderReview.summaryTotalLabel')}
+            </Text>
             <Text style={styles.totalValue}>${total.toFixed(2)}</Text>
           </View>
         </Card.Content>
@@ -258,7 +267,7 @@ export default function AcceptOrders() {
             labelStyle={{ color: '#fff' }}
             onPress={handlePlaceOrder}
           >
-            Place order
+            {I18n.t('orderReview.placeOrderButton')}
           </Button>
           <Button
             mode="outlined"
@@ -266,7 +275,7 @@ export default function AcceptOrders() {
             labelStyle={{ color: '#000' }}
             onPress={handleCancelOrder}
           >
-            Cancel order
+            {I18n.t('orderReview.cancelOrderButton')}
           </Button>
         </Card.Actions>
       </Card>

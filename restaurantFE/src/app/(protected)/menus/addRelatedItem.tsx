@@ -12,6 +12,7 @@ import {
   useAddRelatedMenuItem,
   useGetMenus,
 } from '@/services/mutation/menuMutation';
+import { i18n as I18n } from '@/app/_layout';
 
 const TAGS = ['Best Paired With', 'Alternative', 'Customer Favorite'];
 
@@ -33,7 +34,7 @@ export default function AddRelatedItem() {
 
   const handleAddItem = async () => {
     if (!menuItem || !relatedItem || !tag) {
-      setSnackbarMessage('All fields are required.');
+      setSnackbarMessage(I18n.t('add_related_item.validation_required_fields'));
       setSnackbarVisible(true);
       return;
     }
@@ -43,7 +44,7 @@ export default function AddRelatedItem() {
       related_item: relatedItem,
       tag,
     });
-    setSnackbarMessage('Related item added successfully!');
+    setSnackbarMessage(I18n.t('add_related_item.success_message'));
     setSnackbarVisible(true);
     router.push('/(protected)/menus/relatedMenu');
   };
@@ -64,14 +65,14 @@ export default function AddRelatedItem() {
           variant={isSmallScreen ? 'headlineMedium' : 'headlineLarge'}
           style={[styles.title, { marginBottom: isSmallScreen ? 12 : 24 }]}
         >
-          Add Related Item
+          {I18n.t('add_related_item.title')}
         </Text>
 
         <View style={styles.formContent}>
           <View style={styles.input}>
             <Dropdown
-              label="Menu Item"
-              placeholder="Select Menu Item"
+              label={I18n.t('add_related_item.menu_item_label')}
+              placeholder={I18n.t('add_related_item.menu_item_placeholder')}
               options={
                 (menus?.results
                   ?.filter((menu) => menu.id !== relatedItem)
@@ -88,8 +89,8 @@ export default function AddRelatedItem() {
 
           <View style={styles.input}>
             <Dropdown
-              label="Related Menu Item"
-              placeholder="Select Related Menu Item"
+              label={I18n.t('add_related_item.related_item_label')}
+              placeholder={I18n.t('add_related_item.related_item_placeholder')}
               options={
                 (menus?.results
                   ?.filter((menu) => menu.id !== menuItem)
@@ -106,8 +107,8 @@ export default function AddRelatedItem() {
 
           <View style={styles.input}>
             <Dropdown
-              label="Tag"
-              placeholder="Select Tag"
+              label={I18n.t('add_related_item.tag_label')}
+              placeholder={I18n.t('add_related_item.tag_placeholder')}
               options={
                 (TAGS.map((tg) => ({
                   label: tg,
@@ -135,7 +136,9 @@ export default function AddRelatedItem() {
             contentStyle={{ height: isSmallScreen ? 40 : 48 }}
             labelStyle={{ fontSize: isSmallScreen ? 14 : 16 }}
           >
-            {isPending ? 'Adding...' : 'Add Item'}
+            {isPending
+              ? I18n.t('add_related_item.button_adding')
+              : I18n.t('add_related_item.button_add')}
           </Button>
 
           <Snackbar

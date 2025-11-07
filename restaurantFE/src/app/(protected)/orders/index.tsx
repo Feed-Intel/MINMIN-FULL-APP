@@ -27,16 +27,17 @@ import { router } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { useDispatch } from 'react-redux';
 import dayjs from 'dayjs';
+import debounce from 'lodash.debounce';
 
 import BranchSelector from '@/components/BranchSelector';
 import FiltersDrawer from '@/components/FiltersDrawer';
 import { usePersistentFilters } from '@/hooks/usePersistentFilters';
-// import { OrderModal } from "./createOrder";
 import { useRestaurantIdentity } from '@/hooks/useRestaurantIdentity';
 import { resetPendingOrders } from '@/lib/reduxStore/orderSlice';
 import { useOrders, useUpdateOrder } from '@/services/mutation/orderMutation';
-import { Order } from '@/types/orderTypes';
+import { ChannelFilterId, Order } from '@/types/orderTypes';
 import Pagination from '@/components/Pagination';
+import { i18n as I18n } from '@/app/_layout';
 
 type StatusFilterId =
   | 'ALL'
@@ -45,8 +46,6 @@ type StatusFilterId =
   | 'READY'
   | 'COMPLETED'
   | 'CANCELLED';
-
-type ChannelFilterId = 'ALL' | 'DINE_IN' | 'TAKEAWAY' | 'DELIVERY';
 
 type OrdersFilters = {
   status: StatusFilterId;
@@ -62,7 +61,7 @@ const STATUS_FILTERS: Array<{
   statuses?: Array<Order['status']>;
 }> = [
   { id: 'ALL', label: 'All' },
-  { id: 'NEW', label: 'New', statuses: ['pending_payment', 'placed'] },
+  { id: 'NEW', label: 'New', statuses: ['placed'] },
   { id: 'IN_PROGRESS', label: 'In Progress', statuses: ['progress'] },
   { id: 'READY', label: 'Ready', statuses: ['payment_complete'] },
   {
@@ -174,6 +173,9 @@ const channelLabel = (channel: ChannelFilterId) => {
   return option ? option.label : 'Unknown';
 };
 
+// This component assumes I18n is available and configured
+// E.g., import I18n from 'i18n-js';
+
 export default function Orders() {
   const { width } = useWindowDimensions();
   const isSmallScreen = width < 768;
@@ -184,6 +186,11 @@ export default function Orders() {
   const [filtersVisible, setFiltersVisible] = useState(false);
   const [datePickerField, setDatePickerField] = useState<'from' | 'to' | null>(
     null
+  );
+  const [debouncedQuery, setDebouncedQuery] = useState('');
+  const debouncedSearch = useMemo(
+    () => debounce((q: string) => setDebouncedQuery(q), 300),
+    []
   );
   const [newOrderToast, setNewOrderToast] = useState<{
     id: string;
@@ -196,11 +203,9 @@ export default function Orders() {
 
   const queryClient = useQueryClient();
   const [currentPage, setCurrentPage] = useState<number>(1);
-  const { data: orders, isLoading } = useOrders(currentPage);
   const updateOrderStatus = useUpdateOrder();
   const dispatch = useDispatch();
   const { isRestaurant, isBranch, branchId } = useRestaurantIdentity();
-
   const {
     value: filters,
     setValue: setFilters,
@@ -213,16 +218,52 @@ export default function Orders() {
     to: null,
     branchId: isBranch ? branchId ?? null : 'all',
   });
+  const selectedBranch = useMemo(() => {
+    if (isBranch) return branchId ?? null;
+    return filters.branchId;
+  }, [filters.branchId, isBranch, branchId]);
 
   const highlightTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>(
     {}
   );
   const previousOrderIds = useRef<Set<string>>(new Set());
   const bootstrappedOrders = useRef(false);
+  const queryParams = useMemo(() => {
+    const statusFilter = STATUS_FILTERS.find(
+      (item) => item.id === filters.status
+    );
+    const apiStatuses = statusFilter?.statuses;
+
+    return {
+      page: currentPage,
+      status:
+        filters.status !== 'ALL' && apiStatuses
+          ? apiStatuses.join(',')
+          : undefined,
+      channel: filters.channel !== 'ALL' ? filters.channel : undefined,
+      from_date: filters.from,
+      to_date: filters.to,
+      branch: selectedBranch === 'all' ? undefined : selectedBranch,
+      search: debouncedQuery,
+    };
+  }, [
+    currentPage,
+    filters.status,
+    filters.channel,
+    filters.from,
+    filters.to,
+    selectedBranch,
+    debouncedQuery,
+  ]);
+  const { data: orders, isLoading } = useOrders(queryParams);
 
   useEffect(() => {
     dispatch(resetPendingOrders());
   }, [dispatch]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filters]);
 
   useEffect(() => {
     if (!isHydrated) return;
@@ -233,11 +274,6 @@ export default function Orders() {
       setFilters((prev) => ({ ...prev, branchId: 'all' }));
     }
   }, [isHydrated, isBranch, branchId, filters.branchId, setFilters]);
-
-  const selectedBranch = useMemo(() => {
-    if (isBranch) return branchId ?? null;
-    return filters.branchId;
-  }, [filters.branchId, isBranch, branchId]);
 
   const activeFiltersCount = useMemo(() => {
     let count = 0;
@@ -323,72 +359,18 @@ export default function Orders() {
   }, []);
 
   const filteredOrders = useMemo(() => {
-    if (!orders) return [];
-
-    const statusLookup = new Set(
-      STATUS_FILTERS.find((item) => item.id === filters.status)?.statuses ?? []
-    );
-
-    return orders.results
-      .filter((order) => {
-        if (selectedBranch && selectedBranch !== 'all') {
-          const branchValue =
-            typeof order.branch === 'object' ? order.branch?.id : order.branch;
-          if (branchValue !== selectedBranch) return false;
-        }
-
-        if (filters.status !== 'ALL' && !statusLookup.has(order.status)) {
-          return false;
-        }
-
-        if (filters.channel !== 'ALL') {
-          const orderChannel = getChannelFromOrder(order);
-          if (orderChannel !== filters.channel) return false;
-        }
-
-        if (filters.from) {
-          const fromDate = dayjs(filters.from);
-          if (dayjs(order.created_at).isBefore(fromDate, 'day')) return false;
-        }
-
-        if (filters.to) {
-          const toDate = dayjs(filters.to);
-          if (dayjs(order.created_at).isAfter(toDate, 'day')) return false;
-        }
-
-        const term = searchTerm.trim().toLowerCase();
-        if (!term) return true;
-
-        const customerName =
-          typeof order.customer === 'string'
-            ? order.customer.toLowerCase()
-            : order.customer?.full_name?.toLowerCase() ?? '';
-        const branchAddress =
-          typeof order.branch === 'string'
-            ? order.branch.toLowerCase()
-            : order.branch?.address?.toLowerCase() ?? '';
-        const orderId = order.order_id?.toLowerCase() ?? '';
-
-        return (
-          customerName.includes(term) ||
-          branchAddress.includes(term) ||
-          orderId.includes(term)
-        );
-      })
-      .sort(
-        (a, b) => dayjs(b.created_at).valueOf() - dayjs(a.created_at).valueOf()
-      );
-  }, [orders, filters, selectedBranch, searchTerm]);
+    return orders?.results ?? [];
+  }, [orders]);
 
   const handleStatusUpdate = useCallback(
     async (orderId: string, status: Order['status']) => {
       try {
         await updateOrderStatus.mutateAsync({ id: orderId, order: { status } });
         queryClient.invalidateQueries({ queryKey: ['orders'] });
-        setSnackbarMessage('Order status updated successfully');
+        setSnackbarMessage(I18n.t('orders.snackbarSuccess'));
         setSnackbarVisible(true);
       } catch (error) {
-        setSnackbarMessage('Failed to update order status');
+        setSnackbarMessage(I18n.t('orders.snackbarFailure'));
         setSnackbarVisible(true);
       }
     },
@@ -399,22 +381,22 @@ export default function Orders() {
     switch (currentStatus) {
       case 'pending_payment':
         return {
-          label: 'Record Payment',
+          label: I18n.t('orders.actionRecordPayment'),
           value: 'payment_complete' as Order['status'],
         };
       case 'placed':
         return {
-          label: 'Start Preparing',
+          label: I18n.t('orders.actionStartPreparing'),
           value: 'progress' as Order['status'],
         };
       case 'progress':
         return {
-          label: 'Mark Ready',
+          label: I18n.t('orders.actionMarkReady'),
           value: 'payment_complete' as Order['status'],
         };
       case 'payment_complete':
         return {
-          label: 'Mark Delivered',
+          label: I18n.t('orders.actionMarkDelivered'),
           value: 'delivered' as Order['status'],
         };
       default:
@@ -455,7 +437,7 @@ export default function Orders() {
             ]}
             compact
           >
-            {status.label}
+            {I18n.t('Common.' + status.label.replace(' ', '_').toLowerCase())}
           </Button>
         );
       })}
@@ -475,11 +457,10 @@ export default function Orders() {
             >
               <View style={styles.titleGroup}>
                 <Text variant="headlineSmall" style={styles.title}>
-                  Orders
+                  {I18n.t('orders.title')}
                 </Text>
                 <Text variant="bodyMedium" style={styles.subtitle}>
-                  Track and manage orders in real-time across every service
-                  channel.
+                  {I18n.t('orders.subtitle')}
                 </Text>
               </View>
               <Button
@@ -489,7 +470,7 @@ export default function Orders() {
                 icon="plus"
                 labelStyle={styles.addButtonLabel}
               >
-                Add Order
+                {I18n.t('orders.addButton')}
               </Button>
             </View>
 
@@ -508,9 +489,13 @@ export default function Orders() {
               <View style={styles.searchContainer}>
                 <TextInput
                   mode="outlined"
-                  placeholder="Search by customer, branch, or order ID"
+                  placeholder={I18n.t('orders.searchPlaceholder')}
                   value={searchTerm}
-                  onChangeText={setSearchTerm}
+                  onChangeText={(text) => {
+                    setCurrentPage(1);
+                    setSearchTerm(text);
+                    debouncedSearch(text);
+                  }}
                   style={styles.searchInput}
                   left={<TextInput.Icon icon="magnify" />}
                   outlineStyle={{ borderWidth: 0 }}
@@ -526,7 +511,7 @@ export default function Orders() {
                   style={styles.filterButton}
                   labelStyle={styles.filterButtonLabel}
                 >
-                  Filters
+                  {I18n.t('orders.filterButton')}
                 </Button>
                 {activeFiltersCount > 0 && (
                   <Badge style={styles.filterBadge}>{activeFiltersCount}</Badge>
@@ -536,6 +521,7 @@ export default function Orders() {
 
             <View style={styles.statusOverviewRow}>
               {STATUS_OVERVIEW.map((item) => (
+                // NOTE: item.label is assumed to be translated at the source of STATUS_OVERVIEW
                 <Chip
                   key={item.id}
                   mode="outlined"
@@ -543,7 +529,10 @@ export default function Orders() {
                   style={styles.overviewChip}
                   textStyle={styles.overviewChipLabel}
                 >
-                  {item.label} · {statusOverviewCounts[item.id] ?? 0}
+                  {I18n.t(
+                    'Common.' + item.label.replace(' ', '_').toLowerCase()
+                  )}{' '}
+                  · {statusOverviewCounts[item.id] ?? 0}
                 </Chip>
               ))}
             </View>
@@ -560,48 +549,50 @@ export default function Orders() {
                   <DataTable.Header style={styles.tableHeader}>
                     <DataTable.Title style={[styles.headerCell, { flex: 1.6 }]}>
                       <Text variant="bodyMedium" style={styles.headerCellText}>
-                        Order
+                        {I18n.t('orders.tableHeaderOrder')}
                       </Text>
                     </DataTable.Title>
                     <DataTable.Title style={[styles.headerCell, { flex: 1.2 }]}>
                       <Text variant="bodyMedium" style={styles.headerCellText}>
-                        Placed
+                        {I18n.t('orders.tableHeaderPlaced')}
                       </Text>
                     </DataTable.Title>
                     <DataTable.Title style={[styles.headerCell, { flex: 1.1 }]}>
                       <Text variant="bodyMedium" style={styles.headerCellText}>
-                        Channel
+                        {I18n.t('orders.tableHeaderChannel')}
                       </Text>
                     </DataTable.Title>
                     <DataTable.Title style={[styles.headerCell, { flex: 1 }]}>
                       <Text variant="bodyMedium" style={styles.headerCellText}>
-                        Items
+                        {I18n.t('orders.tableHeaderItems')}
                       </Text>
                     </DataTable.Title>
                     <DataTable.Title style={[styles.headerCell, { flex: 1.6 }]}>
                       <Text variant="bodyMedium" style={styles.headerCellText}>
-                        Customer
+                        {I18n.t('orders.tableHeaderCustomer')}
                       </Text>
                     </DataTable.Title>
                     <DataTable.Title style={[styles.headerCell, { flex: 1.6 }]}>
                       <Text variant="bodyMedium" style={styles.headerCellText}>
-                        Branch
+                        {I18n.t('orders.tableHeaderBranch')}
                       </Text>
                     </DataTable.Title>
                     <DataTable.Title style={[styles.headerCell, { flex: 1.4 }]}>
                       <Text variant="bodyMedium" style={styles.headerCellText}>
-                        Total
+                        {I18n.t('orders.tableHeaderTotal')}
                       </Text>
                     </DataTable.Title>
                     <DataTable.Title style={[styles.headerCell, { flex: 1.5 }]}>
                       <Text variant="bodyMedium" style={styles.headerCellText}>
-                        Status
+                        {I18n.t('orders.tableHeaderStatus')}
                       </Text>
                     </DataTable.Title>
                   </DataTable.Header>
                   {filteredOrders.map((order) => {
                     const nextStatus = getNextStatus(order.status);
                     const statusMeta = STATUS_DISPLAY[order.status] ?? {
+                      // NOTE: If statusMeta is dynamically derived, it will need to be wrapped in I18n.t() at its source or here.
+                      // Assuming statusMeta.label is a direct string from a lookup table.
                       label: order.status.replace(/_/g, ' '),
                       borderColor: '#D6DCCD',
                       backgroundColor: '#EEF1EB',
@@ -649,6 +640,7 @@ export default function Orders() {
                         <DataTable.Cell style={[styles.cell, { flex: 1.1 }]}>
                           <View style={styles.channelBadge}>
                             <Text style={styles.channelBadgeText}>
+                              {/* channelLabel is an external function, assuming it's translated */}
                               {channelLabel(orderChannel)}
                             </Text>
                           </View>
@@ -666,7 +658,8 @@ export default function Orders() {
                           >
                             {typeof order.customer === 'string'
                               ? order.customer
-                              : order.customer?.full_name ?? 'N/A'}
+                              : order.customer?.full_name ??
+                                I18n.t('Common.na')}
                           </Text>
                         </DataTable.Cell>
                         <DataTable.Cell style={[styles.cell, { flex: 1.6 }]}>
@@ -677,7 +670,7 @@ export default function Orders() {
                           >
                             {typeof order.branch === 'string'
                               ? order.branch
-                              : order.branch?.address ?? 'N/A'}
+                              : order.branch?.address ?? I18n.t('Common.na')}
                           </Text>
                         </DataTable.Cell>
                         <DataTable.Cell style={[styles.cell, { flex: 1.4 }]}>
@@ -724,7 +717,7 @@ export default function Orders() {
                   })}
                 </DataTable>
                 <Pagination
-                  totalPages={Math.round(orders?.count! / 10) || 0}
+                  totalPages={Math.ceil((orders?.count ?? 0) / 10)} // Use Math.ceil for accurate page count
                   currentPage={currentPage}
                   onPageChange={setCurrentPage}
                 />
@@ -740,10 +733,15 @@ export default function Orders() {
           resetFilters();
           setFiltersVisible(false);
         }}
-        onApply={() => setFiltersVisible(false)}
+        onApply={() => {
+          setFiltersVisible(false);
+        }}
+        title={I18n.t('orders.filterButton')}
       >
         <View style={styles.filtersSection}>
-          <Text style={styles.filtersLabel}>Status</Text>
+          <Text style={styles.filtersLabel}>
+            {I18n.t('filters.statusLabel')}
+          </Text>
           <View style={styles.filtersChipRow}>
             {STATUS_FILTERS.map((status) => (
               <Chip
@@ -753,17 +751,26 @@ export default function Orders() {
                   setFilters((prev) => ({ ...prev, status: status.id }))
                 }
                 selected={filters.status === status.id}
+                style={{
+                  backgroundColor:
+                    filters.status === status.id ? '#91B275' : '#fff',
+                }}
               >
-                {status.label}
+                {I18n.t(
+                  'Common.' + status.label.replace(' ', '_').toLowerCase()
+                )}
               </Chip>
             ))}
           </View>
         </View>
 
         <View style={styles.filtersSection}>
-          <Text style={styles.filtersLabel}>Channel</Text>
+          <Text style={styles.filtersLabel}>
+            {I18n.t('filters.channelLabel')}
+          </Text>
           <View style={styles.filtersChipRow}>
             {CHANNEL_FILTERS.map((channel) => (
+              // NOTE: channel.label is assumed to be translated at the source of CHANNEL_FILTERS
               <Chip
                 key={channel.id}
                 mode={filters.channel === channel.id ? 'flat' : 'outlined'}
@@ -771,15 +778,23 @@ export default function Orders() {
                   setFilters((prev) => ({ ...prev, channel: channel.id }))
                 }
                 selected={filters.channel === channel.id}
+                style={{
+                  backgroundColor:
+                    filters.channel === channel.id ? '#91B275' : '#fff',
+                }}
               >
-                {channel.label}
+                {I18n.t(
+                  'Common.' + channel.label.replace(' ', '_').toLowerCase()
+                )}
               </Chip>
             ))}
           </View>
         </View>
 
         <View style={styles.filtersSection}>
-          <Text style={styles.filtersLabel}>Date range</Text>
+          <Text style={styles.filtersLabel}>
+            {I18n.t('filters.dateRangeLabel')}
+          </Text>
           <View style={styles.dateRow}>
             <Button
               mode="outlined"
@@ -790,7 +805,7 @@ export default function Orders() {
             >
               {filters.from
                 ? dayjs(filters.from).format('MMM D, YYYY')
-                : 'Start date'}
+                : I18n.t('filters.startDatePlaceholder')}
             </Button>
             <Button
               mode="outlined"
@@ -801,7 +816,7 @@ export default function Orders() {
             >
               {filters.to
                 ? dayjs(filters.to).format('MMM D, YYYY')
-                : 'End date'}
+                : I18n.t('filters.endDatePlaceholder')}
             </Button>
           </View>
           {(filters.from || filters.to) && (
@@ -813,17 +828,22 @@ export default function Orders() {
               }
               style={styles.clearDateButton}
             >
-              Clear dates
+              {I18n.t('filters.clearDatesButton')}
             </Button>
           )}
         </View>
 
         {!isBranch && (
           <View style={styles.filtersSection}>
-            <Text style={styles.filtersLabel}>Branch</Text>
+            <Text style={styles.filtersLabel}>
+              {I18n.t('filters.branchLabel')}
+            </Text>
             <BranchSelector
               selectedBranch={filters.branchId}
-              onChange={handleBranchChange}
+              onChange={(branchId) => {
+                setCurrentPage(1);
+                handleBranchChange(branchId);
+              }}
               includeAllOption={isRestaurant}
             />
           </View>
@@ -868,7 +888,7 @@ export default function Orders() {
         style={styles.toastSnackbar}
         duration={3500}
         action={{
-          label: 'View',
+          label: I18n.t('orders.toastViewAction'),
           onPress: () => {
             if (newOrderToast) {
               openOrderDetail(newOrderToast.id);
@@ -877,7 +897,10 @@ export default function Orders() {
         }}
       >
         {newOrderToast
-          ? `New order ${newOrderToast.orderCode} — ${newOrderToast.items} items`
+          ? I18n.t('orders.newOrderToast', {
+              orderCode: newOrderToast.orderCode,
+              items: newOrderToast.items,
+            })
           : ''}
       </Snackbar>
 
@@ -892,6 +915,7 @@ export default function Orders() {
     </View>
   );
 }
+
 const rootStyles = StyleSheet.create({
   container: {
     flex: 1,

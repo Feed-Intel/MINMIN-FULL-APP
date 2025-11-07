@@ -3,13 +3,9 @@ import { asyncHandler } from '@/util/asyncHandler';
 import { Order } from '@/types/orderTypes';
 
 export const fetchOrders = asyncHandler(
-  async (page?: number | undefined): Promise<Order[]> => {
+  async (param?: string | undefined): Promise<Order[]> => {
     try {
-      if (Boolean(page)) {
-        const resp = await apiClient.get(`/order/?page=${page}`);
-        return resp.data || [];
-      }
-      const resp = await apiClient.get(`/order/`);
+      const resp = await apiClient.get(`/order?${param}`);
       return resp.data || [];
     } catch (error) {
       throw error;

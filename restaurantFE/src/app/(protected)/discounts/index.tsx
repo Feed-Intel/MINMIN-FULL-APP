@@ -30,14 +30,13 @@ import BranchSelector from '@/components/BranchSelector';
 import ModalHeader from '@/components/ModalHeader';
 import { useRestaurantIdentity } from '@/hooks/useRestaurantIdentity';
 import Pagination from '@/components/Pagination';
+import { i18n as I18n } from '@/app/_layout';
 
 const ManageDiscounts: React.FC = () => {
   const { width }: { width: number } = useWindowDimensions();
   const [currentPage, setCurrentPage] = useState<number>(1);
-  const { data: discounts } = useDiscounts(currentPage);
-  const { data: coupons } = useGetCoupons(currentPage);
   const { data: branches } = useGetBranches(undefined, true);
-  const { data: discountRules = [] } = useDiscountRules();
+  const { data: discountRules = [] } = useDiscountRules(undefined, true);
   const { mutateAsync: discountDelete } = useDeleteDiscount();
   const { mutateAsync: couponDelete } = useDeleteCoupon();
   const queryClient = useQueryClient();
@@ -59,27 +58,17 @@ const ManageDiscounts: React.FC = () => {
   const [selectedBranch, setSelectedBranch] = useState<string | null>(
     isBranch ? branchId ?? null : null
   );
+  const [searchTerm, setSearchTerm] = useState('');
   const isSmallScreen: boolean = width < 768;
-
-  const filterByBranch = <T extends { branch?: any }>(items: T[]): T[] => {
-    if (!selectedBranch || selectedBranch === 'all') return items;
-
-    return items.filter((item) => {
-      const branchValue =
-        typeof item.branch === 'object' ? item.branch?.id : item.branch;
-      return branchValue === selectedBranch;
-    });
-  };
-  const filteredDiscounts = useMemo(
-    () =>
-      filterByBranch(discounts?.results as any) as unknown as typeof discounts,
-    [discounts, selectedBranch]
-  );
-
-  const filteredCoupons = useMemo(
-    () => filterByBranch(coupons as any) as unknown as typeof coupons,
-    [coupons, selectedBranch]
-  );
+  const queryParams = useMemo(() => {
+    return {
+      page: currentPage,
+      branches: selectedBranch === 'all' ? undefined : selectedBranch,
+      search: searchTerm,
+    };
+  }, [currentPage, selectedBranch, searchTerm]);
+  const { data: discounts } = useDiscounts(queryParams);
+  const { data: coupons } = useGetCoupons(queryParams);
 
   const handleDeleteDiscount = async (): Promise<void> => {
     setShowDialog(false);
@@ -113,6 +102,8 @@ const ManageDiscounts: React.FC = () => {
     }
   };
 
+  const isCouponCategory = selectedCategory === 'Coupons';
+
   return (
     <View style={rootStyles.container}>
       <ScrollView style={styles.container}>
@@ -120,70 +111,86 @@ const ManageDiscounts: React.FC = () => {
           <Card.Content>
             <View style={styles.headerRow}>
               <Text variant="titleLarge" style={styles.title}>
-                Discount and Coupon
+                {I18n.t('manageDiscounts.headerTitle')}
               </Text>
             </View>
             <BranchSelector
               selectedBranch={selectedBranch}
-              onChange={setSelectedBranch}
+              onChange={(branchId) => {
+                setCurrentPage(1);
+                setSelectedBranch(branchId);
+              }}
               includeAllOption={isRestaurant}
             />
 
             {/* Search Bar */}
             <View style={styles.searchBarContainer}>
               <TextInput
-                placeholder="Search by Item name or Catagory"
+                placeholder={I18n.t(
+                  isCouponCategory
+                    ? 'manageDiscounts.searchCouponPlaceholder'
+                    : 'manageDiscounts.searchDiscountPlaceholder'
+                )}
                 style={styles.searchBar}
                 placeholderTextColor="#999"
-              />
-              <Button
-                mode="contained"
-                onPress={() => {
-                  if (selectedCategory === 'Coupons') {
-                    setAddCouponModalVisible(true);
-                  } else {
-                    setAddDiscountModalVisible(true);
-                  }
+                value={searchTerm}
+                onChangeText={(text) => {
+                  setCurrentPage(1);
+                  setSearchTerm(text);
                 }}
-                style={styles.addButton}
-                labelStyle={{ fontSize: 14, color: '#fff' }}
-              >
-                {selectedCategory === 'Coupons'
-                  ? '+ Add Coupon'
-                  : '+ Add Discount'}
-              </Button>
+              />
+              {!isBranch && (
+                <Button
+                  mode="contained"
+                  onPress={() => {
+                    if (isCouponCategory) {
+                      setAddCouponModalVisible(true);
+                    } else {
+                      setAddDiscountModalVisible(true);
+                    }
+                  }}
+                  style={styles.addButton}
+                  labelStyle={{ fontSize: 14, color: '#fff' }}
+                >
+                  {I18n.t(
+                    isCouponCategory
+                      ? 'manageDiscounts.addCouponButton'
+                      : 'manageDiscounts.addDiscountButton'
+                  )}
+                </Button>
+              )}
             </View>
             <View style={styles.tabContainer}>
               <TouchableOpacity
                 style={[
                   styles.tabButton,
-                  selectedCategory === 'Discount' && styles.activeTabButton,
+                  !isCouponCategory && styles.activeTabButton,
                 ]}
                 onPress={() => setSelectedCategory('Discount')}
               >
                 <Text
                   style={[
                     styles.tabText,
-                    selectedCategory === 'Discount' && styles.activeTabText,
+                    !isCouponCategory && styles.activeTabText,
                   ]}
                 >
-                  Discount
+                  {I18n.t('manageDiscounts.tabDiscount')}
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[
                   styles.tabButton,
-                  selectedCategory === 'Coupons' && styles.activeTabButton,
+                  isCouponCategory && styles.activeTabButton,
                 ]}
                 onPress={() => setSelectedCategory('Coupons')}
               >
                 <Text
                   style={[
                     styles.tabText,
-                    selectedCategory === 'Coupons' && styles.activeTabText,
+                    isCouponCategory && styles.activeTabText,
                   ]}
                 >
-                  Coupons
+                  {I18n.t('manageDiscounts.tabCoupons')}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -191,17 +198,17 @@ const ManageDiscounts: React.FC = () => {
             {/* Table */}
 
             <ScrollView horizontal={isSmallScreen}>
-              {selectedCategory === 'Discount' && (
+              {!isCouponCategory && (
                 <View style={styles.dataTable}>
                   <View style={styles.dataTableHeader}>
                     {[
-                      'Name',
-                      'Branch',
-                      'Type',
-                      'Priority',
-                      'Discount Rules',
-                      'Actions',
-                    ].map((title, index) => (
+                      'nameHeader',
+                      'branchHeader',
+                      'typeHeader',
+                      'priorityHeader',
+                      'rulesHeader',
+                      'actionsHeader',
+                    ].map((key, index) => (
                       <Text
                         key={index}
                         style={[
@@ -209,41 +216,55 @@ const ManageDiscounts: React.FC = () => {
                           {
                             flex: index == 0 ? 0.5 : COLUMN_WIDTHS[index],
                             textAlign: 'center',
-                            // position: "relative",
-                            // left: index === 0 ? 20 : 0,
                           },
                         ]}
                       >
-                        {title}
+                        {I18n.t(`manageDiscounts.discountTable.${key}`)}
                       </Text>
                     ))}
                   </View>
 
-                  {filteredDiscounts?.map((disc: any) => {
+                  {discounts?.results.map((disc: any) => {
                     const relatedRule = discountRules.find(
                       (rule: any) => rule.discount_id.id === disc.id
                     );
 
                     const ruleSummary = (() => {
                       if (!relatedRule) {
-                        return 'No rule configured';
+                        return I18n.t('manageDiscounts.ruleSummary.noRule');
                       }
 
                       switch (disc.type) {
                         case 'volume':
-                          return `Min items ≥ ${relatedRule.min_items ?? 0}`;
+                          return I18n.t(
+                            'manageDiscounts.ruleSummary.minItems',
+                            {
+                              minItems: relatedRule.min_items ?? 0,
+                            }
+                          );
                         case 'combo':
                           return relatedRule.combo_size
-                            ? `Combo size ${relatedRule.combo_size}`
-                            : 'Combo rule configured';
+                            ? I18n.t('manageDiscounts.ruleSummary.comboSize', {
+                                comboSize: relatedRule.combo_size,
+                              })
+                            : I18n.t(
+                                'manageDiscounts.ruleSummary.comboConfigured'
+                              );
                         case 'bogo':
                         case 'freeItem':
                           return relatedRule.buy_quantity &&
                             relatedRule.get_quantity
-                            ? `Buy ${relatedRule.buy_quantity} • Get ${relatedRule.get_quantity}`
-                            : 'Benefit rule configured';
+                            ? I18n.t('manageDiscounts.ruleSummary.buyGet', {
+                                buyQuantity: relatedRule.buy_quantity,
+                                getQuantity: relatedRule.get_quantity,
+                              })
+                            : I18n.t(
+                                'manageDiscounts.ruleSummary.benefitConfigured'
+                              );
                         default:
-                          return 'Rule configured';
+                          return I18n.t(
+                            'manageDiscounts.ruleSummary.genericConfigured'
+                          );
                       }
                     })();
 
@@ -280,29 +301,39 @@ const ManageDiscounts: React.FC = () => {
                         </Text>
 
                         <Text style={[styles.cell, { flex: COLUMN_WIDTHS[5] }]}>
-                          <View style={styles.actionContainer}>
-                            <Switch
-                              value={Boolean(disc?.is_active ?? true)}
-                              color="#91B275"
-                            />
-                            <TouchableOpacity
-                              onPress={() => {
-                                setDiscount(disc);
-                                setSelectedDiscountRule(relatedRule ?? null);
-                                setEditDiscountModalVisible(true);
-                              }}
-                            >
-                              <Pencil height={40} width={40} color="#91B275" />
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                              onPress={() => {
-                                setDiscount(disc);
-                                setShowDialog(true);
-                              }}
-                            >
-                              <Delete height={40} width={40} color="#91B275" />
-                            </TouchableOpacity>
-                          </View>
+                          {!isBranch && (
+                            <View style={styles.actionContainer}>
+                              <Switch
+                                value={Boolean(disc?.is_active ?? true)}
+                                color="#91B275"
+                              />
+                              <TouchableOpacity
+                                onPress={() => {
+                                  setDiscount(disc);
+                                  setSelectedDiscountRule(relatedRule ?? null);
+                                  setEditDiscountModalVisible(true);
+                                }}
+                              >
+                                <Pencil
+                                  height={40}
+                                  width={40}
+                                  color="#91B275"
+                                />
+                              </TouchableOpacity>
+                              <TouchableOpacity
+                                onPress={() => {
+                                  setDiscount(disc);
+                                  setShowDialog(true);
+                                }}
+                              >
+                                <Delete
+                                  height={40}
+                                  width={40}
+                                  color="#91B275"
+                                />
+                              </TouchableOpacity>
+                            </View>
+                          )}
                         </Text>
                       </View>
                     );
@@ -310,32 +341,33 @@ const ManageDiscounts: React.FC = () => {
                 </View>
               )}
 
-              {selectedCategory === 'Coupons' && (
+              {isCouponCategory && (
                 <View style={styles.dataTable}>
                   <View style={styles.dataTableHeader}>
-                    {['Code', 'Created', 'Updated', 'Actions'].map(
-                      (title, index) => (
-                        <Text
-                          key={index}
-                          style={[
-                            styles.headerCell,
-                            {
-                              flex: index === 0 ? 0.5 : 1,
-                              textAlign: 'center',
-                              // position: "relative",
-                              // left: index === 0 ? 20 : 0,
-                            },
-                          ]}
-                        >
-                          {title}
-                        </Text>
-                      )
-                    )}
+                    {[
+                      'codeHeader',
+                      'createdHeader',
+                      'updatedHeader',
+                      'actionsHeader',
+                    ].map((key, index) => (
+                      <Text
+                        key={index}
+                        style={[
+                          styles.headerCell,
+                          {
+                            flex: index === 0 ? 0.5 : 1,
+                            textAlign: 'center',
+                          },
+                        ]}
+                      >
+                        {I18n.t(`manageDiscounts.couponTable.${key}`)}
+                      </Text>
+                    ))}
                   </View>
 
-                  {filteredCoupons?.results.map((cp: any) => (
+                  {coupons?.results.map((cp: any) => (
                     <View key={cp.id} style={styles.row}>
-                      {/* Branch */}
+                      {/* Code */}
                       <Text
                         style={[
                           styles.cell,
@@ -358,30 +390,32 @@ const ManageDiscounts: React.FC = () => {
 
                       {/* Actions */}
                       <Text style={[styles.cell, { flex: 1 }]}>
-                        <View style={styles.actionContainer}>
-                          <Switch
-                            value={cp.is_valid}
-                            // onValueChange={
-                            // }
-                            color="#91B275"
-                          />
-                          <TouchableOpacity
-                            onPress={() => {
-                              setCoupon(cp);
-                              setEditCouponModalVisible(true);
-                            }}
-                          >
-                            <Pencil height={40} width={40} color="#91B275" />
-                          </TouchableOpacity>
-                          <TouchableOpacity
-                            onPress={() => {
-                              setCoupon(cp);
-                              setShowDialog(true);
-                            }}
-                          >
-                            <Delete height={40} width={40} color="#91B275" />
-                          </TouchableOpacity>
-                        </View>
+                        {!isBranch && (
+                          <View style={styles.actionContainer}>
+                            <Switch
+                              value={cp.is_valid}
+                              // onValueChange={
+                              // }
+                              color="#91B275"
+                            />
+                            <TouchableOpacity
+                              onPress={() => {
+                                setCoupon(cp);
+                                setEditCouponModalVisible(true);
+                              }}
+                            >
+                              <Pencil height={40} width={40} color="#91B275" />
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                              onPress={() => {
+                                setCoupon(cp);
+                                setShowDialog(true);
+                              }}
+                            >
+                              <Delete height={40} width={40} color="#91B275" />
+                            </TouchableOpacity>
+                          </View>
+                        )}
                       </Text>
                     </View>
                   ))}
@@ -390,9 +424,9 @@ const ManageDiscounts: React.FC = () => {
               <Pagination
                 totalPages={
                   Math.round(
-                    selectedCategory == 'Coupons'
-                      ? coupons?.count! / 10
-                      : discounts?.count! / 10
+                    isCouponCategory
+                      ? Math.ceil((coupons?.count ?? 0) / 10)
+                      : Math.ceil((discounts?.count ?? 0) / 10)
                   ) || 0
                 }
                 currentPage={currentPage}
@@ -409,14 +443,17 @@ const ManageDiscounts: React.FC = () => {
               >
                 <Dialog.Title>
                   <ModalHeader
-                    title="Confirm Deletion"
+                    title={I18n.t('manageDiscounts.dialog.title')}
                     onClose={() => setShowDialog(false)}
                   />
                 </Dialog.Title>
                 <Dialog.Content>
                   <Text style={{ color: '#000' }}>
-                    Are you sure you want to delete this{' '}
-                    {selectedCategory === 'Coupons' ? 'Coupon' : 'Discount'}?
+                    {I18n.t('manageDiscounts.dialog.deleteConfirmation', {
+                      itemType: isCouponCategory
+                        ? I18n.t('manageDiscounts.tabCoupons') // Use the localized term for Coupon
+                        : I18n.t('manageDiscounts.tabDiscount'), // Use the localized term for Discount
+                    })}
                   </Text>
                 </Dialog.Content>
                 <Dialog.Actions>
@@ -424,17 +461,17 @@ const ManageDiscounts: React.FC = () => {
                     onPress={() => setShowDialog(false)}
                     labelStyle={{ color: '#000' }}
                   >
-                    Cancel
+                    {I18n.t('manageDiscounts.dialog.cancelButton')}
                   </Button>
                   <Button
                     onPress={
-                      selectedCategory === 'Coupons'
+                      isCouponCategory
                         ? handleDeleteCoupon
                         : handleDeleteDiscount
                     }
                     labelStyle={{ color: '#ff0000' }}
                   >
-                    Delete
+                    {I18n.t('manageDiscounts.dialog.deleteButton')}
                   </Button>
                 </Dialog.Actions>
               </Dialog>

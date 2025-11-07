@@ -1,5 +1,6 @@
 from django_filters import rest_framework as filters
-from django.db.models import Q
+from django.db.models.functions import Cast
+from django.db.models import TextField, Q
 from .models import MenuAvailability
 
 class MenuAvailabilityFilter(filters.FilterSet):
@@ -27,24 +28,34 @@ class MenuAvailabilityFilter(filters.FilterSet):
         ]
 
     def filter_search(self, queryset, name, value):
-        return queryset.filter(
-            (Q(menu_item__name__icontains=value) | 
-             Q(branch__tenant__restaurant_name__icontains=value))
-            & Q(is_available=True)
+        queryset = queryset.annotate(
+            categories_text=Cast('menu_item__categories', TextField()),
+            tags_text=Cast('menu_item__tags', TextField())
         )
+        search_query = (
+            Q(menu_item__name__icontains=value)
+            | Q(branch__tenant__restaurant_name__icontains=value)
+            | Q(categories_text__icontains=value)
+            | Q(tags_text__icontains=value)
+        )
+        if self.request.user.user_type in ['admin', 'restaurant']:
+            return queryset.filter(search_query).distinct()
+        return queryset.filter(search_query & Q(is_available=True)).distinct()
+
 
     def filter_categories(self, queryset, name, value):
-        # Split comma-separated categories and create OR conditions
+        queryset = queryset.annotate(categories_text=Cast('menu_item__categories', TextField()))
         categories = [cat.strip() for cat in value.split(',') if cat.strip()]
         q_objects = Q()
         for cat in categories:
-            q_objects |= Q(menu_item__categories__icontains=cat)
-        return queryset.filter(q_objects)
+            q_objects |= Q(categories_text__icontains=cat)
+        return queryset.filter(q_objects).distinct()
+
 
     def filter_tags(self, queryset, name, value):
-        # Split comma-separated tags and create OR conditions
-        tags = [tag.strip() for tag in value.split(',')]
+        queryset = queryset.annotate(tags_text=Cast('menu_item__tags', TextField()))
+        tags = [tag.strip() for tag in value.split(',') if tag.strip()]
         q_objects = Q()
         for tag in tags:
-            q_objects |= Q(menu_item__tags__icontains=tag)
-        return queryset.filter(q_objects)
+            q_objects |= Q(tags_text__icontains=tag)
+        return queryset.filter(q_objects).distinct()

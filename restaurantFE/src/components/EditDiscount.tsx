@@ -29,12 +29,9 @@ import {
 import { useGetMenus } from '@/services/mutation/menuMutation';
 import MenuItemSelectorModal from './MenuItemSelectorModal';
 import ModalHeader from './ModalHeader';
-import {
-  DropdownInputProps,
-  MultiSelectDropdown,
-} from 'react-native-paper-dropdown';
+import { MultiSelectDropdown } from 'react-native-paper-dropdown';
 import { useRestaurantIdentity } from '@/hooks/useRestaurantIdentity';
-import { current } from '@reduxjs/toolkit';
+import { i18n as I18n } from '@/app/_layout';
 
 const TYPEOPTIONS = [
   { label: 'Volume', value: 'volume' },
@@ -78,7 +75,7 @@ export default function EditDiscountModal({
   currentPage,
   onClose,
 }: EditDiscountModalProps) {
-  const [selectedBranches, setSelectedBranches] = useState<string[]>(
+  const [selectedBranches, setSelectedBranches] = useState(
     discount.branches?.map((br: any) => br.id)
   );
   const [applyToAllBranches, setApplyToAllBranches] = useState(
@@ -89,15 +86,13 @@ export default function EditDiscountModal({
   const [type, setType] = useState(discount.type);
   const [showType, setShowType] = useState(false);
   const [off_peak_hours, setOffPeakHours] = useState(discount.off_peak_hours);
-  const [priority, setPriority] = useState<string | undefined>(
-    discount.priority
-  );
+  const [priority, setPriority] = useState(discount.priority);
   const [stackable, setStackable] = useState(discount.is_stackable);
-  const [valid_from, setValidFrom] = useState<Date | undefined>(
+  const [valid_from, setValidFrom] = useState(
     Boolean(discount.valid_from) ? new Date(discount.valid_from) : undefined
   );
   const [showFromPicker, setShowFromPicker] = useState(false);
-  const [valid_until, setValidUntil] = useState<Date | undefined>(
+  const [valid_until, setValidUntil] = useState(
     Boolean(discount.valid_until) ? new Date(discount.valid_until) : undefined
   );
   const [showUntilPicker, setShowUntilPicker] = useState(false);
@@ -123,7 +118,7 @@ export default function EditDiscountModal({
     is_percentage: Boolean(discountRule?.is_percentage),
     max_discount_amount: discountRule?.max_discount_amount?.toString() ?? '',
   });
-  const [ruleErrors, setRuleErrors] = useState<{ [key: string]: string }>({});
+  const [ruleErrors, setRuleErrors] = useState({});
   const [applicableSelectorVisible, setApplicableSelectorVisible] =
     useState(false);
   const [excludedSelectorVisible, setExcludedSelectorVisible] = useState(false);
@@ -147,17 +142,20 @@ export default function EditDiscountModal({
 
   const resetRuleErrors = () => setRuleErrors({});
 
-  const getMenuSummary = (ids: string[] = []) => {
+  const getMenuSummary = (ids = []) => {
     if (!ids?.length) {
       return '';
     }
 
     const names = ids
       .map((id) => menus?.results.find((mn) => mn.id === id)?.name)
-      .filter(Boolean) as string[];
+      .filter(Boolean);
 
     if (!names.length) {
-      return `${ids.length} selected`;
+      // Use interpolation for selected items count
+      return I18n.t('discountModal.summary.items_selected', {
+        count: ids.length,
+      });
     }
 
     if (names.length <= 2) {
@@ -167,7 +165,7 @@ export default function EditDiscountModal({
     return `${names.slice(0, 2).join(', ')} +${names.length - 2}`;
   };
 
-  const clearRuleError = (field: string) => {
+  const clearRuleError = (field: any) => {
     setRuleErrors((prev) => {
       if (!prev[field]) return prev;
       const { [field]: _removed, ...rest } = prev;
@@ -179,27 +177,33 @@ export default function EditDiscountModal({
     if (selectedBranches.length == 0 && !applyToAllBranches) {
       Toast.show({
         type: 'error',
-        text1: 'Branch selection is required.',
-        text2: 'Please select branch.',
+        text1: I18n.t('discountModal.required.branch_selection'),
+        text2: I18n.t('discountModal.required.select_branch'),
       });
       return false;
     }
 
     if (!name?.trim()) {
-      Toast.show({ type: 'error', text1: 'Name is required.' });
+      Toast.show({
+        type: 'error',
+        text1: I18n.t('discountModal.required.name'),
+      });
       return false;
     }
 
     if (name.trim().length < 3) {
       Toast.show({
         type: 'error',
-        text1: 'Name must be at least 3 characters long.',
+        text1: I18n.t('discountModal.error.name_min_length'),
       });
       return false;
     }
 
     if (!type) {
-      Toast.show({ type: 'error', text1: 'Discount type is required.' });
+      Toast.show({
+        type: 'error',
+        text1: I18n.t('discountModal.required.discount_type'),
+      });
       return false;
     }
 
@@ -207,26 +211,32 @@ export default function EditDiscountModal({
       if (isNaN(Number(priority)) || Number(priority) < 0) {
         Toast.show({
           type: 'error',
-          text1: 'Priority must be a non-negative number.',
+          text1: I18n.t('discountModal.error.priority_non_negative'),
         });
         return false;
       }
     }
 
     if (!valid_from) {
-      Toast.show({ type: 'error', text1: 'Valid from date is required.' });
+      Toast.show({
+        type: 'error',
+        text1: I18n.t('discountModal.required.valid_from'),
+      });
       return false;
     }
 
     if (!valid_until) {
-      Toast.show({ type: 'error', text1: 'Valid until date is required.' });
+      Toast.show({
+        type: 'error',
+        text1: I18n.t('discountModal.required.valid_until'),
+      });
       return false;
     }
 
     if (valid_from && valid_until && dayjs(valid_until).isBefore(valid_from)) {
       Toast.show({
         type: 'error',
-        text1: 'Valid until must be after valid from.',
+        text1: I18n.t('discountModal.error.valid_until_after_from'),
       });
       return false;
     }
@@ -234,10 +244,7 @@ export default function EditDiscountModal({
     return true;
   };
 
-  const handleRuleFormChange = (
-    key: string,
-    value: string | boolean | string[]
-  ) => {
+  const handleRuleFormChange = (key: string, value: any) => {
     const normalizedValue =
       key === 'applicable_items' || key === 'excluded_items'
         ? Array.isArray(value)
@@ -249,7 +256,7 @@ export default function EditDiscountModal({
 
     setRuleFormValues((prev) => {
       if (key === 'applicable_items') {
-        const values = normalizedValue as string[];
+        const values = normalizedValue;
         return {
           ...prev,
           applicable_items: values,
@@ -260,7 +267,7 @@ export default function EditDiscountModal({
       }
 
       if (key === 'excluded_items') {
-        const values = normalizedValue as string[];
+        const values = normalizedValue;
         return {
           ...prev,
           excluded_items: values,
@@ -277,30 +284,32 @@ export default function EditDiscountModal({
     });
   };
 
-  const handleApplicableApply = (ids: string[]) => {
+  const handleApplicableApply = (ids: any) => {
     handleRuleFormChange('applicable_items', ids);
     clearRuleError('applicable_items');
   };
 
-  const handleExcludedApply = (ids: string[]) => {
+  const handleExcludedApply = (ids: any) => {
     handleRuleFormChange('excluded_items', ids);
     clearRuleError('excluded_items');
   };
 
   const validateRuleForm = () => {
-    const errors: { [key: string]: string } = {};
+    const errors = {};
 
     if (!type) {
-      errors.type = 'Select a discount type before configuring rules.';
+      errors.type = I18n.t('discountModal.error.select_type_for_rules');
     }
 
     if (
       type === 'volume' &&
       (!ruleFormValues.min_items || isNaN(Number(ruleFormValues.min_items)))
     ) {
-      errors.min_items = 'Min items must be a valid number.';
+      errors.min_items = I18n.t('discountModal.error.min_items_valid');
     } else if (type === 'volume' && Number(ruleFormValues.min_items) <= 0) {
-      errors.min_items = 'Min items must be greater than 0.';
+      errors.min_items = I18n.t(
+        'editDiscount.error.min_items_greater_than_zero'
+      );
     }
 
     const requiresQuantity = type === 'bogo' || type === 'freeItem';
@@ -310,9 +319,11 @@ export default function EditDiscountModal({
       (!ruleFormValues.buy_quantity ||
         isNaN(Number(ruleFormValues.buy_quantity)))
     ) {
-      errors.buy_quantity = 'Buy quantity must be a valid number.';
+      errors.buy_quantity = I18n.t('discountModal.error.buy_quantity_valid');
     } else if (requiresQuantity && Number(ruleFormValues.buy_quantity) <= 0) {
-      errors.buy_quantity = 'Buy quantity must be greater than 0.';
+      errors.buy_quantity = I18n.t(
+        'editDiscount.error.buy_quantity_greater_than_zero'
+      );
     }
 
     if (
@@ -320,9 +331,11 @@ export default function EditDiscountModal({
       (!ruleFormValues.get_quantity ||
         isNaN(Number(ruleFormValues.get_quantity)))
     ) {
-      errors.get_quantity = 'Get quantity must be a valid number.';
+      errors.get_quantity = I18n.t('discountModal.error.get_quantity_valid');
     } else if (requiresQuantity && Number(ruleFormValues.get_quantity) <= 0) {
-      errors.get_quantity = 'Get quantity must be greater than 0.';
+      errors.get_quantity = I18n.t(
+        'editDiscount.error.get_quantity_greater_than_zero'
+      );
     }
 
     if (
@@ -331,13 +344,16 @@ export default function EditDiscountModal({
       (!ruleFormValues.max_discount_amount ||
         isNaN(Number(ruleFormValues.max_discount_amount)))
     ) {
-      errors.max_discount_amount =
-        'Max discount amount must be a valid number.';
+      errors.max_discount_amount = I18n.t(
+        'editDiscount.error.max_discount_amount_valid'
+      );
     } else if (
       ruleFormValues.max_discount_amount !== '' &&
       Number(ruleFormValues.max_discount_amount) < 0
     ) {
-      errors.max_discount_amount = 'Max discount amount must be non-negative.';
+      errors.max_discount_amount = I18n.t(
+        'error.max_discount_amount_non_negative'
+      );
     }
 
     if (
@@ -345,16 +361,17 @@ export default function EditDiscountModal({
       (!ruleFormValues.applicable_items ||
         ruleFormValues.applicable_items.length === 0)
     ) {
-      errors.applicable_items = 'Select at least one applicable item.';
+      errors.applicable_items = I18n.t(
+        'editDiscount.error.applicable_item_required'
+      );
     }
 
     if (
-      ruleFormValues.excluded_items?.some((item: any) =>
+      ruleFormValues.excluded_items?.some((item) =>
         ruleFormValues.applicable_items.includes(item)
       )
     ) {
-      errors.excluded_items =
-        'Excluded items cannot overlap with applicable items.';
+      errors.excluded_items = I18n.t('discountModal.error.excluded_overlap');
     }
 
     setRuleErrors(errors);
@@ -362,7 +379,7 @@ export default function EditDiscountModal({
   };
 
   const buildRulePayload = () => {
-    const toNumber = (value: string) =>
+    const toNumber = (value) =>
       value === undefined || value === null || value === ''
         ? undefined
         : Number(value);
@@ -388,7 +405,7 @@ export default function EditDiscountModal({
     }
 
     try {
-      const discountPayload: any = {
+      const discountPayload = {
         id: discount.id,
         is_global: applyToAllBranches,
         branches: selectedBranches,
@@ -422,8 +439,8 @@ export default function EditDiscountModal({
       console.error('Error updating discount', error);
       Toast.show({
         type: 'error',
-        text1: 'Failed to update discount',
-        text2: 'Please try again.',
+        text1: I18n.t('discountModal.error.update_discount_failed_t1'),
+        text2: I18n.t('discountModal.error.try_again_t2'),
       });
     }
   };
@@ -432,7 +449,10 @@ export default function EditDiscountModal({
     <Portal>
       <Dialog visible={visible} onDismiss={onClose} style={stylesModal.dialog}>
         <Dialog.Title>
-          <ModalHeader title="Edit Discount" onClose={onClose} />
+          <ModalHeader
+            title={I18n.t('discountModal.modal.title')}
+            onClose={onClose}
+          />
         </Dialog.Title>
         <Dialog.Content style={stylesModal.content}>
           <ScrollView
@@ -448,7 +468,9 @@ export default function EditDiscountModal({
                 marginBottom: 15,
               }}
             >
-              <Text style={{ color: '#40392B' }}>Is Global</Text>
+              <Text style={{ color: '#40392B' }}>
+                {I18n.t('discountModal.form.is_global_label')}
+              </Text>
               <Switch
                 value={applyToAllBranches}
                 onValueChange={setApplyToAllBranches}
@@ -458,15 +480,17 @@ export default function EditDiscountModal({
             </View>
             {!applyToAllBranches && (
               <>
-                <Text style={stylesModal.fieldLabel}>Branch</Text>
+                <Text style={stylesModal.fieldLabel}>
+                  {I18n.t('discountModal.form.branch_label')}
+                </Text>
                 <MultiSelectDropdown
-                  label="Select Branches"
-                  placeholder="Select Branches"
+                  label={I18n.t('discountModal.form.select_branches')}
+                  placeholder={I18n.t('discountModal.form.select_branches')}
                   options={
-                    (branches.map((br) => ({
+                    branches.map((br) => ({
                       label: br.address,
-                      value: br.id!,
-                    })) as Option[]) || []
+                      value: br.id,
+                    })) || []
                   }
                   value={selectedBranches || []}
                   onSelect={(values) => setSelectedBranches(values)}
@@ -478,7 +502,7 @@ export default function EditDiscountModal({
                     placeholder,
                     selectedLabel,
                     rightIcon,
-                  }: DropdownInputProps) => (
+                  }) => (
                     <PaperTextInput
                       mode="outlined"
                       placeholder={placeholder}
@@ -501,8 +525,8 @@ export default function EditDiscountModal({
             )}
 
             <TextInput
-              label="Name"
-              placeholder="Name"
+              label={I18n.t('discountModal.form.name_label')}
+              placeholder={I18n.t('discountModal.form.name_label')}
               value={name}
               onChangeText={setName}
               style={{ ...stylesModal.input, marginTop: 15 }}
@@ -510,8 +534,8 @@ export default function EditDiscountModal({
             />
 
             <TextInput
-              label="Description"
-              placeholder="Description"
+              label={I18n.t('discountModal.form.description_label')}
+              placeholder={I18n.t('discountModal.form.description_label')}
               value={description}
               onChangeText={setDescription}
               style={stylesModal.input}
@@ -524,7 +548,9 @@ export default function EditDiscountModal({
               onDismiss={() => setShowType(false)}
               anchor={
                 <View>
-                  <Text style={stylesModal.fieldLabel}>Discount type</Text>
+                  <Text style={stylesModal.fieldLabel}>
+                    {I18n.t('discountModal.form.discount_type_label')}
+                  </Text>
                   <Button
                     mode="outlined"
                     style={stylesModal.dropdownBtn}
@@ -546,7 +572,7 @@ export default function EditDiscountModal({
                     {type
                       ? TYPEOPTIONS.find((option) => option.value === type)
                           ?.label
-                      : 'Discount Type'}
+                      : I18n.t('discountModal.form.discount_type_placeholder')}
                   </Button>
                 </View>
               }
@@ -568,7 +594,9 @@ export default function EditDiscountModal({
             </Menu>
 
             <View style={stylesModal.toggleRow}>
-              <Text style={stylesModal.toggleLabel}>Off peak hours</Text>
+              <Text style={stylesModal.toggleLabel}>
+                {I18n.t('discountModal.form.off_peak_hours_label')}
+              </Text>
               <Switch
                 value={off_peak_hours}
                 onValueChange={setOffPeakHours}
@@ -577,7 +605,9 @@ export default function EditDiscountModal({
             </View>
 
             <View style={stylesModal.toggleRow}>
-              <Text style={stylesModal.toggleLabel}>Stackable</Text>
+              <Text style={stylesModal.toggleLabel}>
+                {I18n.t('discountModal.form.stackable_label')}
+              </Text>
               <Switch
                 value={stackable}
                 onValueChange={setStackable}
@@ -586,8 +616,8 @@ export default function EditDiscountModal({
             </View>
 
             <TextInput
-              label="Priority"
-              placeholder="Priority"
+              label={I18n.t('discountModal.form.priority_label')}
+              placeholder={I18n.t('discountModal.form.priority_label')}
               value={priority ?? ''}
               onChangeText={setPriority}
               style={stylesModal.input}
@@ -596,7 +626,9 @@ export default function EditDiscountModal({
             />
 
             <View style={stylesModal.dateRow}>
-              <Text style={stylesModal.fieldLabel}>Valid from</Text>
+              <Text style={stylesModal.fieldLabel}>
+                {I18n.t('discountModal.form.valid_from_label')}
+              </Text>
               <Button
                 onPress={() => setShowFromPicker(true)}
                 mode="outlined"
@@ -605,10 +637,10 @@ export default function EditDiscountModal({
                 labelStyle={stylesModal.dateLabel}
                 icon="chevron-down"
               >
-                Valid From:{' '}
+                {I18n.t('discountModal.form.valid_from_button')}{' '}
                 {valid_from
                   ? dayjs(valid_from).format('YYYY-MM-DD')
-                  : 'Not set'}
+                  : I18n.t('discountModal.form.not_set')}
               </Button>
               <DatePicker
                 dateFilterVisible={showFromPicker}
@@ -619,7 +651,9 @@ export default function EditDiscountModal({
             </View>
 
             <View style={stylesModal.dateRow}>
-              <Text style={stylesModal.fieldLabel}>Valid until</Text>
+              <Text style={stylesModal.fieldLabel}>
+                {I18n.t('discountModal.form.valid_until_label')}
+              </Text>
               <Button
                 onPress={() => setShowUntilPicker(true)}
                 mode="outlined"
@@ -628,10 +662,10 @@ export default function EditDiscountModal({
                 labelStyle={stylesModal.dateLabel}
                 icon="chevron-down"
               >
-                Valid Until:{' '}
+                {I18n.t('discountModal.form.valid_until_button')}{' '}
                 {valid_until
                   ? dayjs(valid_until).format('YYYY-MM-DD')
-                  : 'Not set'}
+                  : I18n.t('discountModal.form.not_set')}
               </Button>
               <DatePicker
                 dateFilterVisible={showUntilPicker}
@@ -643,15 +677,19 @@ export default function EditDiscountModal({
 
             <View style={stylesModal.sectionDivider} />
 
-            <Text style={stylesModal.sectionHeader}>Discount Rule</Text>
+            <Text style={stylesModal.sectionHeader}>
+              {I18n.t('discountModal.section.discount_rule')}
+            </Text>
 
             {type === 'volume' && (
               <>
-                <Text style={stylesModal.fieldLabel}>Minimum items</Text>
+                <Text style={stylesModal.fieldLabel}>
+                  {I18n.t('discountModal.rule.min_items_label')}
+                </Text>
                 <TextInput
                   style={stylesModal.input}
                   keyboardType="numeric"
-                  placeholder="Minimum items"
+                  placeholder={I18n.t('discountModal.rule.min_items_label')}
                   value={ruleFormValues.min_items}
                   onChangeText={(value) =>
                     handleRuleFormChange(
@@ -668,10 +706,14 @@ export default function EditDiscountModal({
 
             {type !== 'bogo' && type !== 'freeItem' && (
               <>
-                <Text style={stylesModal.fieldLabel}>Max discount amount</Text>
+                <Text style={stylesModal.fieldLabel}>
+                  {I18n.t('discountModal.rule.max_discount_amount_label')}
+                </Text>
                 <TextInput
                   style={stylesModal.input}
-                  placeholder="Max discount amount"
+                  placeholder={I18n.t(
+                    'editDiscount.rule.max_discount_amount_label'
+                  )}
                   value={ruleFormValues.max_discount_amount}
                   onChangeText={(value) =>
                     handleRuleFormChange(
@@ -691,10 +733,12 @@ export default function EditDiscountModal({
 
             {type === 'combo' && (
               <>
-                <Text style={stylesModal.fieldLabel}>Combo size</Text>
+                <Text style={stylesModal.fieldLabel}>
+                  {I18n.t('discountModal.rule.combo_size_label')}
+                </Text>
                 <TextInput
                   style={stylesModal.input}
-                  placeholder="Combo size"
+                  placeholder={I18n.t('discountModal.rule.combo_size_label')}
                   value={ruleFormValues.combo_size}
                   onChangeText={(value) =>
                     handleRuleFormChange(
@@ -712,9 +756,9 @@ export default function EditDiscountModal({
             {(type === 'bogo' || type === 'freeItem') && (
               <>
                 <TextInput
-                  label="Buy quantity"
+                  label={I18n.t('discountModal.rule.buy_quantity_label')}
                   style={stylesModal.input}
-                  placeholder="Buy quantity"
+                  placeholder={I18n.t('discountModal.rule.buy_quantity_label')}
                   value={ruleFormValues.buy_quantity}
                   onChangeText={(value) =>
                     handleRuleFormChange(
@@ -728,9 +772,9 @@ export default function EditDiscountModal({
                 </HelperText>
 
                 <TextInput
-                  label="Get quantity"
+                  label={I18n.t('discountModal.rule.get_quantity_label')}
                   style={stylesModal.input}
-                  placeholder="Get quantity"
+                  placeholder={I18n.t('discountModal.rule.get_quantity_label')}
                   value={ruleFormValues.get_quantity}
                   onChangeText={(value) =>
                     handleRuleFormChange(
@@ -743,14 +787,18 @@ export default function EditDiscountModal({
                   {ruleErrors.get_quantity}
                 </HelperText>
 
-                <Text style={stylesModal.fieldLabel}>Applicable items</Text>
+                <Text style={stylesModal.fieldLabel}>
+                  {I18n.t('discountModal.rule.applicable_items_label')}
+                </Text>
                 <TouchableOpacity
                   onPress={() => setApplicableSelectorVisible(true)}
                   activeOpacity={0.85}
                 >
                   <PaperTextInput
                     mode="outlined"
-                    placeholder="Select applicable items"
+                    placeholder={I18n.t(
+                      'rule.select_applicable_items_placeholder'
+                    )}
                     value={getMenuSummary(ruleFormValues.applicable_items)}
                     editable={false}
                     right={<PaperTextInput.Icon icon="chevron-down" />}
@@ -768,14 +816,18 @@ export default function EditDiscountModal({
                   {ruleErrors.applicable_items}
                 </HelperText>
 
-                <Text style={stylesModal.fieldLabel}>Excluded items</Text>
+                <Text style={stylesModal.fieldLabel}>
+                  {I18n.t('discountModal.rule.excluded_items_label')}
+                </Text>
                 <TouchableOpacity
                   onPress={() => setExcludedSelectorVisible(true)}
                   activeOpacity={0.85}
                 >
                   <PaperTextInput
                     mode="outlined"
-                    placeholder="Select excluded items"
+                    placeholder={I18n.t(
+                      'rule.select_excluded_items_placeholder'
+                    )}
                     value={getMenuSummary(ruleFormValues.excluded_items)}
                     editable={false}
                     right={<PaperTextInput.Icon icon="chevron-down" />}
@@ -793,7 +845,9 @@ export default function EditDiscountModal({
             )}
 
             <View style={stylesModal.toggleRow}>
-              <Text style={stylesModal.toggleLabel}>Is percentage</Text>
+              <Text style={stylesModal.toggleLabel}>
+                {I18n.t('discountModal.rule.is_percentage_label')}
+              </Text>
               <Switch
                 value={ruleFormValues.is_percentage}
                 onValueChange={(value) =>
@@ -812,12 +866,12 @@ export default function EditDiscountModal({
             labelStyle={{ color: '#fff' }}
             onPress={handleSubmit}
           >
-            Update Discount
+            {I18n.t('discountModal.action.update_discount')}
           </Button>
         </Dialog.Actions>
       </Dialog>
       <MenuItemSelectorModal
-        title="Select applicable items"
+        title={I18n.t('discountModal.modal.select_applicable_title')}
         visible={applicableSelectorVisible}
         menus={menus?.results || []}
         selectedIds={ruleFormValues.applicable_items}
@@ -826,7 +880,7 @@ export default function EditDiscountModal({
         onClose={() => setApplicableSelectorVisible(false)}
       />
       <MenuItemSelectorModal
-        title="Select excluded items"
+        title={I18n.t('discountModal.modal.select_excluded_title')}
         visible={excludedSelectorVisible}
         menus={menus?.results || []}
         selectedIds={ruleFormValues.excluded_items}

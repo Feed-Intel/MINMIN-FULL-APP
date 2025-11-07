@@ -16,27 +16,37 @@ import {
   fetchDiscount,
   fetchDiscountRule,
 } from '../api/discountApi';
-import { Coupon, Discount } from '@/types/discountTypes';
+import { Coupon, Discount, DiscountQueryParams } from '@/types/discountTypes';
 import { AppDispatch } from '@/lib/reduxStore/store';
 import { useDispatch } from 'react-redux';
 import { hideLoader, showLoader } from '@/lib/reduxStore/loaderSlice';
+import { useTime } from '@/context/time';
 
-// export const useDiscounts = () =>
-//   useQuery({
-//     queryKey: ["discounts"],
-//     queryFn: fetchDiscounts,
-//   });
-export const useDiscounts = (page?: number | null) =>
-  useQuery<{ next: string | null; results: Discount[]; count: number }>({
-    queryKey: ['discounts', page],
-    queryFn: () => fetchDiscounts(page),
+export const useDiscounts = (params?: DiscountQueryParams | null) => {
+  const { time } = useTime();
+  return useQuery<{ next: string | null; results: Discount[]; count: number }>({
+    queryKey: ['discounts', params, time],
+    queryFn: () => {
+      const searchParams = new URLSearchParams();
+      Object.entries(params ?? {}).forEach(([key, value]) => {
+        if (value) {
+          searchParams.append(key, String(value));
+        }
+      });
+      return fetchDiscounts(searchParams.toString());
+    },
+    gcTime: 0,
     staleTime: 0,
-    refetchInterval: 30000,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
+    refetchInterval: 60000,
   });
+};
 export function useCreateDiscount() {
   const queryClient = useQueryClient();
   const dispatch = useDispatch<AppDispatch>();
-
+  const { setTime } = useTime();
   return useMutation({
     mutationFn: (data: Partial<any>) => {
       dispatch(showLoader());
@@ -46,29 +56,46 @@ export function useCreateDiscount() {
       console.error('Error creating discount:', error);
     },
     onSuccess: () => {
-      //("Discount created successfully");
+      queryClient.invalidateQueries({ queryKey: ['discounts'] });
+      queryClient.refetchQueries({
+        queryKey: ['discounts'],
+        type: 'active',
+      });
+      setTime(Date.now());
     },
     onSettled: async (_: any, error: any) => {
       if (error) {
         console.error(error);
       } else {
         await queryClient.invalidateQueries({ queryKey: ['discounts'] });
+        await queryClient.refetchQueries({
+          queryKey: ['discounts'],
+          type: 'active',
+        });
       }
       dispatch(hideLoader());
     },
   });
 }
 
-export const useGetDiscountById = (id: string) =>
-  useQuery({
-    queryKey: ['discount', id],
+export const useGetDiscountById = (id: string) => {
+  const { time } = useTime();
+  return useQuery({
+    queryKey: ['discount', id, time],
     queryFn: () => fetchDiscount(id),
+    gcTime: 0,
     staleTime: 0,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
+    refetchInterval: 60000,
   });
+};
 
 export function useUpdateDiscount() {
   const queryClient = useQueryClient();
   const dispatch = useDispatch<AppDispatch>();
+  const { setTime } = useTime();
   return useMutation({
     mutationFn: updateDiscount,
     onMutate: () => dispatch(showLoader()),
@@ -78,6 +105,11 @@ export function useUpdateDiscount() {
     onSuccess: () => {
       //("Discount updated successfully");
       queryClient.invalidateQueries({ queryKey: ['discounts'] });
+      queryClient.refetchQueries({
+        queryKey: ['discounts'],
+        type: 'active',
+      });
+      setTime(Date.now());
     },
     onSettled: () => {
       dispatch(hideLoader());
@@ -88,7 +120,7 @@ export function useUpdateDiscount() {
 export function useDeleteDiscount() {
   const queryClient = useQueryClient();
   const dispatch = useDispatch<AppDispatch>();
-
+  const { setTime } = useTime();
   return useMutation({
     mutationFn: (id: string) => {
       dispatch(showLoader());
@@ -98,7 +130,12 @@ export function useDeleteDiscount() {
       console.error('Error deleting discount:', error);
     },
     onSuccess: () => {
-      //("Discount deleted successfully");
+      queryClient.invalidateQueries({ queryKey: ['discounts'] });
+      queryClient.refetchQueries({
+        queryKey: ['discounts'],
+        type: 'active',
+      });
+      setTime(Date.now());
     },
     onSettled: async (_: any, error: any) => {
       if (error) {
@@ -116,44 +153,90 @@ export function useDeleteDiscount() {
 //     queryKey: ["discountRules"],
 //     queryFn: fetchDiscountRules,
 //   });
-export const useDiscountRules = () =>
-  useQuery({
-    queryKey: ['discountRules'],
-    queryFn: () => fetchDiscountRules(),
+export const useDiscountRules = (page?: number, noPage?: boolean) => {
+  const { time } = useTime();
+  return useQuery({
+    queryKey: ['discountRules', time],
+    queryFn: () => fetchDiscountRules(page, noPage),
+    gcTime: 0,
     staleTime: 0,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
+    refetchInterval: 60000,
   });
+};
 
-export const useGetDiscountRuleById = (id: string) =>
-  useQuery({
-    queryKey: ['discountRule', id],
+export const useGetDiscountRuleById = (id: string) => {
+  const { time } = useTime();
+  return useQuery({
+    queryKey: ['discountRule', id, time],
     queryFn: () => fetchDiscountRule(id),
+    gcTime: 0,
     staleTime: 0,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
+    refetchInterval: 60000,
   });
+};
 
-export const useGetCoupons = (page?: number | null) =>
-  useQuery<{ next: string | null; results: Coupon[]; count: number }>({
-    queryKey: ['coupons', page],
-    queryFn: () => fetchCoupons(page),
+export const useGetCoupons = (param?: DiscountQueryParams | null) => {
+  const { time } = useTime();
+  return useQuery<{ next: string | null; results: Coupon[]; count: number }>({
+    queryKey: ['coupons', param, time],
+    queryFn: () => {
+      const searchParams = new URLSearchParams();
+      Object.entries(param ?? {}).forEach(([key, value]) => {
+        if (value) {
+          searchParams.append(key, String(value));
+        }
+      });
+      return fetchCoupons(searchParams.toString());
+    },
+    gcTime: 0,
     staleTime: 0,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
+    refetchInterval: 60000,
   });
+};
 
-export const useGetCoupon = (id: string) =>
-  useQuery({
-    queryKey: ['coupon', id],
+export const useGetCoupon = (id: string) => {
+  const { time } = useTime();
+  return useQuery({
+    queryKey: ['coupon', id, time],
     queryFn: () => fetchCoupon(id),
+    gcTime: 0,
     staleTime: 0,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
+    refetchInterval: 60000,
   });
+};
 export function useCreateDiscountRule(
   onSuccess?: (data: any) => void,
   onError?: (error: any) => void
 ) {
   const dispatch = useDispatch<AppDispatch>();
+  const queryClient = useQueryClient();
+  const { setTime } = useTime();
   return useMutation({
     mutationFn: (data: Partial<any>) => {
       dispatch(showLoader());
       return createDiscountRule(data);
     },
-    onSuccess,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['discountRules'] });
+      queryClient.refetchQueries({
+        queryKey: ['discountRules'],
+        type: 'active',
+      });
+      setTime(Date.now());
+      if (onSuccess) onSuccess;
+    },
     onError,
     onSettled: () => dispatch(hideLoader()),
   });
@@ -162,6 +245,7 @@ export function useCreateDiscountRule(
 export function useUpdateDiscountRule() {
   const queryClient = useQueryClient();
   const dispatch = useDispatch<AppDispatch>();
+  const { setTime } = useTime();
   return useMutation({
     mutationFn: updateDiscountRule,
     onMutate: () => dispatch(showLoader()),
@@ -171,6 +255,11 @@ export function useUpdateDiscountRule() {
     onSuccess: () => {
       //("DiscountRule updated successfully");
       queryClient.invalidateQueries({ queryKey: ['discountRules'] });
+      queryClient.refetchQueries({
+        queryKey: ['discountRules'],
+        type: 'active',
+      });
+      setTime(Date.now());
     },
     onSettled: () => {
       dispatch(hideLoader());
@@ -181,6 +270,7 @@ export function useUpdateDiscountRule() {
 export function useDeleteDiscountRule() {
   const queryClient = useQueryClient();
   const dispatch = useDispatch<AppDispatch>();
+  const { setTime } = useTime();
   return useMutation({
     mutationFn: (id: any) => {
       dispatch(showLoader());
@@ -190,7 +280,12 @@ export function useDeleteDiscountRule() {
       console.error('Error deleting discountRule:', error);
     },
     onSuccess: () => {
-      //("DiscountRule deleted successfully");
+      queryClient.invalidateQueries({ queryKey: ['discountRules'] });
+      queryClient.refetchQueries({
+        queryKey: ['discountRules'],
+        type: 'active',
+      });
+      setTime(Date.now());
     },
     onSettled: async (_: any, error: any) => {
       if (error) {
@@ -206,7 +301,7 @@ export function useDeleteDiscountRule() {
 export function useCreateCoupon() {
   const queryClient = useQueryClient();
   const dispatch = useDispatch<AppDispatch>();
-
+  const { setTime } = useTime();
   return useMutation({
     mutationFn: (data: Partial<any>) => {
       dispatch(showLoader());
@@ -216,7 +311,12 @@ export function useCreateCoupon() {
       console.error('Error creating discount:', error);
     },
     onSuccess: () => {
-      //("Coupon created successfully");
+      queryClient.invalidateQueries({ queryKey: ['coupons'] });
+      queryClient.refetchQueries({
+        queryKey: ['coupons'],
+        type: 'active',
+      });
+      setTime(Date.now());
     },
     onSettled: async (_: any, error: any) => {
       if (error) {
@@ -232,7 +332,7 @@ export function useCreateCoupon() {
 export function useUpdateCoupon() {
   const queryClient = useQueryClient();
   const dispatch = useDispatch<AppDispatch>();
-
+  const { setTime } = useTime();
   return useMutation({
     mutationFn: (data: { id: string; coupon: Partial<any> }) => {
       dispatch(showLoader());
@@ -244,6 +344,11 @@ export function useUpdateCoupon() {
     onSuccess: () => {
       //("Coupon updated successfully");
       queryClient.invalidateQueries({ queryKey: ['coupons'] });
+      queryClient.refetchQueries({
+        queryKey: ['coupons'],
+        type: 'active',
+      });
+      setTime(Date.now());
     },
     onSettled: () => {
       dispatch(hideLoader());
@@ -254,6 +359,7 @@ export function useUpdateCoupon() {
 export function useDeleteCoupon() {
   const queryClient = useQueryClient();
   const dispatch = useDispatch<AppDispatch>();
+  const { setTime } = useTime();
   return useMutation({
     mutationFn: (id: string) => {
       dispatch(showLoader());
@@ -263,7 +369,12 @@ export function useDeleteCoupon() {
       console.error('Error deleting Coupon:', error);
     },
     onSuccess: () => {
-      //("Coupon deleted successfully");
+      queryClient.invalidateQueries({ queryKey: ['coupons'] });
+      queryClient.refetchQueries({
+        queryKey: ['coupons'],
+        type: 'active',
+      });
+      setTime(Date.now());
     },
     onSettled: async (_: any, error: any) => {
       if (error) {

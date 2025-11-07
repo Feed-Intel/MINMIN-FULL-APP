@@ -1,5 +1,5 @@
-import { Branch } from "./branchType";
-import { MenuType } from "./menuType";
+import { Branch } from './branchType';
+import { MenuType } from './menuType';
 
 export type Restaurant = {
   id?: string;
@@ -15,6 +15,7 @@ export type Restaurant = {
   branches?: Branch[];
   menus?: MenuType[];
   CHAPA_API_KEY?: string;
+  CHAPA_PUBLIC_KEY?: string;
   tax?: number;
   service_charge?: number;
   image?: string;

@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from .models import MenuAvailability
 from restaurant.branch.models import Branch
+from restaurant.tenant.models import Tenant
 from restaurant.menu.models import Menu
 from feed.serializers import PostSerializer
 from customer.feedback.serializers import FeedbackSerializer
@@ -52,6 +53,16 @@ class MenuAvailabilitySerializer(serializers.ModelSerializer):
             'location': location_payload,
         }
     
+    def get_is_global(self, obj):
+        user = self.context['request'].user
+        if user.user_type in ['admin', 'restaurant']:
+            tenant = Tenant.objects.get(admin=user)
+            return Branch.objects.filter(tenant=tenant).count() == MenuAvailability.objects.filter(menu_item=obj).count()
+        return False
+    
+    def get_branches(self, obj):
+        return MenuAvailability.objects.filter(menu_item=obj).values_list('branch_id', flat=True)
+    
     def get_menu_item(self, obj):
         return {
             'id': obj.menu_item.id,
@@ -64,7 +75,20 @@ class MenuAvailabilitySerializer(serializers.ModelSerializer):
             'price': obj.menu_item.price,
             'is_side': obj.menu_item.is_side,
             'average_rating': obj.menu_item.average_rating,
+            'is_global': self.get_is_global(obj.menu_item),
+            'branches': self.get_branches(obj.menu_item),
+            'tenant': self.get_tenant(obj.menu_item)    
         }
+    def get_tenant(self, obj):
+        return {
+            'id': obj.tenant.id,
+            'restaurant_name': obj.tenant.restaurant_name,
+            'CHAPA_API_KEY': obj.tenant.CHAPA_API_KEY,
+            'CHAPA_PUBLIC_KEY':obj.tenant.CHAPA_PUBLIC_KEY,
+            'tax': obj.tenant.tax,
+            'service_charge': obj.tenant.service_charge
+        }
+    
     def get_tenant_image_url(self, tenant):
         request = self.context.get('request')  
         if tenant.image:

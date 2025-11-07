@@ -7,6 +7,7 @@ import orderReducer from '../features/order/ordersSlice';
 import pedningOrderReducer from './orderSlice';
 import notificationReducer from './notificationSlice';
 import cartSliceReducer from './cartSlice';
+import localeReducer from './localeSlice';
 import { configureStore } from '@reduxjs/toolkit';
 
 export const makeStore = () => {
@@ -21,6 +22,7 @@ export const makeStore = () => {
       pendingOrder: pedningOrderReducer,
       notifications: notificationReducer,
       cart: cartSliceReducer,
+      language: localeReducer,
     },
   });
 };

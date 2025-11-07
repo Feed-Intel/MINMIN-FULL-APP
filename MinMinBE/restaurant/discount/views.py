@@ -10,6 +10,7 @@ from django.db.models import Q
 from rest_framework.pagination import PageNumberPagination
 from .models import Discount, DiscountRule, DiscountApplication, Coupon
 from .serializers import DiscountSerializer, DiscountRuleSerializer, DiscountApplicationSerializer, CouponSerializer
+from .dicountFilter import DiscountFilter, CouponFilter
 from customer.order.models import Order
 from .utils import apply_discounts
 from accounts.permissions import HasCustomAPIKey, IsAdminOrRestaurant, IsAdminRestaurantOrBranch
@@ -26,26 +27,37 @@ class DiscountViewSet(CachedModelViewSet):
     permission_classes = [IsAuthenticated,HasCustomAPIKey]
     queryset = Discount.objects.all()
     serializer_class = DiscountSerializer
-    filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
-    filterset_fields = ['type', 'off_peak_hours', 'is_stackable']
-    ordering_fields = [ 'priority']
+    filter_backends = [DjangoFilterBackend]
+    filterset_class = DiscountFilter
     pagination_class = DiscountPagination
     # ordering = ['-valid_from']
 
     def get_queryset(self):
         user = self.request.user
         if user.user_type == 'admin':
-            return Discount.objects.prefetch_related('branches', 'tenant')
+            return Discount.objects.prefetch_related('branches', 'tenant').distinct()
 
         if user.user_type == 'restaurant':
             tenant = get_user_tenant(user)
-            return Discount.objects.filter(tenant=tenant).prefetch_related('branches', 'tenant') if tenant else Discount.objects.none()
+            return Discount.objects.filter(tenant=tenant).prefetch_related('branches', 'tenant').distinct() if tenant else Discount.objects.none()
 
         if user.user_type == 'branch':
             branch = get_user_branch(user)
-            return Discount.objects.filter(branch=branch).prefetch_related('branches', 'tenant') if branch else Discount.objects.none()
+            return Discount.objects.filter(branches=branch).prefetch_related('branches', 'tenant').distinct() if branch else Discount.objects.none()
 
         return Discount.objects.none()
+    
+    def get_paginated_response(self, data):
+        # If 'nopage' query param is set, return unpaginated data
+        if self.request.query_params.get('nopage') == '1':
+            return Response(data)
+        return super().get_paginated_response(data)
+
+    def paginate_queryset(self, queryset):
+        # If 'nopage' query param is set, skip pagination
+        if self.request.query_params.get('nopage') == '1':
+            return None
+        return super().paginate_queryset(queryset)
     @action(detail=False, methods=['post'],url_path='apply-discount')
     def apply_discounts_to_order(self, request):
         """
@@ -190,8 +202,8 @@ class CouponViewSet(CachedModelViewSet):
     permission_classes = [IsAuthenticated, HasCustomAPIKey, IsAdminRestaurantOrBranch]
     queryset = Coupon.objects.all()
     serializer_class = CouponSerializer
-    filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
-    filterset_fields = ['discount_code']
+    filter_backends = [DjangoFilterBackend]
+    filterset_class = CouponFilter
     ordering_fields = ['created_at', 'updated_at','valid_from', 'valid_until']
     ordering = ['-created_at']
     pagination_class = CouponPagination

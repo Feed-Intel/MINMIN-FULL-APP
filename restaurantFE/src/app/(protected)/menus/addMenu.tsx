@@ -29,6 +29,7 @@ import {
   Option,
 } from 'react-native-paper-dropdown';
 import { useGetBranches } from '@/services/mutation/branchMutation';
+import { i18n as I18n } from '@/app/_layout';
 
 interface AddMenuDialogProps {
   visible: boolean;
@@ -115,8 +116,26 @@ export default function AddMenuDialog({
     if (!menuData.name || !menuData.image.uri) {
       Toast.show({
         type: 'error',
-        text1: 'Error',
-        text2: 'Please provide a name and select an image',
+        text1: I18n.t('Common.error_title'),
+        text2: I18n.t('MenuDialog.error.nameImageRequired'),
+      });
+      return;
+    }
+
+    if (!menuData.description) {
+      Toast.show({
+        type: 'error',
+        text1: I18n.t('Common.error_title'),
+        text2: I18n.t('MenuDialog.error.descriptionRequired'),
+      });
+      return;
+    }
+
+    if (!menuData.price) {
+      Toast.show({
+        type: 'error',
+        text1: I18n.t('Common.error_title'),
+        text2: I18n.t('MenuDialog.error.priceRequired'),
       });
       return;
     }
@@ -124,8 +143,8 @@ export default function AddMenuDialog({
     if (menuData.categories.length === 0) {
       Toast.show({
         type: 'error',
-        text1: 'Error',
-        text2: 'Please select at least one category',
+        text1: I18n.t('Common.error_title'),
+        text2: I18n.t('MenuDialog.error.categoryRequired'),
       });
       return;
     }
@@ -165,8 +184,8 @@ export default function AddMenuDialog({
     });
     Toast.show({
       type: 'success',
-      text1: 'Success',
-      text2: 'Menu added successfully!',
+      text1: I18n.t('Common.success_title'),
+      text2: I18n.t('MenuDialog.successMessage'),
     });
     onClose();
   };
@@ -175,12 +194,12 @@ export default function AddMenuDialog({
     <Portal>
       <Dialog visible={visible} onDismiss={onClose} style={styles.dialog}>
         <Dialog.Title>
-          <ModalHeader title="Add Menu Item" onClose={onClose} />
+          <ModalHeader title={I18n.t('MenuDialog.title')} onClose={onClose} />
         </Dialog.Title>
         <Dialog.Content>
           <ScrollView>
             <TextInput
-              placeholder="Name"
+              placeholder={I18n.t('MenuDialog.namePlaceholder')}
               value={menuData.name}
               onChangeText={(text) => handleInputChange('name', text)}
               mode="outlined"
@@ -197,7 +216,7 @@ export default function AddMenuDialog({
             />
 
             <TextInput
-              placeholder="Description"
+              placeholder={I18n.t('MenuDialog.descriptionPlaceholder')}
               value={menuData.description}
               onChangeText={(text) => handleInputChange('description', text)}
               mode="outlined"
@@ -223,7 +242,9 @@ export default function AddMenuDialog({
                 marginBottom: 15,
               }}
             >
-              <Text style={{ color: '#40392B' }}>Is Global</Text>
+              <Text style={{ color: '#40392B' }}>
+                {I18n.t('MenuDialog.isGlobalLabel')}
+              </Text>
               <Switch
                 value={menuData.is_global}
                 onValueChange={(value) => handleInputChange('is_global', value)}
@@ -232,10 +253,12 @@ export default function AddMenuDialog({
             </View>
             {!menuData.is_global && (
               <>
-                <Text style={styles.fieldLabel}>Branch</Text>
+                <Text style={styles.fieldLabel}>
+                  {I18n.t('MenuDialog.branchLabel')}
+                </Text>
                 <MultiSelectDropdown
-                  label="Select Branches"
-                  placeholder="Select Branches"
+                  label={I18n.t('MenuDialog.selectBranchesPlaceholder')}
+                  placeholder={I18n.t('MenuDialog.selectBranchesPlaceholder')}
                   options={
                     (branches?.results.map((br) => ({
                       label: br.address,
@@ -294,7 +317,7 @@ export default function AddMenuDialog({
               >
                 {menuData.categories.length > 0
                   ? menuData.categories.join(', ')
-                  : 'Select Categories'}
+                  : I18n.t('MenuDialog.selectCategories')}
               </Button>
 
               {categoryMenuVisible && (
@@ -305,7 +328,7 @@ export default function AddMenuDialog({
                       return (
                         <List.Item
                           key={category}
-                          title={category}
+                          title={I18n.t(`categories.${category.toLowerCase()}`)}
                           onPress={() => toggleCategory(category)}
                           titleStyle={styles.categoryOptionText}
                           left={() => (
@@ -325,7 +348,7 @@ export default function AddMenuDialog({
                       onPress={() => setCategoryMenuVisible(false)}
                       labelStyle={styles.categoryActionLabel}
                     >
-                      Done
+                      {I18n.t('Common.done')}
                     </Button>
                   </View>
                 </View>
@@ -349,7 +372,7 @@ export default function AddMenuDialog({
             )}
 
             <TextInput
-              placeholder="Price"
+              placeholder={I18n.t('MenuDialog.pricePlaceholder')}
               value={menuData.price}
               onChangeText={(text) => {
                 const cleaned = text
@@ -382,7 +405,9 @@ export default function AddMenuDialog({
                 color: '#40392B',
               }}
             >
-              {menuData.image.uri ? 'Change Image' : 'Pick an Image'}
+              {menuData.image.uri
+                ? I18n.t('MenuDialog.changeImage')
+                : I18n.t('MenuDialog.pickImage')}
             </Button>
 
             {menuData.image.uri && (
@@ -404,7 +429,7 @@ export default function AddMenuDialog({
                 variant={isSmallScreen ? 'bodyMedium' : 'bodyLarge'}
                 style={styles.switchText}
               >
-                Is Side Item
+                {I18n.t('MenuDialog.isSideItemLabel')}
               </Text>
               <Switch
                 value={menuData.is_side}
@@ -425,7 +450,7 @@ export default function AddMenuDialog({
             contentStyle={{ height: isSmallScreen ? 40 : 50 }}
             labelStyle={{ fontSize: isSmallScreen ? 14 : 16, color: '#fff' }}
           >
-            Save
+            {I18n.t('MenuDialog.saveButton')}
           </Button>
         </Dialog.Actions>
       </Dialog>

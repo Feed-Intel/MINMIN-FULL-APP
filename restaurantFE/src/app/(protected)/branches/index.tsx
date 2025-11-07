@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   ScrollView,
   StyleSheet,
@@ -27,10 +27,10 @@ import AddBranchDialog from './addBranch';
 import EditBranchDialog from './[branchId]';
 import { useRestaurantIdentity } from '@/hooks/useRestaurantIdentity';
 import Pagination from '@/components/Pagination';
+import { i18n as I18n } from '@/app/_layout';
 
 export default function Branches() {
   const [currentPage, setCurrentPage] = useState<number>(1);
-  const { data: branches } = useGetBranches(currentPage);
   const { mutateAsync: branchDelete } = useDeleteBranch();
   const { mutateAsync: updateBranch } = useUpdateBranch();
   const queryClient = useQueryClient();
@@ -43,6 +43,28 @@ export default function Branches() {
   const dispatch = useDispatch<AppDispatch>();
   const { width } = useWindowDimensions();
   const { isBranch } = useRestaurantIdentity();
+  const [defaultBranches, setActiveBranches] = useState<{
+    [key: string]: boolean;
+  }>({});
+
+  const queryParams = useMemo(() => {
+    return {
+      page: currentPage,
+      search: searchQuery,
+    };
+  }, [currentPage, searchQuery]);
+  const { data: branches } = useGetBranches(queryParams);
+
+  useEffect(() => {
+    if (branches) {
+      setActiveBranches(
+        branches.results.reduce((acc, branch) => {
+          acc[branch.id!] = branch.is_default!;
+          return acc;
+        }, {} as Record<string, boolean>)
+      );
+    }
+  }, [branches]);
 
   const handleDeleteBranch = async () => {
     try {
@@ -57,23 +79,27 @@ export default function Branches() {
     }
   };
 
-  const handleToggleDefault = async (branch: any) => {
+  const handleToggleDefault = async (branch: any, value: boolean) => {
     try {
       dispatch(showLoader());
       await updateBranch({
-        ...branch,
-        is_default: !branch.is_default,
+        id: branch.id,
+        address: branch.address,
+        is_default: value,
+        lat: branch.location?.lat,
+        lng: branch.location?.lng,
+        gps_coordinates: branch.gps_coordinates || '',
       });
       queryClient.invalidateQueries({ queryKey: ['branches'] });
+      setActiveBranches((prev) => ({
+        ...prev,
+        [branch.id!]: value,
+      }));
       dispatch(hideLoader());
     } catch (error) {
       console.error('Error updating branch:', error);
     }
   };
-
-  const filteredBranches = branches?.results.filter((branch) =>
-    branch?.address?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
 
   return (
     <>
@@ -91,7 +117,7 @@ export default function Branches() {
             color: '#21281B',
           }}
         >
-          Branches
+          {I18n.t('Branch.branches_title')}
         </Text>
         <View
           style={[
@@ -106,10 +132,13 @@ export default function Branches() {
           <View style={styles.searchContainer}>
             <TextInput
               style={styles.searchInput}
-              placeholder="search by name"
+              placeholder={I18n.t('Branch.search_placeholder_address')}
               placeholderTextColor="#2E191466"
               value={searchQuery}
-              onChangeText={setSearchQuery}
+              onChangeText={(text) => {
+                setCurrentPage(1);
+                setSearchQuery(text);
+              }}
             />
             {!isBranch && (
               <Button
@@ -118,7 +147,7 @@ export default function Branches() {
                 style={styles.addButton}
                 textColor="#fff"
               >
-                + Add branch
+                {I18n.t('Branch.button_add_branch')}
               </Button>
             )}
           </View>
@@ -132,23 +161,33 @@ export default function Branches() {
                 }}
               >
                 <DataTable.Title>
-                  <Text style={styles.tableTitle}>Branch</Text>
+                  <Text style={styles.tableTitle}>
+                    {I18n.t('Branch.table_header_branch')}
+                  </Text>
                 </DataTable.Title>
                 <DataTable.Title>
-                  <Text style={styles.tableTitle}>Latitude</Text>
+                  <Text style={styles.tableTitle}>
+                    {I18n.t('Branch.table_header_latitude')}
+                  </Text>
                 </DataTable.Title>
                 <DataTable.Title>
-                  <Text style={styles.tableTitle}>Longitude</Text>
+                  <Text style={styles.tableTitle}>
+                    {I18n.t('Branch.table_header_longitude')}
+                  </Text>
                 </DataTable.Title>
                 <DataTable.Title>
-                  <Text style={styles.tableTitle}>Set on map</Text>
+                  <Text style={styles.tableTitle}>
+                    {I18n.t('Branch.table_header_set_on_map')}
+                  </Text>
                 </DataTable.Title>
                 <DataTable.Title>
-                  <Text style={styles.tableTitle}>Actions</Text>
+                  <Text style={styles.tableTitle}>
+                    {I18n.t('Branch.table_header_actions')}
+                  </Text>
                 </DataTable.Title>
               </DataTable.Header>
 
-              {filteredBranches?.map((branch) => {
+              {branches?.results?.map((branch) => {
                 const [latitude, longitude] = branch.location
                   ? [branch.location.lat, branch.location.lng]
                   : ['1', '1'];
@@ -165,15 +204,19 @@ export default function Branches() {
                       <Text style={styles.tableTitle2}>{longitude}</Text>
                     </DataTable.Cell>
                     <DataTable.Cell>
-                      <Text style={styles.tableTitle2}>Set on map</Text>
+                      <Text style={styles.tableTitle2}>
+                        {I18n.t('Branch.table_cell_set_on_map')}
+                      </Text>
                     </DataTable.Cell>
                     <DataTable.Cell>
                       {!isBranch ? (
                         <View style={styles.actionButtons}>
                           <View style={styles.switchContainer}>
                             <Switch
-                              value={branch.is_default}
-                              onValueChange={() => handleToggleDefault(branch)}
+                              value={defaultBranches[branch.id!] || false}
+                              onValueChange={(value) =>
+                                handleToggleDefault(branch, value)
+                              }
                               color="#96B76E"
                               trackColor={{ false: '#96B76E', true: '#96B76E' }}
                               thumbColor={branch.is_default ? '#fff' : '#fff'}
@@ -205,7 +248,9 @@ export default function Branches() {
                           />
                         </View>
                       ) : (
-                        <Text style={styles.tableTitle2}>View only</Text>
+                        <Text style={styles.tableTitle2}>
+                          {I18n.t('Branch.table_cell_view_only')}
+                        </Text>
                       )}
                     </DataTable.Cell>
                   </DataTable.Row>
@@ -213,7 +258,7 @@ export default function Branches() {
               })}
             </DataTable>
             <Pagination
-              totalPages={Math.round(branches?.count! / 10) || 0}
+              totalPages={Math.ceil((branches?.count || 0) / 10)}
               currentPage={currentPage}
               onPageChange={setCurrentPage}
             />
@@ -229,23 +274,25 @@ export default function Branches() {
           style={{
             width: width > 500 ? '80%' : '95%',
             alignSelf: 'center',
+            backgroundColor: '#EFF4EB',
           }}
         >
-          <Dialog.Title>Confirm Deletion</Dialog.Title>
+          <Dialog.Title>{I18n.t('Branch.dialog_delete_title')}</Dialog.Title>
           <Dialog.Content>
-            <Text>
-              Are you sure you want to delete this branch? This action cannot be
-              undone.
-            </Text>
+            <Text>{I18n.t('Branch.dialog_delete_message')}</Text>
           </Dialog.Content>
           <Dialog.Actions>
-            <Button onPress={() => setShowDeleteDialog(false)}>Cancel</Button>
-            <Button onPress={handleDeleteBranch}>Delete</Button>
+            <Button onPress={() => setShowDeleteDialog(false)}>
+              {I18n.t('Branch.button_cancel')}
+            </Button>
+            <Button onPress={handleDeleteBranch} labelStyle={{ color: 'red' }}>
+              {I18n.t('Branch.button_delete')}
+            </Button>
           </Dialog.Actions>
         </Dialog>
       </Portal>
 
-      {/* Add Branch Dialog */}
+      {/* Add Branch Dialog (Content not shown/modified) */}
       <AddBranchDialog
         visible={showAddDialog}
         onClose={() => setShowAddDialog(false)}
@@ -257,7 +304,7 @@ export default function Branches() {
         }}
       />
 
-      {/* Edit Branch Dialog */}
+      {/* Edit Branch Dialog (Content not shown/modified) */}
       <EditBranchDialog
         visible={showEditDialog}
         branch={selectedBranch}
