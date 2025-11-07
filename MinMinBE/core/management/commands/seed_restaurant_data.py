@@ -2,8 +2,8 @@ from django.core.management.base import BaseCommand
 from django.core.files.base import ContentFile
 from django.db import transaction
 from faker import Faker
-from decimal import Decimal
-from random import randint, choice, sample
+from decimal import Decimal, ROUND_HALF_UP
+from random import randint, choice, sample, random
 import io
 from PIL import Image
 
@@ -17,6 +17,7 @@ from restaurant.menu_availability.models import MenuAvailability
 from restaurant.combo.models import Combo, ComboItem
 from restaurant.discount.models import Discount, DiscountRule, Coupon
 from customer.order.models import Order, OrderItem
+from customer.payment.models import Payment
 
 
 class Command(BaseCommand):
@@ -31,6 +32,24 @@ class Command(BaseCommand):
         parser.add_argument('--menus', type=int, default=20, help='Menu items per restaurant')
         parser.add_argument('--customers', type=int, default=50, help='Number of customers to create')
         parser.add_argument('--orders', type=int, default=5, help='Orders per customer')
+        parser.add_argument(
+            '--feed-posts-per-tenant',
+            type=int,
+            default=5,
+            help='Feed posts to create per restaurant admin'
+        )
+        parser.add_argument(
+            '--menu-availability-ratio',
+            type=float,
+            default=0.66,
+            help='Probability (0-1) that a menu is available per branch'
+        )
+        parser.add_argument(
+            '--payments-per-order',
+            type=int,
+            default=1,
+            help='Payments to attach to each seeded order (0 to skip)'
+        )
         parser.add_argument(
             '--only-posts',
             action='store_true',
@@ -47,9 +66,12 @@ class Command(BaseCommand):
         customer_count = options['customers']
         orders_per_customer = options['orders']
         only_posts = options['only_posts']
+        feed_posts_per_tenant = max(0, options['feed_posts_per_tenant'])
+        menu_availability_ratio = min(max(options['menu_availability_ratio'], 0.0), 1.0)
+        payments_per_order = max(0, options['payments_per_order'])
 
         if only_posts:
-            self._seed_posts_only()
+            self._seed_posts_only(feed_posts_per_tenant)
             self.stdout.write(self.style.SUCCESS('✅ Seeded posts only.'))
             return
 
@@ -138,7 +160,7 @@ class Command(BaseCommand):
                         MenuAvailability.objects.get_or_create(
                             branch=branch,
                             menu_item=menu,
-                            defaults={"is_available": choice([True, True, False])}
+                            defaults={"is_available": random() < menu_availability_ratio}
                         )
 
                     # create combos per branch
@@ -210,7 +232,7 @@ class Command(BaseCommand):
                         discount_amount=Decimal(randint(10, 25)),
                         is_percentage=True,
                     )
-                post_count = randint(3, 8)
+                post_count = feed_posts_per_tenant
                 for _ in range(post_count):
                     post = Post.objects.create(
                         user=admin,
@@ -271,6 +293,7 @@ class Command(BaseCommand):
                     status='placed'
                 )
                 # order items
+                order_total = Decimal("0.00")
                 for _ in range(randint(1, 5)):
                     menu_choices = [m for m in menus if m.tenant == tenant]
                     menu_item = choice(menu_choices)
@@ -281,6 +304,27 @@ class Command(BaseCommand):
                         quantity=quantity,
                         price=menu_item.price
                     )
+                    order_total += menu_item.price * quantity
+
+                if payments_per_order and order_total > 0:
+                    base_amount = (order_total / payments_per_order).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+                    remaining_amount = order_total
+                    method_choices = [method for method, _ in Payment.PAYMENT_METHOD_CHOICES]
+                    status_choices = [status for status, _ in Payment.PAYMENT_STATUS_CHOICES]
+                    for payment_index in range(1, payments_per_order + 1):
+                        payments_left = payments_per_order - payment_index + 1
+                        if payments_left == 1:
+                            amount = remaining_amount
+                        else:
+                            amount = min(remaining_amount, base_amount)
+                        remaining_amount -= amount
+                        Payment.objects.create(
+                            order=order,
+                            payment_method=choice(method_choices),
+                            payment_status=choice(status_choices),
+                            transaction_id=f"SEED-{order.id}-{payment_index}-{randint(1000,9999)}",
+                            amount_paid=amount
+                        )
 
         self.stdout.write(self.style.SUCCESS('Database seed completed.'))
 
@@ -291,7 +335,7 @@ class Command(BaseCommand):
         img.save(buffer, format='PNG')
         return ContentFile(buffer.getvalue(), 'seed.png')
     
-    def _seed_posts_only(self):
+    def _seed_posts_only(self, feed_posts_per_tenant=5):
         faker = Faker()
 
         tenants = Tenant.objects.select_related('admin').all()
@@ -313,7 +357,7 @@ class Command(BaseCommand):
         total_posts = 0
         for tenant in tenants:
             admin = tenant.admin
-            post_count = randint(3, 8)
+            post_count = max(0, feed_posts_per_tenant)
 
             for _ in range(post_count):
                 post = Post.objects.create(
@@ -346,4 +390,3 @@ class Command(BaseCommand):
             self.stdout.write(self.style.NOTICE(f"Seeded {post_count} posts for {tenant.restaurant_name}"))
 
         self.stdout.write(self.style.SUCCESS(f"✅ Done! Created {total_posts} posts total."))
-

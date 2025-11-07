@@ -19,15 +19,39 @@ fake = Faker()
 class Command(BaseCommand):
     help = 'Seed additional customer data without deleting existing records'
 
+    def add_arguments(self, parser):
+        parser.add_argument(
+            '--customer-count',
+            type=int,
+            default=10,
+            help='Number of customers to create or update'
+        )
+        parser.add_argument(
+            '--addresses-per-customer',
+            type=int,
+            default=3,
+            help='How many addresses to attach to each customer'
+        )
+        parser.add_argument(
+            '--orders-per-customer',
+            type=int,
+            default=5,
+            help='How many historical orders to create per customer'
+        )
+
     def handle(self, *args, **options):
         self.stdout.write("Creating additional customer data...")
+
+        customer_count = options['customer_count']
+        addresses_per_customer = options['addresses_per_customer']
+        orders_per_customer = options['orders_per_customer']
         
         # Get or create customers
-        customers = self._get_or_create_customers(10)
-        self._create_addresses(customers, 3)
+        customers = self._get_or_create_customers(customer_count)
+        self._create_addresses(customers, addresses_per_customer)
         self._update_loyalty_data(customers)
         self._create_carts(customers)
-        orders = self._create_orders(customers, 5)  # 5 orders per user
+        orders = self._create_orders(customers, orders_per_customer)
         self._create_feedback(orders)
         self._create_customer_engagement(customers)  # Engagement with posts
         
