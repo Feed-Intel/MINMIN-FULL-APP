@@ -12,9 +12,17 @@ from restaurant.table.models import Table
 from faker import Faker
 import random
 from django.utils import timezone
+import math
 
 User = get_user_model()
 fake = Faker()
+
+DEFAULT_CUSTOMER_SEED_COUNTS = {
+    "customer_count": 10,
+    "addresses_per_customer": 3,
+    "orders_per_customer": 5,
+}
+
 
 class Command(BaseCommand):
     help = 'Seed additional customer data without deleting existing records'
@@ -23,28 +31,39 @@ class Command(BaseCommand):
         parser.add_argument(
             '--customer-count',
             type=int,
-            default=10,
+            default=DEFAULT_CUSTOMER_SEED_COUNTS["customer_count"],
             help='Number of customers to create or update'
         )
         parser.add_argument(
             '--addresses-per-customer',
             type=int,
-            default=3,
+            default=DEFAULT_CUSTOMER_SEED_COUNTS["addresses_per_customer"],
             help='How many addresses to attach to each customer'
         )
         parser.add_argument(
             '--orders-per-customer',
             type=int,
-            default=5,
+            default=DEFAULT_CUSTOMER_SEED_COUNTS["orders_per_customer"],
             help='How many historical orders to create per customer'
+        )
+        parser.add_argument(
+            '--seed-size',
+            type=float,
+            default=1.0,
+            help='Global multiplier applied to the above counts'
         )
 
     def handle(self, *args, **options):
         self.stdout.write("Creating additional customer data...")
 
-        customer_count = options['customer_count']
-        addresses_per_customer = options['addresses_per_customer']
-        orders_per_customer = options['orders_per_customer']
+        seed_size = max(options.get('seed_size', 1.0), 0.1)
+
+        def scaled(value, minimum=1):
+            return max(minimum, int(math.ceil(value * seed_size)))
+
+        customer_count = scaled(options['customer_count'])
+        addresses_per_customer = scaled(options['addresses_per_customer'])
+        orders_per_customer = scaled(options['orders_per_customer'])
         
         # Get or create customers
         customers = self._get_or_create_customers(customer_count)
@@ -54,7 +73,10 @@ class Command(BaseCommand):
         orders = self._create_orders(customers, orders_per_customer)
         self._create_feedback(orders)
         self._create_customer_engagement(customers)  # Engagement with posts
-        
+        self.stdout.write(self.style.NOTICE(
+            f"Seed summary: customers={len(customers)}, addresses≈{len(customers) * addresses_per_customer}, "
+            f"orders={len(orders)}, seed_size={seed_size}"
+        ))
         self.stdout.write(self.style.SUCCESS("Successfully added customer data!"))
 
     def _get_or_create_customers(self,count):

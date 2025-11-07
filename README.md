@@ -68,6 +68,7 @@ DJANGO_ALLOWED_CORS_ORIGINS=https://<frontend.domain>
 - Need a heavier dataset for performance testing? Pass the override flags through `seed_full`:
   ```bash
   docker compose exec api python manage.py seed_full \
+    --seed-size 3 \
     --restaurants 15 \
     --restaurant-branches 4 \
     --restaurant-tables 25 \
@@ -82,6 +83,7 @@ DJANGO_ALLOWED_CORS_ORIGINS=https://<frontend.domain>
     --orders-per-customer 15
   ```
 - Restaurant overrides mirror the knobs exposed by `seed_restaurant_data` (restaurants, branches, tables, menus, attached customers/orders, feed posts, menu availability ratio, and payments per order); customer overrides feed directly into `seed_customers`.
+- Use `--seed-size <multiplier>` by itself to uniformly scale every default count (restaurants, tables, menus, customers, orders, posts, payments, etc.) without having to pass the individual flags.
 - Seed only restaurants (heavier; downloads images, needs network):
   ```bash
   make db:seed:restaurants

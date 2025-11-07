@@ -82,6 +82,12 @@ class Command(BaseCommand):
             type=int,
             help="Override how many orders to create per customer",
         )
+        parser.add_argument(
+            "--seed-size",
+            type=float,
+            default=1.0,
+            help="Global multiplier applied to both restaurant and customer seed data",
+        )
 
     def handle(self, *args, **options):
         # Set safe seed-time settings to avoid external side effects
@@ -93,6 +99,7 @@ class Command(BaseCommand):
         }
         no_restaurants = options.get("no_restaurants", False)
         no_customers = options.get("no_customers", False)
+        seed_size = options.get("seed_size", 1.0)
         restaurant_seed_kwargs = {
             key: value
             for key, value in (
@@ -105,6 +112,7 @@ class Command(BaseCommand):
                 ("feed_posts_per_tenant", options.get("feed_posts_per_tenant")),
                 ("menu_availability_ratio", options.get("menu_availability_ratio")),
                 ("payments_per_order", options.get("payments_per_order")),
+                ("seed_size", seed_size),
             )
             if value is not None
         }
@@ -114,6 +122,7 @@ class Command(BaseCommand):
                 ("customer_count", options.get("customer_count")),
                 ("addresses_per_customer", options.get("addresses_per_customer")),
                 ("orders_per_customer", options.get("orders_per_customer")),
+                ("seed_size", seed_size),
             )
             if value is not None
         }
