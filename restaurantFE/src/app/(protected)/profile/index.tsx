@@ -580,9 +580,16 @@ const ProfileScreen = () => {
                           'profile.input_placeholder_tax_percentage'
                         )}
                         value={taxPercentage?.toString() ?? ''}
-                        onChangeText={(text) =>
-                          setTaxPercentage(text ? Number(text) : null)
-                        }
+                        onChangeText={(text) => {
+                          if (
+                            (text.match(/^[0-9\S]+$/) &&
+                              Number(text) <= 100 &&
+                              Number(text) >= 0) ||
+                            text === ''
+                          ) {
+                            setTaxPercentage(text ? Number(text) : null);
+                          }
+                        }}
                         keyboardType="numeric"
                         style={styles.input}
                       />
@@ -591,9 +598,18 @@ const ProfileScreen = () => {
                           'profile.input_placeholder_service_charge_percentage'
                         )}
                         value={serviceChargePercentage?.toString() ?? ''}
-                        onChangeText={(text) =>
-                          setServiceChargePercentage(text ? Number(text) : null)
-                        }
+                        onChangeText={(text) => {
+                          if (
+                            (text.match(/^[0-9\S]+$/) &&
+                              Number(text) <= 100 &&
+                              Number(text) >= 0) ||
+                            text === ''
+                          ) {
+                            setServiceChargePercentage(
+                              text ? Number(text) : null
+                            );
+                          }
+                        }}
                         keyboardType="numeric"
                         style={styles.input}
                       />
@@ -604,9 +620,16 @@ const ProfileScreen = () => {
                         'profile.input_placeholder_max_discount'
                       )}
                       value={maxDiscount?.toString() ?? ''}
-                      onChangeText={(text) =>
-                        setMaxDiscount(text ? Number(text) : null)
-                      }
+                      onChangeText={(text) => {
+                        if (
+                          (text.match(/^[0-9\S]+$/) &&
+                            Number(text) <= 100 &&
+                            Number(text) >= 0) ||
+                          text === ''
+                        ) {
+                          setMaxDiscount(text ? Number(text) : null);
+                        }
+                      }}
                       keyboardType="numeric"
                       style={styles.input}
                     />

@@ -253,6 +253,9 @@
     "appetizer": "Appetizer",
     "breakfast": "Breakfast",
     "drinks":"Drinks",
+    "drink": "Drink",
+    "dessert": "Dessert",
+    "main": "Main",
     "lunch": "Lunch",
     "dinner": "Dinner"
   },
@@ -425,7 +428,7 @@
     "itemTaxLabel": "Tax",
     "summaryHeader": "Order Summary",
     "summarySubtotal": "Subtotal",
-    "summaryShipping": "Shipping",
+    "serviceCharge": "Service Charge",
     "summaryTax": "Tax",
     "summaryTotal": "Total",
     "acceptButton": "Accept order",
