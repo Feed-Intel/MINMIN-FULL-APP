@@ -2,9 +2,10 @@ from django.core.management.base import BaseCommand
 from django.core.files.base import ContentFile
 from django.db import transaction
 from faker import Faker
-from decimal import Decimal
-from random import randint, choice, sample
+from decimal import Decimal, ROUND_HALF_UP
+from random import randint, choice, sample, random
 import io
+import math
 from PIL import Image
 
 from accounts.models import User
@@ -17,6 +18,19 @@ from restaurant.menu_availability.models import MenuAvailability
 from restaurant.combo.models import Combo, ComboItem
 from restaurant.discount.models import Discount, DiscountRule, Coupon
 from customer.order.models import Order, OrderItem
+from customer.payment.models import Payment
+
+
+DEFAULT_RESTAURANT_SEED_COUNTS = {
+    "restaurants": 5,
+    "branches": 3,
+    "tables": 10,
+    "menus": 20,
+    "customers": 50,
+    "orders": 5,
+    "feed_posts_per_tenant": 5,
+    "payments_per_order": 1,
+}
 
 
 class Command(BaseCommand):
@@ -25,12 +39,36 @@ class Command(BaseCommand):
     help = "Seed the database with restaurants, customers, menus and orders."
 
     def add_arguments(self, parser):
-        parser.add_argument('--restaurants', type=int, default=5, help='Number of restaurants to create')
-        parser.add_argument('--branches', type=int, default=3, help='Number of branches per restaurant')
-        parser.add_argument('--tables', type=int, default=10, help='Tables per branch')
-        parser.add_argument('--menus', type=int, default=20, help='Menu items per restaurant')
-        parser.add_argument('--customers', type=int, default=50, help='Number of customers to create')
-        parser.add_argument('--orders', type=int, default=5, help='Orders per customer')
+        parser.add_argument('--restaurants', type=int, default=DEFAULT_RESTAURANT_SEED_COUNTS["restaurants"], help='Number of restaurants to create')
+        parser.add_argument('--branches', type=int, default=DEFAULT_RESTAURANT_SEED_COUNTS["branches"], help='Number of branches per restaurant')
+        parser.add_argument('--tables', type=int, default=DEFAULT_RESTAURANT_SEED_COUNTS["tables"], help='Tables per branch')
+        parser.add_argument('--menus', type=int, default=DEFAULT_RESTAURANT_SEED_COUNTS["menus"], help='Menu items per restaurant')
+        parser.add_argument('--customers', type=int, default=DEFAULT_RESTAURANT_SEED_COUNTS["customers"], help='Number of customers to create')
+        parser.add_argument('--orders', type=int, default=DEFAULT_RESTAURANT_SEED_COUNTS["orders"], help='Orders per customer')
+        parser.add_argument(
+            '--feed-posts-per-tenant',
+            type=int,
+            default=DEFAULT_RESTAURANT_SEED_COUNTS["feed_posts_per_tenant"],
+            help='Feed posts to create per restaurant admin'
+        )
+        parser.add_argument(
+            '--menu-availability-ratio',
+            type=float,
+            default=0.66,
+            help='Probability (0-1) that a menu is available per branch'
+        )
+        parser.add_argument(
+            '--payments-per-order',
+            type=int,
+            default=DEFAULT_RESTAURANT_SEED_COUNTS["payments_per_order"],
+            help='Payments to attach to each seeded order (0 to skip)'
+        )
+        parser.add_argument(
+            '--seed-size',
+            type=float,
+            default=1.0,
+            help='Global multiplier applied to all per-entity counts (e.g. 2 doubles everything)'
+        )
         parser.add_argument(
             '--only-posts',
             action='store_true',
@@ -40,16 +78,24 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         faker = Faker()
 
-        restaurants = options['restaurants']
-        branches_per_restaurant = options['branches']
-        tables_per_branch = options['tables']
-        menus_per_restaurant = options['menus']
-        customer_count = options['customers']
-        orders_per_customer = options['orders']
+        seed_size = max(options.get('seed_size', 1.0), 0.1)
+
+        def scaled(value, minimum=1):
+            return max(minimum, int(math.ceil(value * seed_size)))
+
+        restaurants = scaled(options['restaurants'])
+        branches_per_restaurant = scaled(options['branches'])
+        tables_per_branch = scaled(options['tables'])
+        menus_per_restaurant = scaled(options['menus'])
+        customer_count = scaled(options['customers'])
+        orders_per_customer = scaled(options['orders'])
         only_posts = options['only_posts']
+        feed_posts_per_tenant = max(0, int(math.ceil(options['feed_posts_per_tenant'] * seed_size)))
+        menu_availability_ratio = min(max(options['menu_availability_ratio'], 0.0), 1.0)
+        payments_per_order = max(0, int(math.ceil(options['payments_per_order'] * seed_size)))
 
         if only_posts:
-            self._seed_posts_only()
+            self._seed_posts_only(feed_posts_per_tenant)
             self.stdout.write(self.style.SUCCESS('✅ Seeded posts only.'))
             return
 
@@ -138,7 +184,7 @@ class Command(BaseCommand):
                         MenuAvailability.objects.get_or_create(
                             branch=branch,
                             menu_item=menu,
-                            defaults={"is_available": choice([True, True, False])}
+                            defaults={"is_available": random() < menu_availability_ratio}
                         )
 
                     # create combos per branch
@@ -210,7 +256,7 @@ class Command(BaseCommand):
                         discount_amount=Decimal(randint(10, 25)),
                         is_percentage=True,
                     )
-                post_count = randint(3, 8)
+                post_count = feed_posts_per_tenant
                 for _ in range(post_count):
                     post = Post.objects.create(
                         user=admin,
@@ -256,6 +302,8 @@ class Command(BaseCommand):
             )
 
         # create orders
+        order_counter = 0
+        payment_counter = 0
         for customer in customers:
             for _ in range(orders_per_customer):
                 tenant = choice(tenants)
@@ -270,7 +318,9 @@ class Command(BaseCommand):
                     customer=customer,
                     status='placed'
                 )
+                order_counter += 1
                 # order items
+                order_total = Decimal("0.00")
                 for _ in range(randint(1, 5)):
                     menu_choices = [m for m in menus if m.tenant == tenant]
                     menu_item = choice(menu_choices)
@@ -281,6 +331,44 @@ class Command(BaseCommand):
                         quantity=quantity,
                         price=menu_item.price
                     )
+                    order_total += menu_item.price * quantity
+
+                if payments_per_order and order_total > 0:
+                    base_amount = (order_total / payments_per_order).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+                    remaining_amount = order_total
+                    method_choices = [method for method, _ in Payment.PAYMENT_METHOD_CHOICES]
+                    status_choices = [status for status, _ in Payment.PAYMENT_STATUS_CHOICES]
+                    for payment_index in range(1, payments_per_order + 1):
+                        payments_left = payments_per_order - payment_index + 1
+                        if payments_left == 1:
+                            amount = remaining_amount
+                        else:
+                            amount = min(remaining_amount, base_amount)
+                        remaining_amount -= amount
+                        Payment.objects.create(
+                            order=order,
+                            payment_method=choice(method_choices),
+                            payment_status=choice(status_choices),
+                            transaction_id=f"SEED-{order.id}-{payment_index}-{randint(1000,9999)}",
+                            amount_paid=amount
+                        )
+                        payment_counter += 1
+
+        expected_branches = restaurants * branches_per_restaurant
+        expected_tables = expected_branches * tables_per_branch
+        expected_menus = restaurants * menus_per_restaurant
+        summary_parts = [
+            f"restaurants={len(tenants)}",
+            f"branches={len(branches)} (expected {expected_branches})",
+            f"tables={len(tables)} (expected {expected_tables})",
+            f"menus={len(menus)} (expected {expected_menus})",
+            f"customers={len(customers)}",
+            f"orders={order_counter}",
+            f"payments={payment_counter}",
+        ]
+        self.stdout.write(self.style.NOTICE("Seed summary: " + ", ".join(summary_parts)))
+        if len(branches) != expected_branches or len(tables) != expected_tables or len(menus) != expected_menus:
+            self.stdout.write(self.style.WARNING("Counts mismatch detected; please review configuration."))
 
         self.stdout.write(self.style.SUCCESS('Database seed completed.'))
 
@@ -291,7 +379,7 @@ class Command(BaseCommand):
         img.save(buffer, format='PNG')
         return ContentFile(buffer.getvalue(), 'seed.png')
     
-    def _seed_posts_only(self):
+    def _seed_posts_only(self, feed_posts_per_tenant=5):
         faker = Faker()
 
         tenants = Tenant.objects.select_related('admin').all()
@@ -313,7 +401,7 @@ class Command(BaseCommand):
         total_posts = 0
         for tenant in tenants:
             admin = tenant.admin
-            post_count = randint(3, 8)
+            post_count = max(0, feed_posts_per_tenant)
 
             for _ in range(post_count):
                 post = Post.objects.create(
@@ -346,4 +434,3 @@ class Command(BaseCommand):
             self.stdout.write(self.style.NOTICE(f"Seeded {post_count} posts for {tenant.restaurant_name}"))
 
         self.stdout.write(self.style.SUCCESS(f"✅ Done! Created {total_posts} posts total."))
-
