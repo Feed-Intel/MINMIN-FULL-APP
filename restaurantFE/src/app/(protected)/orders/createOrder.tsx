@@ -1,116 +1,70 @@
-import { useRestaurantIdentity } from '@/hooks/useRestaurantIdentity';
-import { useGetCombos } from '@/services/mutation/comboMutation';
-import {
-  useGetMenuAvailabilities,
-  useGetMenus,
-} from '@/services/mutation/menuMutation';
-import { router } from 'expo-router';
-import React, { useEffect, useMemo, useState } from 'react';
+import { useCreateOrder } from '@/services/mutation/orderMutation';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   View,
   ScrollView,
   StyleSheet,
-  Image,
   TextInput,
   Platform,
   TouchableOpacity,
-  ActivityIndicator,
+  Image,
 } from 'react-native';
 import {
   Text,
   Button,
+  Card,
+  Divider,
   DataTable,
-  Searchbar,
   Portal,
   Modal,
-  Chip,
   Checkbox,
+  Chip,
+  Searchbar,
 } from 'react-native-paper';
-import SelectItemMenu from '@/components/MenuSelector';
-import Trash from '@/assets/icons/Trash.svg';
-import Plus from '@/assets/icons/Plus.svg';
-import { useAppSelector } from '@/lib/reduxStore/hooks';
-import { RootState } from '@/lib/reduxStore/store';
+import DeleteIcon from '@/assets/icons/Delete.svg';
+import { useQueryClient } from '@tanstack/react-query';
+import { i18n as I18n } from '@/app/_layout';
 import { useDispatch } from 'react-redux';
+import { useAppSelector } from '@/lib/reduxStore/hooks';
+import { router } from 'expo-router';
+import { PlusCircleIcon as PlusIcon } from 'lucide-react-native';
+import { RootState } from '@/lib/reduxStore/store';
+import { useRestaurantIdentity } from '@/hooks/useRestaurantIdentity';
 import {
   addToCart,
-  setRemarks,
-  updateQuantity,
+  clearCart,
   setCustomerInfo,
+  updateQuantity,
 } from '@/lib/reduxStore/cartSlice';
-import Pagination from '@/components/Pagination';
-import { i18n as I18n } from '@/app/_layout';
+import { useGetMenus } from '@/services/mutation/menuMutation';
 import Toast from 'react-native-toast-message';
 
 const DEFAULT_CATEGORIES = ['Main course', 'Pasta', 'Dessert', 'Drinks'];
-const categories = ['Appetizer', 'Breakfast', 'Lunch', 'Dinner'];
-
-export default function CreateOrder() {
-  const [activeTab, setActiveTab] = useState<'all' | 'combos'>('all');
-  const [currentPage, setCurrentPage] = useState<number>(1);
+export default function AcceptOrders() {
+  const queryClient = useQueryClient();
+  const [showRelatedModal, setShowRelatedModal] = useState(false);
+  const [modalSearchQuery, setModalSearchQuery] = useState('');
+  const [selectedItems, setSelectedItems] = useState<string[]>([]);
+  const [modalSelectedCategory, setModalSelectedCategory] = useState('All');
+  const dispatch = useDispatch();
+  const cart = useAppSelector((state: RootState) => state.cart);
+  const subtotal = cart.items.reduce(
+    (sum, item) => sum + item.price * item.quantity,
+    0
+  );
+  const serviceCharge = (subtotal * (cart.serviceCharge ?? 0)) / 100;
+  const tax = (subtotal * (cart.tax ?? 0)) / 100;
+  const total = (subtotal || 0) + serviceCharge + tax;
   const { data: menus, isLoading: isMenusLoading } = useGetMenus(
     undefined,
     true
   );
-  const [currentMenuItem, setCurrentMenuItem] = useState<any>(null);
-  const { isRestaurant, isBranch, branchId, tenantId } =
-    useRestaurantIdentity();
-  const [selectedBranch, setSelectedBranch] = useState<string | null>(
-    isBranch ? branchId ?? null : null
-  );
-  const [modalSelectedCategory, setModalSelectedCategory] = useState('All');
-  const [modalSearchQuery, setModalSearchQuery] = useState('');
-  const [selectedItems, setSelectedItems] = useState<string[]>([]);
-  const [showRelatedModal, setShowRelatedModal] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [mainSelectedCategory, setMainSelectedCategory] = useState('All');
-  const [apply, setApply] = useState<number>(Date.now());
-  const queryParams = useMemo(() => {
-    const category = mainSelectedCategory === 'All' ? '' : mainSelectedCategory;
-    return {
-      page: currentPage,
-      category,
-      branch:
-        selectedBranch === 'all' || isRestaurant ? undefined : selectedBranch,
-      search: searchTerm,
-    };
-  }, [currentPage, selectedBranch, apply]);
-  const { data: availableMenus } = useGetMenuAvailabilities(queryParams);
-  const queryParamsCombo = useMemo(() => {
-    return {
-      page: currentPage,
-      branch:
-        selectedBranch === 'all' || isRestaurant ? undefined : selectedBranch,
-      search: searchTerm,
-    };
-  }, [currentPage, selectedBranch, apply]);
-  const { data: combos, isLoading: isCombosLoading } = useGetCombos(
-    queryParamsCombo,
-    activeTab === 'combos'
-  );
-  const cart = useAppSelector((state: RootState) => state.cart);
-  const dispatch = useDispatch();
-
-  const remarks = useAppSelector((state: RootState) => state.cart.remarks);
-
+  const { branchId, tenantId } = useRestaurantIdentity();
+  const { mutateAsync: createOrder } = useCreateOrder();
   const newQuantities = cart.items.reduce((acc: any, item: any) => {
     acc[item.id] = item.quantity;
     return acc;
   }, {} as Record<string, number>);
-
-  const getMenuCategories = (menu: any): string[] => {
-    if (Array.isArray(menu?.categories) && menu.categories.length) {
-      return menu.categories;
-    }
-    if (Array.isArray(menu?.category) && menu.category.length) {
-      return menu.category.filter((value: any) => typeof value === 'string');
-    }
-    if (typeof menu?.category === 'string' && menu.category) {
-      return [menu.category];
-    }
-    return [];
-  };
-
   useEffect(() => {
     setSelectedItems(cart.items.map((item) => item.id));
   }, [cart.items]);
@@ -127,13 +81,66 @@ export default function CreateOrder() {
     return ['All', ...Array.from(set).sort((a, b) => a.localeCompare(b))];
   }, [menus]);
 
-  const modalFilteredMenus = menus?.filter((menu) => {
-    if (menu.id === currentMenuItem?.id) {
-      return false;
+  const getMenuCategories = (menu: any): string[] => {
+    if (Array.isArray(menu?.categories) && menu.categories.length) {
+      return menu.categories;
     }
+    if (Array.isArray(menu?.category) && menu.category.length) {
+      return menu.category.filter((value: any) => typeof value === 'string');
+    }
+    if (typeof menu?.category === 'string' && menu.category) {
+      return [menu.category];
+    }
+    return [];
+  };
+
+  const handlePlaceOrder = async () => {
+    if (
+      cart.customerName === '' ||
+      cart.contactNumber === '' ||
+      cart.tinNumber === ''
+    ) {
+      Toast.show({
+        type: 'error',
+        text1: I18n.t('Common.error_title'),
+        text2: I18n.t('createOrderScreen.errorCustomerInfo'),
+      });
+      return;
+    }
+    const orderData = {
+      tenant: tenantId,
+      branch: branchId,
+      customer_name: cart.customerName,
+      customer_phone: cart.contactNumber,
+      customer_tinNo: cart.tinNumber,
+      table: '',
+      coupon: '',
+      items: cart.items.map((item: any) => ({
+        menu_item: item.id,
+        quantity: newQuantities[item.id] || 1,
+        price: item.price,
+        remarks: cart.remarks[item.id],
+      })),
+    };
+    // const transactionID = generateTransactionID();
+    await createOrder(orderData);
+    await queryClient.invalidateQueries({ queryKey: ['orders'] });
+    dispatch(clearCart());
+    router.replace('/(protected)/orders');
+  };
+
+  const handleCancelOrder = () => {
+    dispatch(clearCart());
+    router.replace('/(protected)/orders');
+  };
+
+  const modalFilteredMenus = menus?.filter((menu) => {
+    // if (selectedItems.includes(menu.id || '')) {
+    //   return false;
+    // }
     const categories = getMenuCategories(menu);
     const matchesCategory =
-      modalSelectedCategory === 'All' || // Check against translated 'All'
+      modalSelectedCategory === 'All' ||
       categories.includes(modalSelectedCategory);
     const categoryText = categories.join(' ');
 
@@ -144,59 +151,12 @@ export default function CreateOrder() {
     );
   });
 
-  const openRelatedModal = (menu: any) => {
-    setCurrentMenuItem(menu);
-    setModalSearchQuery('');
-    setModalSelectedCategory('All'); // Use translated 'All'
-    setShowRelatedModal(true);
-  };
-
-  const toggleItemSelection = (itemId: string) => {
-    setSelectedItems((prev) =>
-      prev.includes(itemId)
-        ? prev.filter((id) => id !== itemId)
-        : [...prev, itemId]
-    );
-  };
-
-  const handleQuantityChange = (menu: any, increment: boolean) => {
-    if (newQuantities[menu.id] === undefined) {
-      dispatch(
-        addToCart({
-          item: {
-            id: menu.id!,
-            name: menu.name,
-            description: menu.description,
-            price: parseFloat(menu.price),
-            quantity: 1,
-            image: menu.image,
-          },
-          restaurantId: tenantId!,
-          branchId: branchId!,
-          tableId: '',
-          paymentAPIKEY: menu?.tenant.CHAPA_API_KEY,
-          paymentPUBLICKEY: menu?.tenant.CHAPA_PUBLIC_KEY || '',
-          tax: menu.tenant.tax || 0,
-          serviceCharge: menu.tenant.service_charge || 0,
-        })
-      );
-    } else {
-      dispatch(
-        updateQuantity({
-          id: menu.id,
-          quantity: increment
-            ? (newQuantities[menu.id] || 0) + 1
-            : Math.max((newQuantities[menu.id] || 0) - 1, 0),
-        })
-      );
-    }
-  };
-
   const handleAddRelatedItem = () => {
     selectedItems.map((Ritem) => {
       const existingItem: any = cart.items.find((item) => item.id === Ritem);
       if (!existingItem) {
         const item = modalFilteredMenus?.find((t: any) => t.id === Ritem);
+        console.log(item);
         dispatch(
           addToCart({
             item: {
@@ -221,408 +181,249 @@ export default function CreateOrder() {
     setShowRelatedModal(false);
   };
 
+  const toggleItemSelection = (itemId: string) => {
+    setSelectedItems((prev) =>
+      prev.includes(itemId)
+        ? prev.filter((id) => id !== itemId)
+        : [...prev, itemId]
+    );
+  };
+
+  const handleQuantityChangeDelete = (id: string) => {
+    dispatch(
+      updateQuantity({
+        id,
+        quantity: Math.max((newQuantities[id] || 0) - 1, 0),
+      })
+    );
+  };
+
+  const handleQuantityChangeAdd = (id: string) => {
+    dispatch(
+      updateQuantity({
+        id,
+        quantity: Math.max((newQuantities[id] || 0) + 1, 0),
+      })
+    );
+  };
+
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.header}>
-        {I18n.t('createOrderScreen.headerTitle')}
-      </Text>
+      <Text style={styles.header}>{I18n.t('acceptOrders.header')}</Text>
 
       {/* Customer Info */}
       <View style={styles.row}>
         <TextInput
-          placeholder={I18n.t('createOrderScreen.contactNumberPlaceholder')}
+          placeholder={I18n.t('acceptOrders.placeholderCustomerName')}
           style={styles.input}
-          keyboardType="phone-pad"
+          value={cart.customerName}
+          onChangeText={(text: string) => {
+            dispatch(setCustomerInfo({ customerName: text }));
+          }}
+        />
+        <TextInput
+          placeholder={I18n.t('acceptOrders.placeholderContactNumber')}
+          style={styles.input}
           value={cart.contactNumber}
           onChangeText={(text) => {
             const cleaned = text.replace(/[^0-9.]/g, '');
             dispatch(setCustomerInfo({ contactNumber: cleaned }));
           }}
         />
+      </View>
+      <View style={styles.row}>
         <TextInput
-          placeholder={I18n.t('createOrderScreen.customerNamePlaceholder')}
-          value={cart.customerName}
-          style={styles.input}
-          onChangeText={(text) => {
-            dispatch(setCustomerInfo({ customerName: text }));
-          }}
-        />
-        <TextInput
-          placeholder={I18n.t('createOrderScreen.tinNumberPlaceholder')}
+          placeholder={I18n.t('acceptOrders.placeholderTinNumber')}
           style={styles.input}
           value={cart.tinNumber}
           onChangeText={(text) => {
             dispatch(setCustomerInfo({ tinNumber: text }));
           }}
         />
-      </View>
-
-      {/* Filters */}
-      <View style={styles.filterRow}>
-        <TextInput
-          placeholder={I18n.t('createOrderScreen.filterItemNamePlaceholder')}
-          style={styles.filterInput}
-          value={searchTerm}
-          onChangeText={(text: string) => setSearchTerm(text)}
-        />
-        <SelectItemMenu
-          onSelectColor={setMainSelectedCategory}
-          OPTIONS={categories.map((item) => ({
-            value: item,
-            label: I18n.t(`categories.${item.toLowerCase()}`),
-          }))}
-          placeholder={I18n.t('createOrderScreen.filterCategoryPlaceholder')}
-        />
-        {/* <TextInput placeholder={} style={styles.filterInput} /> */}
         <Button
           mode="contained"
-          style={styles.applyButton}
+          style={styles.addButton}
           labelStyle={{ color: '#fff' }}
-          onPress={() => {
-            setApply(Date.now());
-          }}
+          onPress={() => setShowRelatedModal(true)}
         >
-          {I18n.t('createOrderScreen.applyButton')}
+          {I18n.t('acceptOrders.addItemButton')}
         </Button>
       </View>
 
-      {/* Table Header */}
-      <View style={styles.tabContainer}>
-        <View style={styles.tabGroup}>
-          <TouchableOpacity
-            style={[styles.tabButton, activeTab === 'all' && styles.activeTab]}
-            onPress={() => setActiveTab('all')}
-          >
-            <Text
-              style={[
-                styles.tabLabel,
-                activeTab === 'all' && styles.activeTabLabel,
-              ]}
-            >
-              {I18n.t('createOrderScreen.allTab')}
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[
-              styles.tabButton,
-              activeTab === 'combos' && styles.activeTab,
-            ]}
-            onPress={() => setActiveTab('combos')}
-          >
-            <Text
-              style={[
-                styles.tabLabel,
-                activeTab === 'combos' && styles.activeTabLabel,
-              ]}
-            >
-              {I18n.t('createOrderScreen.combosTab')}
-            </Text>
-          </TouchableOpacity>
-        </View>
-      </View>
+      <View style={styles.tableWrapper}>
+        <DataTable>
+          <DataTable.Header style={styles.tableHeader}>
+            <DataTable.Title style={[styles.headerCell, { flex: 1.6 }]}>
+              <Text variant="bodyMedium" style={styles.headerCellText}>
+                {I18n.t('acceptOrders.tableHeaderName')}
+              </Text>
+            </DataTable.Title>
+            <DataTable.Title style={[styles.headerCell, { flex: 1.2 }]}>
+              <Text variant="bodyMedium" style={styles.headerCellText}>
+                {I18n.t('acceptOrders.tableHeaderPrice')}
+              </Text>
+            </DataTable.Title>
+            <DataTable.Title style={[styles.headerCell, { flex: 1.1 }]}>
+              <Text variant="bodyMedium" style={styles.headerCellText}>
+                {I18n.t('acceptOrders.tableHeaderQty')}
+              </Text>
+            </DataTable.Title>
+            <DataTable.Title style={[styles.headerCell, { flex: 1 }]}>
+              <Text variant="bodyMedium" style={styles.headerCellText}>
+                {I18n.t('acceptOrders.tableHeaderRemark')}
+              </Text>
+            </DataTable.Title>
+            <DataTable.Title style={[styles.headerCell, { flex: 1.6 }]}>
+              <Text variant="bodyMedium" style={styles.headerCellText}>
+                {I18n.t('acceptOrders.tableHeaderTax')}
+              </Text>
+            </DataTable.Title>
+            <DataTable.Title style={[styles.headerCell, { flex: 1.4 }]}>
+              <Text variant="bodyMedium" style={styles.headerCellText}>
+                {I18n.t('acceptOrders.tableHeaderTotal')}
+              </Text>
+            </DataTable.Title>
+            <DataTable.Title style={[styles.headerCell, { flex: 1.5 }]}>
+              <Text variant="bodyMedium" style={styles.headerCellText}>
+                {I18n.t('acceptOrders.tableHeaderAction')}
+              </Text>
+            </DataTable.Title>
+          </DataTable.Header>
+          {cart?.items.map((item) => {
+            // const nextStatus = getNextStatus(order.status);
+            // const statusMeta = STATUS_DISPLAY[order.status] ?? {
+            //  label: order.status.replace(/_/g, ' '),
+            //  borderColor: '#D6DCCD',
+            //  backgroundColor: '#EEF1EB',
+            //  textColor: '#21281B',
+            // };
+            // const orderChannel = getChannelFromOrder(order);
+            // const isHighlighted = Boolean(highlightedOrders[order.id]);
 
-      {/* Loading Indicator */}
-      {isMenusLoading && (
-        <ActivityIndicator
-          animating={true}
-          size="large"
-          color="#91B275"
-          style={styles.loader}
-          accessibilityLabel={I18n.t('createOrderScreen.loading')}
-        />
-      )}
-
-      {/* Menu Items Table */}
-      {activeTab === 'all' && !isMenusLoading && (
-        <View style={styles.card}>
-          <DataTable>
-            <DataTable.Header style={styles.tableHeader}>
-              <DataTable.Title style={styles.imageHeader}>
-                {' '}
-                <Text style={styles.tableTitle}>
-                  {I18n.t('createOrderScreen.tableHeaderImage')}
-                </Text>
-              </DataTable.Title>
-              <DataTable.Title>
-                {' '}
-                <Text style={styles.tableTitle}>
-                  {I18n.t('createOrderScreen.tableHeaderName')}
-                </Text>
-              </DataTable.Title>
-              <DataTable.Title>
-                {' '}
-                <Text style={styles.tableTitle}>
-                  {I18n.t('createOrderScreen.tableHeaderCategory')}
-                </Text>
-              </DataTable.Title>
-              <DataTable.Title>
-                {' '}
-                <Text style={styles.tableTitle}>
-                  {I18n.t('createOrderScreen.tableHeaderPrice')}
-                </Text>
-              </DataTable.Title>
-              <DataTable.Title>
-                {' '}
-                <Text style={styles.tableTitle}>
-                  {I18n.t('createOrderScreen.tableHeaderRemark')}
-                </Text>
-              </DataTable.Title>
-              <DataTable.Title>
-                {' '}
-                <Text style={styles.tableTitle}>
-                  {I18n.t('createOrderScreen.tableHeaderQuantity')}
-                </Text>
-              </DataTable.Title>
-              <DataTable.Title>
-                {' '}
-                <Text style={styles.tableTitle}>
-                  {I18n.t('createOrderScreen.tableHeaderRelatedItems')}
-                </Text>
-              </DataTable.Title>
-              <DataTable.Title>
-                {' '}
-                <Text style={styles.tableTitle}>
-                  {I18n.t('createOrderScreen.tableHeaderActions')}
-                </Text>
-              </DataTable.Title>
-            </DataTable.Header>
-
-            {availableMenus?.results?.map((menu: any) => {
-              const categories = getMenuCategories(menu.menu_item);
-              const categoriesLabel = categories.length
-                ? categories.join(', ')
-                : I18n.t('createOrderScreen.noCategory'); // Translated '—'
-
-              return (
-                <DataTable.Row key={menu.id} style={styles.tableRow}>
-                  <DataTable.Cell style={styles.imageCell}>
-                    <Image
-                      source={{ uri: menu.menu_item.image }}
-                      style={styles.menuImage}
-                    />
-                  </DataTable.Cell>
-                  <DataTable.Cell style={{ flex: 1 }}>
-                    <Text style={styles.menuName}>{menu.menu_item.name}</Text>
-                  </DataTable.Cell>
-                  <DataTable.Cell style={{ flex: 0.9 }}>
-                    <Text style={styles.categoryTag}>{categoriesLabel}</Text>
-                  </DataTable.Cell>
-                  <DataTable.Cell style={{ flex: 0.9 }}>
-                    <Text style={styles.menuPrice}>
-                      ${menu.menu_item.price}
+            return (
+              <DataTable.Row
+                key={item.id}
+                // onPress={() => openOrderDetail(order.id)}
+                style={[
+                  styles.row,
+                  // isHighlighted && styles.highlightedRow
+                ]}
+              >
+                <DataTable.Cell style={[styles.cell, { flex: 1 }]}>
+                  <View>
+                    <Text
+                      numberOfLines={1}
+                      // variant={isSmallScreen ? 'bodySmall' : 'bodyMedium'}
+                      style={styles.cellText}
+                    >
+                      {item.name}
                     </Text>
-                  </DataTable.Cell>
-                  <DataTable.Cell>
-                    <TextInput
-                      placeholder={I18n.t(
-                        'createOrderScreen.remarkPlaceholder'
-                      )}
-                      style={{ ...styles.input, height: 50, maxWidth: 80 }}
-                      value={remarks[menu.menu_item.id!] || ''}
-                      onChangeText={(text) =>
-                        dispatch(setRemarks({ [menu.menu_item.id!]: text }))
-                      }
-                    />
-                  </DataTable.Cell>
-                  <DataTable.Cell>
-                    <View
-                      style={{
-                        flexDirection: 'row',
-                        justifyContent: 'space-between',
-                        borderWidth: 1,
-                        borderColor: '#5D6E4933',
-                        borderRadius: 10,
-                        padding: 10,
-                        width: 100,
-                      }}
-                    >
-                      <TouchableOpacity
-                        onPress={() =>
-                          handleQuantityChange(menu.menu_item, false)
-                        }
-                      >
-                        <Trash color={'#22281B'} height={16} />
-                      </TouchableOpacity>
-                      <Text style={{ color: '#22281B', fontWeight: 'bold' }}>
-                        {newQuantities[menu.menu_item.id!] || 0}
-                      </Text>
-                      <TouchableOpacity
-                        onPress={() =>
-                          handleQuantityChange(menu.menu_item, true)
-                        }
-                      >
-                        <Plus color={'#22281B'} height={16} />
-                      </TouchableOpacity>
-                    </View>
-                  </DataTable.Cell>
-                  <DataTable.Cell>
-                    <Button
-                      mode="outlined"
-                      onPress={() => openRelatedModal(menu.menu_item)}
-                      style={styles.relatedButton}
-                      labelStyle={styles.relatedButtonLabel}
-                    >
-                      {selectedItems.length != 0
-                        ? I18n.t('createOrderScreen.relatedItemUpdate')
-                        : I18n.t('createOrderScreen.relatedItemAdd')}
-                    </Button>
-                  </DataTable.Cell>
-                  <DataTable.Cell>
-                    <View style={styles.actionsContainer}>
-                      <Button
-                        mode="text"
-                        onPress={() => {
-                          dispatch(
-                            addToCart({
-                              item: {
-                                id: menu.menu_item.id!,
-                                name: menu.menu_item.name,
-                                description: menu.menu_item.description,
-                                price: parseFloat(menu.menu_item.price),
-                                quantity: 1,
-                                image: menu.menu_item.image,
-                              },
-                              restaurantId: tenantId!,
-                              branchId: branchId!,
-                              tableId: '',
-                              paymentAPIKEY:
-                                menu?.menu_item.tenant.CHAPA_API_KEY,
-                              paymentPUBLICKEY:
-                                menu?.menu_item.tenant.CHAPA_PUBLIC_KEY || '',
-                              tax: menu.menu_item.tenant.tax || 0,
-                              serviceCharge:
-                                menu.menu_item.tenant.service_charge || 0,
-                            })
-                          );
-                        }}
-                        contentStyle={styles.deleteButtonContent}
-                        labelStyle={styles.deleteButtonLabel}
-                        style={styles.actionButton}
-                      >
-                        {I18n.t('createOrderScreen.orderButton')}
-                      </Button>
-                    </View>
-                  </DataTable.Cell>
-                </DataTable.Row>
-              );
-            })}
-          </DataTable>
-          <Pagination
-            totalPages={Math.round(availableMenus?.count! / 10) || 0}
-            currentPage={currentPage}
-            onPageChange={setCurrentPage}
-          />
-        </View>
-      )}
-
-      {/* Combos Table */}
-      {activeTab === 'combos' && !isCombosLoading && (
-        <View style={styles.card}>
-          <DataTable>
-            <DataTable.Header style={styles.tableHeader}>
-              <DataTable.Title>
-                {' '}
-                <Text style={styles.tableTitle}>
-                  {I18n.t('createOrderScreen.tableHeaderName')}
-                </Text>
-              </DataTable.Title>
-              <DataTable.Title>
-                {' '}
-                <Text style={styles.tableTitle}>
-                  {I18n.t('createOrderScreen.comboHeaderBranch')}
-                </Text>
-              </DataTable.Title>
-              <DataTable.Title>
-                {' '}
-                <Text style={styles.tableTitle}>
-                  {I18n.t('createOrderScreen.tableHeaderPrice')}
-                </Text>
-              </DataTable.Title>
-              <DataTable.Title>
-                {' '}
-                <Text style={styles.tableTitle}>
-                  {I18n.t('createOrderScreen.comboHeaderCustom')}
-                </Text>
-              </DataTable.Title>
-              <DataTable.Title>
-                {' '}
-                <Text style={styles.tableTitle}>
-                  {I18n.t('createOrderScreen.tableHeaderActions')}
-                </Text>
-              </DataTable.Title>
-            </DataTable.Header>
-
-            {combos?.results?.map((combo) => (
-              <DataTable.Row key={combo.id}>
-                <DataTable.Cell>
-                  <Text style={styles.menuName}>{combo.name}</Text>
-                </DataTable.Cell>
-                <DataTable.Cell>
-                  <Text style={styles.branchName}>
-                    {typeof combo.branch === 'object'
-                      ? combo.branch.address
-                      : combo.branch}
-                  </Text>
-                </DataTable.Cell>
-                <DataTable.Cell>
-                  <Text style={styles.menuPrice}>${combo.combo_price}</Text>
-                </DataTable.Cell>
-                <DataTable.Cell>
-                  <Chip
-                    mode="outlined"
-                    style={styles.customChip}
-                    textStyle={styles.customChipText}
-                  >
-                    {combo.is_custom
-                      ? I18n.t('createOrderScreen.comboCustomYes')
-                      : I18n.t('createOrderScreen.comboCustomNo')}
-                  </Chip>
-                </DataTable.Cell>
-                <DataTable.Cell>
-                  <View style={styles.actionsContainer}>
-                    <Button
-                      mode="text"
-                      onPress={() => {
-                        dispatch(
-                          addToCart({
-                            item: {
-                              id: combo.id!,
-                              name: combo.name,
-                              description: '',
-                              price: combo.combo_price!,
-                              quantity: 1,
-                              image: '',
-                            },
-                            restaurantId: tenantId!,
-                            branchId: branchId!,
-                            tableId: '',
-                            paymentAPIKEY: combo?.tenant.CHAPA_API_KEY,
-                            paymentPUBLICKEY:
-                              combo?.tenant.CHAPA_PUBLIC_KEY || '',
-                            tax: combo.tenant.tax || 0,
-                            serviceCharge: combo.tenant.service_charge || 0,
-                          })
-                        );
-                      }}
-                      contentStyle={styles.deleteButtonContent}
-                      labelStyle={styles.deleteButtonLabel}
-                      icon="delete-outline"
-                      style={styles.actionButton}
-                    >
-                      {I18n.t('createOrderScreen.orderButton')}
-                    </Button>
                   </View>
                 </DataTable.Cell>
+                <DataTable.Cell style={[styles.cell, { flex: 1 }]}>
+                  <Text variant="bodySmall" style={styles.cellText}>
+                    {item.price}
+                  </Text>
+                </DataTable.Cell>
+                <DataTable.Cell style={[styles.cell, { flex: 0.7 }]}>
+                  <View style={styles.channelBadge}>
+                    <Text style={styles.channelBadgeText}>{item.quantity}</Text>
+                  </View>
+                </DataTable.Cell>
+                <DataTable.Cell style={[styles.cell, { flex: 1 }]}>
+                  <Text style={styles.cellText}>
+                    {cart.remarks[item.id] || ''}
+                  </Text>
+                </DataTable.Cell>
+                <DataTable.Cell style={[styles.cell, { flex: 0.9 }]}>
+                  <Text
+                    numberOfLines={1}
+                    // variant={isSmallScreen ? 'bodySmall' : 'bodyMedium'}
+                    style={[styles.cellText, { paddingRight: 55 }]}
+                  >
+                    {cart.tax ?? 0 / 100}
+                  </Text>
+                </DataTable.Cell>
+                <DataTable.Cell style={[styles.cell, { flex: 1 }]}>
+                  <Text
+                    numberOfLines={2}
+                    // variant={isSmallScreen ? 'bodySmall' : 'bodyMedium'}
+                    style={styles.cellText}
+                  >
+                    {item.price * item.quantity}
+                  </Text>
+                </DataTable.Cell>
+                <DataTable.Cell style={[styles.cell, { flex: 1, rowGap: 10 }]}>
+                  <TouchableOpacity
+                    onPress={() => handleQuantityChangeAdd(item.id)}
+                  >
+                    <PlusIcon color={'#91B275'} height={25.55} />
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => handleQuantityChangeDelete(item.id)}
+                  >
+                    <DeleteIcon color={'#91B275'} height={25.55} />
+                  </TouchableOpacity>
+                </DataTable.Cell>
               </DataTable.Row>
-            ))}
-          </DataTable>
-          <Pagination
-            totalPages={Math.round(combos?.count! / 10) || 0}
-            currentPage={currentPage}
-            onPageChange={setCurrentPage}
-          />
-        </View>
-      )}
+            );
+          })}
+        </DataTable>
+      </View>
+
+      {/* Order Summary */}
+      <Card style={styles.summaryCard}>
+        <Card.Content style={{ flex: 1 }}>
+          <Text style={{ color: '#21281B', fontWeight: 'bold' }}>
+            {I18n.t('acceptOrders.summaryHeader')}
+          </Text>
+          <View style={styles.summaryRow}>
+            <Text style={{ color: '#202B189E' }}>
+              {I18n.t('acceptOrders.summarySubtotal')}
+            </Text>
+            <Text style={{ color: '#202B189E' }}>${subtotal?.toFixed(2)}</Text>
+          </View>
+          <View style={styles.summaryRow}>
+            <Text style={{ color: '#202B189E' }}>
+              {I18n.t('acceptOrders.serviceCharge')}
+            </Text>
+            <Text style={{ color: '#202B189E' }}>
+              ${serviceCharge.toFixed(2)}
+            </Text>
+          </View>
+          <View style={styles.summaryRow}>
+            <Text style={{ color: '#202B189E' }}>
+              {I18n.t('acceptOrders.summaryTax')}
+            </Text>
+            <Text style={{ color: '#202B189E' }}>${tax.toFixed(2)}</Text>
+          </View>
+          <Divider style={{ marginVertical: 6 }} />
+          <View style={styles.summaryRow}>
+            <Text style={styles.totalLabel}>
+              {I18n.t('acceptOrders.summaryTotal')}
+            </Text>
+            <Text style={styles.totalValue}>${total.toFixed(2)}</Text>
+          </View>
+        </Card.Content>
+        <Card.Actions style={styles.actions}>
+          <Button
+            mode="contained"
+            style={styles.acceptButton}
+            labelStyle={{ color: '#fff' }}
+            onPress={handlePlaceOrder}
+          >
+            {I18n.t('orderReview.placeOrderButton')}
+          </Button>
+          <Button
+            mode="outlined"
+            style={styles.cancelButton}
+            labelStyle={{ color: '#000' }}
+            onPress={handleCancelOrder}
+          >
+            {I18n.t('orderReview.cancelOrderButton')}
+          </Button>
+        </Card.Actions>
+      </Card>
       <Portal>
         <Modal
           visible={showRelatedModal}
@@ -630,14 +431,6 @@ export default function CreateOrder() {
           contentContainerStyle={styles.modalContainer}
         >
           <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalHeaderText}>
-                {I18n.t('createOrderScreen.modalHeaderFor', {
-                  itemName: currentMenuItem?.name,
-                })}
-              </Text>
-            </View>
-
             <View style={styles.searchContainer}>
               <Searchbar
                 placeholder={I18n.t('createOrderScreen.modalSearchPlaceholder')}
@@ -729,44 +522,6 @@ export default function CreateOrder() {
           </View>
         </Modal>
       </Portal>
-
-      {/* Footer */}
-      {cart.items.length !== 0 && (
-        <View style={styles.footer}>
-          <View>
-            <Text style={styles.footerText}>
-              {I18n.t('createOrderScreen.footerItemsAdded', {
-                count: cart.items.length,
-              })}
-            </Text>
-            <Text style={styles.footerTextDescription}>
-              {I18n.t('createOrderScreen.footerDescription')}
-            </Text>
-          </View>
-          <Button
-            mode="contained"
-            style={{ backgroundColor: '#91B275' }}
-            labelStyle={{ color: '#fff' }}
-            onPress={() => {
-              if (
-                !cart.contactNumber ||
-                !cart.customerName ||
-                !cart.tinNumber
-              ) {
-                Toast.show({
-                  type: 'error',
-                  text1: I18n.t('Common.error_title'),
-                  text2: I18n.t('createOrderScreen.errorCustomerInfo'),
-                });
-                return;
-              }
-              router.push('/(protected)/orders/orderReview');
-            }}
-          >
-            {I18n.t('createOrderScreen.reviewOrdersButton')}
-          </Button>
-        </View>
-      )}
     </ScrollView>
   );
 }
@@ -774,13 +529,12 @@ export default function CreateOrder() {
 const styles = StyleSheet.create({
   container: {
     padding: 16,
-    backgroundColor: '#F6F9F4',
+    backgroundColor: '#EFF4EB',
   },
   header: {
-    fontSize: 34,
+    fontSize: 22,
     fontWeight: 'bold',
     marginBottom: 16,
-    color: '#000',
   },
   row: {
     flexDirection: 'row',
@@ -788,7 +542,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   input: {
-    flex: 1,
+    width: 600,
     paddingHorizontal: 12,
     height: 50,
     paddingVertical: Platform.OS === 'ios' ? 14 : 10,
@@ -799,161 +553,190 @@ const styles = StyleSheet.create({
     color: '#2E3A24',
     backgroundColor: '#91B27517',
   },
-  filterRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+  addButton: {
     marginBottom: 16,
-  },
-  filterInput: {
-    flex: 1,
-    maxWidth: 200,
-    paddingHorizontal: 12,
-    height: 50,
-    paddingVertical: Platform.OS === 'ios' ? 14 : 10,
-    borderWidth: 1,
-    borderColor: '#C7D3C1',
-    borderRadius: 10,
-    fontSize: 16,
-    color: '#2E3A24',
-    backgroundColor: '#91B27517',
-  },
-  applyButton: {
-    height: 48,
-    justifyContent: 'center',
     backgroundColor: '#91B275',
   },
-  tabContainer: {
-    borderColor: '#5E6E4933',
-    borderBottomWidth: 1,
-  },
-  tabGroup: {
-    flexDirection: 'row',
-    justifyContent: 'flex-start',
-    alignItems: 'flex-start',
-    borderRadius: 6,
-    padding: 2,
-  },
-  tabButton: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-  },
-  activeTab: {
-    borderBottomWidth: 1,
-    borderBottomColor: '#96B76E',
-  },
-  tabLabel: {
-    color: '#8D8D8D',
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  activeTabLabel: {
-    color: '#96B76E',
-  },
   card: {
-    backgroundColor: '#EFF4EB',
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    marginBottom: 24,
+    marginBottom: 12,
   },
-  loader: {
-    marginVertical: 24,
+  // itemRow: {
+  //   flexDirection: 'row',
+  //   justifyContent: 'space-between',
+  //   alignItems: 'center',
+  //   marginVertical: 6,
+  // },
+  // itemName: {
+  //   fontSize: 16,
+  //   fontWeight: '500',
+  // },
+  qtyInput: {
+    flex: 0.3,
+    marginRight: 8,
+  },
+  remarkInput: {
+    flex: 0.7,
+  },
+  summaryCard: {
+    marginTop: 16,
+    backgroundColor: '#D7E0CF',
+    height: 270,
+    width: 430,
+    borderRadius: 10,
+    alignSelf: 'flex-end',
+  },
+  summaryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginVertical: 4,
+  },
+  totalLabel: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#202B189E',
+  },
+  totalValue: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#000000',
+  },
+  actions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 20,
+  },
+  acceptButton: {
+    flex: 1,
+    marginRight: 8,
+    backgroundColor: '#91B275',
+  },
+  cancelButton: {
+    flex: 1,
+    marginLeft: 8,
   },
   tableHeader: {
-    borderBottomWidth: 1.5,
-    borderBottomColor: '#20291933',
+    borderBottomWidth: 1,
+    borderBottomColor: '#EAEAEA',
   },
-  imageHeader: {
-    width: 60,
+  tableWrapper: {
+    borderRadius: 12,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#E1E5DC',
+    backgroundColor: '#EFF4EB',
   },
-  tableTitle: {
-    fontWeight: '500',
-    color: '#4A4A4A',
-    fontSize: 13,
-    flex: 0,
-  },
-  tableRow: {
-    borderBottomWidth: 1.5,
-    borderBottomColor: '#20291933',
-  },
-  imageCell: {
-    width: 42,
-    justifyContent: 'flex-start',
-    flex: 0.9,
-  },
-  menuImage: {
-    width: 61,
-    height: 62,
-    borderRadius: 10,
-  },
-  menuName: {
-    fontWeight: '500',
-    color: '#22281B',
-    fontSize: 17,
-  },
-  branchName: {
-    color: '#5F7A3D',
-    fontSize: 17,
-  },
-  categoryTag: {
-    color: '#40392B',
-    fontSize: 17,
-  },
-  customChip: {
-    backgroundColor: '#E9F0F7',
-    borderColor: '#7591B2',
-    height: 24,
-  },
-  customChipText: {
-    color: '#3D5F7A',
-    fontSize: 12,
-  },
-  menuPrice: {
-    fontWeight: '500',
-    color: '#22281B',
-    fontSize: 17,
-  },
-  relatedButton: {
-    borderColor: '#6E504933',
-    borderWidth: 1.5,
-    borderRadius: 16,
-    height: 36,
+  headerCell: {
     justifyContent: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 8,
   },
-  relatedButtonLabel: {
-    color: '#281D1B',
+  actionButton: {
+    borderColor: '#6E504933',
+    borderRadius: 999,
+  },
+  highlightedRow: {
+    backgroundColor: '#F1F8E9',
+  },
+  headerCellText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#4A4A4A',
+  },
+  cellText: {
     fontSize: 15,
     fontWeight: '500',
-    alignSelf: 'center',
+    color: '#4A4A4A',
   },
-  actionsContainer: {
+  statusPill: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    alignSelf: 'flex-start',
+    borderWidth: 1,
+  },
+  actionButtonLabel: {
+    color: '#281D1B',
+    fontSize: 14,
+  },
+  cell: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+    flex: 1,
+    justifyContent: 'center',
+  },
+  channelBadge: {
+    backgroundColor: '#EEF1EB',
+    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  channelBadgeText: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#3A4A2A',
+  },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  searchBar: {
+    flex: 1,
+    backgroundColor: '#91B27517',
+    borderRadius: 100,
+    height: 40,
+    elevation: 0,
+  },
+  categoryContainer: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 16,
+    paddingVertical: 4,
+  },
+  addItemButton: {
+    backgroundColor: '#91B275',
+    borderRadius: 100,
+    height: 36,
+    width: '100%',
+  },
+  selectedItemsText: {
+    marginTop: 6,
+    fontSize: 15,
+    fontWeight: '400',
+    color: '#2E191466',
+  },
+  categoryChip: {
+    borderRadius: 100,
+    backgroundColor: '#91B27517',
+    borderColor: '#91B275',
+    borderWidth: 0,
+    height: 32,
+  },
+  selectedCategoryChip: {
+    backgroundColor: '#96B76E',
+  },
+  categoryChipText: {
+    color: '#5F7A3D',
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  selectedCategoryChipText: {
+    color: '#FFFFFF',
+  },
+  footer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    gap: 16,
+    marginTop: 20,
+    padding: 12,
+    backgroundColor: '#E9F6E9',
+    borderRadius: 6,
   },
-  actionButton: {
-    minWidth: 0,
-    padding: 0,
-  },
-  deleteButtonContent: {
-    justifyContent: 'center',
-    alignItems: 'center',
-    alignSelf: 'center',
-    backgroundColor: '#91B275',
-    borderRadius: 50,
-    width: 150,
-    height: 40,
-  },
-  deleteButtonLabel: {
-    color: '#fff',
-    fontWeight: '500',
-    marginHorizontal: 10,
-  },
-  toggleContainer: {
-    marginLeft: 4,
+  footerText: {
+    fontWeight: '600',
+    color: '#040404',
   },
   modalContainer: {
     backgroundColor: '#EBF1E6',
@@ -1025,69 +808,5 @@ const styles = StyleSheet.create({
     flexDirection: 'column',
     justifyContent: 'space-between',
     alignItems: 'center',
-  },
-  searchContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  searchBar: {
-    flex: 1,
-    backgroundColor: '#91B27517',
-    borderRadius: 100,
-    height: 40,
-    elevation: 0,
-  },
-  categoryContainer: {
-    flexDirection: 'row',
-    gap: 8,
-    marginBottom: 16,
-    paddingVertical: 4,
-  },
-  addItemButton: {
-    backgroundColor: '#91B275',
-    borderRadius: 100,
-    height: 36,
-    width: '100%',
-  },
-  selectedItemsText: {
-    marginTop: 6,
-    fontSize: 15,
-    fontWeight: '400',
-    color: '#2E191466',
-  },
-  categoryChip: {
-    borderRadius: 100,
-    backgroundColor: '#91B27517',
-    borderColor: '#91B275',
-    borderWidth: 0,
-    height: 32,
-  },
-  selectedCategoryChip: {
-    backgroundColor: '#96B76E',
-  },
-  categoryChipText: {
-    color: '#5F7A3D',
-    fontSize: 12,
-    fontWeight: '500',
-  },
-  selectedCategoryChipText: {
-    color: '#FFFFFF',
-  },
-  footer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: 20,
-    padding: 12,
-    backgroundColor: '#E9F6E9',
-    borderRadius: 6,
-  },
-  footerText: {
-    fontWeight: '600',
-    color: '#040404',
-  },
-  footerTextDescription: {
-    color: '#4B4B4B',
   },
 });

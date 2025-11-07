@@ -16,16 +16,17 @@ import { useQueryClient } from '@tanstack/react-query';
 import { i18n as I18n } from '@/app/_layout';
 
 export default function AcceptOrders() {
-  const shipping = 5;
-  const tax = 5;
   const { orderId } = useLocalSearchParams();
-  const { data: order, isLoading } = useGetOrder(orderId as string);
+  const { data: order } = useGetOrder(orderId as string);
   const subtotal = useMemo(
     () =>
       order?.items.reduce((sum, item) => sum + item.price * item.quantity, 0),
     [order]
   );
-  const total = (subtotal || 0) + shipping + tax;
+  const serviceCharge =
+    (subtotal ?? 0 * ((order?.tenant as any)?.service_charge ?? 0)) / 100;
+  const tax = (subtotal ?? 0 * ((order?.tenant as any)?.tax ?? 0)) / 100;
+  const total = (subtotal || 0) + serviceCharge + tax;
   const updateOrderStatus = useUpdateOrder();
   const queryClient = useQueryClient();
 
@@ -81,13 +82,6 @@ export default function AcceptOrders() {
             undefined
           }
         />
-        <Button
-          mode="contained"
-          style={styles.addButton}
-          labelStyle={{ color: '#fff' }}
-        >
-          {I18n.t('acceptOrders.addItemButton')}
-        </Button>
       </View>
 
       <View style={styles.tableWrapper}>
@@ -123,11 +117,11 @@ export default function AcceptOrders() {
                 {I18n.t('acceptOrders.tableHeaderTotal')}
               </Text>
             </DataTable.Title>
-            <DataTable.Title style={[styles.headerCell, { flex: 1.5 }]}>
+            {/* <DataTable.Title style={[styles.headerCell, { flex: 1.5 }]}>
               <Text variant="bodyMedium" style={styles.headerCellText}>
                 {I18n.t('acceptOrders.tableHeaderAction')}
               </Text>
-            </DataTable.Title>
+            </DataTable.Title> */}
           </DataTable.Header>
           {order?.items.map((item) => {
             // const nextStatus = getNextStatus(order.status);
@@ -179,7 +173,7 @@ export default function AcceptOrders() {
                     // variant={isSmallScreen ? 'bodySmall' : 'bodyMedium'}
                     style={[styles.cellText, { paddingRight: 55 }]}
                   >
-                    {I18n.t('acceptOrders.itemTaxLabel')}
+                    {(order?.tenant as any).tax ?? 0 / 100}
                   </Text>
                 </DataTable.Cell>
                 <DataTable.Cell style={[styles.cell, { flex: 1 }]}>
@@ -191,11 +185,11 @@ export default function AcceptOrders() {
                     {item.price * item.quantity}
                   </Text>
                 </DataTable.Cell>
-                <DataTable.Cell style={[styles.cell, { flex: 1 }]}>
+                {/* <DataTable.Cell style={[styles.cell, { flex: 1 }]}>
                   <TouchableOpacity>
                     <DeleteIcon color={'#91B275'} height={25.55} />
                   </TouchableOpacity>
-                </DataTable.Cell>
+                </DataTable.Cell> */}
               </DataTable.Row>
             );
           })}
@@ -216,9 +210,11 @@ export default function AcceptOrders() {
           </View>
           <View style={styles.summaryRow}>
             <Text style={{ color: '#202B189E' }}>
-              {I18n.t('acceptOrders.summaryShipping')}
+              {I18n.t('acceptOrders.serviceCharge')}
             </Text>
-            <Text style={{ color: '#202B189E' }}>${shipping.toFixed(2)}</Text>
+            <Text style={{ color: '#202B189E' }}>
+              ${serviceCharge.toFixed(2)}
+            </Text>
           </View>
           <View style={styles.summaryRow}>
             <Text style={{ color: '#202B189E' }}>

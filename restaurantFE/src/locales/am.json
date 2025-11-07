@@ -253,6 +253,9 @@
     "appetizer": "የምግብ ፍላጎት ከፋች",
     "breakfast": "ቁርስ",
     "drinks":"መጠጦች",
+    "drink": "መጠጥ",
+    "dessert": "ጣፋጭ ምግብ",
+    "main": "ዋና",
     "lunch": "ምሳ",
     "dinner": "እራት"
   },
@@ -425,7 +428,7 @@
     "itemTaxLabel": "ግብር",
     "summaryHeader": "የትዕዛዝ ማጠቃለያ",
     "summarySubtotal": "ንዑስ ድምር",
-    "summaryShipping": "መላኪያ",
+    "serviceCharge": "የአገልግሎት ክፍያ",
     "summaryTax": "ግብር",
     "summaryTotal": "ጠቅላላ",
     "acceptButton": "ትዕዛዝ ተቀበል",
