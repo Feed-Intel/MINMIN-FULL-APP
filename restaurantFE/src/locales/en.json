@@ -23,6 +23,17 @@
     "cancelled":"Cancelled",
     "see_more":"See more"
   },
+  "Sidebar": {
+    "Dashboard": "Dashboard",
+    "Orders": "Orders",
+    "Menu": "Menu",
+    "Discount": "Discount",
+    "Branch": "Branch",
+    "Tables": "Tables",
+    "Loyalty": "Loyalty",
+    "Administration": "Administration",
+    "Profile": "Profile"
+  },
   "Login": {
     "welcome_title": "Welcome to MinMin Restaurant",
     "subtitle": "Log in to manage your restaurant account",

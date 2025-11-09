@@ -55,7 +55,7 @@ interface TableStates {
 const ManageTables: React.FC = () => {
   const { width }: { width: number } = useWindowDimensions();
   const [currentPage, setCurrentPage] = useState(1);
-  const { mutateAsync: tableDelete } = useDeleteTable();
+  const { mutate: tableDelete } = useDeleteTable();
   const queryClient = useQueryClient();
   const dispatch = useDispatch();
 
@@ -125,7 +125,7 @@ const ManageTables: React.FC = () => {
         [key]: value !== undefined ? value : !prevStates[table.id!][key],
       },
     }));
-    await updateTable.mutateAsync({
+    await updateTable.mutate({
       ...table,
       branch: typeof table.branch == 'object' ? table.branch.id : '',
       is_active: value,
@@ -553,7 +553,7 @@ function AddTableModal({
   const [isDeliveryTable, setIsDeliveryTable] = useState(false);
   const [isInsideTable, setIsInsideTable] = useState(false);
 
-  const { mutateAsync: onAdd } = useCreateTable();
+  const { mutate: onAdd } = useCreateTable();
   const queryClient = useQueryClient();
 
   useEffect(() => {
@@ -730,7 +730,7 @@ function EditTableModal({
   );
   const [isInsideTable, setIsInsideTable] = useState(table.is_inside_table);
 
-  const { mutateAsync: onUpdate } = useUpdateTable();
+  const { mutate: onUpdate } = useUpdateTable();
   const queryClient = useQueryClient();
 
   const branchLabel = branch

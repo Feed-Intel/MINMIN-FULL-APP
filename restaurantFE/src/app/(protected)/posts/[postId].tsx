@@ -1,11 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect } from 'react';
 import {
   StyleSheet,
   Image,
   ScrollView,
   View,
   useWindowDimensions,
-} from "react-native";
+} from 'react-native';
 import {
   Button,
   Card,
@@ -13,15 +13,15 @@ import {
   Text,
   Chip,
   ActivityIndicator,
-} from "react-native-paper";
-import { useLocalSearchParams, router } from "expo-router";
-import * as ImagePicker from "expo-image-picker";
+} from 'react-native-paper';
+import { useLocalSearchParams, router } from 'expo-router';
+import * as ImagePicker from 'expo-image-picker';
 import {
   useGetPostById,
   useUpdatePost,
-} from "@/services/mutation/feedMutations";
-import { useQueryClient } from "@tanstack/react-query";
-import { base64ToBlob } from "@/util/imageUtils";
+} from '@/services/mutation/feedMutations';
+import { useQueryClient } from '@tanstack/react-query';
+import { base64ToBlob } from '@/util/imageUtils';
 
 const EditPost = () => {
   const { width } = useWindowDimensions();
@@ -31,10 +31,10 @@ const EditPost = () => {
     name?: string;
     type?: string;
   } | null>(null);
-  const [caption, setCaption] = useState("");
-  const [location, setLocation] = useState("");
+  const [caption, setCaption] = useState('');
+  const [location, setLocation] = useState('');
   const [tags, setTags] = useState<string[]>([]);
-  const [currentTag, setCurrentTag] = useState("");
+  const [currentTag, setCurrentTag] = useState('');
 
   // Screen size breakpoints
   const isSmallScreen = width < 768;
@@ -42,9 +42,7 @@ const EditPost = () => {
   const isLargeScreen = width >= 1024;
 
   const { data: postData } = useGetPostById(postId as string);
-  const { mutateAsync: updatePost, isPending } = useUpdatePost(
-    postId as string
-  );
+  const { mutate: updatePost, isPending } = useUpdatePost(postId as string);
   const queryClient = useQueryClient();
 
   useEffect(() => {
@@ -57,23 +55,23 @@ const EditPost = () => {
         let tagsArray = [];
         if (Array.isArray(postData.tags)) {
           tagsArray = postData.tags;
-        } else if (typeof postData.tags === "string") {
+        } else if (typeof postData.tags === 'string') {
           try {
             tagsArray = JSON.parse(postData.tags);
             if (!Array.isArray(tagsArray)) {
               tagsArray = postData.tags
-                .split(",")
+                .split(',')
                 .map((tag: string) => tag.trim());
             }
           } catch {
             tagsArray = postData.tags
-              .split(",")
+              .split(',')
               .map((tag: string) => tag.trim());
           }
         }
         setTags(tagsArray.filter(Boolean));
       } catch (error) {
-        console.error("Error parsing tags:", error);
+        console.error('Error parsing tags:', error);
         setTags([]);
       }
     }
@@ -81,7 +79,7 @@ const EditPost = () => {
 
   const pickImage = async () => {
     let result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ["images"],
+      mediaTypes: ['images'],
       allowsEditing: true,
       aspect: [4, 3],
       quality: 1,
@@ -90,8 +88,8 @@ const EditPost = () => {
     if (!result.canceled) {
       setImage({
         uri: result.assets[0].uri,
-        name: result.assets[0].fileName || "image.jpg",
-        type: result.assets[0].type || "image/jpeg",
+        name: result.assets[0].fileName || 'image.jpg',
+        type: result.assets[0].type || 'image/jpeg',
       });
     }
   };
@@ -99,7 +97,7 @@ const EditPost = () => {
   const handleAddTag = () => {
     if (currentTag.trim() && !tags.includes(currentTag.trim())) {
       setTags([...tags, currentTag.trim()]);
-      setCurrentTag("");
+      setCurrentTag('');
     }
   };
 
@@ -109,39 +107,39 @@ const EditPost = () => {
 
   const handleSubmit = async () => {
     if (!image || !caption || !location) {
-      alert("Please fill in all fields.");
+      alert('Please fill in all fields.');
       return;
     }
 
     const formData = new FormData();
-    formData.append("caption", caption);
-    formData.append("location", location);
-    formData.append("tags", tags.join(","));
+    formData.append('caption', caption);
+    formData.append('location', location);
+    formData.append('tags', tags.join(','));
 
     if (image.uri !== postData?.image) {
       const base64Data = image.uri;
       const contentType = image.type;
-      const imageName = Date.now() + "." + image.name?.split(".")[1];
+      const imageName = Date.now() + '.' + image.name?.split('.')[1];
       const blob = base64ToBlob(base64Data, contentType);
       formData.append(
-        "image",
+        'image',
         new File([blob], imageName, { type: contentType })
       );
     }
 
     try {
       await updatePost(formData);
-      queryClient.invalidateQueries({ queryKey: ["posts"] });
+      queryClient.invalidateQueries({ queryKey: ['posts'] });
       router.back();
     } catch (error) {
-      console.error("Error updating post:", error);
+      console.error('Error updating post:', error);
     }
   };
 
   if (!postData) {
     return (
       <ActivityIndicator
-        size={isSmallScreen ? "large" : "small"}
+        size={isSmallScreen ? 'large' : 'small'}
         style={styles.loader}
       />
     );
@@ -153,7 +151,7 @@ const EditPost = () => {
         style={[
           styles.container,
           {
-            width: isSmallScreen ? "95%" : "80%",
+            width: isSmallScreen ? '95%' : '80%',
             maxWidth: 600,
             padding: isSmallScreen ? 12 : 24,
           },
@@ -161,7 +159,7 @@ const EditPost = () => {
       >
         <Card.Content>
           <Text
-            variant={isSmallScreen ? "headlineSmall" : "headlineMedium"}
+            variant={isSmallScreen ? 'headlineSmall' : 'headlineMedium'}
             style={[styles.title, { marginBottom: isSmallScreen ? 12 : 16 }]}
           >
             Edit Post
@@ -173,7 +171,7 @@ const EditPost = () => {
             style={[styles.button, { marginBottom: isSmallScreen ? 8 : 16 }]}
             labelStyle={{ fontSize: isSmallScreen ? 14 : 16 }}
           >
-            {image ? "Change Image" : "Upload Image"}
+            {image ? 'Change Image' : 'Upload Image'}
           </Button>
 
           {image && (
@@ -257,15 +255,15 @@ const EditPost = () => {
 const styles = StyleSheet.create({
   scrollContainer: {
     flexGrow: 1,
-    justifyContent: "center",
+    justifyContent: 'center',
   },
   container: {
-    alignSelf: "center",
+    alignSelf: 'center',
     marginVertical: 16,
   },
   title: {
-    textAlign: "center",
-    fontWeight: "600",
+    textAlign: 'center',
+    fontWeight: '600',
   },
   input: {
     // backgroundColor: "white",
@@ -274,16 +272,16 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   image: {
-    width: "100%",
+    width: '100%',
     marginVertical: 16,
-    resizeMode: "cover",
+    resizeMode: 'cover',
   },
   tagSection: {
     marginVertical: 8,
   },
   chipContainer: {
-    flexDirection: "row",
-    flexWrap: "wrap",
+    flexDirection: 'row',
+    flexWrap: 'wrap',
     marginBottom: 8,
   },
   chip: {
@@ -291,8 +289,8 @@ const styles = StyleSheet.create({
   },
   loader: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
+    justifyContent: 'center',
+    alignItems: 'center',
     marginTop: 40,
   },
 });

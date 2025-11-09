@@ -23,6 +23,17 @@
     "cancelled":"ተሰርዟል",
     "see_more":"ተጨማሪ ይመልከቱ"
   },
+  "Sidebar": {
+    "Dashboard": "ዋና ገጽ",
+    "Orders": "ትዕዛዞች",
+    "Menu": "ምግብ ዝርዝር",
+    "Discount": "ቅናሽ",
+    "Branch": "ቅርንጫፍ",
+    "Tables": "ጠረጴዛዎች",
+    "Loyalty": "ታማኝነት",
+    "Administration": "አስተዳደር",
+    "Profile": "መገለጫ"
+  },
   "Login": {
     "welcome_title": "ወደ ሚንሚን ሬስቶራንት እንኳን ደህና መጡ",
     "subtitle": "የሬስቶራንትዎን አካውንት ለማስተዳደር ይግቡ",

@@ -68,7 +68,7 @@ export default function AddMenuDialog({
   const isMediumScreen = width >= 768 && width < 1024;
 
   const queryClient = useQueryClient();
-  const { mutateAsync: createMenu, isPending } = useCreateMenu();
+  const { mutate: createMenu, isPending } = useCreateMenu();
   const { data: branches } = useGetBranches(undefined, true);
 
   const categories = ['Appetizer', 'Breakfast', 'Lunch', 'Dinner'];

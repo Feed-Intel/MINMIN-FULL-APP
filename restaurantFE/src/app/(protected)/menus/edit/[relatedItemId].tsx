@@ -1,29 +1,29 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from 'react';
 import {
   ScrollView,
   StyleSheet,
   View,
   useWindowDimensions,
-} from "react-native";
-import { Text, Button, Snackbar, ActivityIndicator } from "react-native-paper";
-import { Dropdown } from "react-native-paper-dropdown";
-import { router, useLocalSearchParams } from "expo-router";
+} from 'react-native';
+import { Text, Button, Snackbar, ActivityIndicator } from 'react-native-paper';
+import { Dropdown } from 'react-native-paper-dropdown';
+import { router, useLocalSearchParams } from 'expo-router';
 import {
   useGetMenus,
   useGetRelatedMenuItem,
   useUpdateRelatedMenuItem,
-} from "@/services/mutation/menuMutation";
+} from '@/services/mutation/menuMutation';
 
-const TAGS = ["Best Paired With", "Alternative", "Customer Favorite"];
+const TAGS = ['Best Paired With', 'Alternative', 'Customer Favorite'];
 
 export default function EditRelatedItem() {
   const { width } = useWindowDimensions();
   const { relatedItemId } = useLocalSearchParams();
-  const [menuItem, setMenuItem] = useState<string | undefined>("");
-  const [relatedItem, setRelatedItem] = useState<string | undefined>("");
-  const [tag, setTag] = useState<string | undefined>("");
+  const [menuItem, setMenuItem] = useState<string | undefined>('');
+  const [relatedItem, setRelatedItem] = useState<string | undefined>('');
+  const [tag, setTag] = useState<string | undefined>('');
   const [snackbarVisible, setSnackbarVisible] = useState(false);
-  const [snackbarMessage, setSnackbarMessage] = useState("");
+  const [snackbarMessage, setSnackbarMessage] = useState('');
 
   // Screen size breakpoints
   const isSmallScreen = width < 768;
@@ -34,18 +34,18 @@ export default function EditRelatedItem() {
     relatedItemId as string
   );
   const { data: menus } = useGetMenus();
-  const { mutateAsync: updateRelatedItem, isPending: updating } =
+  const { mutate: updateRelatedItem, isPending: updating } =
     useUpdateRelatedMenuItem();
 
   useEffect(() => {
     if (itemData) {
       setMenuItem(
-        typeof itemData.menu_item === "string"
+        typeof itemData.menu_item === 'string'
           ? itemData.menu_item
           : itemData.menu_item?.id
       );
       setRelatedItem(
-        typeof itemData.related_item === "string"
+        typeof itemData.related_item === 'string'
           ? itemData.related_item
           : itemData.related_item?.id
       );
@@ -55,7 +55,7 @@ export default function EditRelatedItem() {
 
   const handleUpdateItem = async () => {
     if (!menuItem || !relatedItem || !tag) {
-      setSnackbarMessage("All fields are required.");
+      setSnackbarMessage('All fields are required.');
       setSnackbarVisible(true);
       return;
     }
@@ -66,7 +66,7 @@ export default function EditRelatedItem() {
       related_item: relatedItem,
       tag,
     });
-    setSnackbarMessage("Related item updated successfully!");
+    setSnackbarMessage('Related item updated successfully!');
     setSnackbarVisible(true);
     router.back();
   };
@@ -76,7 +76,7 @@ export default function EditRelatedItem() {
       <ActivityIndicator
         animating={true}
         style={styles.loading}
-        size={isSmallScreen ? "small" : "large"}
+        size={isSmallScreen ? 'small' : 'large'}
       />
     );
   }
@@ -90,14 +90,14 @@ export default function EditRelatedItem() {
         style={[
           styles.container,
           {
-            width: isSmallScreen ? "100%" : "70%",
+            width: isSmallScreen ? '100%' : '70%',
             paddingHorizontal: isSmallScreen ? 16 : 24,
             maxWidth: 600,
           },
         ]}
       >
         <Text
-          variant={isSmallScreen ? "headlineMedium" : "headlineLarge"}
+          variant={isSmallScreen ? 'headlineMedium' : 'headlineLarge'}
           style={[styles.title, { marginBottom: isSmallScreen ? 12 : 24 }]}
         >
           Edit Related Item
@@ -117,7 +117,7 @@ export default function EditRelatedItem() {
             }
             value={menuItem}
             onSelect={setMenuItem}
-            mode={isSmallScreen ? "flat" : "outlined"}
+            mode={isSmallScreen ? 'flat' : 'outlined'}
           />
         </View>
 
@@ -135,7 +135,7 @@ export default function EditRelatedItem() {
             }
             value={relatedItem}
             onSelect={setRelatedItem}
-            mode={isSmallScreen ? "flat" : "outlined"}
+            mode={isSmallScreen ? 'flat' : 'outlined'}
           />
         </View>
 
@@ -151,7 +151,7 @@ export default function EditRelatedItem() {
             }
             value={tag}
             onSelect={setTag}
-            mode={isSmallScreen ? "flat" : "outlined"}
+            mode={isSmallScreen ? 'flat' : 'outlined'}
           />
         </View>
 
@@ -161,8 +161,8 @@ export default function EditRelatedItem() {
           style={[
             styles.addButton,
             {
-              width: isSmallScreen ? "100%" : "auto",
-              alignSelf: "center",
+              width: isSmallScreen ? '100%' : 'auto',
+              alignSelf: 'center',
             },
           ]}
           loading={updating}
@@ -170,7 +170,7 @@ export default function EditRelatedItem() {
           contentStyle={{ height: isSmallScreen ? 40 : 48 }}
           labelStyle={{ fontSize: isSmallScreen ? 14 : 16 }}
         >
-          {updating ? "Updating..." : "Update Item"}
+          {updating ? 'Updating...' : 'Update Item'}
         </Button>
 
         <Snackbar
@@ -192,15 +192,15 @@ export default function EditRelatedItem() {
 const styles = StyleSheet.create({
   scrollContainer: {
     flexGrow: 1,
-    justifyContent: "center",
+    justifyContent: 'center',
   },
   container: {
-    alignSelf: "center",
+    alignSelf: 'center',
     paddingVertical: 24,
   },
   title: {
-    textAlign: "center",
-    fontWeight: "600",
+    textAlign: 'center',
+    fontWeight: '600',
   },
   input: {
     marginBottom: 16,
@@ -212,7 +212,7 @@ const styles = StyleSheet.create({
   },
   loading: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });

@@ -60,7 +60,7 @@ export default function AcceptOrders() {
     true
   );
   const { branchId, tenantId } = useRestaurantIdentity();
-  const { mutateAsync: createOrder } = useCreateOrder();
+  const { mutate: createOrder } = useCreateOrder();
   const newQuantities = cart.items.reduce((acc: any, item: any) => {
     acc[item.id] = item.quantity;
     return acc;

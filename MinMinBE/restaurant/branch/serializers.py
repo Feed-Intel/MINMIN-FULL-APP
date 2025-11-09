@@ -74,8 +74,6 @@ class BranchSerializer(serializers.ModelSerializer):
             tenant=tenant,
             **validated_data
         )
-        from restaurant.table.models import Table
-        Table.objects.create(branch=branch, is_delivery_table=True)
         return branch
     
     def update(self, instance, validated_data):

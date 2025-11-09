@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useState, useEffect, useCallback } from 'react';
 import { useDispatch } from 'react-redux';
 import {
   CreateMenu,
@@ -24,172 +24,399 @@ import { AppDispatch } from '@/lib/reduxStore/store';
 import { hideLoader, showLoader } from '@/lib/reduxStore/loaderSlice';
 import { useTime } from '@/context/time';
 
+const manualInvalidate = (setTime: (time: number) => void) => {
+  setTime(Date.now());
+};
+
+// --- Menu Queries ---
+
 export const useGetMenus = (params?: MenuQueryParams, noPage?: boolean) => {
   const { time } = useTime();
-  return useQuery<{ next: string | null; results: MenuType[]; count: number }>({
-    queryKey: ['menus', params, time],
-    queryFn: () => {
-      const searchParams = new URLSearchParams();
-      Object.entries(params ?? {}).forEach(([key, value]) => {
-        if (value) {
-          searchParams.append(key, String(value));
+  const [data, setData] = useState<
+    { next: string | null; results: MenuType[]; count: number } | undefined
+  >(undefined);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isPending, setIsPending] = useState(false);
+  const [error, setError] = useState<any>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    const fetchData = async () => {
+      if (!data) {
+        setIsLoading(true);
+      } else {
+        setIsPending(true);
+      }
+      setError(null);
+
+      try {
+        const searchParams = new URLSearchParams();
+        Object.entries(params ?? {}).forEach(([key, value]) => {
+          if (value) {
+            searchParams.append(key, String(value));
+          }
+        });
+        const response = await GetMenus(searchParams.toString(), noPage);
+        if (isMounted) {
+          setData(response);
         }
-      });
-      return GetMenus(searchParams.toString(), noPage);
-    },
-    gcTime: 0,
-    staleTime: 0,
-    refetchOnMount: true,
-    refetchOnWindowFocus: true,
-    refetchOnReconnect: true,
-    refetchInterval: 60000,
-  });
+      } catch (err) {
+        if (isMounted) {
+          setError(err);
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+          setIsPending(false);
+        }
+      }
+    };
+
+    fetchData();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [params, noPage, time]);
+
+  return {
+    data,
+    isLoading,
+    isPending: isPending && !!data,
+    error,
+  };
 };
 
 export const useGetMenu = (id: string) => {
   const { time } = useTime();
-  return useQuery<MenuType>({
-    queryKey: ['menu', id, time],
-    queryFn: () => GetMenu(id),
-    gcTime: 0,
-    staleTime: 0,
-    refetchOnMount: true,
-    refetchOnWindowFocus: true,
-    refetchOnReconnect: true,
-    refetchInterval: 60000,
-  });
+  const [data, setData] = useState<MenuType | undefined>(undefined);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isPending, setIsPending] = useState(false);
+  const [error, setError] = useState<any>(null);
+
+  useEffect(() => {
+    if (!id) return;
+
+    let isMounted = true;
+    const fetchData = async () => {
+      if (!data) {
+        setIsLoading(true);
+      } else {
+        setIsPending(true);
+      }
+      setError(null);
+
+      try {
+        const response = await GetMenu(id);
+        if (isMounted) {
+          setData(response);
+        }
+      } catch (err) {
+        if (isMounted) {
+          setError(err);
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+          setIsPending(false);
+        }
+      }
+    };
+
+    fetchData();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [id, time]);
+
+  return {
+    data,
+    isLoading,
+    isPending: isPending && !!data,
+    error,
+  };
 };
 
 export const useGetMenuAvailabilities = (param?: MenuQueryParams | null) => {
   const { time } = useTime();
-  return useQuery<{
-    next: string | null;
-    results: MenuAvailability[];
-    count: number;
-  }>({
-    queryKey: ['menuAvailability', param, time],
-    queryFn: () => {
-      const searchParams = new URLSearchParams();
-      Object.entries(param ?? {}).forEach(([key, value]) => {
-        if (value) {
-          searchParams.append(key, String(value));
+  const [data, setData] = useState<
+    | { next: string | null; results: MenuAvailability[]; count: number }
+    | undefined
+  >(undefined);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isPending, setIsPending] = useState(false);
+  const [error, setError] = useState<any>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    const fetchData = async () => {
+      if (!data) {
+        setIsLoading(true);
+      } else {
+        setIsPending(true);
+      }
+      setError(null);
+
+      try {
+        const searchParams = new URLSearchParams();
+        Object.entries(param ?? {}).forEach(([key, value]) => {
+          if (value) {
+            searchParams.append(key, String(value));
+          }
+        });
+        const response = await GetMenuAvailabilities(searchParams.toString());
+        if (isMounted) {
+          setData(response);
         }
-      });
-      return GetMenuAvailabilities(searchParams.toString());
-    },
-    gcTime: 0,
-    staleTime: 0,
-    refetchOnMount: true,
-    refetchOnWindowFocus: true,
-    refetchOnReconnect: true,
-    refetchInterval: 60000,
-  });
+      } catch (err) {
+        if (isMounted) {
+          setError(err);
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+          setIsPending(false);
+        }
+      }
+    };
+
+    fetchData();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [param, time]);
+
+  return {
+    data,
+    isLoading,
+    isPending: isPending && !!data,
+    error,
+  };
 };
+
+// --- Related Menus Queries ---
 
 export const useGetRelatedMenus = (
   page?: number | undefined,
   noPage?: boolean
 ) => {
   const { time } = useTime();
-  return useQuery<RelatedMenu[]>({
-    queryKey: ['relatedMenus', time],
-    queryFn: () => GetRelatedItems(page, noPage),
-    gcTime: 0,
-    staleTime: 0,
-    refetchOnMount: true,
-    refetchOnWindowFocus: true,
-    refetchOnReconnect: true,
-    refetchInterval: 60000,
-  });
+  const [data, setData] = useState<RelatedMenu[] | undefined>(undefined);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isPending, setIsPending] = useState(false);
+  const [error, setError] = useState<any>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    const fetchData = async () => {
+      if (!data) {
+        setIsLoading(true);
+      } else {
+        setIsPending(true);
+      }
+      setError(null);
+
+      try {
+        const response = await GetRelatedItems(page, noPage);
+        if (isMounted) {
+          setData(response);
+        }
+      } catch (err) {
+        if (isMounted) {
+          setError(err);
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+          setIsPending(false);
+        }
+      }
+    };
+
+    fetchData();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [page, noPage, time]);
+
+  return {
+    data,
+    isLoading,
+    isPending: isPending && !!data,
+    error,
+  };
 };
+
+export const useGetRelatedMenuItem = (id: string) => {
+  const { time } = useTime();
+  const [data, setData] = useState<RelatedMenu | undefined>(undefined);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isPending, setIsPending] = useState(false);
+  const [error, setError] = useState<any>(null);
+
+  useEffect(() => {
+    if (!id) return;
+
+    let isMounted = true;
+    const fetchData = async () => {
+      if (!data) {
+        setIsLoading(true);
+      } else {
+        setIsPending(true);
+      }
+      setError(null);
+
+      try {
+        const response = await GetRelatedItem(id);
+        if (isMounted) {
+          setData(response);
+        }
+      } catch (err) {
+        if (isMounted) {
+          setError(err);
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+          setIsPending(false);
+        }
+      }
+    };
+
+    fetchData();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [id, time]);
+
+  return {
+    data,
+    isLoading,
+    isPending: isPending && !!data,
+    error,
+  };
+};
+
+// --- Menu Mutations ---
 
 export const useCreateMenu = (
   onSuccess?: (data: any) => void,
   onError?: (error: any) => void
 ) => {
   const dispatch = useDispatch<AppDispatch>();
-  const queryClient = useQueryClient();
   const { setTime } = useTime();
-  return useMutation({
-    mutationKey: ['createMenu'],
-    mutationFn: (data: any) => {
+  const [isPending, setIsPending] = useState(false);
+  const [error, setError] = useState<any>(null);
+  const [data, setData] = useState<any>(undefined);
+
+  const mutate = useCallback(
+    async (variables: any) => {
+      setIsPending(true);
+      setError(null);
+      setData(undefined);
       dispatch(showLoader());
-      return CreateMenu(data);
+      try {
+        const result = await CreateMenu(variables);
+        setData(result);
+        manualInvalidate(setTime);
+        if (onSuccess) onSuccess(result);
+        return result;
+      } catch (err) {
+        setError(err);
+        if (onError) onError(err);
+        throw err;
+      } finally {
+        setIsPending(false);
+        dispatch(hideLoader());
+      }
     },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['menus'] });
-      queryClient.refetchQueries({
-        queryKey: ['menus'],
-        type: 'active',
-      });
-      setTime(Date.now());
-      if (onSuccess) onSuccess(data);
-    },
-    onError: (error) => {
-      dispatch(hideLoader());
-      if (onError) onError(error);
-    },
-    onSettled: () => dispatch(hideLoader()),
-  });
+    [onSuccess, onError, setTime, dispatch]
+  );
+
+  return {
+    mutate,
+    data,
+    isPending,
+    error,
+  };
 };
 
 export const useUpdateMenu = (id: string) => {
   const dispatch = useDispatch<AppDispatch>();
-  const queryClient = useQueryClient();
   const { setTime } = useTime();
-  return useMutation({
-    mutationFn: (data: FormData) => {
+  const [isPending, setIsPending] = useState(false);
+  const [error, setError] = useState<any>(null);
+  const [data, setData] = useState<any>(undefined);
+
+  const mutate = useCallback(
+    async (variables: FormData) => {
+      setIsPending(true);
+      setError(null);
+      setData(undefined);
       dispatch(showLoader());
-      return UpdateMenu(id, data);
+      try {
+        const result = await UpdateMenu(id, variables);
+        setData(result);
+        manualInvalidate(setTime);
+        return result;
+      } catch (err) {
+        setError(err);
+        throw err;
+      } finally {
+        setIsPending(false);
+        dispatch(hideLoader());
+      }
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['menus'] });
-      queryClient.refetchQueries({
-        queryKey: ['menus'],
-        type: 'active',
-      });
-      setTime(Date.now());
-    },
-    onError: () => dispatch(hideLoader()),
-    onSettled: () => dispatch(hideLoader()),
-  });
+    [id, setTime, dispatch]
+  );
+
+  return {
+    mutate,
+    data,
+    isPending,
+    error,
+  };
 };
 
-export const useDeleteRelatedMenu = () => {
+export const useDeleteMenu = () => {
   const dispatch = useDispatch<AppDispatch>();
-  const queryClient = useQueryClient();
   const { setTime } = useTime();
-  return useMutation({
-    mutationKey: ['deleteMenu'],
-    mutationFn: (data: any) => {
-      dispatch(showLoader());
-      return DeleteRelatedItem(data);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['relatedMenus'] });
-      queryClient.refetchQueries({
-        queryKey: ['relatedMenus'],
-        type: 'active',
-      });
-      setTime(Date.now());
-    },
-    onError: () => dispatch(hideLoader()),
-    onSettled: () => dispatch(hideLoader()),
-  });
-};
+  const [isPending, setIsPending] = useState(false);
+  const [error, setError] = useState<any>(null);
+  const [data, setData] = useState<any>(undefined);
 
-export const useGetRelatedMenuItem = (id: string) => {
-  const { time } = useTime();
-  return useQuery<RelatedMenu>({
-    queryKey: ['relatedMenu', id, time],
-    queryFn: () => GetRelatedItem(id),
-    gcTime: 0,
-    staleTime: 0,
-    refetchOnMount: true,
-    refetchOnWindowFocus: true,
-    refetchOnReconnect: true,
-    refetchInterval: 60000,
-  });
+  const mutate = useCallback(
+    async (variables: any) => {
+      setIsPending(true);
+      setError(null);
+      setData(undefined);
+      dispatch(showLoader());
+      try {
+        const result = await DeleteMenu(variables);
+        setData(result);
+        manualInvalidate(setTime);
+        return result;
+      } catch (err) {
+        setError(err);
+        throw err;
+      } finally {
+        setIsPending(false);
+        dispatch(hideLoader());
+      }
+    },
+    [setTime, dispatch]
+  );
+
+  return {
+    mutate,
+    data,
+    isPending,
+    error,
+  };
 };
 
 export const useUpdateMenuAvailability = (
@@ -197,58 +424,85 @@ export const useUpdateMenuAvailability = (
   onError?: (error: any) => void
 ) => {
   const dispatch = useDispatch<AppDispatch>();
-  const queryClient = useQueryClient();
   const { setTime } = useTime();
-  return useMutation({
-    mutationFn: (data: any) => {
+  const [isPending, setIsPending] = useState(false);
+  const [error, setError] = useState<any>(null);
+  const [data, setData] = useState<any>(undefined);
+
+  const mutate = useCallback(
+    async (variables: any) => {
+      setIsPending(true);
+      setError(null);
+      setData(undefined);
       dispatch(showLoader());
-      return UpdateMenuAvailability(data);
+      try {
+        const result = await UpdateMenuAvailability(variables);
+        setData(result);
+        manualInvalidate(setTime);
+        if (onSuccess) onSuccess(result);
+        return result;
+      } catch (err) {
+        setError(err);
+        if (onError) onError(err);
+        throw err;
+      } finally {
+        setIsPending(false);
+        dispatch(hideLoader());
+      }
     },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['menuAvailability'] });
-      queryClient.refetchQueries({
-        queryKey: ['menuAvailability'],
-        type: 'active',
-      });
-      setTime(Date.now());
-      if (onSuccess) onSuccess(data);
-    },
-    onError: (error) => {
-      dispatch(hideLoader());
-      if (onError) onError(error);
-    },
-    onSettled: () => dispatch(hideLoader()),
-  });
+    [onSuccess, onError, setTime, dispatch]
+  );
+
+  return {
+    mutate,
+    data,
+    isPending,
+    error,
+  };
 };
+
+// --- Related Menu Mutations ---
 
 export const useAddRelatedMenuItem = (
   onSuccess?: (data: any) => void,
   onError?: (error: any) => void
 ) => {
   const dispatch = useDispatch<AppDispatch>();
-  const queryClient = useQueryClient();
   const { setTime } = useTime();
-  return useMutation({
-    mutationKey: ['addRelatedMenuItem'],
-    mutationFn: (data: any) => {
+  const [isPending, setIsPending] = useState(false);
+  const [error, setError] = useState<any>(null);
+  const [data, setData] = useState<any>(undefined);
+
+  const mutate = useCallback(
+    async (variables: any) => {
+      setIsPending(true);
+      setError(null);
+      setData(undefined);
       dispatch(showLoader());
-      return CreateRelatedItem(data);
+      try {
+        const result = await CreateRelatedItem(variables);
+        setData(result);
+        manualInvalidate(setTime);
+        if (onSuccess) onSuccess(result);
+        return result;
+      } catch (err) {
+        setError(err);
+        if (onError) onError(err);
+        throw err;
+      } finally {
+        setIsPending(false);
+        dispatch(hideLoader());
+      }
     },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['relatedMenus'] });
-      queryClient.refetchQueries({
-        queryKey: ['relatedMenus'],
-        type: 'active',
-      });
-      setTime(Date.now());
-      if (onSuccess) onSuccess(data);
-    },
-    onError: (error) => {
-      dispatch(hideLoader());
-      if (onError) onError(error);
-    },
-    onSettled: () => dispatch(hideLoader()),
-  });
+    [onSuccess, onError, setTime, dispatch]
+  );
+
+  return {
+    mutate,
+    data,
+    isPending,
+    error,
+  };
 };
 
 export const useUpdateRelatedMenuItem = (
@@ -256,50 +510,76 @@ export const useUpdateRelatedMenuItem = (
   onError?: (error: any) => void
 ) => {
   const dispatch = useDispatch<AppDispatch>();
-  const queryClient = useQueryClient();
   const { setTime } = useTime();
-  return useMutation({
-    mutationKey: ['updateRelatedMenuItem'],
-    mutationFn: (data: any) => {
+  const [isPending, setIsPending] = useState(false);
+  const [error, setError] = useState<any>(null);
+  const [data, setData] = useState<any>(undefined);
+
+  const mutate = useCallback(
+    async (variables: any) => {
+      setIsPending(true);
+      setError(null);
+      setData(undefined);
       dispatch(showLoader());
-      return UpdateRelatedItem(data);
+      try {
+        const result = await UpdateRelatedItem(variables);
+        setData(result);
+        manualInvalidate(setTime);
+        if (onSuccess) onSuccess(result);
+        return result;
+      } catch (err) {
+        setError(err);
+        if (onError) onError(err);
+        throw err;
+      } finally {
+        setIsPending(false);
+        dispatch(hideLoader());
+      }
     },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['relatedMenus'] });
-      queryClient.refetchQueries({
-        queryKey: ['relatedMenus'],
-        type: 'active',
-      });
-      setTime(Date.now());
-      if (onSuccess) onSuccess(data);
-    },
-    onError: (error) => {
-      dispatch(hideLoader());
-      if (onError) onError(error);
-    },
-    onSettled: () => dispatch(hideLoader()),
-  });
+    [onSuccess, onError, setTime, dispatch]
+  );
+
+  return {
+    mutate,
+    data,
+    isPending,
+    error,
+  };
 };
 
-export const useDeleteMenu = () => {
+export const useDeleteRelatedMenu = () => {
   const dispatch = useDispatch<AppDispatch>();
-  const queryClient = useQueryClient();
   const { setTime } = useTime();
-  return useMutation({
-    mutationKey: ['deleteMenu'],
-    mutationFn: (data: any) => {
+  const [isPending, setIsPending] = useState(false);
+  const [error, setError] = useState<any>(null);
+  const [data, setData] = useState<any>(undefined);
+
+  const mutate = useCallback(
+    async (variables: any) => {
+      setIsPending(true);
+      setError(null);
+      setData(undefined);
       dispatch(showLoader());
-      return DeleteMenu(data);
+      try {
+        const result = await DeleteRelatedItem(variables);
+        setData(result);
+        manualInvalidate(setTime);
+        return result;
+      } catch (err) {
+        setError(err);
+        throw err;
+      } finally {
+        setIsPending(false);
+        dispatch(hideLoader());
+      }
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['menus'] });
-      queryClient.refetchQueries({
-        queryKey: ['menus'],
-        type: 'active',
-      });
-      setTime(Date.now());
-    },
-    onError: () => dispatch(hideLoader()),
-    onSettled: () => dispatch(hideLoader()),
-  });
+    [setTime, dispatch]
+  );
+
+  return {
+    mutate,
+    data,
+    isPending,
+    error,
+  };
 };

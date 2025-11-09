@@ -33,7 +33,7 @@ export default function AcceptOrders() {
   const handleStatusUpdate = useCallback(
     async (orderId: string, status: Order['status']) => {
       try {
-        await updateOrderStatus.mutateAsync({ id: orderId, order: { status } });
+        await updateOrderStatus.mutate({ id: orderId, order: { status } });
         queryClient.invalidateQueries({ queryKey: ['order', orderId] });
         // setSnackbarMessage(I18n.t('acceptOrders.statusUpdateSuccess'));
         // setSnackbarVisible(true);

@@ -48,7 +48,7 @@ import { i18n as I18n } from '@/app/_layout';
 
 export default function Menus() {
   const [currentPage, setCurrentPage] = useState<number>(1);
-  const { mutateAsync: menuDelete } = useDeleteMenu();
+  const { mutate: menuDelete } = useDeleteMenu();
 
   const { data: relatedMenus } = useGetRelatedMenus(undefined, true);
   const { isRestaurant, isBranch, branchId } = useRestaurantIdentity();
@@ -87,8 +87,8 @@ export default function Menus() {
   const [showEditMenuDialog, setShowEditMenuDialog] = useState(false);
   const [showEditComboDialog, setShowEditComboDialog] = useState(false);
   const [selectedItem, setSelectedItem] = useState<any>(null);
-  const { mutateAsync: createRelatedItem } = useAddRelatedMenuItem();
-  const { mutateAsync: deleteCombo } = useDeleteCombo();
+  const { mutate: createRelatedItem } = useAddRelatedMenuItem();
+  const { mutate: deleteCombo } = useDeleteCombo();
   const DEFAULT_CATEGORIES = ['Main course', 'Pasta', 'Dessert', 'Drink'];
 
   const queryParams = useMemo(() => {

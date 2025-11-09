@@ -42,7 +42,7 @@ export default function AddCouponModal({
   const [validUntil, setValidUntil] = useState<Date>(
     new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
   );
-  const { mutateAsync: createCouponCode } = useCreateCoupon();
+  const { mutate: createCouponCode } = useCreateCoupon();
   const queryClient = useQueryClient();
 
   const validateForm = () => {

@@ -38,7 +38,7 @@ export default function AddTableScreen() {
         ...formValues,
       };
 
-      await createTable.mutateAsync(formData);
+      await createTable.mutate(formData);
       queryClient.invalidateQueries({ queryKey: ['tables'] });
       queryClient.invalidateQueries({ queryKey: ['qrCode'] });
       router.back();

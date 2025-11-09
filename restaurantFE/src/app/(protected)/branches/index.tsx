@@ -31,8 +31,8 @@ import { i18n as I18n } from '@/app/_layout';
 
 export default function Branches() {
   const [currentPage, setCurrentPage] = useState<number>(1);
-  const { mutateAsync: branchDelete } = useDeleteBranch();
-  const { mutateAsync: updateBranch } = useUpdateBranch();
+  const { mutate: branchDelete } = useDeleteBranch();
+  const { mutate: updateBranch } = useUpdateBranch();
   const queryClient = useQueryClient();
   const [showDeleteDialog, setShowDeleteDialog] = React.useState(false);
   const [showAddDialog, setShowAddDialog] = React.useState(false);

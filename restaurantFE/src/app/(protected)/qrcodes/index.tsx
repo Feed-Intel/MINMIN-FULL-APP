@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState } from 'react';
 import {
   ScrollView,
   StyleSheet,
@@ -7,9 +7,9 @@ import {
   Platform,
   useWindowDimensions,
   View,
-} from "react-native";
-import * as FileSystem from "expo-file-system";
-import * as MediaLibrary from "expo-media-library";
+} from 'react-native';
+import * as FileSystem from 'expo-file-system';
+import * as MediaLibrary from 'expo-media-library';
 import {
   Button,
   DataTable,
@@ -19,18 +19,18 @@ import {
   Dialog,
   Text,
   Icon,
-} from "react-native-paper";
+} from 'react-native-paper';
 import {
   useDeleteQRCode,
   useGetQRCodes,
-} from "@/services/mutation/qrCodeMutation";
-import { router } from "expo-router";
-import { useQueryClient } from "@tanstack/react-query";
-import { useDispatch } from "react-redux";
-import { hideLoader, showLoader } from "@/lib/reduxStore/loaderSlice";
-import BranchSelector from "@/components/BranchSelector";
-import { useRestaurantIdentity } from "@/hooks/useRestaurantIdentity";
-import ModalHeader from "@/components/ModalHeader";
+} from '@/services/mutation/qrCodeMutation';
+import { router } from 'expo-router';
+import { useQueryClient } from '@tanstack/react-query';
+import { useDispatch } from 'react-redux';
+import { hideLoader, showLoader } from '@/lib/reduxStore/loaderSlice';
+import BranchSelector from '@/components/BranchSelector';
+import { useRestaurantIdentity } from '@/hooks/useRestaurantIdentity';
+import ModalHeader from '@/components/ModalHeader';
 
 export default function QRCodes() {
   const { data: qrCodes } = useGetQRCodes();
@@ -38,7 +38,7 @@ export default function QRCodes() {
   const isSmallScreen = width < 600;
   const isMediumScreen = width >= 600 && width < 1024;
   const dispatch = useDispatch();
-  const { mutateAsync: qrCodeDelete } = useDeleteQRCode();
+  const { mutate: qrCodeDelete } = useDeleteQRCode();
   const [showDialog, setShowDialog] = React.useState(false);
   const [qrCodeID, setQrCodeID] = React.useState<string | null>(null);
   const queryClient = useQueryClient();
@@ -49,11 +49,11 @@ export default function QRCodes() {
 
   const filteredQRCodes = useMemo(() => {
     if (!qrCodes) return [] as typeof qrCodes;
-    if (!selectedBranch || selectedBranch === "all") return qrCodes;
+    if (!selectedBranch || selectedBranch === 'all') return qrCodes;
 
     return qrCodes.filter((qr) => {
       const branchValue =
-        typeof qr.branch === "object" ? qr.branch?.id : qr.branch;
+        typeof qr.branch === 'object' ? qr.branch?.id : qr.branch;
       return branchValue === selectedBranch;
     });
   }, [qrCodes, selectedBranch]);
@@ -62,12 +62,12 @@ export default function QRCodes() {
     setShowDialog(false);
     dispatch(showLoader());
     await qrCodeDelete(qrCodeID!);
-    queryClient.invalidateQueries({ queryKey: ["qrCodes"] });
+    queryClient.invalidateQueries({ queryKey: ['qrCodes'] });
     dispatch(hideLoader());
   };
 
   const downloadQRCode = async (imageUrl: string) => {
-    if (Platform.OS === "web") {
+    if (Platform.OS === 'web') {
       // Fetch the image as a Blob
       try {
         const response = await fetch(imageUrl);
@@ -75,9 +75,9 @@ export default function QRCodes() {
         const url = window.URL.createObjectURL(blob);
 
         // Create a hidden download link
-        const link = document.createElement("a");
+        const link = document.createElement('a');
         link.href = url;
-        link.download = "table_qr_code.png"; // Set file name
+        link.download = 'table_qr_code.png'; // Set file name
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -85,14 +85,14 @@ export default function QRCodes() {
         // Release the object URL
         window.URL.revokeObjectURL(url);
       } catch (error) {
-        console.error("Download failed:", error);
-        alert("Failed to download QR Code.");
+        console.error('Download failed:', error);
+        alert('Failed to download QR Code.');
       }
     } else {
       try {
         const { status } = await MediaLibrary.requestPermissionsAsync();
-        if (status !== "granted") {
-          Alert.alert("Permission Denied", "Storage permission is required.");
+        if (status !== 'granted') {
+          Alert.alert('Permission Denied', 'Storage permission is required.');
           return;
         }
 
@@ -100,9 +100,9 @@ export default function QRCodes() {
         const { uri } = await FileSystem.downloadAsync(imageUrl, fileUri);
 
         await MediaLibrary.saveToLibraryAsync(uri);
-        Alert.alert("Success", "QR Code saved to gallery!");
+        Alert.alert('Success', 'QR Code saved to gallery!');
       } catch (error) {
-        Alert.alert("Error", "Failed to download QR Code.");
+        Alert.alert('Error', 'Failed to download QR Code.');
       }
     }
   };
@@ -121,25 +121,25 @@ export default function QRCodes() {
             style={[
               styles.sectionHeader,
               isSmallScreen && {
-                flexDirection: "column",
-                alignItems: "flex-start",
+                flexDirection: 'column',
+                alignItems: 'flex-start',
               },
             ]}
           >
-            <Text variant={isSmallScreen ? "titleMedium" : "headlineSmall"}>
+            <Text variant={isSmallScreen ? 'titleMedium' : 'headlineSmall'}>
               Manage QR Codes
             </Text>
             <Button
               mode="contained"
-              onPress={() => router.push("/(protected)/qrcodes/addQRcode")}
+              onPress={() => router.push('/(protected)/qrcodes/addQRcode')}
               style={{
-                alignSelf: isSmallScreen ? "stretch" : "flex-end",
-                width: isSmallScreen ? "100%" : isMediumScreen ? "35%" : "25%",
+                alignSelf: isSmallScreen ? 'stretch' : 'flex-end',
+                width: isSmallScreen ? '100%' : isMediumScreen ? '35%' : '25%',
                 marginTop: isSmallScreen ? 8 : 0,
               }}
             >
               <Icon source="plus" size={20} color="gray" />
-              {isSmallScreen ? "Create" : "Create QRcode"}
+              {isSmallScreen ? 'Create' : 'Create QRcode'}
             </Button>
           </Card.Content>
         </Card>
@@ -174,12 +174,12 @@ export default function QRCodes() {
                     <DataTable.Cell
                       style={{ width: isSmallScreen ? 120 : 160 }}
                     >
-                      {qr.branch?.address || "N/A"}
+                      {qr.branch?.address || 'N/A'}
                     </DataTable.Cell>
                     <DataTable.Cell
                       style={{ width: isSmallScreen ? 100 : 120 }}
                     >
-                      {qr.table?.table_code || "Branch QR"}
+                      {qr.table?.table_code || 'Branch QR'}
                     </DataTable.Cell>
                     <DataTable.Cell style={{ width: isSmallScreen ? 80 : 100 }}>
                       <Image
@@ -198,9 +198,9 @@ export default function QRCodes() {
                     >
                       <View
                         style={{
-                          flexDirection: isSmallScreen ? "column" : "row",
+                          flexDirection: isSmallScreen ? 'column' : 'row',
                           gap: 4,
-                          alignItems: "flex-start",
+                          alignItems: 'flex-start',
                         }}
                       >
                         <Button
@@ -213,7 +213,7 @@ export default function QRCodes() {
                             )
                           }
                         >
-                          {isSmallScreen ? "" : "Download"}
+                          {isSmallScreen ? '' : 'Download'}
                         </Button>
                         <Button
                           icon="delete"
@@ -223,7 +223,7 @@ export default function QRCodes() {
                             setShowDialog(true);
                           }}
                         >
-                          {isSmallScreen ? "" : "Delete"}
+                          {isSmallScreen ? '' : 'Delete'}
                         </Button>
                       </View>
                     </DataTable.Cell>
@@ -238,9 +238,9 @@ export default function QRCodes() {
                 visible={showDialog}
                 onDismiss={() => setShowDialog(false)}
                 style={{
-                  width: isSmallScreen ? "90%" : "50%",
-                  marginHorizontal: "auto",
-                  alignSelf: "center",
+                  width: isSmallScreen ? '90%' : '50%',
+                  marginHorizontal: 'auto',
+                  alignSelf: 'center',
                 }}
               >
                 <Dialog.Title>
@@ -276,8 +276,8 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   sectionHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
 });

@@ -6,10 +6,12 @@ import {
   ScrollView,
   Platform,
 } from 'react-native';
-import { Text, Icon } from 'react-native-paper'; // Using Icon from react-native-paper
-import { router, usePathname } from 'expo-router'; // Assuming expo-router is configured, added usePathname
-import { useResponsive } from '@/hooks/useResponsive';
+import { Text } from 'react-native-paper';
+import { router, usePathname } from 'expo-router';
 import { useRestaurantIdentity } from '@/hooks/useRestaurantIdentity';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { useResponsive } from '@/hooks/useResponsive';
+import { i18n as I18n } from '@/app/_layout';
 
 // Define the structure for a menu link
 interface Link {
@@ -20,6 +22,7 @@ interface Link {
 
 const Sidebar: React.FC = () => {
   const { isBranch } = useRestaurantIdentity();
+  const { isTablet } = useResponsive(); // or whatever your hook provides
 
   // Define the menu links exactly as seen in the image
   const links: Link[] = [
@@ -90,13 +93,19 @@ const Sidebar: React.FC = () => {
     }
   }, [currentPathname]); // Re-run when the pathname changes
 
-  const { isTablet } = useResponsive();
+  // NOTE: isTablet is not used for width anymore, replaced by 'isOpen' prop for explicit control
+  // const { isTablet } = useResponsive();
+
+  // Calculate sidebar width based on isOpen prop
+  const sidebarWidthStyle = isTablet
+    ? sidebarStyles.sidebarOpen // e.g., wider style for open
+    : sidebarStyles.sidebarClosed; // e.g., narrower style for closed
 
   return (
     <View
       style={[
         sidebarStyles.sidebar,
-        isTablet ? sidebarStyles.sidebarTablet : sidebarStyles.sidebarMobile,
+        sidebarWidthStyle, // Apply the width based on isOpen
       ]}
     >
       {/* Menu Items */}
@@ -106,6 +115,8 @@ const Sidebar: React.FC = () => {
             key={item.name}
             style={[
               sidebarStyles.menuItem,
+              // Adjust padding/layout when sidebar is closed for better alignment
+              !isTablet && sidebarStyles.menuItemClosed,
               activeLink === item.route && sidebarStyles.activeMenuItem, // Apply active style
             ]}
             onPress={() => {
@@ -113,19 +124,21 @@ const Sidebar: React.FC = () => {
               router.push(item.route as any); // Navigate to the route
             }}
           >
-            <Icon
-              source={item.icon} // Use 'source' prop for react-native-paper Icon
+            <MaterialCommunityIcons
+              name={item.icon}
               size={24}
-              color={activeLink === item.route ? '#3F522E' : '#555'} // Green for active, grey for inactive
+              color={activeLink === item.route ? '#3F522E' : '#555'}
             />
-            {/* <Text
-              style={[
-                sidebarStyles.menuItemText,
-                activeLink === item.route && sidebarStyles.activeMenuItemText, // Apply active text style
-              ]}
-            >
-              {item.name}
-            </Text> */}
+            {isTablet && (
+              <Text
+                style={[
+                  sidebarStyles.menuItemText,
+                  activeLink === item.route && sidebarStyles.activeMenuItemText,
+                ]}
+              >
+                {I18n.t(`Sidebar.${item.name}`)}
+              </Text>
+            )}
           </TouchableOpacity>
         ))}
       </ScrollView>
@@ -138,9 +151,11 @@ const sidebarStyles = StyleSheet.create({
   sidebar: {
     backgroundColor: '#EFF4EB',
     paddingVertical: 20,
+    // Adjust padding to accommodate both states, or use conditional padding
     paddingHorizontal: 15,
     borderRightWidth: 1,
     borderRightColor: '#eee',
+    // ... platform specific shadows
     ...(Platform.OS === 'web'
       ? { boxShadow: '0px 2px 4px rgba(0,0,0,0.1)' }
       : {
@@ -151,11 +166,12 @@ const sidebarStyles = StyleSheet.create({
           elevation: 5,
         }),
   },
-  sidebarMobile: {
-    width: 100,
+  // New styles for open/closed state widths
+  sidebarOpen: {
+    width: 200, // Example width when open/expanded
   },
-  sidebarTablet: {
-    width: 100,
+  sidebarClosed: {
+    width: 80, // Example width when closed/collapsed, enough for just the icon
   },
   logo: {
     fontSize: 24,
@@ -174,6 +190,11 @@ const sidebarStyles = StyleSheet.create({
     paddingHorizontal: 10,
     borderRadius: 8,
     marginBottom: 8,
+  },
+  // Style adjustment for closed state to center the icon horizontally
+  menuItemClosed: {
+    justifyContent: 'center',
+    paddingHorizontal: 5, // Reduce horizontal padding in closed state
   },
   menuItemText: {
     marginLeft: 10,

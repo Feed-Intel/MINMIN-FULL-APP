@@ -61,7 +61,7 @@ export default function AddComboDialog({
   const queryClient = useQueryClient();
   const { data: branches } = useGetBranches();
   const { data: menuItems } = useGetMenus();
-  const { mutateAsync: saveCombo, isPending } = useCreateCombo();
+  const { mutate: saveCombo, isPending } = useCreateCombo();
   const { width } = useWindowDimensions();
   const isSmallScreen = width < 600;
   const { isBranch, branchId } = useRestaurantIdentity();

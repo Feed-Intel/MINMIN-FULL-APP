@@ -40,7 +40,7 @@ export default function AddBranchDialog({
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [showSnackbar, setShowSnackbar] = useState(false);
 
-  const { mutateAsync: addBranch, isPending } = useCreateBranch();
+  const { mutate: addBranch, isPending } = useCreateBranch();
 
   const validateForm = () => {
     const errors: { [key: string]: string } = {};

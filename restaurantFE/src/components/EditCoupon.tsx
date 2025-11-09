@@ -46,7 +46,7 @@ export default function EditCouponModal({
   const [selectedBranches, setSelectedBranches] = useState<string[]>(
     coupon.branches
   );
-  const { mutateAsync: updateCouponCode } = useUpdateCoupon();
+  const { mutate: updateCouponCode } = useUpdateCoupon();
   const queryClient = useQueryClient();
 
   const validateForm = () => {

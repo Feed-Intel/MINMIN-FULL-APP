@@ -67,7 +67,7 @@ export default function MenuAvailability() {
     }
   }, [data]);
 
-  const { mutateAsync: toggleAvailability, isPending: isToggleLoading } =
+  const { mutate: toggleAvailability, isPending: isToggleLoading } =
     useUpdateMenuAvailability();
 
   const handleToggle = async (
