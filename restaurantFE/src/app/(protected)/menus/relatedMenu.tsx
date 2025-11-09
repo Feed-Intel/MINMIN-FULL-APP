@@ -1,10 +1,10 @@
-import React from "react";
+import React from 'react';
 import {
   ScrollView,
   StyleSheet,
   useWindowDimensions,
   View,
-} from "react-native";
+} from 'react-native';
 import {
   Text,
   DataTable,
@@ -14,16 +14,16 @@ import {
   Portal,
   Dialog,
   Icon,
-} from "react-native-paper";
-import { router } from "expo-router";
+} from 'react-native-paper';
+import { router } from 'expo-router';
 import {
   useDeleteRelatedMenu,
   useGetRelatedMenus,
-} from "@/services/mutation/menuMutation";
-import { useQueryClient } from "@tanstack/react-query";
-import { useDispatch } from "react-redux";
-import { AppDispatch } from "@/lib/reduxStore/store";
-import { hideLoader, showLoader } from "@/lib/reduxStore/loaderSlice";
+} from '@/services/mutation/menuMutation';
+import { useQueryClient } from '@tanstack/react-query';
+import { useDispatch } from 'react-redux';
+import { AppDispatch } from '@/lib/reduxStore/store';
+import { hideLoader, showLoader } from '@/lib/reduxStore/loaderSlice';
 
 export default function RelatedItemManagement() {
   const { width } = useWindowDimensions();
@@ -32,7 +32,7 @@ export default function RelatedItemManagement() {
   const queryClient = useQueryClient();
   const [showDialog, setShowDialog] = React.useState(false);
   const [relatedMenuID, setRelatedMenuID] = React.useState<string | null>(null);
-  const { mutateAsync: deleteRelatedMenu, isPending: isDeleting } =
+  const { mutate: deleteRelatedMenu, isPending: isDeleting } =
     useDeleteRelatedMenu();
   const dispatch = useDispatch<AppDispatch>();
 
@@ -54,7 +54,7 @@ export default function RelatedItemManagement() {
     setShowDialog(false);
     dispatch(showLoader());
     await deleteRelatedMenu(relatedMenuID!);
-    queryClient.invalidateQueries({ queryKey: ["relatedMenus"] });
+    queryClient.invalidateQueries({ queryKey: ['relatedMenus'] });
     dispatch(hideLoader());
   };
 
@@ -63,7 +63,7 @@ export default function RelatedItemManagement() {
       <ActivityIndicator
         animating={true}
         style={styles.loading}
-        size={isSmallScreen ? "small" : "large"}
+        size={isSmallScreen ? 'small' : 'large'}
       />
     );
   }
@@ -73,7 +73,7 @@ export default function RelatedItemManagement() {
       <Card>
         <Card.Content>
           <Text
-            variant={isSmallScreen ? "headlineMedium" : "headlineLarge"}
+            variant={isSmallScreen ? 'headlineMedium' : 'headlineLarge'}
             style={[styles.title, { marginBottom: isSmallScreen ? 12 : 16 }]}
           >
             Related Items
@@ -81,16 +81,16 @@ export default function RelatedItemManagement() {
 
           <Button
             mode="contained"
-            onPress={() => router.push("/(protected)/menus/addRelatedItem")}
+            onPress={() => router.push('/(protected)/menus/addRelatedItem')}
             style={[
               styles.addButton,
               {
-                width: isSmallScreen ? "100%" : "auto",
-                alignSelf: isSmallScreen ? "center" : "flex-end",
+                width: isSmallScreen ? '100%' : 'auto',
+                alignSelf: isSmallScreen ? 'center' : 'flex-end',
                 marginBottom: isSmallScreen ? 12 : 16,
               },
             ]}
-            contentStyle={{ flexDirection: "row-reverse" }}
+            contentStyle={{ flexDirection: 'row-reverse' }}
             labelStyle={{ fontSize: isSmallScreen ? 14 : 16 }}
           >
             <Icon source="plus" size={20} color="gray" />
@@ -131,7 +131,7 @@ export default function RelatedItemManagement() {
                     style={[styles.tableCell, { width: columnWidths.menuItem }]}
                   >
                     <Text numberOfLines={2}>
-                      {typeof item.menu_item === "string"
+                      {typeof item.menu_item === 'string'
                         ? item.menu_item
                         : item.menu_item?.name}
                     </Text>
@@ -143,7 +143,7 @@ export default function RelatedItemManagement() {
                     ]}
                   >
                     <Text numberOfLines={2}>
-                      {typeof item.related_item === "string"
+                      {typeof item.related_item === 'string'
                         ? item.related_item
                         : item.related_item?.name}
                     </Text>
@@ -200,8 +200,8 @@ export default function RelatedItemManagement() {
               style={[
                 styles.dialog,
                 {
-                  width: isSmallScreen ? "90%" : "50%",
-                  marginHorizontal: "auto",
+                  width: isSmallScreen ? '90%' : '50%',
+                  marginHorizontal: 'auto',
                 },
               ]}
             >
@@ -230,19 +230,19 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   title: {
-    textAlign: "center",
-    fontWeight: "600",
+    textAlign: 'center',
+    fontWeight: '600',
   },
   addButton: {
     borderRadius: 8,
   },
   loading: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   tableHeader: {
-    justifyContent: "center",
+    justifyContent: 'center',
     height: 50,
     paddingHorizontal: 8,
   },
@@ -251,14 +251,14 @@ const styles = StyleSheet.create({
   },
   tableCell: {
     paddingHorizontal: 8,
-    justifyContent: "center",
+    justifyContent: 'center',
   },
   actionCell: {
-    justifyContent: "center",
+    justifyContent: 'center',
   },
   actionContainer: {
-    flexDirection: "row",
-    justifyContent: "space-evenly",
+    flexDirection: 'row',
+    justifyContent: 'space-evenly',
   },
   actionButton: {
     marginHorizontal: 4,

@@ -123,9 +123,9 @@ export default function EditDiscountModal({
     useState(false);
   const [excludedSelectorVisible, setExcludedSelectorVisible] = useState(false);
 
-  const { mutateAsync: updateDiscount } = useUpdateDiscount();
-  const { mutateAsync: updateDiscountRule } = useUpdateDiscountRule();
-  const { mutateAsync: createDiscountRule } = useCreateDiscountRule();
+  const { mutate: updateDiscount } = useUpdateDiscount();
+  const { mutate: updateDiscountRule } = useUpdateDiscountRule();
+  const { mutate: createDiscountRule } = useCreateDiscountRule();
   const { data: menus } = useGetMenus();
   const queryClient = useQueryClient();
   const { isBranch } = useRestaurantIdentity();

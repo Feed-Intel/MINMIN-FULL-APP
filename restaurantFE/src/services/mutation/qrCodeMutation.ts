@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useState, useEffect, useCallback } from 'react';
 import { deleteQRCode, getQRCodes } from '../api/qrCodeApi';
 import { QRCodeType } from '@/types/qrCodeType';
 import { hideLoader, showLoader } from '@/lib/reduxStore/loaderSlice';
@@ -6,39 +6,102 @@ import { useDispatch } from 'react-redux';
 import { AppDispatch } from '@/lib/reduxStore/store';
 import { useTime } from '@/context/time';
 
-export const useGetQRCodes = () => {
-  const { time } = useTime();
-  return useQuery<QRCodeType[]>({
-    queryKey: ['qrCodes', time],
-    queryFn: getQRCodes,
-    staleTime: 0,
-    refetchOnMount: true,
-  });
+const manualInvalidate = (setTime: (time: number) => void) => {
+  setTime(Date.now());
 };
 
+// --- QR Code Query ---
+
+export const useGetQRCodes = () => {
+  const { time } = useTime();
+  const [data, setData] = useState<QRCodeType[] | undefined>(undefined);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isPending, setIsPending] = useState(false);
+  const [error, setError] = useState<any>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    const fetchData = async () => {
+      // Show loading only on initial fetch, pending on subsequent fetches
+      if (data === undefined) {
+        setIsLoading(true);
+      } else {
+        setIsPending(true);
+      }
+      setError(null);
+
+      try {
+        const response = await getQRCodes();
+        if (isMounted) {
+          setData(response);
+        }
+      } catch (err) {
+        if (isMounted) {
+          setError(err);
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+          setIsPending(false);
+        }
+      }
+    };
+
+    fetchData();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [time]);
+
+  return {
+    data,
+    isLoading,
+    isPending: isPending && !!data,
+    error,
+  };
+};
+
+// --- QR Code Mutation ---
+
 export const useDeleteQRCode = () => {
-  const queryClient = useQueryClient();
   const dispatch = useDispatch<AppDispatch>();
   const { setTime } = useTime();
-  return useMutation({
-    mutationFn: deleteQRCode,
-    onMutate: () => {
-      dispatch(showLoader());
-    },
-    onError: (error: any) => {
-      console.error('Error creating table:', error);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['qrCodes'] });
-      setTime(Date.now());
-    },
-    onSettled: async (_: any, error: any) => {
-      if (error) {
-        console.error(error);
-      } else {
-        await queryClient.invalidateQueries({ queryKey: ['tables'] });
+  const [isPending, setIsPending] = useState(false);
+  const [error, setError] = useState<any>(null);
+  const [data, setData] = useState<any>(undefined);
+
+  const mutate = useCallback(
+    async (id: string) => {
+      setIsPending(true);
+      setError(null);
+      setData(undefined);
+      dispatch(showLoader()); // onMutate equivalent
+
+      try {
+        const result = await deleteQRCode(id);
+        setData(result);
+        manualInvalidate(setTime); // onSuccess invalidates 'qrCodes'
+        // Note: Original hook also invalidated 'tables' on success/settled.
+        // We manually invalidate 'qrCodes' and rely on other 'tables' hooks
+        // to update based on the global 'time' change.
+        return result;
+      } catch (err) {
+        setError(err);
+        console.error('Error creating table:', err); // onError equivalent
+        throw err;
+      } finally {
+        setIsPending(false);
+        dispatch(hideLoader()); // onSettled equivalent
       }
-      dispatch(hideLoader());
     },
-  });
+    [setTime, dispatch]
+  );
+
+  return {
+    mutate,
+    data,
+    isPending,
+    error,
+  };
 };

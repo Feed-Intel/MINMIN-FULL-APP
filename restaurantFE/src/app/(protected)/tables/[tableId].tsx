@@ -10,6 +10,7 @@ import {
 import { useGetBranches } from '@/services/mutation/branchMutation';
 import { Branch } from '@/types/branchType';
 import { Table } from '@/types/tableTypes';
+import { i18n as I18n } from '@/app/_layout';
 
 const { width } = Dimensions.get('window');
 const isSmallScreen = width < 375; // iPhone SE
@@ -46,7 +47,7 @@ export default function EditTableScreen() {
   const handleSave = async () => {
     try {
       const formData = { ...formValues };
-      await updateTable.mutateAsync({ id: tableId as string, ...formData });
+      await updateTable.mutate({ id: tableId as string, ...formData });
       router.back();
     } catch (error) {
       console.error('Error updating table:', error);

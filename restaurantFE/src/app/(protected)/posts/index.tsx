@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState } from 'react';
 import {
   FlatList,
   View,
@@ -7,7 +7,7 @@ import {
   useWindowDimensions,
   TouchableOpacity,
   TextInput,
-} from "react-native";
+} from 'react-native';
 import {
   Card,
   Button,
@@ -16,16 +16,16 @@ import {
   Portal,
   Paragraph,
   IconButton,
-} from "react-native-paper";
-import { useRouter } from "expo-router";
+} from 'react-native-paper';
+import { useRouter } from 'expo-router';
 import {
   useAddPost,
   useDeletePost,
   useGetPosts,
-} from "@/services/mutation/feedMutations";
-import { useQueryClient } from "@tanstack/react-query";
-import { useDispatch } from "react-redux";
-import { hideLoader, showLoader } from "@/lib/reduxStore/loaderSlice";
+} from '@/services/mutation/feedMutations';
+import { useQueryClient } from '@tanstack/react-query';
+import { useDispatch } from 'react-redux';
+import { hideLoader, showLoader } from '@/lib/reduxStore/loaderSlice';
 
 const AdminPosts = () => {
   const { width } = useWindowDimensions();
@@ -34,7 +34,7 @@ const AdminPosts = () => {
   const [postId, setPostId] = useState<string | null>(null);
   const [addPostModalVisible, setAddPostModalVisible] = useState(false);
   const { data: posts } = useGetPosts();
-  const { mutateAsync: deletePost } = useDeletePost();
+  const { mutate: deletePost } = useDeletePost();
   const queryClient = useQueryClient();
   const dispatch = useDispatch();
   const [activeTab, setActiveTab] = useState(1);
@@ -49,10 +49,10 @@ const AdminPosts = () => {
       setPostId(null);
       dispatch(showLoader());
       await deletePost(postId);
-      queryClient.invalidateQueries({ queryKey: ["posts"] });
+      queryClient.invalidateQueries({ queryKey: ['posts'] });
       dispatch(hideLoader());
     } catch (error) {
-      console.error("Error deleting post:", error);
+      console.error('Error deleting post:', error);
     }
   };
 
@@ -66,7 +66,7 @@ const AdminPosts = () => {
           icon="plus"
           onPress={() => setAddPostModalVisible(true)}
           style={styles.addButton}
-          labelStyle={{ fontSize: 14, color: "#ffffff" }}
+          labelStyle={{ fontSize: 14, color: '#ffffff' }}
         >
           Add posts
         </Button>
@@ -131,7 +131,7 @@ const AdminPosts = () => {
             key={page}
             compact
             style={activeTab === page ? styles.pageActive : styles.pageButton}
-            labelStyle={{ color: "#14212E9E" }}
+            labelStyle={{ color: '#14212E9E' }}
             onPress={() => setActiveTab(page)}
           >
             {page}
@@ -140,7 +140,7 @@ const AdminPosts = () => {
         <IconButton
           icon="chevron-right"
           iconColor="#14212E9E"
-          style={{ backgroundColor: "#fff", height: 40, width: 40 }}
+          style={{ backgroundColor: '#fff', height: 40, width: 40 }}
         />
       </View>
 
@@ -171,34 +171,34 @@ const AdminPosts = () => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16, backgroundColor: "#EFF4EB" },
+  container: { flex: 1, padding: 16, backgroundColor: '#EFF4EB' },
   header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: 16,
   },
-  headerTitle: { fontSize: 22, fontWeight: "700", color: "#22281B" },
+  headerTitle: { fontSize: 22, fontWeight: '700', color: '#22281B' },
   addButton: {
     borderRadius: 20,
-    backgroundColor: "#A4C58C",
+    backgroundColor: '#A4C58C',
     width: 131,
-    alignSelf: "flex-end",
+    alignSelf: 'flex-end',
   },
   listContent: { paddingBottom: 24 },
   row: {
-    justifyContent: "space-between",
+    justifyContent: 'space-between',
     marginBottom: 16,
   },
   postCard: {
     borderRadius: 16,
-    overflow: "hidden",
-    backgroundColor: "transparent",
-    borderColor: "transparent",
+    overflow: 'hidden',
+    backgroundColor: 'transparent',
+    borderColor: 'transparent',
     height: 300,
   },
   postImage: {
-    width: "100%",
+    width: '100%',
     height: 250, // fixed height for equal-sized images
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
@@ -209,37 +209,37 @@ const styles = StyleSheet.create({
   },
   postDescription: {
     fontSize: 13,
-    color: "#666",
+    color: '#666',
   },
   actionRow: {
-    flexDirection: "row",
-    justifyContent: "flex-end",
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
     paddingHorizontal: 4,
     paddingBottom: 8,
   },
   pagination: {
-    flexDirection: "row",
-    justifyContent: "flex-end",
-    alignItems: "center",
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
     gap: 4,
     marginTop: 12,
   },
   pageActive: {
     borderRadius: 12,
-    backgroundColor: "#A4C58C",
+    backgroundColor: '#A4C58C',
     paddingHorizontal: 12,
   },
   pageButton: {
     borderRadius: 12,
-    backgroundColor: "transparent",
+    backgroundColor: 'transparent',
     paddingHorizontal: 12,
   },
 });
 
 export default AdminPosts;
 
-import * as ImagePicker from "expo-image-picker";
-import { base64ToBlob } from "@/util/imageUtils";
+import * as ImagePicker from 'expo-image-picker';
+import { base64ToBlob } from '@/util/imageUtils';
 
 interface Props {
   visible: boolean;
@@ -247,18 +247,18 @@ interface Props {
 }
 
 const AddPostModal: React.FC<Props> = ({ visible, onClose }) => {
-  const [caption, setCaption] = useState("");
+  const [caption, setCaption] = useState('');
   const [imageUri, setImageUri] = useState<{
     uri: string;
     name: string;
     type: string;
   } | null>(null);
-  const { mutateAsync: addPost } = useAddPost();
+  const { mutate: addPost } = useAddPost();
   const queryClient = useQueryClient();
 
   const pickImage = async () => {
     let result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ["images"],
+      mediaTypes: ['images'],
       allowsEditing: true,
       aspect: [4, 3],
       quality: 1,
@@ -267,8 +267,8 @@ const AddPostModal: React.FC<Props> = ({ visible, onClose }) => {
     if (!result.canceled) {
       setImageUri({
         uri: result.assets[0].uri,
-        name: result.assets[0].fileName || "image.jpg",
-        type: result.assets[0].type || "image/jpeg",
+        name: result.assets[0].fileName || 'image.jpg',
+        type: result.assets[0].type || 'image/jpeg',
       });
     }
   };
@@ -280,29 +280,29 @@ const AddPostModal: React.FC<Props> = ({ visible, onClose }) => {
     // setImageUri(null);
     // onClose();
     if (!imageUri?.uri || !caption) {
-      alert("Please fill in all fields and upload an image.");
+      alert('Please fill in all fields and upload an image.');
       return;
     }
 
     const formData = new FormData();
-    formData.append("caption", caption);
-    formData.append("location", "");
-    formData.append("tags", JSON.stringify([]));
+    formData.append('caption', caption);
+    formData.append('location', '');
+    formData.append('tags', JSON.stringify([]));
     const base64Data = imageUri.uri;
     const contentType = imageUri.type;
-    const imageName = Date.now() + "." + imageUri.name?.split(".")[1];
+    const imageName = Date.now() + '.' + imageUri.name?.split('.')[1];
 
     const blob = base64ToBlob(base64Data, contentType);
     formData.append(
-      "image",
+      'image',
       new File([blob], imageName, { type: contentType })
     );
 
     try {
       await addPost(formData);
-      queryClient.invalidateQueries({ queryKey: ["posts"] });
+      queryClient.invalidateQueries({ queryKey: ['posts'] });
     } catch (error) {
-      console.error("Error adding post:", error);
+      console.error('Error adding post:', error);
     }
   };
 
@@ -318,14 +318,14 @@ const AddPostModal: React.FC<Props> = ({ visible, onClose }) => {
           <TouchableOpacity style={stylesModal.uploadBox} onPress={pickImage}>
             <Text style={stylesModal.uploadText}>
               {imageUri
-                ? "File Selected"
-                : "Choose a file or drag and drop here"}
+                ? 'File Selected'
+                : 'Choose a file or drag and drop here'}
             </Text>
             <Button
               mode="outlined"
               onPress={pickImage}
               style={stylesModal.browseBtn}
-              labelStyle={{ color: "#000" }}
+              labelStyle={{ color: '#000' }}
             >
               Browse a file
             </Button>
@@ -345,7 +345,7 @@ const AddPostModal: React.FC<Props> = ({ visible, onClose }) => {
             mode="contained"
             onPress={handleAddPost}
             style={styles.addButton}
-            labelStyle={{ color: "#fff", fontWeight: "600" }}
+            labelStyle={{ color: '#fff', fontWeight: '600' }}
           >
             + Add Post
           </Button>
@@ -357,53 +357,53 @@ const AddPostModal: React.FC<Props> = ({ visible, onClose }) => {
 
 const stylesModal = StyleSheet.create({
   dialogContainer: {
-    backgroundColor: "#F3F7EC",
+    backgroundColor: '#F3F7EC',
     borderRadius: 16,
-    width: "40%",
-    alignSelf: "center",
+    width: '40%',
+    alignSelf: 'center',
     padding: 20,
   },
   uploadBox: {
-    width: "100%",
+    width: '100%',
     height: 180,
     borderRadius: 12,
-    backgroundColor: "#E7EFE2",
-    justifyContent: "center",
-    alignItems: "center",
+    backgroundColor: '#E7EFE2',
+    justifyContent: 'center',
+    alignItems: 'center',
     marginBottom: 16,
   },
   uploadText: {
     fontSize: 14,
     marginBottom: 8,
-    color: "#333",
-    textAlign: "center",
-    fontWeight: "700",
+    color: '#333',
+    textAlign: 'center',
+    fontWeight: '700',
   },
   browseBtn: {
-    borderColor: "#A4C58C",
+    borderColor: '#A4C58C',
   },
   dropdownPlaceholder: {
-    width: "100%",
+    width: '100%',
     height: 40,
-    backgroundColor: "#E7EFE2",
+    backgroundColor: '#E7EFE2',
     borderRadius: 8,
-    justifyContent: "center",
+    justifyContent: 'center',
     paddingHorizontal: 12,
     marginBottom: 12,
   },
   captionInput: {
-    width: "100%",
+    width: '100%',
     height: 60,
-    backgroundColor: "#E7EFE2",
+    backgroundColor: '#E7EFE2',
     borderRadius: 8,
     paddingHorizontal: 12,
     fontSize: 14,
     marginBottom: 16,
   },
   addButton: {
-    backgroundColor: "#A4C58C",
+    backgroundColor: '#A4C58C',
     borderRadius: 12,
     paddingHorizontal: 24,
-    alignSelf: "flex-end",
+    alignSelf: 'flex-end',
   },
 });

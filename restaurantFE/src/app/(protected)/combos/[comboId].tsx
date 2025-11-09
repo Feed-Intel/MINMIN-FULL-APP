@@ -65,7 +65,7 @@ export default function EditComboDialog({
   const queryClient = useQueryClient();
   const { data: branches } = useGetBranches();
   const { data: menuItems } = useGetMenus();
-  const { mutateAsync: updateCombo, isPending } = useUpdateCombo();
+  const { mutate: updateCombo, isPending } = useUpdateCombo();
   const { isBranch, branchId } = useRestaurantIdentity();
 
   useEffect(() => {

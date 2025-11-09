@@ -107,7 +107,7 @@ const AddDiscountRuleModal = ({
   const onSuccessAdd = () => {
     setSnackbarVisible(true);
   };
-  const { mutateAsync: createDiscountRule, isPending } =
+  const { mutate: createDiscountRule, isPending } =
     useCreateDiscountRule(onSuccessAdd);
   const { width } = useWindowDimensions();
   const isSmallScreen = width < 600;

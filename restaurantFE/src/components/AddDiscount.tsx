@@ -88,8 +88,8 @@ export default function AddDiscountModal({
     useState(false);
   const [excludedSelectorVisible, setExcludedSelectorVisible] = useState(false);
 
-  const { mutateAsync: onAdd } = useCreateDiscount();
-  const { mutateAsync: createDiscountRule } = useCreateDiscountRule();
+  const { mutate: onAdd } = useCreateDiscount();
+  const { mutate: createDiscountRule } = useCreateDiscountRule();
   const { data: menus } = useGetMenus();
   const queryClient = useQueryClient();
   const { isBranch, branchId } = useRestaurantIdentity();

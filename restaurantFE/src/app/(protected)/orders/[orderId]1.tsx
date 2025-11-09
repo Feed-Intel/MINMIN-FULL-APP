@@ -22,23 +22,16 @@ const OrderAdminPage = () => {
   const queryClient = useQueryClient();
   const { orderId } = useLocalSearchParams();
   const { data: order, isLoading } = useGetOrder(orderId as string);
-  const { mutateAsync: updateOrderStatus } = useUpdateOrder();
+  const { mutate: updateOrderStatus } = useUpdateOrder();
 
   // Screen size breakpoints
   const isSmallScreen = width < 768;
 
   const handleStatusChange = async (status: string) => {
-    await updateOrderStatus(
-      {
-        id: orderId as string,
-        order: { status },
-      },
-      {
-        onSuccess: () => {
-          queryClient.invalidateQueries({ queryKey: ['order', orderId] });
-        },
-      }
-    );
+    await updateOrderStatus({
+      id: orderId as string,
+      order: { status },
+    });
   };
 
   if (isLoading) {

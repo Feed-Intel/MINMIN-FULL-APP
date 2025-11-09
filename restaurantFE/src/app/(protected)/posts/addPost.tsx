@@ -1,17 +1,17 @@
-import { useState } from "react";
+import { useState } from 'react';
 import {
   StyleSheet,
   Image,
   ScrollView,
   View,
   useWindowDimensions,
-} from "react-native";
-import { Button, Card, TextInput, Text, Chip } from "react-native-paper";
-import * as ImagePicker from "expo-image-picker";
-import { useAddPost } from "@/services/mutation/feedMutations";
-import { router } from "expo-router";
-import { useQueryClient } from "@tanstack/react-query";
-import { base64ToBlob } from "@/util/imageUtils";
+} from 'react-native';
+import { Button, Card, TextInput, Text, Chip } from 'react-native-paper';
+import * as ImagePicker from 'expo-image-picker';
+import { useAddPost } from '@/services/mutation/feedMutations';
+import { router } from 'expo-router';
+import { useQueryClient } from '@tanstack/react-query';
+import { base64ToBlob } from '@/util/imageUtils';
 
 const AddPost = () => {
   const { width } = useWindowDimensions();
@@ -20,10 +20,10 @@ const AddPost = () => {
     name: string;
     type: string;
   } | null>(null);
-  const [caption, setCaption] = useState("");
-  const [location, setLocation] = useState("");
+  const [caption, setCaption] = useState('');
+  const [location, setLocation] = useState('');
   const [tags, setTags] = useState<string[]>([]);
-  const [currentTag, setCurrentTag] = useState("");
+  const [currentTag, setCurrentTag] = useState('');
   const queryClient = useQueryClient();
 
   // Screen size breakpoints
@@ -32,7 +32,7 @@ const AddPost = () => {
   const handleAddTag = () => {
     if (currentTag.trim() && !tags.includes(currentTag.trim())) {
       setTags([...tags, currentTag.trim()]);
-      setCurrentTag("");
+      setCurrentTag('');
     }
   };
 
@@ -40,11 +40,11 @@ const AddPost = () => {
     setTags(tags.filter((tag) => tag !== tagToRemove));
   };
 
-  const { mutateAsync: addPost, isPending } = useAddPost();
+  const { mutate: addPost, isPending } = useAddPost();
 
   const pickImage = async () => {
     let result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ["images"],
+      mediaTypes: ['images'],
       allowsEditing: true,
       aspect: [4, 3],
       quality: 1,
@@ -53,38 +53,38 @@ const AddPost = () => {
     if (!result.canceled) {
       setImage({
         uri: result.assets[0].uri,
-        name: result.assets[0].fileName || "image.jpg",
-        type: result.assets[0].type || "image/jpeg",
+        name: result.assets[0].fileName || 'image.jpg',
+        type: result.assets[0].type || 'image/jpeg',
       });
     }
   };
 
   const handleSubmit = async () => {
     if (!image || !caption || !location) {
-      alert("Please fill in all fields and upload an image.");
+      alert('Please fill in all fields and upload an image.');
       return;
     }
 
     const formData = new FormData();
-    formData.append("caption", caption);
-    formData.append("location", location);
-    formData.append("tags", JSON.stringify(tags));
+    formData.append('caption', caption);
+    formData.append('location', location);
+    formData.append('tags', JSON.stringify(tags));
     const base64Data = image.uri;
     const contentType = image.type;
-    const imageName = Date.now() + "." + image.name?.split(".")[1];
+    const imageName = Date.now() + '.' + image.name?.split('.')[1];
 
     const blob = base64ToBlob(base64Data, contentType);
     formData.append(
-      "image",
+      'image',
       new File([blob], imageName, { type: contentType })
     );
 
     try {
       await addPost(formData);
-      queryClient.invalidateQueries({ queryKey: ["posts"] });
+      queryClient.invalidateQueries({ queryKey: ['posts'] });
       router.back();
     } catch (error) {
-      console.error("Error adding post:", error);
+      console.error('Error adding post:', error);
     }
   };
 
@@ -94,7 +94,7 @@ const AddPost = () => {
         style={[
           styles.container,
           {
-            width: isSmallScreen ? "95%" : "80%",
+            width: isSmallScreen ? '95%' : '80%',
             maxWidth: 600,
             padding: isSmallScreen ? 12 : 24,
           },
@@ -102,7 +102,7 @@ const AddPost = () => {
       >
         <Card.Content>
           <Text
-            variant={isSmallScreen ? "headlineSmall" : "headlineMedium"}
+            variant={isSmallScreen ? 'headlineSmall' : 'headlineMedium'}
             style={[styles.title, { marginBottom: isSmallScreen ? 12 : 16 }]}
           >
             Add Post
@@ -114,7 +114,7 @@ const AddPost = () => {
             style={[styles.button, { marginBottom: isSmallScreen ? 8 : 16 }]}
             labelStyle={{ fontSize: isSmallScreen ? 14 : 16 }}
           >
-            {image ? "Change Image" : "Upload Image"}
+            {image ? 'Change Image' : 'Upload Image'}
           </Button>
 
           {image && (
@@ -198,15 +198,15 @@ const AddPost = () => {
 const styles = StyleSheet.create({
   scrollContainer: {
     flexGrow: 1,
-    justifyContent: "center",
+    justifyContent: 'center',
   },
   container: {
-    alignSelf: "center",
+    alignSelf: 'center',
     marginVertical: 16,
   },
   title: {
-    textAlign: "center",
-    fontWeight: "600",
+    textAlign: 'center',
+    fontWeight: '600',
   },
   input: {
     // backgroundColor: "white",
@@ -215,16 +215,16 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   image: {
-    width: "100%",
+    width: '100%',
     marginVertical: 16,
-    resizeMode: "cover",
+    resizeMode: 'cover',
   },
   tagSection: {
     marginVertical: 8,
   },
   chipContainer: {
-    flexDirection: "row",
-    flexWrap: "wrap",
+    flexDirection: 'row',
+    flexWrap: 'wrap',
     marginBottom: 8,
   },
   chip: {

@@ -1,10 +1,10 @@
-import React, { useState } from "react";
+import React, { useState } from 'react';
 import {
   ScrollView,
   View,
   useWindowDimensions,
   StyleSheet,
-} from "react-native";
+} from 'react-native';
 import {
   Button,
   Card,
@@ -15,16 +15,16 @@ import {
   Portal,
   Text,
   Icon,
-} from "react-native-paper";
+} from 'react-native-paper';
 import {
   useDeleteCombo,
   useGetCombos,
-} from "@/services/mutation/comboMutation";
-import { router } from "expo-router";
-import { useQueryClient } from "@tanstack/react-query";
-import { useDispatch } from "react-redux";
-import { AppDispatch } from "@/lib/reduxStore/store";
-import { hideLoader, showLoader } from "@/lib/reduxStore/loaderSlice";
+} from '@/services/mutation/comboMutation';
+import { router } from 'expo-router';
+import { useQueryClient } from '@tanstack/react-query';
+import { useDispatch } from 'react-redux';
+import { AppDispatch } from '@/lib/reduxStore/store';
+import { hideLoader, showLoader } from '@/lib/reduxStore/loaderSlice';
 
 export default function Combos() {
   const { width } = useWindowDimensions();
@@ -32,7 +32,7 @@ export default function Combos() {
 
   const { data: combos } = useGetCombos();
   const queryClient = useQueryClient();
-  const { mutateAsync: comboDelete } = useDeleteCombo();
+  const { mutate: comboDelete } = useDeleteCombo();
   const [showDialog, setShowDialog] = useState(false);
   const [comboID, setComboID] = useState<string | null>(null);
   const dispatch = useDispatch<AppDispatch>();
@@ -42,7 +42,7 @@ export default function Combos() {
     setShowDialog(false);
     dispatch(showLoader());
     await comboDelete(comboID!);
-    queryClient.invalidateQueries({ queryKey: ["combos"] });
+    queryClient.invalidateQueries({ queryKey: ['combos'] });
     dispatch(hideLoader());
   };
 
@@ -55,7 +55,7 @@ export default function Combos() {
               <Title>Combos</Title>
               <Button
                 mode="contained"
-                onPress={() => router.push("/(protected)/combos/addCombo")}
+                onPress={() => router.push('/(protected)/combos/addCombo')}
                 style={[styles.addButton, isMobile && styles.fullWidth]}
               >
                 <Icon source="plus" size={20} color="white" />
@@ -77,19 +77,21 @@ export default function Combos() {
                   <DataTable.Row key={combo.id}>
                     <DataTable.Cell>{combo.name}</DataTable.Cell>
                     <DataTable.Cell>
-                      {typeof combo.branch === "object"
+                      {typeof combo.branch === 'object'
                         ? combo.branch.address
                         : combo.branch}
                     </DataTable.Cell>
                     <DataTable.Cell>${combo.combo_price}</DataTable.Cell>
                     <DataTable.Cell>
-                      {combo.is_custom ? "Yes" : "No"}
+                      {combo.is_custom ? 'Yes' : 'No'}
                     </DataTable.Cell>
                     <DataTable.Cell style={styles.actionCell}>
                       <Button
                         mode="text"
                         onPress={() =>
-                          router.push(("/(protected)/combos/" + combo.id) as any)
+                          router.push(
+                            ('/(protected)/combos/' + combo.id) as any
+                          )
                         }
                       >
                         <Icon source="pencil" size={20} color="#007AFF" />
@@ -140,29 +142,29 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   headerContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    flexWrap: "wrap",
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    flexWrap: 'wrap',
     gap: 12,
   },
   addButton: {
-    alignSelf: "flex-end",
+    alignSelf: 'flex-end',
     minWidth: 140,
   },
   fullWidth: {
-    alignSelf: "stretch",
+    alignSelf: 'stretch',
     marginTop: 12,
   },
   actionCell: {
-    flexDirection: "row",
+    flexDirection: 'row',
     gap: 4,
   },
   dialog: {
-    alignSelf: "center",
-    width: "50%",
+    alignSelf: 'center',
+    width: '50%',
   },
   dialogMobile: {
-    width: "90%",
+    width: '90%',
   },
 });

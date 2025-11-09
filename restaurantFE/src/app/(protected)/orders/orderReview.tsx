@@ -31,7 +31,7 @@ export default function AcceptOrders() {
   const MenuTax = useAppSelector((state: RootState) => state.cart.tax);
   const cart = useAppSelector((state: RootState) => state.cart);
   const dispatch = useDispatch();
-  const { mutateAsync: createOrder } = useCreateOrder();
+  const { mutate: createOrder } = useCreateOrder();
   const { tenantId, branchId } = useRestaurantIdentity();
   const queryClient = useQueryClient();
 

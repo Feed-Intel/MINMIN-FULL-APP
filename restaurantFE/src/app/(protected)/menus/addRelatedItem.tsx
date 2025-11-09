@@ -30,7 +30,7 @@ export default function AddRelatedItem() {
   const isLargeScreen = width >= 1024;
 
   const { data: menus } = useGetMenus();
-  const { mutateAsync: addRelatedItem, isPending } = useAddRelatedMenuItem();
+  const { mutate: addRelatedItem, isPending } = useAddRelatedMenuItem();
 
   const handleAddItem = async () => {
     if (!menuItem || !relatedItem || !tag) {

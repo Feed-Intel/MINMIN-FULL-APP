@@ -69,7 +69,7 @@ export default function EditMenuDialog({
   const isMediumScreen = width >= 768 && width < 1024;
 
   const queryClient = useQueryClient();
-  const { mutateAsync: updateMenu, isPending } = useUpdateMenu(menu?.id);
+  const { mutate: updateMenu, isPending } = useUpdateMenu(menu?.id);
   const { data: branches } = useGetBranches(undefined, true);
 
   const categories = ['Appetizer', 'Breakfast', 'Lunch', 'Dinner'];

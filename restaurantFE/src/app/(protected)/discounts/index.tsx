@@ -37,8 +37,8 @@ const ManageDiscounts: React.FC = () => {
   const [currentPage, setCurrentPage] = useState<number>(1);
   const { data: branches } = useGetBranches(undefined, true);
   const { data: discountRules = [] } = useDiscountRules(undefined, true);
-  const { mutateAsync: discountDelete } = useDeleteDiscount();
-  const { mutateAsync: couponDelete } = useDeleteCoupon();
+  const { mutate: discountDelete } = useDeleteDiscount();
+  const { mutate: couponDelete } = useDeleteCoupon();
   const queryClient = useQueryClient();
   const dispatch = useDispatch();
   const { isRestaurant, isBranch, branchId } = useRestaurantIdentity();

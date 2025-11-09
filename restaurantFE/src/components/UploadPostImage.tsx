@@ -26,7 +26,7 @@ export default function AddPostModal({
 }) {
   const [caption, setCaption] = React.useState('');
   const [location, setLocation] = React.useState('');
-  const { mutateAsync: addPost } = useAddPost();
+  const { mutate: addPost } = useAddPost();
   const [uploadedImage, setUploadedImage] = React.useState<any | undefined>(
     undefined
   );

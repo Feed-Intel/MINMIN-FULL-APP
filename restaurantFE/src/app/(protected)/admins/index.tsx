@@ -38,7 +38,7 @@ export default function BranchAdmins() {
   const [isAdminActive, setIsAdminActive] = useState<Record<string, boolean>>(
     {}
   );
-  const { mutateAsync: adminDelete } = useDeleteBranchAdmin();
+  const { mutate: adminDelete } = useDeleteBranchAdmin();
   const dispatch = useDispatch<AppDispatch>();
   const queryClient = useQueryClient();
   const [showDialog, setShowDialog] = React.useState(false);
@@ -377,7 +377,7 @@ function AddAdminModal({ branches, visible, onClose }: AddAdminModalProps) {
   const [phone, setPhone] = React.useState('');
   const [branch, setBranch] = React.useState('');
   // Assume useCreateBranchAdmin and useQueryClient are defined externally
-  const { mutateAsync: addBranchAdmin } = useCreateBranchAdmin();
+  const { mutate: addBranchAdmin } = useCreateBranchAdmin();
   const queryClient = useQueryClient();
 
   const [showMenu, setShowMenu] = React.useState(false);
@@ -594,7 +594,7 @@ function UpdateAdminModal({
   const [phone, setPhone] = React.useState(admin.phone);
   const [branch, setBranch] = React.useState(admin.branch);
   // Assume useUpdateBranchAdmin and useQueryClient are defined externally
-  const { mutateAsync: updateBranchAdmin } = useUpdateBranchAdmin();
+  const { mutate: updateBranchAdmin } = useUpdateBranchAdmin();
   const queryClient = useQueryClient();
 
   const [showMenu, setShowMenu] = React.useState(false);
