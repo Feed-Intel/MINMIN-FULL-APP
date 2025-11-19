@@ -31,7 +31,11 @@ export const updateQr = asyncHandler(
 );
 
 export const fetchTables = asyncHandler(
-  async (page?: string | null): Promise<any[]> => {
+  async (page?: string | null, noPage?: boolean): Promise<any> => {
+    if (noPage) {
+      const resp = await apiClient.get(`/table/?nopage=1`);
+      return { results: resp.data || [] };
+    }
     const resp = await apiClient.get(`/table?${page}`);
     return resp.data || [];
   }

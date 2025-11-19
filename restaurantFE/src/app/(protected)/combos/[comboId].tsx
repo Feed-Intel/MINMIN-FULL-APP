@@ -112,48 +112,49 @@ export default function EditComboDialog({
   };
 
   const toggleMenuItemMenu = (index: number, visible: boolean) => {
-    setMenuItemMenusVisible((prev) => ({
-      ...prev,
-      [index]: visible,
-    }));
+    setMenuItemMenusVisible((prev) => ({ ...prev, [index]: visible }));
   };
 
   const validateForm = () => {
-    const errors: { [key: string]: string } = {};
+    const validationErrors: { [key: string]: string } = {};
 
     if (!combo.name?.trim()) {
-      errors.name = I18n.t('comboDialog.errorComboNameRequired');
+      validationErrors.name = I18n.t('comboDialog.errorComboNameRequired');
     } else if (combo.name.trim().length < 3) {
-      errors.name = I18n.t('comboDialog.errorComboNameMinLength');
+      validationErrors.name = I18n.t('comboDialog.errorComboNameMinLength');
     }
 
     if (!applyToAllBranches && !combo.branch) {
-      errors.branch = I18n.t('comboDialog.errorBranchRequired');
+      validationErrors.branch = I18n.t('comboDialog.errorBranchRequired');
     }
 
     if ((combo.combo_price ?? 0) <= 0) {
-      errors.combo_price = I18n.t('comboDialog.errorComboPriceInvalid');
+      validationErrors.combo_price = I18n.t(
+        'comboDialog.errorComboPriceInvalid'
+      );
     }
 
     if (!combo.combo_items || combo.combo_items.length === 0) {
-      errors.combo_items = I18n.t('comboDialog.errorComboItemsRequired');
+      validationErrors.combo_items = I18n.t(
+        'comboDialog.errorComboItemsRequired'
+      );
     } else {
       combo.combo_items.forEach((item, index) => {
         if (!item.menu_item) {
-          errors[`menu_item_${index}`] = I18n.t(
+          validationErrors[`menu_item_${index}`] = I18n.t(
             'comboDialog.errorMenuItemRequired'
           );
         }
         if (item.quantity <= 0) {
-          errors[`quantity_${index}`] = I18n.t(
+          validationErrors[`quantity_${index}`] = I18n.t(
             'comboDialog.errorQuantityInvalid'
           );
         }
       });
     }
 
-    setErrors(errors);
-    return Object.keys(errors).length === 0;
+    setErrors(validationErrors);
+    return Object.keys(validationErrors).length === 0;
   };
 
   const handleSave = async () => {
@@ -191,6 +192,7 @@ export default function EditComboDialog({
                 {I18n.t('comboDialog.comboDetailEditTitle')}
               </Text>
 
+              {/* Combo Name */}
               <TextInput
                 placeholder={I18n.t('comboDialog.comboNamePlaceholder')}
                 value={combo.name}
@@ -200,20 +202,22 @@ export default function EditComboDialog({
                 mode="outlined"
                 outlineStyle={styles.outline}
                 placeholderTextColor="#202B1866"
-                contentStyle={{ color: '#202B1866' }}
               />
               <HelperText type="error" visible={!!errors.name}>
                 {errors.name}
               </HelperText>
 
+              {/* Combo Price */}
               <TextInput
                 placeholder={I18n.t('comboDialog.comboPricePlaceholder')}
                 value={combo.combo_price?.toString()}
                 keyboardType="numeric"
-                onChangeText={(text) => {
-                  const sanitizedValue = text.replace(/[^0-9.,-]/g, '');
-                  handleInputChange('combo_price', sanitizedValue);
-                }}
+                onChangeText={(text) =>
+                  handleInputChange(
+                    'combo_price',
+                    text.replace(/[^0-9.,-]/g, '')
+                  )
+                }
                 style={styles.input}
                 error={!!errors.combo_price}
                 mode="outlined"
@@ -224,26 +228,28 @@ export default function EditComboDialog({
                 {errors.combo_price}
               </HelperText>
 
+              {/* Apply to all branches */}
               <View style={styles.switchContainer}>
                 <Text style={styles.switchText}>
                   {I18n.t('comboDialog.applyToAllBranchesLabel')}
                 </Text>
                 <Switch
                   value={applyToAllBranches}
-                  onValueChange={(value) => setApplyToAllBranches(value)}
+                  onValueChange={setApplyToAllBranches}
                   trackColor={{ false: '#96B76E', true: '#96B76E' }}
-                  thumbColor={'#fff'}
+                  thumbColor="#fff"
                   disabled={isBranch}
                 />
               </View>
 
+              {/* Branch Selection */}
               {!applyToAllBranches && (
                 <View style={styles.dropdownContainer}>
                   {isBranch ? (
                     <Text style={styles.readonlyBranch}>
                       {branches?.results.find(
                         (b: any) => b.id === (branchId ?? combo.branch)
-                      )?.address ??
+                      )?.address ||
                         I18n.t('comboDialog.assignedBranchReadonly')}
                     </Text>
                   ) : (
@@ -270,8 +276,8 @@ export default function EditComboDialog({
                       }
                       contentStyle={[styles.menuContent, { width: '100%' }]}
                     >
-                      {branches?.results && branches?.results?.length > 0 ? (
-                        branches?.results?.map((branch: any) => (
+                      {branches?.results?.length ? (
+                        branches.results.map((branch: any) => (
                           <Menu.Item
                             key={branch.id}
                             onPress={() => {
@@ -293,6 +299,7 @@ export default function EditComboDialog({
                 </View>
               )}
 
+              {/* Combo Items */}
               <DataTable style={styles.dataTable}>
                 <DataTable.Header>
                   <DataTable.Title>
@@ -334,9 +341,8 @@ export default function EditComboDialog({
                           </Button>
                         }
                       >
-                        {menuItems?.results &&
-                        menuItems?.results?.length > 0 ? (
-                          menuItems?.results?.map((menuItem: any) => (
+                        {menuItems?.results?.length ? (
+                          menuItems.results.map((menuItem: any) => (
                             <Menu.Item
                               key={menuItem.id}
                               onPress={() => {

@@ -11,7 +11,6 @@ import {
   Dialog,
 } from 'react-native-paper';
 import { useUpdateBranch } from '@/services/mutation/branchMutation';
-import Toast from 'react-native-toast-message';
 import { i18n as I18n } from '@/app/_layout';
 
 interface EditBranchDialogProps {
@@ -31,7 +30,11 @@ export default function EditBranchDialog({
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [showSnackbar, setShowSnackbar] = useState(false);
 
-  const { mutate: updateBranch, isPending } = useUpdateBranch();
+  const { mutate: updateBranch, isPending } = useUpdateBranch(() => {
+    onSuccess();
+    setShowSnackbar(true);
+    onClose();
+  });
 
   useEffect(() => {
     if (branch) {
@@ -39,7 +42,6 @@ export default function EditBranchDialog({
         id: branch.id,
         address: branch.address,
         is_default: branch.is_default,
-        // Ensure lat/lng are string for TextInput consistency
         lat: String(branch.location?.lat || ''),
         lng: String(branch.location?.lng || ''),
         gps_coordinates: branch.gps_coordinates || '',
@@ -48,88 +50,47 @@ export default function EditBranchDialog({
   }, [branch]);
 
   const validateForm = () => {
-    const errors: { [key: string]: string } = {};
+    const validationErrors: { [key: string]: string } = {};
 
-    // Check if branchData is initialized
     if (!branchData) return false;
 
     // Validate Address
-    if (!branchData.address || !branchData.address.trim()) {
-      errors.address = I18n.t('EditBranch.error_address_required');
-      Toast.show({
-        type: 'error',
-        text1: I18n.t('Common.error_title'),
-        text2: errors.address,
-      });
+    if (!branchData.address?.trim()) {
+      validationErrors.address = I18n.t('EditBranch.error_address_required');
     } else if (branchData.address.trim().length < 3) {
-      errors.address = I18n.t('EditBranch.error_address_length');
-      Toast.show({
-        type: 'error',
-        text1: I18n.t('Common.error_title'),
-        text2: errors.address,
-      });
+      validationErrors.address = I18n.t('EditBranch.error_address_length');
     }
 
     // Validate Latitude
-    if (!branchData.lat || !branchData.lat.trim()) {
-      errors.lat = I18n.t('EditBranch.error_lat_required');
-      Toast.show({
-        type: 'error',
-        text1: I18n.t('Common.error_title'),
-        text2: errors.lat,
-      });
+    if (!branchData.lat?.trim()) {
+      validationErrors.lat = I18n.t('EditBranch.error_lat_required');
     } else {
       const latitude = parseFloat(branchData.lat.trim());
       if (isNaN(latitude) || latitude < -90 || latitude > 90) {
-        errors.lat = I18n.t('EditBranch.error_lat_range');
-        Toast.show({
-          type: 'error',
-          text1: I18n.t('Common.error_title'),
-          text2: errors.lat,
-        });
+        validationErrors.lat = I18n.t('EditBranch.error_lat_range');
       }
     }
 
     // Validate Longitude
-    if (!branchData.lng || !branchData.lng.trim()) {
-      errors.lng = I18n.t('EditBranch.error_lng_required');
-      Toast.show({
-        type: 'error',
-        text1: I18n.t('Common.error_title'),
-        text2: errors.lng,
-      });
+    if (!branchData.lng?.trim()) {
+      validationErrors.lng = I18n.t('EditBranch.error_lng_required');
     } else {
       const longitude = parseFloat(branchData.lng.trim());
       if (isNaN(longitude) || longitude < -180 || longitude > 180) {
-        errors.lng = I18n.t('EditBranch.error_lng_range');
-        Toast.show({
-          type: 'error',
-          text1: I18n.t('Common.error_title'),
-          text2: errors.lng,
-        });
+        validationErrors.lng = I18n.t('EditBranch.error_lng_range');
       }
     }
 
-    setErrors(errors);
-    return Object.keys(errors).length === 0;
+    setErrors(validationErrors);
+    return Object.keys(validationErrors).length === 0;
   };
 
   const handleUpdate = () => {
     if (validateForm() && branchData) {
-      updateBranch(
-        {
-          ...branchData,
-          // Correctly convert to string format for API
-          gps_coordinates: `${branchData.lat},${branchData.lng}`,
-        },
-        {
-          onSuccess: () => {
-            onSuccess();
-            setShowSnackbar(true);
-            onClose();
-          },
-        }
-      );
+      updateBranch({
+        ...branchData,
+        gps_coordinates: `${branchData.lat},${branchData.lng}`,
+      });
     }
   };
 
@@ -154,9 +115,7 @@ export default function EditBranchDialog({
               borderWidth: 0,
               borderRadius: 16,
             }}
-            contentStyle={{
-              color: '#202B1866',
-            }}
+            contentStyle={{ color: '#202B1866' }}
           />
           <HelperText type="error" visible={!!errors.address}>
             {errors.address}
@@ -168,21 +127,17 @@ export default function EditBranchDialog({
             mode="outlined"
             value={branchData?.lat}
             onChangeText={(text) => {
-              // Allows numbers, decimal, and minus sign
               const sanitizedValue = text.replace(/[^0-9\-.]/g, '');
-              setBranchData((prev: any) => ({
-                ...prev,
-                lat: sanitizedValue,
-              }));
+              setBranchData((prev: any) => ({ ...prev, lat: sanitizedValue }));
             }}
             style={styles.input}
             error={!!errors.lat}
+            placeholderTextColor="#202B1866"
             outlineStyle={{
               borderColor: '#91B275',
               borderWidth: 0,
               borderRadius: 16,
             }}
-            placeholderTextColor="#202B1866"
             keyboardType="numeric"
           />
           <HelperText type="error" visible={!!errors.lat}>
@@ -195,28 +150,24 @@ export default function EditBranchDialog({
             mode="outlined"
             value={branchData?.lng}
             onChangeText={(text) => {
-              // Allows numbers, decimal, and minus sign
               const sanitizedValue = text.replace(/[^0-9\-.]/g, '');
-              setBranchData((prev: any) => ({
-                ...prev,
-                lng: sanitizedValue,
-              }));
+              setBranchData((prev: any) => ({ ...prev, lng: sanitizedValue }));
             }}
             style={styles.input}
             error={!!errors.lng}
+            placeholderTextColor="#202B1866"
             outlineStyle={{
               borderColor: '#91B275',
               borderWidth: 0,
               borderRadius: 16,
             }}
-            placeholderTextColor="#202B1866"
             keyboardType="numeric"
           />
           <HelperText type="error" visible={!!errors.lng}>
             {errors.lng}
           </HelperText>
 
-          {/* Set as Default Switch */}
+          {/* Default Switch */}
           <View style={styles.switchContainer}>
             <Text style={styles.switchText}>
               {I18n.t('EditBranch.label_default_switch')}
@@ -228,17 +179,15 @@ export default function EditBranchDialog({
               }
               color="#96B76E"
               trackColor={{ false: '#96B76E', true: '#96B76E' }}
-              thumbColor={'#fff'}
+              thumbColor="#fff"
             />
           </View>
         </Dialog.Content>
 
         <Dialog.Actions>
-          {/* Cancel Button */}
           <Button onPress={onClose}>
             {I18n.t('BranchAdmins.cancel_button')}
           </Button>
-          {/* Update Branch Button */}
           <Button
             mode="contained"
             onPress={handleUpdate}
@@ -249,17 +198,13 @@ export default function EditBranchDialog({
               height: 36,
               backgroundColor: '#96B76E',
             }}
-            labelStyle={{
-              color: '#fff',
-              fontSize: 15,
-            }}
+            labelStyle={{ color: '#fff', fontSize: 15 }}
           >
             {I18n.t('EditBranch.button_update_branch')}
           </Button>
         </Dialog.Actions>
       </Dialog>
 
-      {/* Snackbar for error/success messages */}
       <Snackbar
         visible={showSnackbar || !!errors.general}
         onDismiss={() => {

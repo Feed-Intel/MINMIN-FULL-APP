@@ -1,15 +1,17 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, StyleSheet, Animated, TextInput } from 'react-native';
 import { setRestaurant } from '@/lib/reduxStore/authSlice';
 import { Text, Button } from 'react-native-paper';
-import { router } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { useDispatch } from 'react-redux';
 import { useResetPassword } from '@/services/mutation/authMutation';
 import { i18n as I18n } from '../_layout';
 
 const ForgotPasswordScreen = () => {
-  const [email, setEmail] = React.useState('');
+  const [email, setEmail] = useState('');
+  const [error, setError] = useState(false);
   const dispatch = useDispatch();
+  const router = useRouter();
 
   const onSuccessResetPassword = () => {
     dispatch(setRestaurant({ email: email }));
@@ -21,28 +23,20 @@ const ForgotPasswordScreen = () => {
   );
 
   const handlePasswordReset = () => {
+    if (!email.trim()) {
+      setError(true);
+      return;
+    }
+    setError(false);
     const data = { email };
     ResetPasswordFn(data);
   };
 
   return (
     <View style={styles.container}>
-      {/* Title and Subtitle container */}
-      <View
-        style={{
-          width: 600,
-          alignSelf: 'center',
-          backgroundColor: '#fff',
-          padding: 40,
-          borderRadius: 15,
-          boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
-          flexDirection: 'column',
-        }}
-      >
-        <Text variant="headlineLarge" style={styles.titleText}>
-          {I18n.t('ForgotPassword.title')}
-        </Text>
-        <Text variant="bodyLarge" style={styles.subtitleText}>
+      <View style={styles.card}>
+        <Text style={styles.titleText}>{I18n.t('ForgotPassword.title')}</Text>
+        <Text style={styles.subtitleText}>
           {I18n.t('ForgotPassword.subtitle')}
         </Text>
 
@@ -50,10 +44,16 @@ const ForgotPasswordScreen = () => {
         <TextInput
           placeholder={I18n.t('ForgotPassword.email_placeholder')}
           value={email}
-          onChangeText={(text: string) => setEmail(text)} // Use e.target.value for web
+          onChangeText={(text) => {
+            setEmail(text);
+            if (text.trim()) setError(false); // Clear error when user types
+          }}
           keyboardType="email-address"
-          style={styles.input}
+          style={[styles.input, error && styles.inputError]}
         />
+        {error && (
+          <Text style={styles.errorText}>Please enter a valid email</Text>
+        )}
 
         {/* Reset Password Button */}
         <Button
@@ -61,18 +61,12 @@ const ForgotPasswordScreen = () => {
           onPress={handlePasswordReset}
           style={styles.button}
           loading={isPending}
-          // The labelStyle prop is ignored in this web simulation but kept for context
         >
           {I18n.t('ForgotPassword.reset_button')}
         </Button>
 
         <View style={styles.bottomLinks}>
-          <Button
-            // The labelStyle prop is ignored in this web simulation but kept for context
-            onPress={() => {
-              router.push('/(auth)');
-            }}
-          >
+          <Button onPress={() => router.push('/(auth)')}>
             {I18n.t('ForgotPassword.sign_in_link')}
           </Button>
         </View>
@@ -87,6 +81,18 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: 16,
     backgroundColor: '#EFF4EB',
+  },
+  card: {
+    width: 600,
+    alignSelf: 'center',
+    backgroundColor: '#fff',
+    padding: 40,
+    borderRadius: 15,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 4 },
+    flexDirection: 'column',
   },
   logo: {
     width: 120,
@@ -115,6 +121,14 @@ const styles = StyleSheet.create({
     height: 50,
     padding: 8,
     borderRadius: 8,
+  },
+  inputError: {
+    borderColor: 'red',
+    borderWidth: 1.5,
+  },
+  errorText: {
+    color: 'red',
+    marginBottom: 12,
   },
   button: {
     marginBottom: 16,

@@ -52,6 +52,7 @@ export default function AddMenuDialog({
   onClose,
 }: AddMenuDialogProps) {
   const { width } = useWindowDimensions();
+
   const [menuData, setMenuData] = useState<MenuFormState>({
     name: '',
     description: '',
@@ -62,6 +63,15 @@ export default function AddMenuDialog({
     is_global: false,
     branches: [],
   });
+
+  const [errors, setErrors] = useState({
+    name: false,
+    description: false,
+    price: false,
+    image: false,
+    categories: false,
+  });
+
   const [categoryMenuVisible, setCategoryMenuVisible] = useState(false);
 
   const isSmallScreen = width < 768;
@@ -77,19 +87,20 @@ export default function AddMenuDialog({
     field: K,
     value: MenuFormState[K]
   ) => {
-    setMenuData((prevData) => ({
-      ...prevData,
-      [field]: value,
-    }));
+    setMenuData((prev) => ({ ...prev, [field]: value }));
+    setErrors((prev) => ({ ...prev, [field]: false })); // Clear error on change
   };
 
   const toggleCategory = (category: string) => {
-    setMenuData((prevData) => {
-      const exists = prevData.categories.includes(category);
-      const categories = exists
-        ? prevData.categories.filter((item) => item !== category)
-        : [...prevData.categories, category];
-      return { ...prevData, categories };
+    setMenuData((prev) => {
+      const exists = prev.categories.includes(category);
+      const list = exists
+        ? prev.categories.filter((item) => item !== category)
+        : [...prev.categories, category];
+
+      setErrors((prevErr) => ({ ...prevErr, categories: false })); // Clear error
+
+      return { ...prev, categories: list };
     });
   };
 
@@ -101,50 +112,35 @@ export default function AddMenuDialog({
     });
 
     if (!result.canceled) {
-      setMenuData({
-        ...menuData,
+      setMenuData((prev) => ({
+        ...prev,
         image: {
           uri: result.assets[0].uri,
           name: result.assets[0].fileName || 'image.jpg',
           type: result.assets[0].type || 'image/jpeg',
         },
-      });
+      }));
+
+      setErrors((prev) => ({ ...prev, image: false }));
     }
   };
 
   const handleSave = async () => {
-    if (!menuData.name || !menuData.image.uri) {
-      Toast.show({
-        type: 'error',
-        text1: I18n.t('Common.error_title'),
-        text2: I18n.t('MenuDialog.error.nameImageRequired'),
-      });
-      return;
-    }
+    const newErrors = {
+      name: !menuData.name,
+      description: !menuData.description,
+      price: !menuData.price,
+      image: !menuData.image.uri,
+      categories: menuData.categories.length === 0,
+    };
 
-    if (!menuData.description) {
-      Toast.show({
-        type: 'error',
-        text1: I18n.t('Common.error_title'),
-        text2: I18n.t('MenuDialog.error.descriptionRequired'),
-      });
-      return;
-    }
+    setErrors(newErrors);
 
-    if (!menuData.price) {
+    if (Object.values(newErrors).some(Boolean)) {
       Toast.show({
         type: 'error',
         text1: I18n.t('Common.error_title'),
-        text2: I18n.t('MenuDialog.error.priceRequired'),
-      });
-      return;
-    }
-
-    if (menuData.categories.length === 0) {
-      Toast.show({
-        type: 'error',
-        text1: I18n.t('Common.error_title'),
-        text2: I18n.t('MenuDialog.error.categoryRequired'),
+        text2: I18n.t('MenuDialog.error.fillAllFields'),
       });
       return;
     }
@@ -156,12 +152,14 @@ export default function AddMenuDialog({
     formData.append('is_side', String(menuData.is_side));
     formData.append('categories', JSON.stringify(menuData.categories));
     formData.append('is_global', String(menuData.is_global));
+
     for (const branch of menuData.branches) {
       formData.append('branches', branch);
     }
+
     const base64Data = menuData.image.uri;
     const contentType = menuData.image.type || 'image/jpeg';
-    const extension = menuData.image.name?.split('.').pop() || 'jpg';
+    const extension = menuData.image.name.split('.').pop() || 'jpg';
     const imageName = `${Date.now()}.${extension}`;
 
     const blob = base64ToBlob(base64Data, contentType);
@@ -172,6 +170,7 @@ export default function AddMenuDialog({
 
     await createMenu(formData);
     queryClient.invalidateQueries({ queryKey: ['menus'] });
+
     setMenuData({
       name: '',
       description: '',
@@ -182,11 +181,13 @@ export default function AddMenuDialog({
       is_global: false,
       branches: [],
     });
+
     Toast.show({
       type: 'success',
       text1: I18n.t('Common.success_title'),
       text2: I18n.t('MenuDialog.successMessage'),
     });
+
     onClose();
   };
 
@@ -198,6 +199,7 @@ export default function AddMenuDialog({
         </Dialog.Title>
         <Dialog.Content>
           <ScrollView>
+            {/* NAME INPUT */}
             <TextInput
               placeholder={I18n.t('MenuDialog.namePlaceholder')}
               value={menuData.name}
@@ -205,16 +207,15 @@ export default function AddMenuDialog({
               mode="outlined"
               style={styles.input}
               outlineStyle={{
-                borderColor: '#91B275',
-                borderWidth: 0,
+                borderColor: errors.name ? 'red' : '#91B275',
+                borderWidth: errors.name ? 2 : 0,
                 borderRadius: 16,
               }}
               placeholderTextColor="#202B1866"
-              contentStyle={{
-                color: '#202B1866',
-              }}
+              contentStyle={{ color: '#202B1866' }}
             />
 
+            {/* DESCRIPTION */}
             <TextInput
               placeholder={I18n.t('MenuDialog.descriptionPlaceholder')}
               value={menuData.description}
@@ -224,24 +225,16 @@ export default function AddMenuDialog({
               numberOfLines={isSmallScreen ? 3 : 8}
               style={styles.descInput}
               outlineStyle={{
-                borderColor: '#91B275',
-                borderWidth: 0,
+                borderColor: errors.description ? 'red' : '#91B275',
+                borderWidth: errors.description ? 2 : 0,
                 borderRadius: 16,
               }}
               placeholderTextColor="#202B1866"
-              contentStyle={{
-                color: '#202B1866',
-              }}
+              contentStyle={{ color: '#202B1866' }}
             />
 
-            <View
-              style={{
-                flexDirection: 'row',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                marginBottom: 15,
-              }}
-            >
+            {/* GLOBAL SWITCH */}
+            <View style={styles.switchRow}>
               <Text style={{ color: '#40392B' }}>
                 {I18n.t('MenuDialog.isGlobalLabel')}
               </Text>
@@ -251,11 +244,14 @@ export default function AddMenuDialog({
                 color="#91B275"
               />
             </View>
+
+            {/* BRANCH SELECTOR */}
             {!menuData.is_global && (
               <>
                 <Text style={styles.fieldLabel}>
                   {I18n.t('MenuDialog.branchLabel')}
                 </Text>
+
                 <MultiSelectDropdown
                   label={I18n.t('MenuDialog.selectBranchesPlaceholder')}
                   placeholder={I18n.t('MenuDialog.selectBranchesPlaceholder')}
@@ -267,9 +263,7 @@ export default function AddMenuDialog({
                   }
                   value={menuData.branches || []}
                   onSelect={(values) => handleInputChange('branches', values)}
-                  menuContentStyle={{
-                    backgroundColor: '#fff',
-                  }}
+                  menuContentStyle={{ backgroundColor: '#fff' }}
                   CustomMenuHeader={() => <Text>{''}</Text>}
                   CustomMultiSelectDropdownInput={({
                     placeholder,
@@ -281,13 +275,7 @@ export default function AddMenuDialog({
                       placeholder={placeholder}
                       placeholderTextColor={'#202B1866'}
                       value={selectedLabel}
-                      style={{
-                        backgroundColor: '#50693A17',
-                        maxHeight: 50,
-                      }}
-                      contentStyle={{
-                        borderColor: '#ccc',
-                      }}
+                      style={{ backgroundColor: '#50693A17', maxHeight: 50 }}
                       textColor={'#000'}
                       right={rightIcon}
                       outlineColor="#ccc"
@@ -297,11 +285,14 @@ export default function AddMenuDialog({
               </>
             )}
 
-            {/* Category Selector */}
+            {/* CATEGORY SELECTOR */}
             <View style={styles.dropdownContainer}>
               <Button
                 mode="outlined"
-                style={styles.dropdownButton}
+                style={[
+                  styles.dropdownButton,
+                  errors.categories && { borderColor: 'red', borderWidth: 2 },
+                ]}
                 labelStyle={{
                   color: '#333',
                   fontSize: 14,
@@ -309,10 +300,7 @@ export default function AddMenuDialog({
                   textAlign: 'left',
                 }}
                 onPress={() => setCategoryMenuVisible((prev) => !prev)}
-                contentStyle={{
-                  flexDirection: 'row-reverse',
-                  width: '100%',
-                }}
+                contentStyle={{ flexDirection: 'row-reverse', width: '100%' }}
                 icon={categoryMenuVisible ? 'chevron-up' : 'chevron-down'}
               >
                 {menuData.categories.length > 0
@@ -355,6 +343,7 @@ export default function AddMenuDialog({
               )}
             </View>
 
+            {/* CATEGORY CHIPS */}
             {menuData.categories.length > 0 && (
               <View style={styles.selectedCategoriesContainer}>
                 {menuData.categories.map((category) => (
@@ -371,12 +360,13 @@ export default function AddMenuDialog({
               </View>
             )}
 
+            {/* PRICE */}
             <TextInput
               placeholder={I18n.t('MenuDialog.pricePlaceholder')}
               value={menuData.price}
               onChangeText={(text) => {
                 const cleaned = text
-                  .replace(/[^0-9.]/g, '') // remove non-digits and extra chars
+                  .replace(/[^0-9.]/g, '')
                   .replace(/(\..*)\./g, '$1');
                 handleInputChange('price', cleaned);
               }}
@@ -384,26 +374,24 @@ export default function AddMenuDialog({
               keyboardType="numeric"
               style={styles.input}
               outlineStyle={{
-                borderColor: '#91B275',
-                borderWidth: 0,
+                borderColor: errors.price ? 'red' : '#91B275',
+                borderWidth: errors.price ? 2 : 0,
                 borderRadius: 16,
               }}
               placeholderTextColor="#202B1866"
-              contentStyle={{
-                color: '#202B1866',
-              }}
+              contentStyle={{ color: '#202B1866' }}
             />
 
+            {/* IMAGE PICKER */}
             <Button
               onPress={pickImage}
               mode="outlined"
-              style={styles.button}
+              style={[
+                styles.button,
+                errors.image && { borderColor: 'red', borderWidth: 2 },
+              ]}
               icon={menuData.image.uri ? 'image-edit' : 'image-plus'}
-              labelStyle={{
-                fontSize: 14,
-                fontWeight: '400',
-                color: '#40392B',
-              }}
+              labelStyle={{ fontSize: 14, fontWeight: '400', color: '#40392B' }}
             >
               {menuData.image.uri
                 ? I18n.t('MenuDialog.changeImage')
@@ -424,6 +412,7 @@ export default function AddMenuDialog({
               />
             )}
 
+            {/* SIDE ITEM SWITCH */}
             <View style={[styles.switchRow, { gap: isSmallScreen ? 8 : 16 }]}>
               <Text
                 variant={isSmallScreen ? 'bodyMedium' : 'bodyLarge'}
@@ -440,8 +429,8 @@ export default function AddMenuDialog({
             </View>
           </ScrollView>
         </Dialog.Content>
+
         <Dialog.Actions>
-          {/* <Button onPress={onClose}>Cancel</Button> */}
           <Button
             mode="contained"
             onPress={handleSave}
@@ -514,7 +503,6 @@ const styles = StyleSheet.create({
     width: '100%',
     height: 36,
     justifyContent: 'center',
-    alignItems: 'center',
   },
   dropdownContainer: {
     marginVertical: 16,

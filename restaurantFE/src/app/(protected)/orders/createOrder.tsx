@@ -20,6 +20,7 @@ import {
   Checkbox,
   Chip,
   Searchbar,
+  Menu,
 } from 'react-native-paper';
 import DeleteIcon from '@/assets/icons/Delete.svg';
 import { useQueryClient } from '@tanstack/react-query';
@@ -33,11 +34,17 @@ import { useRestaurantIdentity } from '@/hooks/useRestaurantIdentity';
 import {
   addToCart,
   clearCart,
+  setCoupon,
   setCustomerInfo,
+  setDiscount,
+  setRemarks,
+  setTableID,
   updateQuantity,
 } from '@/lib/reduxStore/cartSlice';
 import { useGetMenus } from '@/services/mutation/menuMutation';
-import Toast from 'react-native-toast-message';
+import { useCheckDiscount } from '@/services/mutation/discountMutation';
+import debounce from 'lodash.debounce';
+import { useGetTables } from '@/services/mutation/tableMutation';
 
 const DEFAULT_CATEGORIES = ['Main course', 'Pasta', 'Dessert', 'Drinks'];
 export default function AcceptOrders() {
@@ -46,6 +53,11 @@ export default function AcceptOrders() {
   const [modalSearchQuery, setModalSearchQuery] = useState('');
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [modalSelectedCategory, setModalSelectedCategory] = useState('All');
+  const [customerNameError, setCustomerNameError] = useState(false);
+  const [customerPhoneError, setCustomerPhoneError] = useState(false);
+  const [customerTinError, setCustomerTinError] = useState(false);
+  const [debouncedQuery, setDebouncedQuery] = useState('');
+  const [showTables, setShowTables] = useState(false);
   const dispatch = useDispatch();
   const cart = useAppSelector((state: RootState) => state.cart);
   const subtotal = cart.items.reduce(
@@ -54,13 +66,17 @@ export default function AcceptOrders() {
   );
   const serviceCharge = (subtotal * (cart.serviceCharge ?? 0)) / 100;
   const tax = (subtotal * (cart.tax ?? 0)) / 100;
-  const total = (subtotal || 0) + serviceCharge + tax;
-  const { data: menus, isLoading: isMenusLoading } = useGetMenus(
-    undefined,
-    true
-  );
+  const [total, setTotal] = useState((subtotal || 0) + serviceCharge + tax);
+  const { data: menus } = useGetMenus(undefined, true);
   const { branchId, tenantId } = useRestaurantIdentity();
   const { mutate: createOrder } = useCreateOrder();
+  const { mutateAsync: checkDiscount } = useCheckDiscount();
+  const { data: tables } = useGetTables(undefined, true);
+  const branchTables = useMemo(() => {
+    return tables?.results?.filter(
+      (table: any) => table.branch.id === branchId
+    );
+  }, [tables, branchId]);
   const newQuantities = cart.items.reduce((acc: any, item: any) => {
     acc[item.id] = item.quantity;
     return acc;
@@ -80,6 +96,39 @@ export default function AcceptOrders() {
     });
     return ['All', ...Array.from(set).sort((a, b) => a.localeCompare(b))];
   }, [menus]);
+  async function checkDiscountFN(coupon?: string) {
+    const itemsData = cart.items.map((item: any) => ({
+      menu_item: item.id,
+      quantity: newQuantities[item.id] || 0,
+      price: item.price,
+    }));
+
+    const discountResponse = await checkDiscount({
+      tenant: tenantId,
+      branch: branchId,
+      coupon: coupon?.trim() || undefined,
+      items: itemsData,
+    });
+    const discountValue = discountResponse.discount_amount || 0;
+    dispatch(setDiscount(discountValue));
+    setTotal(subtotal - discountValue);
+  }
+
+  useEffect(() => {
+    if (branchId) {
+      checkDiscountFN(debouncedQuery);
+    }
+  }, [debouncedQuery]);
+
+  const debouncedSearch = useMemo(
+    () => debounce((q: string) => setDebouncedQuery(q), 300),
+    []
+  );
+  useEffect(() => {
+    return () => {
+      debouncedSearch.cancel();
+    };
+  }, [debouncedSearch]);
 
   const getMenuCategories = (menu: any): string[] => {
     if (Array.isArray(menu?.categories) && menu.categories.length) {
@@ -95,16 +144,20 @@ export default function AcceptOrders() {
   };
 
   const handlePlaceOrder = async () => {
-    if (
-      cart.customerName === '' ||
-      cart.contactNumber === '' ||
-      cart.tinNumber === ''
-    ) {
-      Toast.show({
-        type: 'error',
-        text1: I18n.t('Common.error_title'),
-        text2: I18n.t('createOrderScreen.errorCustomerInfo'),
-      });
+    if (cart.customerName === '') {
+      setCustomerNameError(true);
+      return;
+    }
+    if (cart.contactNumber === '') {
+      setCustomerPhoneError(true);
+      return;
+    }
+    if (cart.tinNumber === '') {
+      setCustomerTinError(true);
+      return;
+    }
+    if (cart.customerName.trim().length < 3) {
+      setCustomerNameError(true);
       return;
     }
     const orderData = {
@@ -113,8 +166,8 @@ export default function AcceptOrders() {
       customer_name: cart.customerName,
       customer_phone: cart.contactNumber,
       customer_tinNo: cart.tinNumber,
-      table: '',
-      coupon: '',
+      table: cart.tableId,
+      coupon: cart.coupon,
       items: cart.items.map((item: any) => ({
         menu_item: item.id,
         quantity: newQuantities[item.id] || 1,
@@ -122,7 +175,6 @@ export default function AcceptOrders() {
         remarks: cart.remarks[item.id],
       })),
     };
-    // const transactionID = generateTransactionID();
     await createOrder(orderData);
     await queryClient.invalidateQueries({ queryKey: ['orders'] });
     dispatch(clearCart());
@@ -135,9 +187,6 @@ export default function AcceptOrders() {
   };
 
   const modalFilteredMenus = menus?.filter((menu) => {
-    // if (selectedItems.includes(menu.id || '')) {
-    //   return false;
-    // }
     const categories = getMenuCategories(menu);
     const matchesCategory =
       modalSelectedCategory === 'All' ||
@@ -156,7 +205,6 @@ export default function AcceptOrders() {
       const existingItem: any = cart.items.find((item) => item.id === Ritem);
       if (!existingItem) {
         const item = modalFilteredMenus?.find((t: any) => t.id === Ritem);
-        console.log(item);
         dispatch(
           addToCart({
             item: {
@@ -169,7 +217,7 @@ export default function AcceptOrders() {
             },
             restaurantId: tenantId!,
             branchId: branchId!,
-            tableId: '',
+            tableId: cart.tableId,
             paymentAPIKEY: item?.tenant.CHAPA_API_KEY,
             paymentPUBLICKEY: item?.tenant.CHAPA_PUBLIC_KEY,
             tax: item?.tenant.tax,
@@ -215,31 +263,101 @@ export default function AcceptOrders() {
       <View style={styles.row}>
         <TextInput
           placeholder={I18n.t('acceptOrders.placeholderCustomerName')}
-          style={styles.input}
+          style={{
+            ...styles.input,
+            borderColor: customerNameError ? 'red' : '#ccc',
+          }}
           value={cart.customerName}
           onChangeText={(text: string) => {
             dispatch(setCustomerInfo({ customerName: text }));
+            setCustomerNameError(false);
           }}
         />
         <TextInput
           placeholder={I18n.t('acceptOrders.placeholderContactNumber')}
-          style={styles.input}
+          style={{
+            ...styles.input,
+            borderColor: customerPhoneError ? 'red' : '#ccc',
+          }}
           value={cart.contactNumber}
           onChangeText={(text) => {
             const cleaned = text.replace(/[^0-9.]/g, '');
             dispatch(setCustomerInfo({ contactNumber: cleaned }));
+            setCustomerPhoneError(false);
           }}
         />
       </View>
       <View style={styles.row}>
         <TextInput
           placeholder={I18n.t('acceptOrders.placeholderTinNumber')}
-          style={styles.input}
+          style={{
+            ...styles.input,
+            borderColor: customerTinError ? 'red' : '#ccc',
+          }}
           value={cart.tinNumber}
           onChangeText={(text) => {
             dispatch(setCustomerInfo({ tinNumber: text }));
+            setCustomerTinError(false);
           }}
         />
+        <TextInput
+          placeholder={I18n.t('acceptOrders.discountCode')}
+          style={{
+            ...styles.input,
+            borderColor: customerTinError ? 'red' : '#ccc',
+          }}
+          value={cart.coupon}
+          onChangeText={(text) => {
+            dispatch(setCoupon(text));
+            debouncedSearch(text);
+          }}
+        />
+        <Menu
+          visible={showTables}
+          onDismiss={() => setShowTables(false)}
+          anchor={
+            <View>
+              <Button
+                mode="outlined"
+                style={styles.dropdownBtn}
+                labelStyle={{
+                  color: cart.tableId === '' ? '#000' : '#333',
+                  fontSize: 14,
+                  width: '100%',
+                  textAlign: 'left',
+                  marginLeft: 0,
+                }}
+                onPress={() => setShowTables(true)}
+                contentStyle={{
+                  flexDirection: 'row-reverse',
+                  width: '100%',
+                  paddingLeft: 10,
+                }}
+                icon={showTables ? 'chevron-up' : 'chevron-down'}
+              >
+                {cart.tableId
+                  ? branchTables?.find((option) => option.id === cart.tableId)
+                      ?.table_code
+                  : I18n.t('acceptOrders.select_table')}
+              </Button>
+            </View>
+          }
+          contentStyle={{ width: '100%', backgroundColor: '#fff' }}
+          style={{ alignSelf: 'stretch' }}
+          anchorPosition="bottom"
+        >
+          {branchTables?.map((option) => (
+            <Menu.Item
+              key={option.id}
+              onPress={() => {
+                dispatch(setTableID(option.id!));
+                setShowTables(false);
+              }}
+              title={option.table_code}
+              titleStyle={styles.menuItem}
+            />
+          ))}
+        </Menu>
         <Button
           mode="contained"
           style={styles.addButton}
@@ -290,32 +408,11 @@ export default function AcceptOrders() {
             </DataTable.Title>
           </DataTable.Header>
           {cart?.items.map((item) => {
-            // const nextStatus = getNextStatus(order.status);
-            // const statusMeta = STATUS_DISPLAY[order.status] ?? {
-            //  label: order.status.replace(/_/g, ' '),
-            //  borderColor: '#D6DCCD',
-            //  backgroundColor: '#EEF1EB',
-            //  textColor: '#21281B',
-            // };
-            // const orderChannel = getChannelFromOrder(order);
-            // const isHighlighted = Boolean(highlightedOrders[order.id]);
-
             return (
-              <DataTable.Row
-                key={item.id}
-                // onPress={() => openOrderDetail(order.id)}
-                style={[
-                  styles.row,
-                  // isHighlighted && styles.highlightedRow
-                ]}
-              >
+              <DataTable.Row key={item.id} style={[styles.row]}>
                 <DataTable.Cell style={[styles.cell, { flex: 1 }]}>
                   <View>
-                    <Text
-                      numberOfLines={1}
-                      // variant={isSmallScreen ? 'bodySmall' : 'bodyMedium'}
-                      style={styles.cellText}
-                    >
+                    <Text numberOfLines={1} style={styles.cellText}>
                       {item.name}
                     </Text>
                   </View>
@@ -331,25 +428,28 @@ export default function AcceptOrders() {
                   </View>
                 </DataTable.Cell>
                 <DataTable.Cell style={[styles.cell, { flex: 1 }]}>
-                  <Text style={styles.cellText}>
-                    {cart.remarks[item.id] || ''}
-                  </Text>
+                  <TextInput
+                    placeholder={I18n.t('orderReview.tableRemark')}
+                    style={{
+                      ...styles.input,
+                      borderColor: customerNameError ? 'red' : '#ccc',
+                    }}
+                    value={cart.remarks[item.id] || ''}
+                    onChangeText={(text: string) => {
+                      dispatch(setRemarks({ [item.id]: text }));
+                    }}
+                  />
                 </DataTable.Cell>
                 <DataTable.Cell style={[styles.cell, { flex: 0.9 }]}>
                   <Text
                     numberOfLines={1}
-                    // variant={isSmallScreen ? 'bodySmall' : 'bodyMedium'}
                     style={[styles.cellText, { paddingRight: 55 }]}
                   >
                     {cart.tax ?? 0 / 100}
                   </Text>
                 </DataTable.Cell>
                 <DataTable.Cell style={[styles.cell, { flex: 1 }]}>
-                  <Text
-                    numberOfLines={2}
-                    // variant={isSmallScreen ? 'bodySmall' : 'bodyMedium'}
-                    style={styles.cellText}
-                  >
+                  <Text numberOfLines={2} style={styles.cellText}>
                     {item.price * item.quantity}
                   </Text>
                 </DataTable.Cell>
@@ -396,6 +496,14 @@ export default function AcceptOrders() {
               {I18n.t('acceptOrders.summaryTax')}
             </Text>
             <Text style={{ color: '#202B189E' }}>${tax.toFixed(2)}</Text>
+          </View>
+          <View style={styles.summaryRow}>
+            <Text style={{ color: '#202B189E' }}>
+              {I18n.t('acceptOrders.discount')}
+            </Text>
+            <Text style={{ color: '#202B189E' }}>
+              ${cart.discount.toFixed(2)}
+            </Text>
           </View>
           <Divider style={{ marginVertical: 6 }} />
           <View style={styles.summaryRow}>
@@ -560,16 +668,6 @@ const styles = StyleSheet.create({
   card: {
     marginBottom: 12,
   },
-  // itemRow: {
-  //   flexDirection: 'row',
-  //   justifyContent: 'space-between',
-  //   alignItems: 'center',
-  //   marginVertical: 6,
-  // },
-  // itemName: {
-  //   fontSize: 16,
-  //   fontWeight: '500',
-  // },
   qtyInput: {
     flex: 0.3,
     marginRight: 8,
@@ -677,6 +775,14 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: '#3A4A2A',
   },
+  dropdownBtn: {
+    backgroundColor: '#50693A17',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#ccc',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -757,6 +863,10 @@ const styles = StyleSheet.create({
     color: '#2E191466',
     fontSize: 16,
   },
+  menuItem: {
+    color: '#333',
+    fontSize: 14,
+  },
   inputStyle: {
     color: '#2E191466',
     fontSize: 15,
@@ -803,6 +913,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#F9FFF4',
     borderBottomRightRadius: 13,
     borderBottomLeftRadius: 13,
+  },
+  errorText: {
+    color: 'red',
+    marginBottom: 8,
   },
   footerActions: {
     flexDirection: 'column',

@@ -115,6 +115,10 @@ const cartSlice = createSlice({
       state.tinNumber = action.payload.tinNumber || state.tinNumber;
       return state;
     },
+    setTableID: (state, action: PayloadAction<string>) => {
+      state.tableId = action.payload;
+      return state;
+    },
     updateQuantity: (
       state,
       action: PayloadAction<{ id: string; quantity: number }>
@@ -231,6 +235,7 @@ export const {
   reorder,
   setRemarks,
   setCoupon,
+  setTableID,
   setTransactionId,
   setDiscount,
   setRedeemAmount,

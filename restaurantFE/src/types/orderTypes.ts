@@ -28,6 +28,7 @@ export interface Order {
     | 'delivered'
     | 'cancelled';
   total_price: number;
+  discount_amount?: number;
   created_at: string;
   updated_at: string;
   items: OrderItem[];

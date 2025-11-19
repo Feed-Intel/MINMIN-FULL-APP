@@ -36,10 +36,12 @@ const EditPost = () => {
   const [tags, setTags] = useState<string[]>([]);
   const [currentTag, setCurrentTag] = useState('');
 
-  // Screen size breakpoints
+  // Validation state
+  const [captionError, setCaptionError] = useState(false);
+  const [locationError, setLocationError] = useState(false);
+  const [imageError, setImageError] = useState(false);
+
   const isSmallScreen = width < 768;
-  const isMediumScreen = width >= 768 && width < 1024;
-  const isLargeScreen = width >= 1024;
 
   const { data: postData } = useGetPostById(postId as string);
   const { mutate: updatePost, isPending } = useUpdatePost(postId as string);
@@ -51,8 +53,8 @@ const EditPost = () => {
       setCaption(postData.caption);
       setLocation(postData.location);
 
+      let tagsArray: string[] = [];
       try {
-        let tagsArray = [];
         if (Array.isArray(postData.tags)) {
           tagsArray = postData.tags;
         } else if (typeof postData.tags === 'string') {
@@ -91,6 +93,7 @@ const EditPost = () => {
         name: result.assets[0].fileName || 'image.jpg',
         type: result.assets[0].type || 'image/jpeg',
       });
+      setImageError(false); // reset error
     }
   };
 
@@ -106,20 +109,36 @@ const EditPost = () => {
   };
 
   const handleSubmit = async () => {
-    if (!image || !caption || !location) {
-      alert('Please fill in all fields.');
-      return;
+    // Reset errors
+    setCaptionError(false);
+    setLocationError(false);
+    setImageError(false);
+
+    let hasError = false;
+    if (!image) {
+      setImageError(true);
+      hasError = true;
     }
+    if (!caption.trim()) {
+      setCaptionError(true);
+      hasError = true;
+    }
+    if (!location.trim()) {
+      setLocationError(true);
+      hasError = true;
+    }
+
+    if (hasError) return;
 
     const formData = new FormData();
     formData.append('caption', caption);
     formData.append('location', location);
     formData.append('tags', tags.join(','));
 
-    if (image.uri !== postData?.image) {
-      const base64Data = image.uri;
-      const contentType = image.type;
-      const imageName = Date.now() + '.' + image.name?.split('.')[1];
+    if (image?.uri !== postData?.image) {
+      const base64Data = image!.uri;
+      const contentType = image!.type!;
+      const imageName = Date.now() + '.' + image!.name?.split('.')[1];
       const blob = base64ToBlob(base64Data, contentType);
       formData.append(
         'image',
@@ -173,6 +192,11 @@ const EditPost = () => {
           >
             {image ? 'Change Image' : 'Upload Image'}
           </Button>
+          {imageError && (
+            <Text style={{ color: 'red', marginBottom: 8 }}>
+              Please upload an image.
+            </Text>
+          )}
 
           {image && (
             <Image
@@ -190,20 +214,38 @@ const EditPost = () => {
           <TextInput
             label="Caption"
             value={caption}
-            onChangeText={setCaption}
+            onChangeText={(text) => {
+              setCaption(text);
+              setCaptionError(false);
+            }}
             style={[styles.input, { marginBottom: isSmallScreen ? 12 : 16 }]}
             mode="outlined"
             multiline
             numberOfLines={3}
+            error={captionError}
           />
+          {captionError && (
+            <Text style={{ color: 'red', marginBottom: 8 }}>
+              Caption is required.
+            </Text>
+          )}
 
           <TextInput
             label="Location"
             value={location}
-            onChangeText={setLocation}
+            onChangeText={(text) => {
+              setLocation(text);
+              setLocationError(false);
+            }}
             style={[styles.input, { marginBottom: isSmallScreen ? 12 : 16 }]}
             mode="outlined"
+            error={locationError}
           />
+          {locationError && (
+            <Text style={{ color: 'red', marginBottom: 8 }}>
+              Location is required.
+            </Text>
+          )}
 
           <View style={styles.tagSection}>
             <ScrollView
@@ -213,7 +255,7 @@ const EditPost = () => {
                 { paddingBottom: isSmallScreen ? 8 : 12 },
               ]}
             >
-              {tags?.map((tag, index) => (
+              {tags.map((tag, index) => (
                 <Chip
                   key={index}
                   onClose={() => handleRemoveTag(tag)}
@@ -253,40 +295,15 @@ const EditPost = () => {
 };
 
 const styles = StyleSheet.create({
-  scrollContainer: {
-    flexGrow: 1,
-    justifyContent: 'center',
-  },
-  container: {
-    alignSelf: 'center',
-    marginVertical: 16,
-  },
-  title: {
-    textAlign: 'center',
-    fontWeight: '600',
-  },
-  input: {
-    // backgroundColor: "white",
-  },
-  button: {
-    borderRadius: 8,
-  },
-  image: {
-    width: '100%',
-    marginVertical: 16,
-    resizeMode: 'cover',
-  },
-  tagSection: {
-    marginVertical: 8,
-  },
-  chipContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    marginBottom: 8,
-  },
-  chip: {
-    marginBottom: 8,
-  },
+  scrollContainer: { flexGrow: 1, justifyContent: 'center' },
+  container: { alignSelf: 'center', marginVertical: 16 },
+  title: { textAlign: 'center', fontWeight: '600' },
+  input: {},
+  button: { borderRadius: 8 },
+  image: { width: '100%', marginVertical: 16, resizeMode: 'cover' },
+  tagSection: { marginVertical: 8 },
+  chipContainer: { flexDirection: 'row', flexWrap: 'wrap', marginBottom: 8 },
+  chip: { marginBottom: 8 },
   loader: {
     flex: 1,
     justifyContent: 'center',

@@ -79,7 +79,6 @@ type TopMenuItem = {
 const ProfileScreen = () => {
   const { width } = useWindowDimensions();
   const isCompact = width < 960;
-  const queryClient = useQueryClient();
 
   const restaurant = useAppSelector((state) => state.auth.restaurant);
   const tenantId = restaurant?.id;
@@ -245,17 +244,20 @@ const ProfileScreen = () => {
       } as any);
     }
 
-    updateProfileImage(formData, {
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: ['tenantProfile'] });
-        setSnackbarMessage(I18n.t('profile.snackbar_profile_pic_updated'));
-      },
-      onError: () => {
-        setSnackbarMessage(
-          I18n.t('profile.snackbar_profile_pic_update_failed')
-        );
-      },
-    });
+    updateProfileImage(
+      formData
+      // {
+      // onSuccess: () => {
+      //   queryClient.invalidateQueries({ queryKey: ['tenantProfile'] });
+      //   setSnackbarMessage(I18n.t('profile.snackbar_profile_pic_updated'));
+      // },
+      // onError: () => {
+      //   setSnackbarMessage(
+      //     I18n.t('profile.snackbar_profile_pic_update_failed')
+      //   );
+      // },
+      //}
+    );
   };
 
   const handleUpdateProfile = () => {
@@ -273,16 +275,16 @@ const ProfileScreen = () => {
         CHAPA_PUBLIC_KEY: chapaPaymentPublicKey,
         tax: taxPercentage ?? undefined,
         service_charge: serviceChargePercentage ?? undefined,
-      },
-      {
-        onSuccess: () => {
-          queryClient.invalidateQueries({ queryKey: ['tenantProfile'] });
-          setSnackbarMessage(I18n.t('profile.snackbar_profile_saved'));
-        },
-        onError: () => {
-          setSnackbarMessage(I18n.t('profile.snackbar_profile_save_failed'));
-        },
       }
+      // {
+      //   onSuccess: () => {
+      //     queryClient.invalidateQueries({ queryKey: ['tenantProfile'] });
+      //     setSnackbarMessage(I18n.t('profile.snackbar_profile_saved'));
+      //   },
+      //   onError: () => {
+      //     setSnackbarMessage(I18n.t('profile.snackbar_profile_save_failed'));
+      //   },
+      // }
     );
   };
 

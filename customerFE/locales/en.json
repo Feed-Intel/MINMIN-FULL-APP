@@ -8,6 +8,7 @@
   "reset_password_button": "Reset Password",
   "remember_password_text": "Remember Password ?",
   "failed_to_load_branch_details_error":"Failed to Load Branch Details",
+  "failed_to_load_orders_error":"Failed to Load Orders",
   "login_link": "Login",
   "login_title": "Log In",
   "email_placeholder": "Email",
