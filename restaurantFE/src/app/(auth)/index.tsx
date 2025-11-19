@@ -1,8 +1,8 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Animated, StyleSheet } from 'react-native';
 import { Text, Button, Card, Paragraph, useTheme } from 'react-native-paper';
 import { TextInput } from 'react-native';
-import { router } from 'expo-router';
+import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { jwtDecode } from 'jwt-decode';
 import { useDispatch } from 'react-redux';
@@ -12,11 +12,14 @@ import Toast from 'react-native-toast-message';
 import { i18n as I18n } from '../_layout';
 
 const LoginScreen = () => {
-  const logoAnimation = React.useRef(new Animated.Value(0)).current;
-  const [email, setEmail] = React.useState('');
-  const [password, setPassword] = React.useState('');
+  const logoAnimation = useRef(new Animated.Value(0)).current;
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [emailError, setEmailError] = useState(false);
+  const [passwordError, setPasswordError] = useState(false);
+
   const dispatch = useDispatch();
-  const theme = useTheme();
+  const router = useRouter();
   const { mutate: LoginFn, isPending } = useLogin();
 
   useEffect(() => {
@@ -35,14 +38,15 @@ const LoginScreen = () => {
       branch?: string;
       restaurant_name?: string;
     }>(data.access_token);
+
     const isBranchUser = decoded.user_type === 'branch';
     const isRestaurantUser = decoded.user_type === 'restaurant';
 
     if ((isBranchUser || isRestaurantUser) && !decoded?.branch) {
       Toast.show({
         type: 'error',
-        text1: I18n.t('Login.error_title'), // Localized
-        text2: I18n.t('Login.error_no_branch'), // Localized
+        text1: I18n.t('Login.error_title'),
+        text2: I18n.t('Login.error_no_branch'),
       });
       return;
     }
@@ -50,13 +54,15 @@ const LoginScreen = () => {
     if (isRestaurantUser && !decoded?.tenant) {
       Toast.show({
         type: 'error',
-        text1: I18n.t('Login.error_title'), // Localized
-        text2: I18n.t('Login.error_no_tenant'), // Localized
+        text1: I18n.t('Login.error_title'),
+        text2: I18n.t('Login.error_no_tenant'),
       });
       return;
     }
+
     await AsyncStorage.setItem('accessToken', data.access_token);
     await AsyncStorage.setItem('refreshToken', data.refresh_token);
+
     dispatch(
       setRestaurant({
         id: decoded.tenant,
@@ -66,12 +72,18 @@ const LoginScreen = () => {
         restaurant_name: decoded?.restaurant_name,
       })
     );
+
     router.replace('/(protected)/dashboard');
   };
 
   const handleLogin = () => {
-    if (!email || !password) {
-      // Replaced alert with Toast and localized the message
+    const isEmailEmpty = !email.trim();
+    const isPasswordEmpty = !password.trim();
+
+    setEmailError(isEmailEmpty);
+    setPasswordError(isPasswordEmpty);
+
+    if (isEmailEmpty || isPasswordEmpty) {
       Toast.show({
         type: 'error',
         text1: I18n.t('Login.error_title'),
@@ -79,39 +91,55 @@ const LoginScreen = () => {
       });
       return;
     }
+
     LoginFn({ email, password }, { onSuccess });
   };
 
   return (
     <Animated.View style={[styles.container, { opacity: logoAnimation }]}>
-      {/* Title Card */}
       <Card style={styles.card}>
         <Card.Content>
           <Text
-            variant="headlineLarge"
-            style={[styles.title, { color: '#3A3A3A' }]}
+            style={[
+              styles.title,
+              { color: '#3A3A3A', fontSize: 28, fontWeight: 'bold' },
+            ]}
           >
-            {I18n.t('Login.welcome_title')} {/* Localized */}
+            {I18n.t('Login.welcome_title')}
           </Text>
           <Paragraph style={styles.subtitle}>
-            {I18n.t('Login.subtitle')} {/* Localized */}
+            {I18n.t('Login.subtitle')}
           </Paragraph>
 
-          {/* Input Fields */}
+          {/* Email Input */}
           <TextInput
             placeholder={I18n.t('Login.email_placeholder')}
             value={email}
-            onChangeText={setEmail}
-            style={styles.input}
+            onChangeText={(text) => {
+              setEmail(text);
+              if (text.trim()) setEmailError(false);
+            }}
+            style={[styles.input, emailError && styles.inputError]}
             keyboardType="email-address"
           />
+          {emailError && (
+            <Text style={styles.errorText}>Email is required</Text>
+          )}
+
+          {/* Password Input */}
           <TextInput
             placeholder={I18n.t('Login.password_placeholder')}
             value={password}
-            onChangeText={setPassword}
-            style={styles.input}
+            onChangeText={(text) => {
+              setPassword(text);
+              if (text.trim()) setPasswordError(false);
+            }}
+            style={[styles.input, passwordError && styles.inputError]}
             secureTextEntry
           />
+          {passwordError && (
+            <Text style={styles.errorText}>Password is required</Text>
+          )}
 
           {/* Login Button */}
           <Button
@@ -121,11 +149,9 @@ const LoginScreen = () => {
             style={styles.button}
             labelStyle={{ color: '#fff' }}
           >
-            {
-              isPending
-                ? I18n.t('Login.logging_in') // Localized
-                : I18n.t('Login.login_button') // Localized
-            }
+            {isPending
+              ? I18n.t('Login.logging_in')
+              : I18n.t('Login.login_button')}
           </Button>
 
           {/* Forgot Password */}
@@ -135,7 +161,7 @@ const LoginScreen = () => {
             style={styles.forgotPassword}
             labelStyle={{ color: '#3A3A3A' }}
           >
-            {I18n.t('Login.forgot_password')} {/* Localized */}
+            {I18n.t('Login.forgot_password')}
           </Button>
         </Card.Content>
       </Card>
@@ -176,6 +202,14 @@ const styles = StyleSheet.create({
     height: 50,
     padding: 8,
     borderRadius: 8,
+  },
+  inputError: {
+    borderColor: 'red',
+    borderWidth: 1.5,
+  },
+  errorText: {
+    color: 'red',
+    marginBottom: 8,
   },
   button: {
     marginBottom: 16,

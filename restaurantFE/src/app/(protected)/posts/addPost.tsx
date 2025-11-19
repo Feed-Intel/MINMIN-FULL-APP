@@ -24,9 +24,13 @@ const AddPost = () => {
   const [location, setLocation] = useState('');
   const [tags, setTags] = useState<string[]>([]);
   const [currentTag, setCurrentTag] = useState('');
-  const queryClient = useQueryClient();
 
-  // Screen size breakpoints
+  // Validation state
+  const [captionError, setCaptionError] = useState(false);
+  const [locationError, setLocationError] = useState(false);
+  const [imageError, setImageError] = useState(false);
+
+  const queryClient = useQueryClient();
   const isSmallScreen = width < 768;
 
   const handleAddTag = () => {
@@ -56,12 +60,31 @@ const AddPost = () => {
         name: result.assets[0].fileName || 'image.jpg',
         type: result.assets[0].type || 'image/jpeg',
       });
+      setImageError(false); // Reset error
     }
   };
 
   const handleSubmit = async () => {
-    if (!image || !caption || !location) {
-      alert('Please fill in all fields and upload an image.');
+    // Reset errors
+    let hasError = false;
+    setCaptionError(false);
+    setLocationError(false);
+    setImageError(false);
+
+    if (!image) {
+      setImageError(true);
+      hasError = true;
+    }
+    if (!caption.trim()) {
+      setCaptionError(true);
+      hasError = true;
+    }
+    if (!location.trim()) {
+      setLocationError(true);
+      hasError = true;
+    }
+
+    if (hasError) {
       return;
     }
 
@@ -69,11 +92,12 @@ const AddPost = () => {
     formData.append('caption', caption);
     formData.append('location', location);
     formData.append('tags', JSON.stringify(tags));
-    const base64Data = image.uri;
-    const contentType = image.type;
-    const imageName = Date.now() + '.' + image.name?.split('.')[1];
 
+    const base64Data = image!.uri;
+    const contentType = image!.type;
+    const imageName = Date.now() + '.' + image!.name?.split('.')[1];
     const blob = base64ToBlob(base64Data, contentType);
+
     formData.append(
       'image',
       new File([blob], imageName, { type: contentType })
@@ -116,6 +140,11 @@ const AddPost = () => {
           >
             {image ? 'Change Image' : 'Upload Image'}
           </Button>
+          {imageError && (
+            <Text style={{ color: 'red', marginBottom: 8 }}>
+              Please upload an image.
+            </Text>
+          )}
 
           {image && (
             <Image
@@ -133,20 +162,38 @@ const AddPost = () => {
           <TextInput
             label="Caption"
             value={caption}
-            onChangeText={setCaption}
+            onChangeText={(text) => {
+              setCaption(text);
+              setCaptionError(false); // Reset error when user types
+            }}
             style={[styles.input, { marginBottom: isSmallScreen ? 12 : 16 }]}
             mode="outlined"
             multiline
             numberOfLines={3}
+            error={captionError}
           />
+          {captionError && (
+            <Text style={{ color: 'red', marginBottom: 8 }}>
+              Caption is required.
+            </Text>
+          )}
 
           <TextInput
             label="Location"
             value={location}
-            onChangeText={setLocation}
+            onChangeText={(text) => {
+              setLocation(text);
+              setLocationError(false);
+            }}
             style={[styles.input, { marginBottom: isSmallScreen ? 12 : 16 }]}
             mode="outlined"
+            error={locationError}
           />
+          {locationError && (
+            <Text style={{ color: 'red', marginBottom: 8 }}>
+              Location is required.
+            </Text>
+          )}
 
           <View style={styles.tagSection}>
             <ScrollView
@@ -156,7 +203,7 @@ const AddPost = () => {
                 { paddingBottom: isSmallScreen ? 8 : 12 },
               ]}
             >
-              {tags?.map((tag, index) => (
+              {tags.map((tag, index) => (
                 <Chip
                   key={index}
                   onClose={() => handleRemoveTag(tag)}
@@ -196,40 +243,15 @@ const AddPost = () => {
 };
 
 const styles = StyleSheet.create({
-  scrollContainer: {
-    flexGrow: 1,
-    justifyContent: 'center',
-  },
-  container: {
-    alignSelf: 'center',
-    marginVertical: 16,
-  },
-  title: {
-    textAlign: 'center',
-    fontWeight: '600',
-  },
-  input: {
-    // backgroundColor: "white",
-  },
-  button: {
-    borderRadius: 8,
-  },
-  image: {
-    width: '100%',
-    marginVertical: 16,
-    resizeMode: 'cover',
-  },
-  tagSection: {
-    marginVertical: 8,
-  },
-  chipContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    marginBottom: 8,
-  },
-  chip: {
-    marginBottom: 8,
-  },
+  scrollContainer: { flexGrow: 1, justifyContent: 'center' },
+  container: { alignSelf: 'center', marginVertical: 16 },
+  title: { textAlign: 'center', fontWeight: '600' },
+  input: {},
+  button: { borderRadius: 8 },
+  image: { width: '100%', marginVertical: 16, resizeMode: 'cover' },
+  tagSection: { marginVertical: 8 },
+  chipContainer: { flexDirection: 'row', flexWrap: 'wrap', marginBottom: 8 },
+  chip: { marginBottom: 8 },
 });
 
 export default AddPost;

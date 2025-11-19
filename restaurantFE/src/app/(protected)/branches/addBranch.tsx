@@ -40,61 +40,66 @@ export default function AddBranchDialog({
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [showSnackbar, setShowSnackbar] = useState(false);
 
-  const { mutate: addBranch, isPending } = useCreateBranch();
+  const { mutate: addBranch, isPending } = useCreateBranch(
+    () => {
+      setBranchData({ address: '', lat: '', lng: '', is_default: false });
+      setShowSnackbar(true);
+      onSuccess();
+    },
+    () => {
+      setErrors({ general: I18n.t('AddBranch.general_error') });
+    }
+  );
 
   const validateForm = () => {
-    const errors: { [key: string]: string } = {};
+    const validationErrors: { [key: string]: string } = {};
 
     if (!branchData.address.trim()) {
-      errors.address = I18n.t('AddBranch.address_required');
+      validationErrors.address = I18n.t('AddBranch.address_required');
     } else if (branchData.address.trim().length < 3) {
-      errors.address = I18n.t('AddBranch.address_min_length');
+      validationErrors.address = I18n.t('AddBranch.address_min_length');
     }
 
     if (!branchData.lat.trim()) {
-      errors.lat = I18n.t('AddBranch.latitude_required');
+      validationErrors.lat = I18n.t('AddBranch.latitude_required');
+    } else {
+      const latitude = parseFloat(branchData.lat.trim());
+      if (isNaN(latitude) || latitude < -90 || latitude > 90) {
+        validationErrors.lat = I18n.t('AddBranch.latitude_range_error');
+      }
     }
+
     if (!branchData.lng.trim()) {
-      errors.lng = I18n.t('AddBranch.longitude_required');
+      validationErrors.lng = I18n.t('AddBranch.longitude_required');
+    } else {
+      const longitude = parseFloat(branchData.lng.trim());
+      if (isNaN(longitude) || longitude < -180 || longitude > 180) {
+        validationErrors.lng = I18n.t('AddBranch.longitude_range_error');
+      }
     }
-    const latitude = parseFloat(branchData.lat.trim());
-    const longitude = parseFloat(branchData.lng.trim());
-    if (isNaN(latitude) || latitude < -90 || latitude > 90) {
-      errors.lat = I18n.t('AddBranch.latitude_range_error');
-    }
-    if (isNaN(longitude) || longitude < -180 || longitude > 180) {
-      errors.lng = I18n.t('AddBranch.longitude_range_error');
-    }
-    setErrors(errors);
-    return Object.keys(errors).length === 0;
+
+    setErrors(validationErrors);
+    return Object.keys(validationErrors).length === 0;
   };
 
-  const handleSave = async () => {
+  const handleSave = () => {
     if (validateForm()) {
-      try {
-        await addBranch({
-          ...branchData,
-          gps_coordinates: `${branchData.lat},${branchData.lng}`,
-        });
-        setBranchData({ address: '', lat: '', lng: '', is_default: false });
-        setShowSnackbar(true);
-        onSuccess();
-      } catch (error) {
-        console.error('Error adding branch:', error);
-        setErrors({ general: I18n.t('AddBranch.general_error') });
-      }
+      addBranch({
+        ...branchData,
+        gps_coordinates: `${branchData.lat},${branchData.lng}`,
+      });
     }
   };
 
   return (
     <Portal>
       <Dialog visible={visible} onDismiss={onClose} style={styles.dialog}>
-        {/* <Dialog.Title>Add New Branch</Dialog.Title> */}
         <Dialog.Content>
           <KeyboardAvoidingView
             behavior={Platform.OS === 'ios' ? 'padding' : undefined}
           >
             <ScrollView>
+              {/* Address Input */}
               <TextInput
                 placeholder={I18n.t('AddBranch.address_placeholder')}
                 mode="outlined"
@@ -115,17 +120,17 @@ export default function AddBranchDialog({
                 {errors.address}
               </HelperText>
 
+              {/* Latitude Input */}
               <TextInput
                 placeholder={I18n.t('AddBranch.latitude_placeholder')}
                 mode="outlined"
                 value={branchData.lat}
-                onChangeText={(text) => {
-                  const sanitizedValue = text.replace(/[^0-9\-,\.]/g, '');
+                onChangeText={(text) =>
                   setBranchData({
                     ...branchData,
-                    lat: sanitizedValue,
-                  });
-                }}
+                    lat: text.replace(/[^0-9\-,\.]/g, ''),
+                  })
+                }
                 style={styles.input}
                 error={!!errors.lat}
                 outlineStyle={{
@@ -134,22 +139,23 @@ export default function AddBranchDialog({
                   borderRadius: 16,
                 }}
                 placeholderTextColor="#202B1866"
+                keyboardType="numeric"
               />
               <HelperText type="error" visible={!!errors.lat}>
                 {errors.lat}
               </HelperText>
 
+              {/* Longitude Input */}
               <TextInput
                 placeholder={I18n.t('AddBranch.longitude_placeholder')}
                 mode="outlined"
                 value={branchData.lng}
-                onChangeText={(text) => {
-                  const sanitizedValue = text.replace(/[^0-9\-,\.]/g, '');
+                onChangeText={(text) =>
                   setBranchData({
                     ...branchData,
-                    lng: sanitizedValue,
-                  });
-                }}
+                    lng: text.replace(/[^0-9\-,\.]/g, ''),
+                  })
+                }
                 style={styles.input}
                 error={!!errors.lng}
                 outlineStyle={{
@@ -158,11 +164,13 @@ export default function AddBranchDialog({
                   borderRadius: 16,
                 }}
                 placeholderTextColor="#202B1866"
+                keyboardType="numeric"
               />
               <HelperText type="error" visible={!!errors.lng}>
                 {errors.lng}
               </HelperText>
 
+              {/* Default Switch */}
               <View style={styles.switchContainer}>
                 <Text style={styles.switchText}>
                   {I18n.t('AddBranch.set_as_default_label')}
@@ -174,33 +182,28 @@ export default function AddBranchDialog({
                   }
                   color="#96B76E"
                   trackColor={{ false: '#96B76E', true: '#96B76E' }}
-                  thumbColor={'#fff'}
+                  thumbColor="#fff"
                 />
               </View>
             </ScrollView>
           </KeyboardAvoidingView>
         </Dialog.Content>
+
         <Dialog.Actions>
           <Button
             mode="contained"
             onPress={handleSave}
             loading={isPending}
             disabled={isPending}
-            style={{
-              borderRadius: 16,
-              height: 36,
-              backgroundColor: '#96B76E',
-            }}
-            labelStyle={{
-              color: '#fff',
-              fontSize: 15,
-            }}
+            style={{ borderRadius: 16, height: 36, backgroundColor: '#96B76E' }}
+            labelStyle={{ color: '#fff', fontSize: 15 }}
           >
             {I18n.t('AddBranch.save_branch_button')}
           </Button>
         </Dialog.Actions>
       </Dialog>
 
+      {/* Snackbar for success/error */}
       <Snackbar
         visible={showSnackbar || !!errors.general}
         onDismiss={() => {

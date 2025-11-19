@@ -119,3 +119,13 @@ export const deleteDiscountRule = asyncHandler(
 export const deleteCoupon = asyncHandler(async (id: string): Promise<void> => {
   await apiClient.delete(`/coupon/${id}/`);
 });
+
+export const createCheckDiscount = asyncHandler(
+  async (discount: Partial<any>) => {
+    const response = await apiClient.post('/order/check-discount/', discount);
+    if (!response.data) {
+      throw new Error('No data returned from discount check');
+    }
+    return response.data;
+  }
+);

@@ -45,6 +45,18 @@ class TableView(CachedModelViewSet):
             return base_qs.filter(branch=branch) if branch else base_qs.none()
 
         return base_qs.none()
+    
+    def get_paginated_response(self, data):
+        # If 'nopage' query param is set, return unpaginated data
+        if self.request.query_params.get('nopage') == '1':
+            return Response(data)
+        return super().get_paginated_response(data)
+
+    def paginate_queryset(self, queryset):
+        # If 'nopage' query param is set, skip pagination
+        if self.request.query_params.get('nopage') == '1':
+            return None
+        return super().paginate_queryset(queryset)
 
     def destroy(self, request, *args, **kwargs):
         """Handles deletion of a table with validation error handling."""

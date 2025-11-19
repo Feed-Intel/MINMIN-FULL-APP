@@ -74,10 +74,7 @@ export default function AddComboDialog({
   useEffect(() => {
     if (visible) {
       setApplyToAllBranches(!isBranch);
-      setCombo((prev) => ({
-        ...prev,
-        branch: defaultBranchId,
-      }));
+      setCombo((prev) => ({ ...prev, branch: defaultBranchId }));
     }
   }, [visible, isBranch, defaultBranchId]);
 
@@ -90,7 +87,7 @@ export default function AddComboDialog({
     field: keyof ComboItem,
     value: any
   ) => {
-    const updatedItems = [...(combo.combo_items ?? [])] as ComboItem[];
+    const updatedItems = [...(combo.combo_items ?? [])];
     updatedItems[index][field] = value as never;
     setCombo({ ...combo, combo_items: updatedItems });
   };
@@ -106,16 +103,13 @@ export default function AddComboDialog({
   };
 
   const handleRemoveItem = (index: number) => {
-    const updatedItems = [...(combo?.combo_items ?? [])];
+    const updatedItems = [...(combo.combo_items ?? [])];
     updatedItems.splice(index, 1);
     setCombo({ ...combo, combo_items: updatedItems });
   };
 
   const toggleMenuItemMenu = (index: number, visible: boolean) => {
-    setMenuItemMenusVisible((prev) => ({
-      ...prev,
-      [index]: visible,
-    }));
+    setMenuItemMenusVisible((prev) => ({ ...prev, [index]: visible }));
   };
 
   const validateForm = () => {
@@ -123,7 +117,7 @@ export default function AddComboDialog({
 
     if (!combo.name?.trim()) {
       errors.name = I18n.t('comboDialog.errorComboNameRequired');
-    } else if (combo.name.trim()?.length < 3) {
+    } else if (combo.name.trim().length < 3) {
       errors.name = I18n.t('comboDialog.errorComboNameTooShort');
     }
 
@@ -135,47 +129,43 @@ export default function AddComboDialog({
       errors.combo_price = I18n.t('comboDialog.errorComboPriceInvalid');
     }
 
-    if (!combo.combo_items || combo.combo_items?.length === 0) {
+    if (!combo.combo_items || combo.combo_items.length === 0) {
       errors.combo_items = I18n.t('comboDialog.errorComboItemsRequired');
     } else {
-      combo.combo_items?.forEach((item, index) => {
-        if (!item.menu_item) {
+      combo.combo_items.forEach((item, index) => {
+        if (!item.menu_item)
           errors[`menu_item_${index}`] = I18n.t(
             'comboDialog.errorMenuItemRequired'
           );
-        }
-        if (item.quantity <= 0) {
+        if (item.quantity <= 0)
           errors[`quantity_${index}`] = I18n.t(
             'comboDialog.errorQuantityInvalid'
           );
-        }
       });
     }
 
     setErrors(errors);
-    return Object.keys(errors)?.length === 0;
+    return Object.keys(errors).length === 0;
   };
 
   const handleSave = async () => {
-    if (validateForm()) {
-      try {
-        await saveCombo(combo);
-        queryClient.invalidateQueries({ queryKey: ['combos'] });
-        onClose();
-      } catch (error) {
-        console.error('Error saving combo:', error);
-        setErrors({ general: 'Failed to save combo. Please try again.' });
-      }
+    if (!validateForm()) return;
+
+    try {
+      await saveCombo(combo);
+      queryClient.invalidateQueries({ queryKey: ['combos'] });
+      onClose();
+    } catch (error) {
+      console.error('Error saving combo:', error);
+      setErrors({ general: 'Failed to save combo. Please try again.' });
     }
   };
 
   return (
     <Portal>
       <Dialog visible={visible} onDismiss={onClose} style={styles.dialog}>
-        {/* <Dialog.Title>Add Combo</Dialog.Title> */}
         <Dialog.Content>
           <ScrollView>
-            {/* <Card style={styles.card}> */}
             <Card.Content>
               <Text variant="titleLarge" style={styles.title}>
                 {I18n.t('comboDialog.comboDetailsTitle')}
@@ -188,15 +178,8 @@ export default function AddComboDialog({
                 style={styles.input}
                 error={!!errors.name}
                 mode="outlined"
-                outlineStyle={{
-                  borderColor: '#91B275',
-                  borderWidth: 0,
-                  borderRadius: 16,
-                }}
+                outlineStyle={styles.outline}
                 placeholderTextColor="#202B1866"
-                contentStyle={{
-                  color: '#202B1866',
-                }}
               />
               <HelperText type="error" visible={!!errors.name}>
                 {errors.name}
@@ -208,228 +191,152 @@ export default function AddComboDialog({
                 </Text>
                 <Switch
                   value={applyToAllBranches}
-                  onValueChange={(value) => setApplyToAllBranches(value)}
+                  onValueChange={setApplyToAllBranches}
                   trackColor={{ false: '#96B76E', true: '#96B76E' }}
-                  thumbColor={'#fff'}
+                  thumbColor="#fff"
                   disabled={isBranch}
                 />
               </View>
+
               {!applyToAllBranches && (
-                <>
-                  {/* Updated Branch Dropdown */}
-                  <View style={styles.dropdownContainer}>
-                    {isBranch ? (
-                      <Text style={styles.readonlyBranch}>
-                        {branches?.results.find(
-                          (b: any) => b.id === defaultBranchId
-                        )?.address ??
-                          I18n.t('comboDialog.assignedBranchReadonly')}
-                      </Text>
-                    ) : (
-                      <Menu
-                        visible={branchMenuVisible}
-                        onDismiss={() => setBranchMenuVisible(false)}
-                        anchor={
-                          <Button
-                            mode="text"
-                            style={styles.dropdownButton}
-                            labelStyle={{
-                              color: '#333',
-                              fontSize: 14,
-                              width: '100%',
-                              textAlign: 'left',
-                            }}
-                            onPress={() => setBranchMenuVisible(true)}
-                            contentStyle={{
-                              flexDirection: 'row-reverse',
-                              width: '100%',
-                            }}
-                            icon={
-                              branchMenuVisible ? 'chevron-up' : 'chevron-down'
-                            }
-                          >
-                            {combo.branch
-                              ? branches?.results.find(
-                                  (b: any) => b.id === combo.branch
-                                )?.address
-                              : I18n.t('comboDialog.selectBranchButton')}
-                          </Button>
-                        }
-                        contentStyle={[styles.menuContent, { width: '100%' }]}
-                        style={{ alignSelf: 'stretch' }}
-                        anchorPosition="bottom"
-                      >
-                        {branches?.results && branches?.results?.length > 0 ? (
-                          branches?.results?.map((branch: any) => (
-                            <Menu.Item
-                              key={branch.id}
-                              onPress={() => {
-                                handleInputChange('branch', branch.id);
-                                setBranchMenuVisible(false);
-                              }}
-                              title={branch.address}
-                              titleStyle={styles.menuItem}
-                            />
-                          ))
-                        ) : (
+                <View style={styles.dropdownContainer}>
+                  {isBranch ? (
+                    <Text style={styles.readonlyBranch}>
+                      {branches?.results.find((b) => b.id === defaultBranchId)
+                        ?.address ??
+                        I18n.t('comboDialog.assignedBranchReadonly')}
+                    </Text>
+                  ) : (
+                    <Menu
+                      visible={branchMenuVisible}
+                      onDismiss={() => setBranchMenuVisible(false)}
+                      anchor={
+                        <Button
+                          mode="text"
+                          style={styles.dropdownButton}
+                          onPress={() => setBranchMenuVisible(true)}
+                          icon={
+                            branchMenuVisible ? 'chevron-up' : 'chevron-down'
+                          }
+                        >
+                          {combo.branch
+                            ? branches?.results.find(
+                                (b) => b.id === combo.branch
+                              )?.address
+                            : I18n.t('comboDialog.selectBranchButton')}
+                        </Button>
+                      }
+                    >
+                      {branches?.results?.length ? (
+                        branches.results.map((branch) => (
                           <Menu.Item
-                            title={I18n.t('comboDialog.noBranchesAvailable')}
-                            disabled
+                            key={branch.id}
+                            onPress={() => {
+                              handleInputChange('branch', branch.id);
+                              setBranchMenuVisible(false);
+                            }}
+                            title={branch.address}
                           />
-                        )}
-                      </Menu>
-                    )}
-                  </View>
+                        ))
+                      ) : (
+                        <Menu.Item
+                          title={I18n.t('comboDialog.noBranchesAvailable')}
+                          disabled
+                        />
+                      )}
+                    </Menu>
+                  )}
                   <HelperText type="error" visible={!!errors.branch}>
                     {errors.branch}
                   </HelperText>
-                </>
+                </View>
               )}
+
               <TextInput
                 placeholder={I18n.t('comboDialog.comboPricePlaceholder')}
                 value={combo.combo_price?.toString()}
-                style={styles.input}
                 keyboardType="numeric"
-                onChangeText={(text) => {
-                  const sanitizedValue = text.replace(/[^0-9\-,\.]/g, '');
-                  handleInputChange('combo_price', sanitizedValue);
-                }}
+                onChangeText={(text) =>
+                  handleInputChange(
+                    'combo_price',
+                    text.replace(/[^0-9\-,\.]/g, '')
+                  )
+                }
+                style={styles.input}
                 error={!!errors.combo_price}
                 mode="outlined"
-                contentStyle={{
-                  color: '#202B1866',
-                }}
-                outlineStyle={{
-                  borderColor: '#91B275',
-                  borderWidth: 0,
-                  borderRadius: 16,
-                }}
+                outlineStyle={styles.outline}
                 placeholderTextColor="#202B1866"
               />
               <HelperText type="error" visible={!!errors.combo_price}>
                 {errors.combo_price}
               </HelperText>
             </Card.Content>
-            {/* </Card> */}
 
-            {/* <Card style={[styles.card, styles.dataTable]}> */}
             <Card.Content>
               <DataTable>
-                <DataTable.Header
-                  style={{ borderBottomWidth: 1, borderColor: '#91B275' }}
-                >
+                <DataTable.Header>
                   <DataTable.Title>
-                    {' '}
-                    <Text
-                      style={{
-                        fontSize: 13,
-                        fontWeight: '400',
-                        color: '#40392B',
-                      }}
-                    >
-                      {I18n.t('comboDialog.menuItemHeader')}
-                    </Text>
+                    {I18n.t('comboDialog.menuItemHeader')}
                   </DataTable.Title>
-                  <DataTable.Title style={isSmallScreen && { paddingLeft: 6 }}>
-                    <Text
-                      style={{
-                        fontSize: 13,
-                        fontWeight: '400',
-                        color: '#40392B',
-                      }}
-                    >
-                      {I18n.t('comboDialog.quantityHeader')}
-                    </Text>
+                  <DataTable.Title>
+                    {I18n.t('comboDialog.quantityHeader')}
                   </DataTable.Title>
-                  <DataTable.Title style={{ paddingLeft: 0 }}>
-                    <Text
-                      style={{
-                        fontSize: 13,
-                        fontWeight: '400',
-                        color: '#40392B',
-                      }}
-                    >
-                      {I18n.t('comboDialog.isHalfHeader')}
-                    </Text>
+                  <DataTable.Title>
+                    {I18n.t('comboDialog.isHalfHeader')}
                   </DataTable.Title>
-                  <DataTable.Title style={{ paddingLeft: 0 }}>
-                    <Text
-                      style={{
-                        fontSize: 13,
-                        fontWeight: '400',
-                        color: '#40392B',
-                      }}
-                    >
-                      {I18n.t('comboDialog.actionsHeader')}
-                    </Text>
+                  <DataTable.Title>
+                    {I18n.t('comboDialog.actionsHeader')}
                   </DataTable.Title>
                 </DataTable.Header>
 
-                {combo?.combo_items?.map((item, index) => (
+                {combo.combo_items?.map((item, index) => (
                   <DataTable.Row key={index}>
                     <DataTable.Cell>
-                      {/* Updated Menu Item Dropdown */}
-                      <View style={styles.dropdownContainer}>
-                        <Menu
-                          visible={menuItemMenusVisible[index] || false}
-                          onDismiss={() => toggleMenuItemMenu(index, false)}
-                          anchor={
-                            <Button
-                              mode="outlined"
-                              style={styles.dropdownButton}
-                              labelStyle={{
-                                color: '#333',
-                                fontSize: 13,
-                                width: '100%',
-                                textAlign: 'left',
-                              }}
-                              onPress={() => toggleMenuItemMenu(index, true)}
-                              contentStyle={{
-                                flexDirection: 'row-reverse',
-                                width: '100%',
-                              }}
-                              icon={
-                                menuItemMenusVisible[index]
-                                  ? 'chevron-up'
-                                  : 'chevron-down'
-                              }
-                            >
-                              {typeof item.menu_item === 'string' &&
-                              item.menu_item
-                                ? menuItems?.results.find(
-                                    (m: any) => m.id === item.menu_item
-                                  )?.name
-                                : I18n.t('comboDialog.menuItemDropdownDefault')}
-                            </Button>
-                          }
-                          contentStyle={[styles.menuContent, { width: '100%' }]}
-                          style={{ alignSelf: 'flex-start' }}
-                          anchorPosition="bottom"
-                        >
-                          {menuItems && menuItems?.results?.length > 0 ? (
-                            menuItems?.results?.map((menuItem: any) => (
-                              <Menu.Item
-                                key={menuItem.id}
-                                onPress={() => {
-                                  handleItemChange(
-                                    index,
-                                    'menu_item',
-                                    menuItem.id
-                                  );
-                                  toggleMenuItemMenu(index, false);
-                                }}
-                                title={menuItem.name}
-                                titleStyle={styles.menuItem}
-                              />
-                            ))
-                          ) : (
+                      <Menu
+                        visible={menuItemMenusVisible[index] || false}
+                        onDismiss={() => toggleMenuItemMenu(index, false)}
+                        anchor={
+                          <Button
+                            mode="outlined"
+                            style={styles.dropdownButton}
+                            onPress={() => toggleMenuItemMenu(index, true)}
+                            icon={
+                              menuItemMenusVisible[index]
+                                ? 'chevron-up'
+                                : 'chevron-down'
+                            }
+                          >
+                            {item.menu_item
+                              ? menuItems?.results.find(
+                                  (m) => m.id === item.menu_item
+                                )?.name
+                              : I18n.t('comboDialog.menuItemDropdownDefault')}
+                          </Button>
+                        }
+                      >
+                        {menuItems?.results?.length ? (
+                          menuItems.results.map((menuItem) => (
                             <Menu.Item
-                              title={I18n.t('comboDialog.noMenuItemsAvailable')}
-                              disabled
+                              key={menuItem.id}
+                              onPress={() => {
+                                handleItemChange(
+                                  index,
+                                  'menu_item',
+                                  menuItem.id
+                                );
+                                toggleMenuItemMenu(index, false);
+                              }}
+                              title={menuItem.name}
                             />
-                          )}
-                        </Menu>
-                      </View>
+                          ))
+                        ) : (
+                          <Menu.Item
+                            title={I18n.t('comboDialog.noMenuItemsAvailable')}
+                            disabled
+                          />
+                        )}
+                      </Menu>
                       <HelperText
                         type="error"
                         visible={!!errors[`menu_item_${index}`]}
@@ -438,29 +345,21 @@ export default function AddComboDialog({
                       </HelperText>
                     </DataTable.Cell>
 
-                    <DataTable.Cell style={{ flex: 1, paddingLeft: 6 }}>
+                    <DataTable.Cell>
                       <TextInput
                         keyboardType="numeric"
                         value={item.quantity.toString()}
-                        onChangeText={(text) => {
-                          const sanitizedValue = text.replace(
-                            /[^0-9\-,\.]/g,
-                            ''
-                          );
-                          handleItemChange(index, 'quantity', sanitizedValue);
-                        }}
+                        onChangeText={(text) =>
+                          handleItemChange(
+                            index,
+                            'quantity',
+                            text.replace(/[^0-9\-,\.]/g, '')
+                          )
+                        }
                         style={styles.quantityInput}
                         error={!!errors[`quantity_${index}`]}
                         mode="outlined"
-                        outlineStyle={{
-                          borderColor: '#91B275',
-                          borderWidth: 0,
-                          borderRadius: 16,
-                        }}
-                        placeholderTextColor="#202B1866"
-                        contentStyle={{
-                          color: '#202B1866',
-                        }}
+                        outlineStyle={styles.outline}
                       />
                       <HelperText
                         type="error"
@@ -470,7 +369,7 @@ export default function AddComboDialog({
                       </HelperText>
                     </DataTable.Cell>
 
-                    <DataTable.Cell style={{ flex: 0.7, paddingLeft: 0 }}>
+                    <DataTable.Cell>
                       <Checkbox
                         status={item.is_half ? 'checked' : 'unchecked'}
                         onPress={() =>
@@ -481,11 +380,10 @@ export default function AddComboDialog({
                       />
                     </DataTable.Cell>
 
-                    <DataTable.Cell style={{ flex: 0.7, paddingLeft: 0 }}>
+                    <DataTable.Cell>
                       <IconButton
                         icon="delete"
                         onPress={() => handleRemoveItem(index)}
-                        size={24}
                       />
                     </DataTable.Cell>
                   </DataTable.Row>
@@ -500,22 +398,16 @@ export default function AddComboDialog({
                 {I18n.t('comboDialog.addComboItemButton')}
               </Button>
             </Card.Content>
-            {/* </Card> */}
           </ScrollView>
         </Dialog.Content>
+
         <Dialog.Actions>
-          {/* <Button onPress={onClose}>Cancel</Button> */}
           <Button
             mode="contained"
             onPress={handleSave}
             loading={isPending}
-            style={styles.saveButton}
             disabled={isPending}
-            labelStyle={{
-              color: '#fff',
-              fontSize: 17,
-              fontWeight: '400',
-            }}
+            style={styles.saveButton}
           >
             {I18n.t('comboDialog.saveComboButton')}
           </Button>
@@ -531,6 +423,11 @@ const styles = StyleSheet.create({
     width: '40%',
     alignSelf: 'center',
     borderRadius: 12,
+  },
+  outline: {
+    borderColor: '#91B275',
+    borderWidth: 0,
+    borderRadius: 16,
   },
   input: {
     flex: 1,

@@ -63,6 +63,16 @@ export default function EditMenuDialog({
     is_global: false,
     branches: [],
   });
+
+  // Validation state (same shape as AddMenuDialog)
+  const [errors, setErrors] = useState({
+    name: false,
+    description: false,
+    price: false,
+    image: false,
+    categories: false,
+  });
+
   const [categoryMenuVisible, setCategoryMenuVisible] = useState(false);
 
   const isSmallScreen = width < 768;
@@ -74,6 +84,7 @@ export default function EditMenuDialog({
 
   const categories = ['Appetizer', 'Breakfast', 'Lunch', 'Dinner'];
 
+  // populate menu data when `menu` prop changes
   useEffect(() => {
     if (menu) {
       const parsedCategories = Array.isArray(menu.categories)
@@ -81,17 +92,27 @@ export default function EditMenuDialog({
         : menu.category
         ? [menu.category]
         : [];
+
       setMenuData({
-        name: menu.name,
-        description: menu.description,
+        name: menu.name ?? '',
+        description: menu.description ?? '',
         categories: parsedCategories,
-        price: menu.price,
-        is_side: menu.is_side,
+        price: menu.price ?? '',
+        is_side: Boolean(menu.is_side),
         image: menu.image
           ? { uri: menu.image, name: '', type: '' }
           : { uri: '', name: '', type: '' },
-        is_global: menu.is_global,
-        branches: menu.branches,
+        is_global: Boolean(menu.is_global),
+        branches: menu.branches ?? [],
+      });
+
+      // clear previous errors when a new menu loads
+      setErrors({
+        name: false,
+        description: false,
+        price: false,
+        image: false,
+        categories: false,
       });
     }
   }, [menu]);
@@ -104,6 +125,10 @@ export default function EditMenuDialog({
       ...prevData,
       [field]: value,
     }));
+    setErrors((prev) => ({
+      ...prev,
+      [field]: false,
+    }));
   };
 
   const toggleCategory = (category: string) => {
@@ -112,6 +137,10 @@ export default function EditMenuDialog({
       const categories = exists
         ? prevData.categories.filter((item) => item !== category)
         : [...prevData.categories, category];
+
+      // clear categories error on toggle
+      setErrors((prev) => ({ ...prev, categories: false }));
+
       return { ...prevData, categories };
     });
   };
@@ -124,50 +153,36 @@ export default function EditMenuDialog({
     });
 
     if (!result.canceled) {
-      setMenuData({
-        ...menuData,
+      setMenuData((prev) => ({
+        ...prev,
         image: {
           uri: result.assets[0].uri,
           name: result.assets[0].fileName || 'image.jpg',
           type: result.assets[0].type || 'image/jpeg',
         },
-      });
+      }));
+      setErrors((prev) => ({ ...prev, image: false }));
     }
   };
 
   const handleUpdate = async () => {
-    if (!menuData.name || !menuData.image.uri) {
-      Toast.show({
-        type: 'error',
-        text1: I18n.t('Common.error_title'),
-        text2: I18n.t('editMenuDialog.error.nameImageRequired'),
-      });
-      return;
-    }
+    const newErrors = {
+      name: !menuData.name,
+      description: !menuData.description,
+      price: !menuData.price,
+      image: !menuData.image.uri,
+      categories: menuData.categories.length === 0,
+    };
 
-    if (!menuData.description) {
-      Toast.show({
-        type: 'error',
-        text1: I18n.t('Common.error_title'),
-        text2: I18n.t('editMenuDialog.error.descriptionRequired'),
-      });
-      return;
-    }
+    setErrors(newErrors);
 
-    if (!menuData.price) {
+    if (Object.values(newErrors).some(Boolean)) {
       Toast.show({
         type: 'error',
         text1: I18n.t('Common.error_title'),
-        text2: I18n.t('editMenuDialog.error.priceRequired'),
-      });
-      return;
-    }
-
-    if (menuData.categories.length === 0) {
-      Toast.show({
-        type: 'error',
-        text1: I18n.t('Common.error_title'),
-        text2: I18n.t('editMenuDialog.error.categoryRequired'),
+        text2:
+          I18n.t('editMenuDialog.error.fillAllFields') ||
+          I18n.t('Common.please_fill_required_fields'),
       });
       return;
     }
@@ -183,6 +198,7 @@ export default function EditMenuDialog({
       formData.append('branches', branch);
     }
 
+    // only append file when image is a data URL (new file picked)
     if (menuData.image.uri.includes('data:image')) {
       const base64Data = menuData.image.uri;
       const contentType = menuData.image.type || 'image/jpeg';
@@ -198,11 +214,13 @@ export default function EditMenuDialog({
 
     await updateMenu(formData);
     queryClient.invalidateQueries({ queryKey: ['menus'] });
+
     Toast.show({
       type: 'success',
       text1: I18n.t('Common.success_title'),
       text2: I18n.t('MenuDialog.successUpdateMessage'),
     });
+
     onClose();
   };
 
@@ -217,6 +235,7 @@ export default function EditMenuDialog({
         </Dialog.Title>
         <Dialog.Content>
           <ScrollView>
+            {/* NAME */}
             <TextInput
               label={I18n.t('MenuDialog.namePlaceholder')}
               value={menuData.name}
@@ -224,16 +243,15 @@ export default function EditMenuDialog({
               mode="outlined"
               style={styles.input}
               outlineStyle={{
-                borderColor: '#91B275',
-                borderWidth: 0,
+                borderColor: errors.name ? 'red' : '#91B275',
+                borderWidth: errors.name ? 2 : 0,
                 borderRadius: 16,
               }}
               placeholderTextColor="#202B1866"
-              contentStyle={{
-                color: '#202B1866',
-              }}
+              contentStyle={{ color: '#202B1866' }}
             />
 
+            {/* DESCRIPTION */}
             <TextInput
               label={I18n.t('MenuDialog.descriptionPlaceholder')}
               value={menuData.description}
@@ -243,15 +261,15 @@ export default function EditMenuDialog({
               numberOfLines={isSmallScreen ? 3 : 5}
               style={styles.descInput}
               outlineStyle={{
-                borderColor: '#91B275',
-                borderWidth: 0,
+                borderColor: errors.description ? 'red' : '#91B275',
+                borderWidth: errors.description ? 2 : 0,
                 borderRadius: 16,
               }}
               placeholderTextColor="#202B1866"
-              contentStyle={{
-                color: '#202B1866',
-              }}
+              contentStyle={{ color: '#202B1866' }}
             />
+
+            {/* GLOBAL SWITCH */}
             <View
               style={{
                 flexDirection: 'row',
@@ -269,14 +287,16 @@ export default function EditMenuDialog({
                 color="#91B275"
               />
             </View>
+
+            {/* BRANCHES */}
             {!menuData.is_global && (
               <>
                 <Text style={styles.fieldLabel}>
                   {I18n.t('MenuDialog.branchLabel')}
                 </Text>
                 <MultiSelectDropdown
-                  label="Select Branches"
-                  placeholder="Select Branches"
+                  label={I18n.t('MenuDialog.selectBranchesPlaceholder')}
+                  placeholder={I18n.t('MenuDialog.selectBranchesPlaceholder')}
                   options={
                     (branches?.results.map((br) => ({
                       label: br.address,
@@ -285,10 +305,9 @@ export default function EditMenuDialog({
                   }
                   value={menuData.branches || []}
                   onSelect={(values) => handleInputChange('branches', values)}
-                  menuContentStyle={{
-                    backgroundColor: '#fff',
-                  }}
+                  menuContentStyle={{ backgroundColor: '#fff' }}
                   CustomMenuHeader={() => <Text>{''}</Text>}
+                  // make the dropdown input match TextInput style
                   CustomMultiSelectDropdownInput={({
                     placeholder,
                     selectedLabel,
@@ -303,18 +322,20 @@ export default function EditMenuDialog({
                         backgroundColor: '#50693A17',
                         maxHeight: 50,
                       }}
-                      contentStyle={{
-                        borderColor: '#ccc',
+                      outlineStyle={{
+                        borderColor: '#91B275',
+                        borderWidth: 0,
+                        borderRadius: 16,
                       }}
                       textColor={'#000'}
                       right={rightIcon}
-                      outlineColor="#ccc"
                     />
                   )}
                 />
               </>
             )}
-            {/* Category Dropdown */}
+
+            {/* CATEGORY SELECTOR (Menu with Button anchor) */}
             <View style={styles.dropdownContainer}>
               <Menu
                 visible={categoryMenuVisible}
@@ -322,7 +343,13 @@ export default function EditMenuDialog({
                 anchor={
                   <Button
                     mode="outlined"
-                    style={styles.dropdownButton}
+                    style={[
+                      styles.dropdownButton,
+                      errors.categories && {
+                        borderColor: 'red',
+                        borderWidth: 2,
+                      },
+                    ]}
                     labelStyle={{
                       color: '#333',
                       fontSize: 14,
@@ -370,6 +397,7 @@ export default function EditMenuDialog({
               </Menu>
             </View>
 
+            {/* CATEGORY CHIPS */}
             {menuData.categories.length > 0 && (
               <View style={styles.selectedCategoriesContainer}>
                 {menuData.categories.map((category) => (
@@ -386,33 +414,36 @@ export default function EditMenuDialog({
               </View>
             )}
 
+            {/* PRICE */}
             <TextInput
               label={I18n.t('MenuDialog.pricePlaceholder')}
               value={menuData.price}
               onChangeText={(text) => {
                 const cleaned = text
-                  .replace(/[^0-9.]/g, '') // remove non-digits and extra chars
-                  .replace(/(\..*)\./g, '$1'); // prevent multiple dots
+                  .replace(/[^0-9.]/g, '')
+                  .replace(/(\..*)\./g, '$1');
                 handleInputChange('price', cleaned);
               }}
               mode="outlined"
               keyboardType="numeric"
               style={styles.input}
               outlineStyle={{
-                borderColor: '#91B275',
-                borderWidth: 0,
+                borderColor: errors.price ? 'red' : '#91B275',
+                borderWidth: errors.price ? 2 : 0,
                 borderRadius: 16,
               }}
               placeholderTextColor="#202B1866"
-              contentStyle={{
-                color: '#202B1866',
-              }}
+              contentStyle={{ color: '#202B1866' }}
             />
 
+            {/* IMAGE PICKER */}
             <Button
               onPress={pickImage}
               mode="outlined"
-              style={styles.button}
+              style={[
+                styles.button,
+                errors.image && { borderColor: 'red', borderWidth: 2 },
+              ]}
               icon={menuData.image.uri ? 'image-edit' : 'image-plus'}
             >
               {menuData.image.uri
@@ -420,6 +451,7 @@ export default function EditMenuDialog({
                 : I18n.t('MenuDialog.pickImage')}
             </Button>
 
+            {/* IMAGE PREVIEW */}
             {menuData.image.uri && (
               <Image
                 source={{ uri: menuData.image.uri }}
@@ -433,6 +465,7 @@ export default function EditMenuDialog({
               />
             )}
 
+            {/* SIDE ITEM SWITCH */}
             <View style={[styles.switchRow, { gap: isSmallScreen ? 8 : 16 }]}>
               <Text
                 variant={isSmallScreen ? 'bodyMedium' : 'bodyLarge'}
@@ -449,8 +482,8 @@ export default function EditMenuDialog({
             </View>
           </ScrollView>
         </Dialog.Content>
+
         <Dialog.Actions>
-          {/* <Button onPress={onClose}>Cancel</Button> */}
           <Button
             mode="contained"
             onPress={handleUpdate}
@@ -523,7 +556,6 @@ const styles = StyleSheet.create({
     width: '100%',
     height: 36,
     justifyContent: 'center',
-    alignItems: 'center',
     alignSelf: 'center',
   },
   dropdownContainer: {

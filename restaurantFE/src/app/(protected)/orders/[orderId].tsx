@@ -7,10 +7,8 @@ import {
   StyleSheet,
   TextInput,
   Platform,
-  TouchableOpacity,
 } from 'react-native';
 import { Text, Button, Card, Divider, DataTable } from 'react-native-paper';
-import DeleteIcon from '@/assets/icons/Delete.svg';
 import { Order } from '@/types/orderTypes';
 import { useQueryClient } from '@tanstack/react-query';
 import { i18n as I18n } from '@/app/_layout';
@@ -35,12 +33,7 @@ export default function AcceptOrders() {
       try {
         await updateOrderStatus.mutate({ id: orderId, order: { status } });
         queryClient.invalidateQueries({ queryKey: ['order', orderId] });
-        // setSnackbarMessage(I18n.t('acceptOrders.statusUpdateSuccess'));
-        // setSnackbarVisible(true);
-      } catch (error) {
-        // setSnackbarMessage(I18n.t('acceptOrders.statusUpdateFailure'));
-        // setSnackbarVisible(true);
-      }
+      } catch (error) {}
     },
     [queryClient, updateOrderStatus]
   );
@@ -117,39 +110,13 @@ export default function AcceptOrders() {
                 {I18n.t('acceptOrders.tableHeaderTotal')}
               </Text>
             </DataTable.Title>
-            {/* <DataTable.Title style={[styles.headerCell, { flex: 1.5 }]}>
-              <Text variant="bodyMedium" style={styles.headerCellText}>
-                {I18n.t('acceptOrders.tableHeaderAction')}
-              </Text>
-            </DataTable.Title> */}
           </DataTable.Header>
           {order?.items.map((item) => {
-            // const nextStatus = getNextStatus(order.status);
-            // const statusMeta = STATUS_DISPLAY[order.status] ?? {
-            //  label: order.status.replace(/_/g, ' '),
-            //  borderColor: '#D6DCCD',
-            //  backgroundColor: '#EEF1EB',
-            //  textColor: '#21281B',
-            // };
-            // const orderChannel = getChannelFromOrder(order);
-            // const isHighlighted = Boolean(highlightedOrders[order.id]);
-
             return (
-              <DataTable.Row
-                key={item.id}
-                // onPress={() => openOrderDetail(order.id)}
-                style={[
-                  styles.row,
-                  // isHighlighted && styles.highlightedRow
-                ]}
-              >
+              <DataTable.Row key={item.id} style={[styles.row]}>
                 <DataTable.Cell style={[styles.cell, { flex: 1 }]}>
                   <View>
-                    <Text
-                      numberOfLines={1}
-                      // variant={isSmallScreen ? 'bodySmall' : 'bodyMedium'}
-                      style={styles.cellText}
-                    >
+                    <Text numberOfLines={1} style={styles.cellText}>
                       {item.menu_item_name}
                     </Text>
                   </View>
@@ -170,26 +137,16 @@ export default function AcceptOrders() {
                 <DataTable.Cell style={[styles.cell, { flex: 0.9 }]}>
                   <Text
                     numberOfLines={1}
-                    // variant={isSmallScreen ? 'bodySmall' : 'bodyMedium'}
                     style={[styles.cellText, { paddingRight: 55 }]}
                   >
                     {(order?.tenant as any).tax ?? 0 / 100}
                   </Text>
                 </DataTable.Cell>
                 <DataTable.Cell style={[styles.cell, { flex: 1 }]}>
-                  <Text
-                    numberOfLines={2}
-                    // variant={isSmallScreen ? 'bodySmall' : 'bodyMedium'}
-                    style={styles.cellText}
-                  >
+                  <Text numberOfLines={2} style={styles.cellText}>
                     {item.price * item.quantity}
                   </Text>
                 </DataTable.Cell>
-                {/* <DataTable.Cell style={[styles.cell, { flex: 1 }]}>
-                  <TouchableOpacity>
-                    <DeleteIcon color={'#91B275'} height={25.55} />
-                  </TouchableOpacity>
-                </DataTable.Cell> */}
               </DataTable.Row>
             );
           })}
@@ -222,12 +179,22 @@ export default function AcceptOrders() {
             </Text>
             <Text style={{ color: '#202B189E' }}>${tax.toFixed(2)}</Text>
           </View>
+          <View style={styles.summaryRow}>
+            <Text style={{ color: '#202B189E' }}>
+              {I18n.t('acceptOrders.discount')}
+            </Text>
+            <Text style={{ color: '#202B189E' }}>
+              {order?.discount_amount?.toFixed(2)}
+            </Text>
+          </View>
           <Divider style={{ marginVertical: 6 }} />
           <View style={styles.summaryRow}>
             <Text style={styles.totalLabel}>
               {I18n.t('acceptOrders.summaryTotal')}
             </Text>
-            <Text style={styles.totalValue}>${total.toFixed(2)}</Text>
+            <Text style={styles.totalValue}>
+              ${(total - (Number(order?.discount_amount) || 0)).toFixed(2)}
+            </Text>
           </View>
         </Card.Content>
         <Card.Actions style={styles.actions}>

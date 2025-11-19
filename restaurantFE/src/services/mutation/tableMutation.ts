@@ -72,7 +72,10 @@ export const useQRs = () => {
 
 // --- Table Queries ---
 
-export const useGetTables = (param?: TableQueryParams | null) => {
+export const useGetTables = (
+  param?: TableQueryParams | null,
+  noPage?: boolean
+) => {
   const { time } = useTime();
   const [data, setData] = useState<
     { next: string | null; results: Table[]; count: number } | undefined
@@ -98,7 +101,7 @@ export const useGetTables = (param?: TableQueryParams | null) => {
             searchParams.append(key, String(value));
           }
         });
-        const response = await fetchTables(searchParams.toString());
+        const response = await fetchTables(searchParams.toString(), noPage);
         if (isMounted) {
           setData(response);
         }

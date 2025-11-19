@@ -15,12 +15,14 @@ import {
   fetchCoupon,
   fetchDiscount,
   fetchDiscountRule,
+  createCheckDiscount,
 } from '../api/discountApi';
 import { Coupon, Discount, DiscountQueryParams } from '@/types/discountTypes';
 import { AppDispatch } from '@/lib/reduxStore/store';
 import { useDispatch } from 'react-redux';
 import { hideLoader, showLoader } from '@/lib/reduxStore/loaderSlice';
 import { useTime } from '@/context/time';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 const manualInvalidate = (setTime: (time: number) => void) => {
   setTime(Date.now());
@@ -698,4 +700,26 @@ export function useDeleteCoupon() {
     isPending,
     error,
   };
+}
+
+export function useCheckDiscount() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: Partial<any>) => {
+      return createCheckDiscount(data);
+    },
+    onError: (error: any) => {
+      console.error('Error checking discount:', error);
+    },
+    onSuccess: () => {
+      ('Discount created successfully');
+    },
+    onSettled: async (_: any, error: any) => {
+      if (error) {
+        console.error(error);
+      } else {
+        await queryClient.invalidateQueries({ queryKey: ['discounts'] });
+      }
+    },
+  });
 }

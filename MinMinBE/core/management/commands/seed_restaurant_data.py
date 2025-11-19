@@ -108,16 +108,16 @@ class Command(BaseCommand):
         tables = []
 
         # create fixed accounts for admin and demo customer
-        if not User.objects.filter(email='admin@example1.com').exists():
+        if not User.objects.filter(email='admin@example2.com').exists():
             User.objects.create_superuser(
-                email='admin@example1.com',
+                email='admin@example2.com',
                 password='password',
                 full_name='Admin User',
             )
-        demo_customer = User.objects.filter(email='customer@example1.com').first()
+        demo_customer = User.objects.filter(email='customer@example2.com').first()
         if not demo_customer:
             demo_customer = User.objects.create_user(
-                email='customer@example1.com',
+                email='customer@example2.com',
                 password='password',
                 full_name='Demo Customer',
                 user_type='customer',
@@ -127,7 +127,7 @@ class Command(BaseCommand):
         for r in range(restaurants):
             with transaction.atomic():
                 admin = User.objects.create_user(
-                    email=f'restaurant{r + 1}@example1.com',
+                    email=f'restaurant{r + 1}@example2.com',
                     password='password',
                     full_name=faker.company() + ' Admin',
                     user_type='restaurant',
@@ -294,7 +294,7 @@ class Command(BaseCommand):
         for c in range(customer_count):
             customers.append(
                 User.objects.create_user(
-                    email=f'customer{c + 1}@example1.com',
+                    email=f'customer{c + 1}@example2.com',
                     password='password',
                     full_name=faker.name(),
                     user_type='customer',

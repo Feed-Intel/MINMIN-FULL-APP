@@ -521,7 +521,6 @@ export default function Orders() {
 
             <View style={styles.statusOverviewRow}>
               {STATUS_OVERVIEW.map((item) => (
-                // NOTE: item.label is assumed to be translated at the source of STATUS_OVERVIEW
                 <Chip
                   key={item.id}
                   mode="outlined"
@@ -964,7 +963,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#91B275',
     borderRadius: 20,
     paddingHorizontal: 16,
-    alignSelf: 'flex-start',
   },
   addButtonLabel: {
     color: '#fff',

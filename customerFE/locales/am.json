@@ -8,6 +8,7 @@
   "reset_password_button": "የይለፍ ቃል ዳግም አስጀምር",
   "remember_password_text": "የይለፍ ቃል ያስታውሱ?",
   "failed_to_load_branch_details_error":"የቅርንጫፉን ዝርዝር መጫን አልተቻለም",
+  "failed_to_load_orders_error":"የምዝገባቸው ዝርዝር መጫን አልተቻለም",
   "login_link": "ግባ",
   "login_title": "ግባ",
   "email_placeholder": "ኢሜል",
