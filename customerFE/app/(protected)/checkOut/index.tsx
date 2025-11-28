@@ -424,130 +424,133 @@ export default function CheckoutScreen() {
                 </RadioButton.Group>
               </View>
 
-              {Platform.OS === 'web' && paymentMethod === 'chapa' && (
-                <form
-                  method="POST"
-                  action="https://api.chapa.co/v1/hosted/pay"
-                  style={{ margin: '0 auto', minWidth: 353 }}
-                  onSubmit={(e: React.FormEvent) => {
-                    e.preventDefault();
-                    const orderData = {
-                      tenant: restaurant,
-                      branch: branch,
-                      table: updTable,
-                      coupon: discountCode,
-                      items: cartItems.map((item: any) => ({
-                        menu_item: item.id,
-                        quantity: newQuantities[item.id] || 1,
-                        price: item.price,
-                        remarks: remarks[item.id],
-                      })),
-                    };
-                    const stringifiedOrderData = JSON.stringify(orderData);
-                    localStorage.setItem('orderData', stringifiedOrderData);
-                    const transactionID = generateTransactionID();
-                    localStorage.setItem('transactionID', transactionID);
-                    const amount = (
-                      subtotal +
-                      serviceCharge +
-                      tax -
-                      (tempDiscount + redeem_amount)
-                    ).toFixed(2);
-                    localStorage.setItem('amount', amount);
-                    const form = e.target as HTMLFormElement;
-                    form.tx_ref.value = transactionID;
-                    form.submit();
-                  }}
-                >
-                  <input
-                    type="hidden"
-                    name="public_key"
-                    value={paymentPublicKey}
-                  />
-                  <input
-                    type="hidden"
-                    name="tx_ref"
-                    value={generateTransactionID()}
-                  />
-                  <input
-                    type="hidden"
-                    name="amount"
-                    value={
-                      subtotal +
-                      serviceCharge +
-                      tax -
-                      (tempDiscount + redeem_amount)
-                    }
-                  />
-                  <input
-                    type="hidden"
-                    name="currency"
-                    value={'ETB'} // Replaced hardcoded string
-                  />
-                  <input type="hidden" name="email" value={user.email} />
-                  <input
-                    type="hidden"
-                    name="first_name"
-                    value={user?.full_name?.split(' ')[0] || ''}
-                  />
-                  <input
-                    type="hidden"
-                    name="last_name"
-                    value={user?.full_name?.split(' ')[1] || ''}
-                  />
-                  <input
-                    type="hidden"
-                    name="title"
-                    value={i18n.t('chapa_title')} // Replaced hardcoded string
-                  />
-                  <input
-                    type="hidden"
-                    name="description"
-                    value={i18n.t('chapa_description')} // Replaced hardcoded string
-                  />
-                  <input
-                    type="hidden"
-                    name="logo"
-                    value="https://chapa.link/asset/images/chapa_swirl.svg"
-                  />
-                  <input
-                    type="hidden"
-                    name="return_url"
-                    value={
-                      process.env.EXPO_PUBLIC_BASE_URL +
-                      '/payment/paymentSuccess'
-                    }
-                  />
-                  <input type="hidden" name="meta[title]" value="test" />
-                  <button
-                    type="submit"
-                    style={{
-                      marginTop: 16,
-                      marginBottom: 16,
-                      borderRadius: 30,
-                      color: '#22281B',
-                      height: 50,
-                      width: 353,
-                      border: 'none',
-                      fontWeight: 'bold',
-                      fontSize: 17,
-                      display: 'block',
-                      textAlign: 'center',
-                      background: '#9AC26B',
-                      ...Platform.select({
-                        web: {
-                          maxWidth: 353,
-                          width: '100%',
-                          alignSelf: 'center',
-                        },
-                      }),
+              {Platform.OS === 'web' &&
+                paymentMethod === 'chapa' &&
+                Boolean(paymentPublicKey) && (
+                  <form
+                    method="POST"
+                    action="https://api.chapa.co/v1/hosted/pay"
+                    style={{ margin: '0 auto', minWidth: 353 }}
+                    onSubmit={(e: React.FormEvent) => {
+                      e.preventDefault();
+                      const orderData = {
+                        tenant: restaurant,
+                        branch: branch,
+                        table: updTable,
+                        coupon: discountCode,
+                        items: cartItems.map((item: any) => ({
+                          menu_item: item.id,
+                          quantity: newQuantities[item.id] || 1,
+                          price: item.price,
+                          remarks: remarks[item.id],
+                        })),
+                      };
+                      const stringifiedOrderData = JSON.stringify(orderData);
+                      localStorage.setItem('orderData', stringifiedOrderData);
+                      const transactionID = generateTransactionID();
+                      localStorage.setItem('transactionID', transactionID);
+                      const amount = (
+                        subtotal +
+                        serviceCharge +
+                        tax -
+                        (tempDiscount + redeem_amount)
+                      ).toFixed(2);
+                      localStorage.setItem('amount', amount);
+                      const form = e.target as HTMLFormElement;
+                      form.tx_ref.value = transactionID;
+                      form.submit();
                     }}
                   >
-                    {i18n.t('place_order_button')}{' '}
-                    {/* Replaced hardcoded string */}
-                  </button>
-                </form>
-              )}
+                    <input
+                      type="hidden"
+                      name="public_key"
+                      value={paymentPublicKey}
+                    />
+                    <input
+                      type="hidden"
+                      name="tx_ref"
+                      value={generateTransactionID()}
+                    />
+                    <input
+                      type="hidden"
+                      name="amount"
+                      value={
+                        subtotal +
+                        serviceCharge +
+                        tax -
+                        (tempDiscount + redeem_amount)
+                      }
+                    />
+                    <input
+                      type="hidden"
+                      name="currency"
+                      value={'ETB'} // Replaced hardcoded string
+                    />
+                    <input type="hidden" name="email" value={user.email} />
+                    <input
+                      type="hidden"
+                      name="first_name"
+                      value={user?.full_name?.split(' ')[0] || ''}
+                    />
+                    <input
+                      type="hidden"
+                      name="last_name"
+                      value={user?.full_name?.split(' ')[1] || ''}
+                    />
+                    <input
+                      type="hidden"
+                      name="title"
+                      value={i18n.t('chapa_title')} // Replaced hardcoded string
+                    />
+                    <input
+                      type="hidden"
+                      name="description"
+                      value={i18n.t('chapa_description')} // Replaced hardcoded string
+                    />
+                    <input
+                      type="hidden"
+                      name="logo"
+                      value="https://chapa.link/asset/images/chapa_swirl.svg"
+                    />
+                    <input
+                      type="hidden"
+                      name="return_url"
+                      value={
+                        process.env.EXPO_PUBLIC_BASE_URL +
+                        '/payment/paymentSuccess'
+                      }
+                    />
+                    <input type="hidden" name="meta[title]" value="test" />
+                    <button
+                      type="submit"
+                      style={{
+                        marginTop: 16,
+                        marginBottom: 16,
+                        borderRadius: 30,
+                        color: '#22281B',
+                        height: 50,
+                        width: 353,
+                        border: 'none',
+                        fontWeight: 'bold',
+                        fontSize: 17,
+                        display: 'block',
+                        textAlign: 'center',
+                        background: '#9AC26B',
+                        ...Platform.select({
+                          web: {
+                            maxWidth: 353,
+                            width: '100%',
+                            alignSelf: 'center',
+                            cursor: 'pointer',
+                          },
+                        }),
+                      }}
+                    >
+                      {i18n.t('place_order_button')}{' '}
+                      {/* Replaced hardcoded string */}
+                    </button>
+                  </form>
+                )}
 
               {!(Platform.OS === 'web' && paymentMethod === 'chapa') && (
                 <Button
