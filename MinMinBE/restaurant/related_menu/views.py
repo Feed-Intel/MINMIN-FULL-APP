@@ -7,8 +7,8 @@ from .serializers import (
     RelatedMenuItemSerializer,
     RelatedMenuBulkCreateSerializer,
 )
+from rest_framework.viewsets import ModelViewSet
 from .relatedMenuItemFilter import RelatedMenuItemFilter
-from core.cache import CachedModelViewSet
 from accounts.utils import get_user_branch, get_user_tenant
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -19,7 +19,7 @@ class RelatedMenuItemPagination(PageNumberPagination):
     page_size = 10
 
 
-class RelatedMenuItemView(CachedModelViewSet):
+class RelatedMenuItemView(ModelViewSet):
     permission_classes = [IsAuthenticated, HasCustomAPIKey]
     queryset = RelatedMenuItem.objects.all()
     serializer_class = RelatedMenuItemSerializer

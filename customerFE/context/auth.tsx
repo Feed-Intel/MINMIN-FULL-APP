@@ -115,7 +115,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 setRefreshToken(storedRefreshToken);
               }
               setUser({ id: decoded.user_id });
-              router.replace('/(protected)/feed');
+              // router.replace('/(protected)/feed');
             } else if (storedRefreshToken) {
               // Access token expired, but we have a refresh token
               setRefreshToken(storedRefreshToken);

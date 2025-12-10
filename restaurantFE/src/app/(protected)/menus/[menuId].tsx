@@ -15,9 +15,11 @@ import {
   Dialog,
   Menu,
   Chip,
+  HelperText,
 } from 'react-native-paper';
 import Toast from 'react-native-toast-message';
 import * as ImagePicker from 'expo-image-picker';
+import validator from 'validator';
 import { useUpdateMenu } from '@/services/mutation/menuMutation';
 import { useQueryClient } from '@tanstack/react-query';
 import { base64ToBlob } from '@/util/imageUtils';
@@ -65,12 +67,13 @@ export default function EditMenuDialog({
   });
 
   // Validation state (same shape as AddMenuDialog)
-  const [errors, setErrors] = useState({
-    name: false,
-    description: false,
-    price: false,
-    image: false,
-    categories: false,
+  const [errors, setErrors] = useState<Record<string, string | undefined>>({
+    name: undefined,
+    description: undefined,
+    price: undefined,
+    image: undefined,
+    branches: undefined,
+    categories: undefined,
   });
 
   const [categoryMenuVisible, setCategoryMenuVisible] = useState(false);
@@ -108,11 +111,12 @@ export default function EditMenuDialog({
 
       // clear previous errors when a new menu loads
       setErrors({
-        name: false,
-        description: false,
-        price: false,
-        image: false,
-        categories: false,
+        name: undefined,
+        description: undefined,
+        price: undefined,
+        image: undefined,
+        branches: undefined,
+        categories: undefined,
       });
     }
   }, [menu]);
@@ -127,7 +131,7 @@ export default function EditMenuDialog({
     }));
     setErrors((prev) => ({
       ...prev,
-      [field]: false,
+      [field]: undefined,
     }));
   };
 
@@ -139,7 +143,7 @@ export default function EditMenuDialog({
         : [...prevData.categories, category];
 
       // clear categories error on toggle
-      setErrors((prev) => ({ ...prev, categories: false }));
+      setErrors((prev) => ({ ...prev, categories: undefined }));
 
       return { ...prevData, categories };
     });
@@ -161,31 +165,64 @@ export default function EditMenuDialog({
           type: result.assets[0].type || 'image/jpeg',
         },
       }));
-      setErrors((prev) => ({ ...prev, image: false }));
+      setErrors((prev) => ({ ...prev, image: undefined }));
     }
   };
 
   const handleUpdate = async () => {
-    const newErrors = {
-      name: !menuData.name,
-      description: !menuData.description,
-      price: !menuData.price,
-      image: !menuData.image.uri,
-      categories: menuData.categories.length === 0,
-    };
+    let hasError = false;
 
-    setErrors(newErrors);
-
-    if (Object.values(newErrors).some(Boolean)) {
-      Toast.show({
-        type: 'error',
-        text1: I18n.t('Common.error_title'),
-        text2:
-          I18n.t('editMenuDialog.error.fillAllFields') ||
-          I18n.t('Common.please_fill_required_fields'),
-      });
-      return;
+    if (
+      !menuData.name ||
+      menuData.name.trim().length < 3 ||
+      !validator.isAlpha(menuData.name.trim())
+    ) {
+      setErrors((prev: any) => ({
+        ...prev,
+        name: I18n.t('MenuDialog.error.invalid_name'),
+      }));
+      hasError = true;
     }
+    if (
+      !menuData.description ||
+      menuData.description.trim().length === 0 ||
+      menuData.description.trim().length < 3
+    ) {
+      setErrors((prev: any) => ({
+        ...prev,
+        description: I18n.t('MenuDialog.error.invalid_description'),
+      }));
+      hasError = true;
+    }
+    if (!menuData.price || parseInt(menuData.price) < 0) {
+      setErrors((prev: any) => ({
+        ...prev,
+        price: I18n.t('MenuDialog.error.invalid_price'),
+      }));
+      hasError = true;
+    }
+    if (!menuData.image.uri) {
+      setErrors((prev: any) => ({
+        ...prev,
+        image: I18n.t('MenuDialog.error.invalid_price'),
+      }));
+      hasError = true;
+    }
+    if (!menuData.is_global && menuData.branches.length == 0) {
+      setErrors((prev: any) => ({
+        ...prev,
+        branches: I18n.t('MenuDialog.error.invalid_branches'),
+      }));
+      hasError = true;
+    }
+    if (menuData.categories.length == 0) {
+      setErrors((prev: any) => ({
+        ...prev,
+        categories: I18n.t('MenuDialog.error.invalid_categories'),
+      }));
+      hasError = true;
+    }
+    if (hasError) return;
 
     const formData = new FormData();
     formData.append('name', menuData.name);
@@ -250,7 +287,11 @@ export default function EditMenuDialog({
               placeholderTextColor="#202B1866"
               contentStyle={{ color: '#202B1866' }}
             />
-
+            {errors.name && (
+              <HelperText type="error" visible={!!errors.name}>
+                {errors.name}
+              </HelperText>
+            )}
             {/* DESCRIPTION */}
             <TextInput
               label={I18n.t('MenuDialog.descriptionPlaceholder')}
@@ -268,7 +309,11 @@ export default function EditMenuDialog({
               placeholderTextColor="#202B1866"
               contentStyle={{ color: '#202B1866' }}
             />
-
+            {errors.description && (
+              <HelperText type="error" visible={!!errors.description}>
+                {errors.description}
+              </HelperText>
+            )}
             {/* GLOBAL SWITCH */}
             <View
               style={{
@@ -334,7 +379,14 @@ export default function EditMenuDialog({
                 />
               </>
             )}
-
+            {errors.branches && !menuData.is_global && (
+              <HelperText
+                type="error"
+                visible={!!errors.branches && !menuData.is_global}
+              >
+                {errors.branches}
+              </HelperText>
+            )}
             {/* CATEGORY SELECTOR (Menu with Button anchor) */}
             <View style={styles.dropdownContainer}>
               <Menu
@@ -396,7 +448,11 @@ export default function EditMenuDialog({
                 />
               </Menu>
             </View>
-
+            {errors.categories && (
+              <HelperText type="error" visible={!!errors.categories}>
+                {errors.categories}
+              </HelperText>
+            )}
             {/* CATEGORY CHIPS */}
             {menuData.categories.length > 0 && (
               <View style={styles.selectedCategoriesContainer}>
@@ -435,7 +491,11 @@ export default function EditMenuDialog({
               placeholderTextColor="#202B1866"
               contentStyle={{ color: '#202B1866' }}
             />
-
+            {errors.price && (
+              <HelperText type="error" visible={!!errors.price}>
+                {errors.price}
+              </HelperText>
+            )}
             {/* IMAGE PICKER */}
             <Button
               onPress={pickImage}
@@ -464,7 +524,11 @@ export default function EditMenuDialog({
                 ]}
               />
             )}
-
+            {errors.image && (
+              <HelperText type="error" visible={!!errors.image}>
+                {errors.image}
+              </HelperText>
+            )}
             {/* SIDE ITEM SWITCH */}
             <View style={[styles.switchRow, { gap: isSmallScreen ? 8 : 16 }]}>
               <Text

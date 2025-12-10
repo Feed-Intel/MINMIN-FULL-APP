@@ -1,15 +1,16 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Animated, StyleSheet } from 'react-native';
-import { Text, Button, Card, Paragraph, useTheme } from 'react-native-paper';
+import { Text, Button, Card, Paragraph } from 'react-native-paper';
 import { TextInput } from 'react-native';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { jwtDecode } from 'jwt-decode';
 import { useDispatch } from 'react-redux';
+import validator from 'validator';
 import { setRestaurant } from '@/lib/reduxStore/authSlice';
 import { useLogin } from '@/services/mutation/authMutation';
 import Toast from 'react-native-toast-message';
-import { i18n as I18n } from '../_layout';
+import { i18n, i18n as I18n } from '../_layout';
 
 const LoginScreen = () => {
   const logoAnimation = useRef(new Animated.Value(0)).current;
@@ -77,13 +78,13 @@ const LoginScreen = () => {
   };
 
   const handleLogin = () => {
-    const isEmailEmpty = !email.trim();
-    const isPasswordEmpty = !password.trim();
+    const isEmailInValid = !validator.isEmail(email);
+    const isPasswordInValid = validator.isEmpty(password);
 
-    setEmailError(isEmailEmpty);
-    setPasswordError(isPasswordEmpty);
+    setEmailError(isEmailInValid);
+    setPasswordError(isPasswordInValid);
 
-    if (isEmailEmpty || isPasswordEmpty) {
+    if (isEmailInValid || isPasswordInValid) {
       Toast.show({
         type: 'error',
         text1: I18n.t('Login.error_title'),
@@ -123,7 +124,9 @@ const LoginScreen = () => {
             keyboardType="email-address"
           />
           {emailError && (
-            <Text style={styles.errorText}>Email is required</Text>
+            <Text style={styles.errorText}>
+              {i18n.t('Login.invalid_email')}
+            </Text>
           )}
 
           {/* Password Input */}
@@ -138,7 +141,9 @@ const LoginScreen = () => {
             secureTextEntry
           />
           {passwordError && (
-            <Text style={styles.errorText}>Password is required</Text>
+            <Text style={styles.errorText}>
+              {i18n.t('Login.invalid_password')}
+            </Text>
           )}
 
           {/* Login Button */}

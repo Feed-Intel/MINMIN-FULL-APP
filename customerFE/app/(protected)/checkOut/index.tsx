@@ -161,7 +161,7 @@ export default function CheckoutScreen() {
       items: cartItems.map((item: any) => ({
         menu_item: item.id,
         quantity: newQuantities[item.id] || 1,
-        price: item.price,
+        price: item.price * (total / (total + discount)),
         remarks: remarks[item.id],
       })),
     };
@@ -302,6 +302,7 @@ export default function CheckoutScreen() {
                     style={styles.applyButton}
                     theme={{ colors: { primary: '#9AC26B' } }}
                     labelStyle={{ fontSize: 14, color: '#000' }}
+                    disabled={!Boolean(discountCode)}
                   >
                     {i18n.t('apply_button')} {/* Replaced hardcoded string */}
                   </Button>
@@ -407,20 +408,22 @@ export default function CheckoutScreen() {
                     serviceCharge +
                     tax -
                     (tempDiscount + redeem_amount) >
-                    0 && (
-                    <RadioButton.Item
-                      label={i18n.t('chapa_payment_method')} // Replaced hardcoded string
-                      value="chapa"
-                      color="#9AC26B"
-                      rippleColor="#9AC26B"
-                      uncheckedColor="#9AC26B"
-                      labelStyle={{
-                        fontSize: 17,
-                        color: '#222C169E',
-                        opacity: 0.9,
-                      }}
-                    />
-                  )}
+                    0 &&
+                    Boolean(paymentPublicKey) &&
+                    Boolean(paymentAPI) && (
+                      <RadioButton.Item
+                        label={i18n.t('chapa_payment_method')} // Replaced hardcoded string
+                        value="chapa"
+                        color="#9AC26B"
+                        rippleColor="#9AC26B"
+                        uncheckedColor="#9AC26B"
+                        labelStyle={{
+                          fontSize: 17,
+                          color: '#222C169E',
+                          opacity: 0.9,
+                        }}
+                      />
+                    )}
                 </RadioButton.Group>
               </View>
 
@@ -552,7 +555,11 @@ export default function CheckoutScreen() {
                   </form>
                 )}
 
-              {!(Platform.OS === 'web' && paymentMethod === 'chapa') && (
+              {!(
+                Platform.OS === 'web' &&
+                paymentMethod === 'chapa' &&
+                paymentPublicKey
+              ) && (
                 <Button
                   mode="contained"
                   onPress={handlePlaceOrder}

@@ -1,4 +1,9 @@
-import { useState, useEffect, useCallback } from 'react';
+import {
+  useQuery,
+  useMutation,
+  useQueryClient,
+  QueryFunction,
+} from '@tanstack/react-query';
 import {
   fetchOrders,
   updateOrder,
@@ -11,282 +16,115 @@ import { Order, OrderQueryParams } from '@/types/orderTypes';
 import { useDispatch } from 'react-redux';
 import { AppDispatch } from '@/lib/reduxStore/store';
 import { hideLoader, showLoader } from '@/lib/reduxStore/loaderSlice';
-import { useTime } from '@/context/time';
 
-const manualInvalidate = (setTime: (time: number) => void) => {
-  setTime(Date.now());
+interface PaginatedOrdersResponse {
+  next: string | null;
+  results: Order[];
+  count: number;
+}
+
+const orderKeys = {
+  all: ['orders'] as const,
+  lists: () => [...orderKeys.all, 'list'] as const,
+  list: (params?: OrderQueryParams) =>
+    [...orderKeys.lists(), { params }] as const,
+  details: () => [...orderKeys.all, 'detail'] as const,
+  detail: (id: string) => [...orderKeys.details(), id] as const,
+  tenant: () => ['tenant'] as const, // Separate key for global tenant data
 };
 
-// --- Order Queries ---
-
 export const useOrders = (params?: OrderQueryParams) => {
-  const { time } = useTime();
-  const [data, setData] = useState<
-    { next: string | null; results: Order[]; count: number } | undefined
-  >(undefined);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isPending, setIsPending] = useState(false);
-  const [error, setError] = useState<any>(null);
+  const queryKey = orderKeys.list(params);
 
-  useEffect(() => {
-    let isMounted = true;
-    const fetchData = async () => {
-      if (!data) {
-        setIsLoading(true);
-      } else {
-        setIsPending(true);
+  const queryFn: QueryFunction<PaginatedOrdersResponse, typeof queryKey> = ({
+    queryKey: [, , { params: currentParams }],
+  }) => {
+    const searchParams = new URLSearchParams();
+    Object.entries(currentParams ?? {}).forEach(([key, value]) => {
+      if (value) {
+        searchParams.append(key, String(value));
       }
-      setError(null);
-
-      try {
-        const searchParams = new URLSearchParams();
-        Object.entries(params ?? {}).forEach(([key, value]) => {
-          if (value) {
-            searchParams.append(key, String(value));
-          }
-        });
-        const response = await fetchOrders(searchParams.toString());
-        if (isMounted) {
-          setData(response);
-        }
-      } catch (err) {
-        if (isMounted) {
-          setError(err);
-        }
-      } finally {
-        if (isMounted) {
-          setIsLoading(false);
-          setIsPending(false);
-        }
-      }
-    };
-
-    fetchData();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [params, time]);
-
-  return {
-    data,
-    isLoading,
-    isPending: isPending && !!data,
-    error,
+    });
+    return fetchOrders(searchParams.toString());
   };
+
+  return useQuery({
+    queryKey,
+    queryFn,
+  });
 };
 
 export const useGetOrder = (id: string) => {
-  const { time } = useTime();
-  const [data, setData] = useState<Order | undefined>(undefined);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isPending, setIsPending] = useState(false);
-  const [error, setError] = useState<any>(null);
+  const queryKey = orderKeys.detail(id);
 
-  useEffect(() => {
-    if (!id) return;
+  const queryFn: QueryFunction<Order, typeof queryKey> = ({
+    queryKey: [, , orderId],
+  }) => fetchOrder(orderId);
 
-    let isMounted = true;
-    const fetchData = async () => {
-      if (!data) {
-        setIsLoading(true);
-      } else {
-        setIsPending(true);
-      }
-      setError(null);
-
-      try {
-        const response = await fetchOrder(id);
-        if (isMounted) {
-          setData(response);
-        }
-      } catch (err) {
-        if (isMounted) {
-          setError(err);
-        }
-      } finally {
-        if (isMounted) {
-          setIsLoading(false);
-          setIsPending(false);
-        }
-      }
-    };
-
-    fetchData();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [id, time]);
-
-  return {
-    data,
-    isLoading,
-    isPending: isPending && !!data,
-    error,
-  };
+  return useQuery({
+    queryKey,
+    queryFn,
+    enabled: !!id,
+  });
 };
-
-// --- Tenant Query ---
 
 export const useTenant = () => {
-  const { time } = useTime();
-  const [data, setData] = useState<any>(undefined);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isPending, setIsPending] = useState(false);
-  const [error, setError] = useState<any>(null);
+  const queryKey = orderKeys.tenant();
 
-  useEffect(() => {
-    let isMounted = true;
-    const fetchData = async () => {
-      if (!data) {
-        setIsLoading(true);
-      } else {
-        setIsPending(true);
-      }
-      setError(null);
+  const queryFn: QueryFunction<any, typeof queryKey> = () => fetchTenant();
 
-      try {
-        const response = await fetchTenant();
-        if (isMounted) {
-          setData(response);
-        }
-      } catch (err) {
-        if (isMounted) {
-          setError(err);
-        }
-      } finally {
-        if (isMounted) {
-          setIsLoading(false);
-          setIsPending(false);
-        }
-      }
-    };
-
-    fetchData();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [time]);
-
-  return {
-    data,
-    isLoading,
-    isPending: isPending && !!data,
-    error,
-  };
+  return useQuery({
+    queryKey,
+    queryFn,
+  });
 };
 
-// --- Order Mutations ---
-
 export function useCreateOrder() {
-  const { setTime } = useTime();
-  const [isPending, setIsPending] = useState(false);
-  const [error, setError] = useState<any>(null);
-  const [data, setData] = useState<any>(undefined);
+  const queryClient = useQueryClient();
 
-  const mutate = useCallback(
-    async (variables: Partial<any>) => {
-      setIsPending(true);
-      setError(null);
-      setData(undefined);
-      try {
-        const result = await createOrder(variables);
-        setData(result);
-        manualInvalidate(setTime); // onSuccess/onSettled invalidate logic
-        return result;
-      } catch (err) {
-        setError(err);
-        console.error('Error creating Order:', err); // onError logic
-        throw err;
-      } finally {
-        setIsPending(false); // onSettled logic
-      }
+  return useMutation({
+    mutationFn: (variables: Partial<any>) => createOrder(variables),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: orderKeys.lists() });
     },
-    [setTime]
-  );
-
-  return {
-    mutate,
-    data,
-    isPending,
-    error,
-  };
+    onError: (err) => {
+      console.error('Error creating Order:', err);
+    },
+  });
 }
 
 export function useUpdateOrder() {
+  const queryClient = useQueryClient();
   const dispatch = useDispatch<AppDispatch>();
-  const { setTime } = useTime();
-  const [isPending, setIsPending] = useState(false);
-  const [error, setError] = useState<any>(null);
-  const [data, setData] = useState<any>(undefined);
 
-  const mutate = useCallback(
-    async (variables: { id: string; order: any }) => {
-      setIsPending(true);
-      setError(null);
-      setData(undefined);
-      dispatch(showLoader()); // onMutate equivalent
-      try {
-        const result = await updateOrder(variables.id, variables.order);
-        setData(result);
-        manualInvalidate(setTime); // onSuccess invalidate logic
-        return result;
-      } catch (err) {
-        setError(err);
-        console.error('Error updating order:', err); // onError logic
-        throw err;
-      } finally {
-        setIsPending(false);
-        dispatch(hideLoader()); // onSettled logic
-      }
+  return useMutation({
+    mutationFn: (variables: { id: string; order: any }) =>
+      updateOrder(variables.id, variables.order),
+    onMutate: () => dispatch(showLoader()),
+    onSuccess: (data, variables) => {
+      queryClient.invalidateQueries({ queryKey: orderKeys.lists() });
+      queryClient.setQueryData(orderKeys.detail(variables.id), data);
     },
-    [setTime, dispatch]
-  );
-
-  return {
-    mutate,
-    data,
-    isPending,
-    error,
-  };
+    onError: (err) => {
+      console.error('Error updating order:', err);
+    },
+    onSettled: () => dispatch(hideLoader()),
+  });
 }
 
 export function useDeleteOrder() {
+  const queryClient = useQueryClient();
   const dispatch = useDispatch<AppDispatch>();
-  const { setTime } = useTime();
-  const [isPending, setIsPending] = useState(false);
-  const [error, setError] = useState<any>(null);
-  const [data, setData] = useState<any>(undefined);
 
-  const mutate = useCallback(
-    async (id: string) => {
-      setIsPending(true);
-      setError(null);
-      setData(undefined);
-      dispatch(showLoader()); // onMutate equivalent
-      try {
-        const result = await deleteOrder(id);
-        setData(result);
-        manualInvalidate(setTime); // onSuccess/onSettled invalidate logic
-        return result;
-      } catch (err) {
-        setError(err);
-        console.error('Error deleting order:', err); // onError logic
-        throw err;
-      } finally {
-        setIsPending(false);
-        dispatch(hideLoader()); // onSettled logic
-      }
+  return useMutation({
+    mutationFn: (id: string) => deleteOrder(id),
+    onMutate: () => dispatch(showLoader()),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: orderKeys.lists() });
     },
-    [setTime, dispatch]
-  );
-
-  return {
-    mutate,
-    data,
-    isPending,
-    error,
-  };
+    onError: (err) => {
+      console.error('Error deleting order:', err);
+    },
+    onSettled: () => dispatch(hideLoader()),
+  });
 }

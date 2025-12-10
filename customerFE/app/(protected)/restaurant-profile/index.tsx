@@ -289,11 +289,7 @@ const RestaurantProfile = () => {
                 <TouchableOpacity
                   onPress={() => {
                     router.push({
-                      pathname: `(protected)/restaurant-profile/feed` as any,
-                      params: {
-                        ...item,
-                        comments: JSON.stringify(item.comments),
-                      },
+                      pathname: `(protected)/feed/${item.id}` as any,
                     });
                   }}
                 >

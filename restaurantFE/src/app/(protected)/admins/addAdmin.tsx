@@ -13,6 +13,7 @@ import { i18n as I18n } from '@/app/_layout';
 import { BranchAdmin } from '@/types/branchAdmin';
 import { useCreateBranchAdmin } from '@/services/mutation/branchAdminMutation';
 import { Dropdown } from 'react-native-paper-dropdown';
+import validator from 'validator';
 import { useGetBranches } from '@/services/mutation/branchMutation';
 
 const screenWidth = Dimensions.get('window').width;
@@ -45,21 +46,21 @@ export default function AddAdminScreen() {
     setErrors({ general: I18n.t('AddAdminScreen.error_general_failed') });
   };
 
-  const { mutate: addBranchAdmin, isPending } = useCreateBranchAdmin(
-    onSuccessAdd,
-    onErrorAdd
-  );
+  const { mutate: addBranchAdmin, isPending } = useCreateBranchAdmin();
 
   const validateForm = () => {
     const errors: { [key: string]: string } = {};
 
-    if (!newBranchAdmin.full_name?.trim()) {
+    if (
+      !newBranchAdmin.full_name?.trim() ||
+      !validator.isAlpha(newBranchAdmin.full_name?.trim())
+    ) {
       errors.full_name = I18n.t('AddAdminScreen.error_fullname_required');
     }
 
     if (!newBranchAdmin.email?.trim()) {
       errors.email = I18n.t('AddAdminScreen.error_email_required');
-    } else if (!/\S+@\S+\.\S+/.test(newBranchAdmin.email)) {
+    } else if (!validator.isEmail(newBranchAdmin.email)) {
       errors.email = I18n.t('AddAdminScreen.error_email_invalid');
     }
 
@@ -98,9 +99,10 @@ export default function AddAdminScreen() {
         <TextInput
           label={I18n.t('AddAdminScreen.label_fullname')}
           value={newBranchAdmin.full_name}
-          onChangeText={(fullname) =>
-            setNewBranchAdmin({ ...newBranchAdmin, full_name: fullname })
-          }
+          onChangeText={(fullname) => {
+            const cleaned = fullname.replace(/[0-9]/g, '');
+            setNewBranchAdmin({ ...newBranchAdmin, full_name: cleaned });
+          }}
           style={styles.input}
           mode="outlined"
           error={!!errors.full_name}
@@ -126,7 +128,7 @@ export default function AddAdminScreen() {
           label={I18n.t('AddAdminScreen.label_phone')}
           value={newBranchAdmin.phone}
           onChangeText={(phone) => {
-            const numericValue = phone.replace(/[^0-9]/g, '');
+            const numericValue = phone.replace(/[A-Za-z]/g, '');
             setNewBranchAdmin({ ...newBranchAdmin, phone: numericValue });
           }}
           style={styles.input}

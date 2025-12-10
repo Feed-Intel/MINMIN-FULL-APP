@@ -1,7 +1,10 @@
 import dayjs from 'dayjs';
 import DatePicker from '@/components/DatePicker';
 import { useState } from 'react';
-import { useCreateCoupon } from '@/services/mutation/discountMutation';
+import {
+  useCreateCoupon,
+  useGetCoupons,
+} from '@/services/mutation/discountMutation';
 import { useQueryClient } from '@tanstack/react-query';
 import Toast from 'react-native-toast-message';
 import {
@@ -10,6 +13,7 @@ import {
   Portal,
   Switch,
   TextInput as PaperTextInput,
+  HelperText,
 } from 'react-native-paper';
 import { ScrollView, View, TextInput, Text, StyleSheet } from 'react-native';
 import {
@@ -17,6 +21,7 @@ import {
   MultiSelectDropdown,
   Option,
 } from 'react-native-paper-dropdown';
+import validator from 'validator';
 import { Branch } from '@/types/branchType';
 import { i18n as I18n } from '@/app/_layout';
 
@@ -37,50 +42,78 @@ export default function AddCouponModal({
   const [validFrom, setValidFrom] = useState<Date>(new Date());
   const [showUntilPicker, setShowUntilPicker] = useState(false);
   const [isPercentage, setIsPercentage] = useState(false);
-  const [isGlobal, setIsGlobal] = useState(false);
+  const [isGlobal, setIsGlobal] = useState(true);
   const [selectedBranches, setSelectedBranches] = useState<string[]>([]);
   const [validUntil, setValidUntil] = useState<Date>(
     new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
   );
   const { mutate: createCouponCode } = useCreateCoupon();
   const queryClient = useQueryClient();
+  const [errors, setErrors] = useState<Record<string, string | undefined>>({});
+  const { refetch: refetchCoupons } = useGetCoupons({
+    page: 1,
+    branch: undefined,
+    search: '',
+  });
 
   const validateForm = () => {
+    let hasError: boolean = false;
     if (!discountCode?.trim()) {
-      Toast.show({
-        type: 'error',
-        text1: I18n.t('coupon_modal.error_code_required'),
-      });
-      return false;
+      setErrors((prev) => ({
+        ...prev,
+        discount_code: I18n.t('coupon_modal.error_code_required'),
+      }));
+      hasError = true;
     } else if (discountCode.trim().length < 3) {
-      Toast.show({
-        type: 'error',
-        text1: I18n.t('coupon_modal.error_code_min_length'),
-      });
-      return false;
+      setErrors((prev) => ({
+        ...prev,
+        discount_code: I18n.t('coupon_modal.error_code_min_length'),
+      }));
+      hasError = true;
+    }
+
+    if (!isGlobal && !selectedBranches.length) {
+      setErrors((prev) => ({
+        ...prev,
+        branch: I18n.t('coupon_modal.error_branch_required'),
+      }));
+      hasError = true;
     }
 
     // Validate Valid From/Until Dates
     if (!validFrom) {
-      Toast.show({
-        type: 'error',
-        text1: I18n.t('coupon_modal.error_from_required'),
-      });
-      return false;
+      setErrors((prev) => ({
+        ...prev,
+        valid_from: I18n.t('coupon_modal.error_from_required'),
+      }));
+      hasError = true;
     }
     if (!validUntil) {
       Toast.show({
         type: 'error',
         text1: I18n.t('coupon_modal.error_until_required'),
       });
-      return false;
+      setErrors((prev) => ({
+        ...prev,
+        valid_until: I18n.t('coupon_modal.error_until_required'),
+      }));
+      hasError = true;
     } else if (dayjs(validUntil).isBefore(validFrom)) {
-      Toast.show({
-        type: 'error',
-        text1: I18n.t('coupon_modal.error_until_after_from'),
-      });
-      return false;
+      setErrors((prev) => ({
+        ...prev,
+        valid_until: I18n.t('coupon_modal.error_until_after_from'),
+      }));
+      hasError = true;
     }
+
+    if (!validator.isNumeric(discountAmount)) {
+      setErrors((prev) => ({
+        ...prev,
+        discount_amount: I18n.t('coupon_modal.error_discount_amount_invalid'),
+      }));
+      hasError = true;
+    }
+    if (hasError) return false;
 
     return true;
   };
@@ -101,7 +134,11 @@ export default function AddCouponModal({
               style={stylesModal.input}
               placeholderTextColor="#999"
             />
-
+            {errors['discount_code'] && (
+              <HelperText type="error" visible={!!errors['discount_code']}>
+                {errors['discount_code']}
+              </HelperText>
+            )}
             <View
               style={{
                 flexDirection: 'row',
@@ -115,7 +152,10 @@ export default function AddCouponModal({
               </Text>
               <Switch
                 value={isGlobal}
-                onValueChange={setIsGlobal}
+                onValueChange={(value: boolean) => {
+                  setIsGlobal(value);
+                  setErrors((prev) => ({ ...prev, branch: undefined }));
+                }}
                 color="#91B275"
               />
             </View>
@@ -136,7 +176,10 @@ export default function AddCouponModal({
                     })) as Option[]) || []
                   }
                   value={selectedBranches || []}
-                  onSelect={(values) => setSelectedBranches(values)}
+                  onSelect={(values) => {
+                    setSelectedBranches(values);
+                    setErrors((prev) => ({ ...prev, branch: undefined }));
+                  }}
                   menuContentStyle={{
                     backgroundColor: '#fff',
                   }}
@@ -166,6 +209,11 @@ export default function AddCouponModal({
                 />
               </>
             )}
+            {errors['branch'] && (
+              <HelperText type="error" visible={!!errors['branch']}>
+                {errors['branch']}
+              </HelperText>
+            )}
             <View
               style={{
                 flexDirection: 'row',
@@ -186,12 +234,19 @@ export default function AddCouponModal({
             <TextInput
               placeholder={I18n.t('coupon_modal.placeholder_amount')}
               value={discountAmount}
-              onChangeText={setDiscountAmount}
+              onChangeText={(text: string) => {
+                setDiscountAmount(text);
+                setErrors((prev) => ({ ...prev, discount_amount: undefined }));
+              }}
               style={stylesModal.input}
               keyboardType="default"
               placeholderTextColor="#999"
             />
-
+            {errors['discount_amount'] && (
+              <HelperText type="error" visible={!!errors['discount_amount']}>
+                {errors['discount_amount']}
+              </HelperText>
+            )}
             <View
               style={{
                 flexDirection: 'row',
@@ -220,9 +275,17 @@ export default function AddCouponModal({
                   dateFilterVisible={showFromPicker}
                   setDateFilterVisible={setShowFromPicker}
                   selectedDate={validFrom}
-                  setSelectedDate={setValidFrom}
+                  setSelectedDate={(date) => {
+                    setValidFrom(date);
+                    setErrors((prev) => ({ ...prev, valid_from: undefined }));
+                  }}
                 />
               </>
+              {errors['valid_from'] && (
+                <HelperText type="error" visible={!!errors['valid_from']}>
+                  {errors['valid_from']}
+                </HelperText>
+              )}
               <>
                 <Button
                   onPress={() => setShowUntilPicker(true)}
@@ -247,9 +310,17 @@ export default function AddCouponModal({
                   dateFilterVisible={showUntilPicker}
                   setDateFilterVisible={setShowUntilPicker}
                   selectedDate={validUntil}
-                  setSelectedDate={setValidUntil}
+                  setSelectedDate={(date) => {
+                    setValidUntil(date);
+                    setErrors((prev) => ({ ...prev, valid_until: undefined }));
+                  }}
                 />
               </>
+              {errors['valid_until'] && (
+                <HelperText type="error" visible={!!errors['valid_until']}>
+                  {errors['valid_until']}
+                </HelperText>
+              )}
             </View>
           </ScrollView>
         </Dialog.Content>
@@ -264,7 +335,7 @@ export default function AddCouponModal({
             }}
             onPress={async () => {
               if (validateForm()) {
-                await createCouponCode({
+                createCouponCode({
                   discount_code: discountCode,
                   discount_amount: discountAmount,
                   is_percentage: isPercentage,
@@ -274,6 +345,7 @@ export default function AddCouponModal({
                   valid_until: validUntil,
                 });
                 await queryClient.invalidateQueries({ queryKey: ['coupons'] });
+                refetchCoupons();
                 setVisible(false);
               }
             }}

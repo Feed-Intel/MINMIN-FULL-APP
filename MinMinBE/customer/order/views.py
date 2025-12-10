@@ -196,7 +196,7 @@ class OrderView(viewsets.ModelViewSet):
         order_total = sum(item['price'] * item['quantity'] for item in valid_items)
 
         # Calculate discount
-        discount_amount = calculate_discount_from_data(
+        discount_amount,typeDiscount,freeItems = calculate_discount_from_data(
             tenant=tenant,
             branch = branch_id,
             items_data=valid_items,
@@ -205,4 +205,4 @@ class OrderView(viewsets.ModelViewSet):
         )
         redeem_amount = calculate_redeem_amount(customer_id=request.user.id, tenant_id=tenant)
 
-        return Response({'discount_amount': discount_amount,"redeem_amount":redeem_amount}, status=status.HTTP_200_OK)
+        return Response({'discount_amount': discount_amount,"redeem_amount":redeem_amount,"typeDiscount":typeDiscount,"freeItems":freeItems}, status=status.HTTP_200_OK)

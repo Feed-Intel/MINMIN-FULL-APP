@@ -1,12 +1,12 @@
-import { useEffect, useState } from "react";
-import { Redirect } from "expo-router";
-import { View, Image, StyleSheet } from "react-native";
-import { Text } from "react-native-paper";
-import * as Location from "expo-location";
-import { setLocation } from "@/lib/reduxStore/locationSlice";
-import { useDispatch } from "react-redux";
-import useNetworkStatus from "@/hooks/useNetworkStatus";
-import { useAuth } from "@/context/auth";
+import { useEffect, useState } from 'react';
+import { Redirect, Slot } from 'expo-router';
+import { View, Image, StyleSheet } from 'react-native';
+import { Text } from 'react-native-paper';
+import * as Location from 'expo-location';
+import { setLocation } from '@/lib/reduxStore/locationSlice';
+import { useDispatch } from 'react-redux';
+import useNetworkStatus from '@/hooks/useNetworkStatus';
+import { useAuth } from '@/context/auth';
 
 export default function OnboardingPage() {
   const isConnected = useNetworkStatus();
@@ -26,8 +26,8 @@ export default function OnboardingPage() {
   const getLocation = async () => {
     try {
       const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== "granted") {
-        throw new Error("Location permission denied");
+      if (status !== 'granted') {
+        throw new Error('Location permission denied');
       }
 
       const location = await Location.getCurrentPositionAsync({});
@@ -47,7 +47,7 @@ export default function OnboardingPage() {
     return (
       <View style={styles.splashContainer}>
         <Image
-          source={require("@/assets/images/splash-screen.png")} // Replace with your image path
+          source={require('@/assets/images/splash-screen.png')} // Replace with your image path
           style={styles.splashImage}
           resizeMode="cover" // Cover the whole screen
         />
@@ -57,32 +57,30 @@ export default function OnboardingPage() {
 
   if (!isConnected) {
     return (
-      <View style={{ backgroundColor: "#ff4444", padding: 10 }}>
-        <Text style={{ color: "white", textAlign: "center" }}>
+      <View style={{ backgroundColor: '#ff4444', padding: 10 }}>
+        <Text style={{ color: 'white', textAlign: 'center' }}>
           No internet connection
         </Text>
       </View>
     );
   }
 
-  if (user?.id) {
-    return <Redirect href="/(protected)/feed" />;
-  }
-
   if (!Boolean(user?.id)) {
     return <Redirect href="/(auth)" />;
   }
+
+  return <Redirect href="/(protected)/feed" />;
 }
 
 const styles = StyleSheet.create({
   splashContainer: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#ffffff", // Or your desired background color
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#ffffff', // Or your desired background color
   },
   splashImage: {
     flex: 1,
-    width: "100%",
+    width: '100%',
   },
 });

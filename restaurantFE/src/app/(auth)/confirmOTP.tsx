@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { setOTP } from '@/lib/reduxStore/authSlice';
 import { OtpInput } from 'react-native-otp-entry';
@@ -14,10 +14,22 @@ import { i18n as I18n } from '../_layout';
 
 const ConfirmOTPScreen = () => {
   const [OTP, setOTPText] = useState('');
-  const [error, setError] = useState(false);
+  const [timer, setTimer] = React.useState(600);
   const email = useAppSelector((state) => state.auth.restaurant?.email);
   const dispatch = useDispatch();
   const router = useRouter();
+
+  useEffect(() => {
+    let interval: NodeJS.Timeout | number | null = null;
+    if (timer > 0) {
+      interval = setInterval(() => {
+        setTimer((prev) => prev - 1);
+      }, 1000);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [timer]);
 
   const onSuccessConfirmOTP = () => {
     dispatch(setOTP(OTP));
@@ -28,17 +40,18 @@ const ConfirmOTPScreen = () => {
   const { mutate: ResetPasswordFn, isPending } = useResetPassword();
 
   const handleOTPConfirm = () => {
-    if (OTP.trim().length !== 6) {
-      setError(true);
-      return;
-    }
-    setError(false);
     const data = { email, otp: OTP };
     checkOTPFn(data);
   };
 
   const sendOTPAgain = () => {
     ResetPasswordFn({ email });
+  };
+
+  const formatTime = (seconds: number) => {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${m}:${s.toString().padStart(2, '0')}`;
   };
 
   return (
@@ -51,25 +64,21 @@ const ConfirmOTPScreen = () => {
           numberOfDigits={6}
           onTextChange={(text) => {
             setOTPText(text);
-            if (text.trim().length === 6) setError(false);
           }}
-          focusColor={error ? 'red' : 'gray'}
+          focusColor={'gray'}
           type="numeric"
           theme={{
-            pinCodeContainerStyle: StyleSheet.flatten([
-              styles.pinCodeStyle,
-              error ? styles.pinCodeError : undefined,
-            ]),
+            pinCodeContainerStyle: StyleSheet.flatten([styles.pinCodeStyle]),
             pinCodeTextStyle: styles.textStyle,
           }}
         />
-        {error && <Text style={styles.errorText}>OTP must be 6 digits</Text>}
 
         {/* Verify OTP Button */}
         <Button
           mode="contained"
           onPress={handleOTPConfirm}
           style={styles.button}
+          disabled={OTP.length !== 6}
         >
           {I18n.t('ConfirmOTP.verify_button')}
         </Button>
@@ -80,8 +89,11 @@ const ConfirmOTPScreen = () => {
           onPress={sendOTPAgain}
           style={styles.resendButton}
           loading={isPending}
+          disabled={timer > 0}
         >
-          {I18n.t('ConfirmOTP.resend_button')}
+          {timer > 0
+            ? I18n.t('ConfirmOTP.resend_button') + ` (${formatTime(timer)})`
+            : I18n.t('ConfirmOTP.resend_button')}
         </Button>
       </View>
     </View>

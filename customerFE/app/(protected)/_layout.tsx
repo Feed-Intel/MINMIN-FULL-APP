@@ -94,6 +94,7 @@ export default function ProtectedLayout() {
             ),
         }}
       />
+      <Tabs.Screen name="feed/[feedID]" options={{ href: null }} />
 
       {/* Search Tab */}
       <Tabs.Screen

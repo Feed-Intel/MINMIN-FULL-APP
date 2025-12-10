@@ -12,6 +12,7 @@ from django.contrib.gis.db.models.functions import Distance
 from rest_framework.permissions import IsAuthenticated
 import uuid
 from rest_framework.decorators import action
+from rest_framework.viewsets import ModelViewSet
 from core.redis_client import redis_client # Your existing Redis client (assuming it's a django-redis client)
 from .menuavailability_filter import MenuAvailabilityFilter # Your existing filter
 from .services import get_best_dishes_of_week, get_recommended_items # Your existing services
@@ -23,7 +24,6 @@ from accounts.utils import get_user_branch, get_user_tenant
 from django.core.cache import cache 
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_page
-from core.cache import CachedModelViewSet
 
 # Define cache timeouts
 CACHE_TIMEOUT_LIST_QS_SECONDS = 60 * 5 # 5 minutes for main queryset
@@ -43,7 +43,7 @@ class MenuAvailabilityViewPagination(PageNumberPagination):
             'results': data
         })
 
-class MenuAvailabilityView(CachedModelViewSet):
+class MenuAvailabilityView(ModelViewSet):
     permission_classes = [IsAuthenticated, HasCustomAPIKey]
     queryset = MenuAvailability.objects.all()
     serializer_class = MenuAvailabilitySerializer

@@ -2,7 +2,6 @@ from django.db import models
 from restaurant.tenant.models import Tenant
 from django.core.exceptions import ValidationError
 from restaurant.branch.models import Branch
-from customer.order.models import Order
 from accounts.models import User
 import uuid
 
@@ -84,7 +83,8 @@ class DiscountRule(models.Model):
     min_items = models.IntegerField(null=True, blank=True)
     min_price = models.DecimalField(max_digits=10, decimal_places=2,null=True, blank=True)
     applicable_items = models.JSONField(default=list)
-    excluded_items = models.JSONField(default=list)
+    free_items = models.JSONField(default=list)
+    # excluded_items = models.JSONField(default=list)
     combo_size = models.IntegerField(null=True, blank=True)
     buy_quantity = models.IntegerField(null=True, blank=True)
     get_quantity = models.IntegerField(null=True, blank=True)
@@ -97,7 +97,7 @@ class DiscountRule(models.Model):
         db_table = 'discount_rule'
         verbose_name_plural = 'discount_rules'
 
-
+from customer.order.models import Order
 class DiscountApplication(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     order = models.ForeignKey(Order, on_delete=models.CASCADE,related_name='order_discount_applications')

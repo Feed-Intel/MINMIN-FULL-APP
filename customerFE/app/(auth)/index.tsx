@@ -15,12 +15,14 @@ import { Text, TextInput, ActivityIndicator } from 'react-native-paper';
 import { router } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import { useNetworkState } from 'expo-network';
+import validator from 'validator';
 import SignInWithGoogleButton from '@/components/ui/SignInWithGoogleButton';
 import SignInWithFacebookButton from '@/components/ui/SignInWithFacebookButton';
 import { useAuth } from '@/context/auth';
 import { ThemedView } from '@/components/ThemedView';
 import Toast from 'react-native-toast-message';
 import { i18n } from '@/app/_layout';
+import TurnstileCaptcha from '@/components/Captcha';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -34,8 +36,10 @@ const LoginScreen = () => {
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
   const networkState = useNetworkState();
+  const [enabled, setEnabled] = useState<boolean>(false);
   const { signInWithEmail, signInWithGoogle, signInWithFacebook, isLoading } =
     useAuth();
+  const [isSubmitted, setIsSubmitted] = useState(false);
 
   useEffect(() => {
     Animated.parallel([
@@ -62,14 +66,15 @@ const LoginScreen = () => {
   }
 
   const handleSignInWithEmail = () => {
-    if (email && password) {
+    setIsSubmitted(true);
+    if (validator.isEmail(email) && !validator.isEmpty(password)) {
       signInWithEmail(email, password, rememberMe);
       return;
     }
     Toast.show({
       type: 'error',
-      text1: i18n.t('error_toast_title'), // Replaced hardcoded string
-      text2: i18n.t('login_error_message'), // Replaced hardcoded string
+      text1: i18n.t('error_toast_title'),
+      text2: i18n.t('login_error_message'),
     });
   };
 
@@ -129,12 +134,19 @@ const LoginScreen = () => {
               onChangeText={setEmail}
               keyboardType="email-address"
               autoCapitalize="none"
-              style={styles.textInput}
+              style={{
+                ...styles.textInput,
+                borderColor:
+                  isSubmitted && !validator.isEmail(email) ? '#EE8429' : '#FFF',
+              }}
               placeholderTextColor="#EE8429"
               underlineColor="transparent" // Removes Android's default underline
               activeUnderlineColor="transparent" // Removes Android's default underline
               cursorColor="#EE8429" // Sets the cursor color
             />
+            {isSubmitted && !validator.isEmail(password) && (
+              <Text style={styles.errorText}>{i18n.t('not_email')}</Text>
+            )}
           </View>
           <View style={styles.inputContainer}>
             <Image
@@ -144,14 +156,30 @@ const LoginScreen = () => {
             <TextInput
               placeholder={i18n.t('password_placeholder')} // Replaced hardcoded string
               value={password}
-              onChangeText={setPassword}
+              onChangeText={(text: string) => {
+                setPassword(text);
+                if (isSubmitted) {
+                  setIsSubmitted(false);
+                }
+              }}
               secureTextEntry={!showPassword}
-              style={styles.textInput} // Both Email and Password TextInputs now use 'textInput' style
+              style={{
+                ...styles.textInput,
+                borderColor:
+                  isSubmitted && validator.isEmpty(password)
+                    ? '#EE8429'
+                    : '#FFF',
+              }} // Both Email and Password TextInputs now use 'textInput' style
               placeholderTextColor="#EE8429"
               underlineColor="transparent" // Removes Android's default underline
               activeUnderlineColor="transparent" // Removes Android's default underline
               cursorColor="#EE8429" // Sets the cursor color
             />
+            {isSubmitted && validator.isEmpty(password) && (
+              <View style={styles.errorContainer}>
+                <Text style={styles.errorText}>{i18n.t('password_empty')}</Text>
+              </View>
+            )}
             <Pressable
               onPress={() => setShowPassword(!showPassword)}
               style={styles.eyeIconContainer}
@@ -182,7 +210,6 @@ const LoginScreen = () => {
             <Pressable onPress={() => router.push('/(auth)/forgotPassword')}>
               <Text style={styles.forgotPasswordText}>
                 {i18n.t('forgot_password_link')}{' '}
-                {/* Replaced hardcoded string */}
               </Text>
             </Pressable>
           </View>
@@ -192,10 +219,15 @@ const LoginScreen = () => {
             onPress={handleSignInWithEmail}
             disabled={!networkState.isInternetReachable}
           >
-            <Text style={styles.loginButtonText}>
-              {i18n.t('login_button')} {/* Replaced hardcoded string */}
-            </Text>
+            <Text style={styles.loginButtonText}>{i18n.t('login_button')}</Text>
           </Pressable>
+          {/* <TurnstileCaptcha
+            siteKey="0x4AAAAAACEgbB50q9S_xe_X"
+            onVerify={(token) => {
+              console.log(token);
+              setEnabled(true);
+            }}
+          /> */}
 
           {/* Divider */}
           <View style={styles.dividerContainer}>
@@ -209,7 +241,6 @@ const LoginScreen = () => {
           </View>
 
           <View style={styles.socialButtons}>
-            {/* Assuming SignInWithGoogleButton and SignInWithFacebookButton are custom components that handle their own internal rendering and icon/text */}
             <SignInWithGoogleButton
               onPress={signInWithGoogle}
               style={styles.googleButton}
@@ -218,7 +249,6 @@ const LoginScreen = () => {
             <SignInWithFacebookButton
               onPress={signInWithFacebook}
               style={styles.facebookButton}
-              // textStyle={styles.facebookButtonText}
             />
           </View>
 
@@ -356,6 +386,7 @@ const styles = StyleSheet.create({
     width: '100%', // Takes full width of its parent
     alignSelf: 'center', // Centers the button horizontally
     marginTop: 30, // Space from options
+    marginBottom: 20,
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: '#000', // Shadow for iOS
@@ -482,6 +513,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#F7A700',
+  },
+  errorText: {
+    color: '#EE8429', // Red color for error text
+    fontSize: 14,
+    marginTop: 5,
+  },
+  errorContainer: {
+    display: 'flex',
+    marginTop: 5,
   },
 });
 

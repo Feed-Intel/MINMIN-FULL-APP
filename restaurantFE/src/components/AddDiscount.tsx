@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState } from 'react';
 import {
   useCreateDiscount,
   useCreateDiscountRule,
+  useDiscountRules,
+  useDiscounts,
 } from '@/services/mutation/discountMutation';
 import { useQueryClient } from '@tanstack/react-query';
 import Toast from 'react-native-toast-message';
@@ -48,7 +50,7 @@ const ruleDefaultState = {
   max_items: '',
   min_price: '',
   applicable_items: [] as string[],
-  excluded_items: [] as string[],
+  free_items: [] as string[],
   combo_size: '',
   buy_quantity: '',
   get_quantity: '',
@@ -78,19 +80,32 @@ export default function AddDiscountModal({
   const [off_peak_hours, setOffPeakHours] = useState(false);
   const [priority, setPriority] = useState<string | undefined>(undefined);
   const [stackable, setStackable] = useState(false);
-  const [valid_from, setValidFrom] = useState<Date | undefined>(undefined);
+  const [valid_from, setValidFrom] = useState<Date | undefined>(new Date());
   const [showFromPicker, setShowFromPicker] = useState(false);
-  const [valid_until, setValidUntil] = useState<Date | undefined>(undefined);
+  const [valid_until, setValidUntil] = useState<Date | undefined>(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 7);
+    return d;
+  });
   const [showUntilPicker, setShowUntilPicker] = useState(false);
   const [ruleFormValues, setRuleFormValues] = useState(ruleDefaultState);
-  const [ruleErrors, setRuleErrors] = useState<{ [key: string]: string }>({});
+  const [ruleErrors, setRuleErrors] = useState<{
+    [key: string]: string | undefined;
+  }>({});
   const [applicableSelectorVisible, setApplicableSelectorVisible] =
     useState(false);
   const [excludedSelectorVisible, setExcludedSelectorVisible] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string | undefined>>({});
 
-  const { mutate: onAdd } = useCreateDiscount();
+  const { mutateAsync: onAdd } = useCreateDiscount();
   const { mutate: createDiscountRule } = useCreateDiscountRule();
   const { data: menus } = useGetMenus();
+  const { refetch: refetchDiscounts } = useDiscounts({
+    page: 1,
+    branch: undefined,
+    search: '',
+  });
+  const { refetch: refetchDiscountRules } = useDiscountRules(undefined, true);
   const queryClient = useQueryClient();
   const { isBranch, branchId } = useRestaurantIdentity();
 
@@ -137,73 +152,71 @@ export default function AddDiscountModal({
   };
 
   const validateForm = () => {
-    // Branch validation uses existing I18n keys
+    let hasError: boolean = false;
     if (!applyToAllBranches && selectedBranches.length === 0) {
-      Toast.show({
-        type: 'error',
-        text1: I18n.t('discountModal.required.branch_selection'),
-        text2: I18n.t('discountModal.required.select_branch'),
-      });
-      return false;
+      setErrors((prev) => ({
+        ...prev,
+        branch: I18n.t('discountModal.required.select_branch'),
+      }));
+      hasError = true;
     }
 
     if (!name?.trim()) {
-      Toast.show({
-        type: 'error',
-        text1: I18n.t('discountModal.required.name'),
-      });
-      return false;
-    }
-
-    if (name.trim().length < 3) {
-      Toast.show({
-        type: 'error',
-        text1: I18n.t('discountModal.error.name_min_length'),
-      });
-      return false;
+      setErrors((prev) => ({
+        ...prev,
+        name: I18n.t('discountModal.required.name'),
+      }));
+      hasError = true;
+    } else if (name.trim().length < 3) {
+      setErrors((prev) => ({
+        ...prev,
+        name: I18n.t('discountModal.error.name_min_length'),
+      }));
+      hasError = true;
     }
 
     if (!type) {
-      Toast.show({
-        type: 'error',
-        text1: I18n.t('discountModal.required.discount_type'),
-      });
-      return false;
+      setErrors((prev) => ({
+        ...prev,
+        type: I18n.t('discountModal.required.discount_type'),
+      }));
+      hasError = true;
     }
 
     if (priority !== undefined && priority !== '') {
       if (isNaN(Number(priority)) || Number(priority) < 0) {
-        Toast.show({
-          type: 'error',
-          text1: I18n.t('discountModal.error.priority_non_negative'),
-        });
-        return false;
+        setErrors((prev) => ({
+          ...prev,
+          priority: I18n.t('discountModal.error.priority_non_negative'),
+        }));
+        hasError = true;
       }
     }
 
     if (!valid_from) {
-      Toast.show({
-        type: 'error',
-        text1: I18n.t('discountModal.required.valid_from'),
-      });
-      return false;
+      setErrors((prev) => ({
+        ...prev,
+        valid_from: I18n.t('discountModal.required.valid_from'),
+      }));
+      hasError = true;
     }
 
     if (!valid_until) {
-      Toast.show({
-        type: 'error',
-        text1: I18n.t('discountModal.required.valid_until'),
-      });
-      return false;
+      setErrors((prev) => ({
+        ...prev,
+        valid_until: I18n.t('discountModal.required.valid_until'),
+      }));
+      hasError = true;
     }
 
     if (valid_from && valid_until && dayjs(valid_until).isBefore(valid_from)) {
-      Toast.show({
-        type: 'error',
-        text1: I18n.t('discountModal.error.valid_until_after_from'),
-      });
-      return false;
+      setErrors((prev) => ({
+        ...prev,
+        valid_until: I18n.t('discountModal.error.valid_until_after_from'),
+      }));
+      hasError = true;
     }
+    if (hasError) return false;
 
     return true;
   };
@@ -213,7 +226,7 @@ export default function AddDiscountModal({
     value: string | boolean | string[]
   ) => {
     const normalizedValue =
-      key === 'applicable_items' || key === 'excluded_items'
+      key === 'applicable_items' || key === 'free_items'
         ? Array.isArray(value)
           ? value
           : value == null || value === ''
@@ -227,17 +240,17 @@ export default function AddDiscountModal({
         return {
           ...prev,
           applicable_items: values,
-          excluded_items: (prev.excluded_items || []).filter(
+          free_items: (prev.free_items || []).filter(
             (id) => !values.includes(id)
           ),
         };
       }
 
-      if (key === 'excluded_items') {
+      if (key === 'free_items') {
         const values = normalizedValue as string[];
         return {
           ...prev,
-          excluded_items: values,
+          free_items: values,
           applicable_items: (prev.applicable_items || []).filter(
             (id) => !values.includes(id)
           ),
@@ -323,12 +336,8 @@ export default function AddDiscountModal({
       );
     }
 
-    if (
-      ruleFormValues.excluded_items?.some((item) =>
-        ruleFormValues.applicable_items.includes(item)
-      )
-    ) {
-      errors.excluded_items = I18n.t('discountModal.error.excluded_overlap');
+    if (type === 'freeItem' && ruleFormValues.free_items.length == 0) {
+      errors.free_items = I18n.t('discountModal.error.free_item_required');
     }
 
     setRuleErrors(errors);
@@ -347,7 +356,7 @@ export default function AddDiscountModal({
       max_items: toNumber(ruleFormValues.max_items),
       min_price: toNumber(ruleFormValues.min_price),
       applicable_items: ruleFormValues.applicable_items,
-      excluded_items: ruleFormValues.excluded_items,
+      free_items: ruleFormValues.free_items,
       combo_size: toNumber(ruleFormValues.combo_size),
       buy_quantity: toNumber(ruleFormValues.buy_quantity),
       get_quantity: toNumber(ruleFormValues.get_quantity),
@@ -379,12 +388,12 @@ export default function AddDiscountModal({
       await queryClient.invalidateQueries({
         queryKey: ['discounts', currentPage],
       });
-
       if (newDiscount?.id) {
-        await createDiscountRule(buildRulePayload(newDiscount.id));
+        createDiscountRule(buildRulePayload(newDiscount.id));
         await queryClient.invalidateQueries({ queryKey: ['discountRules'] });
       }
-
+      // refetchDiscounts();
+      // refetchDiscountRules();
       onClose();
       resetForms();
     } catch (error) {
@@ -434,8 +443,8 @@ export default function AddDiscountModal({
   };
 
   const handleExcludedApply = (ids: string[]) => {
-    handleRuleFormChange('excluded_items', ids);
-    clearRuleError('excluded_items');
+    handleRuleFormChange('free_items', ids);
+    clearRuleError('free_items');
   };
 
   return (
@@ -443,7 +452,7 @@ export default function AddDiscountModal({
       <Dialog visible={visible} onDismiss={onClose} style={stylesModal.dialog}>
         <Dialog.Title>
           <ModalHeader
-            title={I18n.t('discountModal.modal.title')} // Using the available title key, which is "Edit Discount"
+            title={I18n.t('discountModal.modal.new_title')}
             onClose={onClose}
           />
         </Dialog.Title>
@@ -466,7 +475,10 @@ export default function AddDiscountModal({
               </Text>
               <Switch
                 value={applyToAllBranches}
-                onValueChange={setApplyToAllBranches}
+                onValueChange={(value) => {
+                  setApplyToAllBranches(value);
+                  setErrors((prev) => ({ ...prev, branch: undefined }));
+                }}
                 color="#91B275"
                 disabled={isBranch}
               />
@@ -486,7 +498,10 @@ export default function AddDiscountModal({
                     })) as Option[]) || []
                   }
                   value={selectedBranches || []}
-                  onSelect={(values) => setSelectedBranches(values)}
+                  onSelect={(values) => {
+                    setSelectedBranches(values);
+                    setErrors((prev) => ({ ...prev, branch: undefined }));
+                  }}
                   menuContentStyle={{
                     backgroundColor: '#fff',
                   }}
@@ -516,16 +531,28 @@ export default function AddDiscountModal({
                 />
               </>
             )}
-
+            {errors['branch'] && (
+              <HelperText type="error" visible={!!errors['branch']}>
+                {errors['branch']}
+              </HelperText>
+            )}
             <TextInput
               label={I18n.t('discountModal.form.name_label')}
               placeholder={I18n.t('discountModal.form.name_label')}
               value={name}
-              onChangeText={setName}
+              onChangeText={(text: string) => {
+                const cleaned = text.replace(/[^0-9a-zA-Z ]/g, '');
+                setName(cleaned);
+                setErrors((prev) => ({ ...prev, name: undefined }));
+              }}
               style={{ ...stylesModal.input, marginTop: 15 }}
               placeholderTextColor="#999"
             />
-
+            {errors['name'] && (
+              <HelperText type="error" visible={!!errors['name']}>
+                {errors['name']}
+              </HelperText>
+            )}
             <TextInput
               label={I18n.t('discountModal.form.description_label')}
               placeholder={I18n.t('discountModal.form.description_label')}
@@ -535,7 +562,11 @@ export default function AddDiscountModal({
               keyboardType="default"
               placeholderTextColor="#999"
             />
-
+            {errors['description'] && (
+              <HelperText type="error" visible={!!errors['description']}>
+                {errors['description']}
+              </HelperText>
+            )}
             <Menu
               visible={showType}
               onDismiss={() => setShowType(false)}
@@ -579,12 +610,18 @@ export default function AddDiscountModal({
                   onPress={() => {
                     setType(option.value);
                     setShowType(false);
+                    setErrors((prev) => ({ ...prev, type: undefined }));
                   }}
                   title={option.label}
                   titleStyle={stylesModal.menuItem}
                 />
               ))}
             </Menu>
+            {errors['type'] && (
+              <HelperText type="error" visible={!!errors['type']}>
+                {errors['type']}
+              </HelperText>
+            )}
 
             <View style={stylesModal.toggleRow}>
               <Text style={stylesModal.toggleLabel}>
@@ -639,10 +676,17 @@ export default function AddDiscountModal({
                 dateFilterVisible={showFromPicker}
                 setDateFilterVisible={setShowFromPicker}
                 selectedDate={valid_from}
-                setSelectedDate={setValidFrom}
+                setSelectedDate={(date) => {
+                  setValidFrom(date);
+                  setErrors((prev) => ({ ...prev, valid_from: undefined }));
+                }}
               />
             </View>
-
+            {errors['valid_from'] && (
+              <HelperText type="error" visible={!!errors['valid_from']}>
+                {errors['valid_from']}
+              </HelperText>
+            )}
             <View style={stylesModal.dateRow}>
               <Text style={stylesModal.fieldLabel}>
                 {I18n.t('discountModal.form.valid_until_label')}
@@ -664,10 +708,17 @@ export default function AddDiscountModal({
                 dateFilterVisible={showUntilPicker}
                 setDateFilterVisible={setShowUntilPicker}
                 selectedDate={valid_until}
-                setSelectedDate={setValidUntil}
+                setSelectedDate={(date) => {
+                  setValidUntil(date);
+                  setErrors((prev) => ({ ...prev, valid_until: undefined }));
+                }}
               />
             </View>
-
+            {errors['valid_until'] && (
+              <HelperText type="error" visible={!!errors['valid_until']}>
+                {errors['valid_until']}
+              </HelperText>
+            )}
             <View style={stylesModal.sectionDivider} />
 
             <Text style={stylesModal.sectionHeader}>
@@ -684,12 +735,16 @@ export default function AddDiscountModal({
                   keyboardType="numeric"
                   placeholder={I18n.t('discountModal.rule.min_items_label')}
                   value={ruleFormValues.min_items}
-                  onChangeText={(value) =>
+                  onChangeText={(value) => {
                     handleRuleFormChange(
                       'min_items',
                       value.replace(/[^0-9]/g, '')
-                    )
-                  }
+                    );
+                    setRuleErrors((prev) => ({
+                      ...prev,
+                      min_items: undefined,
+                    }));
+                  }}
                 />
                 <HelperText type="error" visible={!!ruleErrors.min_items}>
                   {ruleErrors.min_items}
@@ -708,12 +763,13 @@ export default function AddDiscountModal({
                     'discountModal.rule.max_discount_amount_label'
                   )}
                   value={ruleFormValues.max_discount_amount}
-                  onChangeText={(value) =>
+                  onChangeText={(value) => {
                     handleRuleFormChange(
                       'max_discount_amount',
                       value.replace(/[^0-9.\-]/g, '')
-                    )
-                  }
+                    );
+                    setRuleErrors({ ...ruleErrors, max_discount_amount: null });
+                  }}
                 />
                 <HelperText
                   type="error"
@@ -733,12 +789,13 @@ export default function AddDiscountModal({
                   style={stylesModal.input}
                   placeholder={I18n.t('discountModal.rule.combo_size_label')}
                   value={ruleFormValues.combo_size}
-                  onChangeText={(value) =>
+                  onChangeText={(value) => {
                     handleRuleFormChange(
                       'combo_size',
                       value.replace(/[^0-9]/g, '')
-                    )
-                  }
+                    );
+                    setRuleErrors({ ...ruleErrors, combo_size: null });
+                  }}
                 />
                 <HelperText type="error" visible={!!ruleErrors.combo_size}>
                   {ruleErrors.combo_size}
@@ -753,12 +810,13 @@ export default function AddDiscountModal({
                   style={stylesModal.input}
                   placeholder={I18n.t('discountModal.rule.buy_quantity_label')}
                   value={ruleFormValues.buy_quantity}
-                  onChangeText={(value) =>
+                  onChangeText={(value) => {
                     handleRuleFormChange(
                       'buy_quantity',
                       value.replace(/[^0-9]/g, '')
-                    )
-                  }
+                    );
+                    setRuleErrors({ ...ruleErrors, buy_quantity: null });
+                  }}
                 />
                 <HelperText type="error" visible={!!ruleErrors.buy_quantity}>
                   {ruleErrors.buy_quantity}
@@ -769,12 +827,13 @@ export default function AddDiscountModal({
                   style={stylesModal.input}
                   placeholder={I18n.t('discountModal.rule.get_quantity_label')}
                   value={ruleFormValues.get_quantity}
-                  onChangeText={(value) =>
+                  onChangeText={(value) => {
                     handleRuleFormChange(
                       'get_quantity',
                       value.replace(/[^0-9]/g, '')
-                    )
-                  }
+                    );
+                    setRuleErrors({ ...ruleErrors, get_quantity: null });
+                  }}
                 />
                 <HelperText type="error" visible={!!ruleErrors.get_quantity}>
                   {ruleErrors.get_quantity}
@@ -808,9 +867,12 @@ export default function AddDiscountModal({
                 >
                   {ruleErrors.applicable_items}
                 </HelperText>
-
+              </>
+            )}
+            {type === 'freeItem' && (
+              <>
                 <Text style={stylesModal.fieldLabel}>
-                  {I18n.t('discountModal.rule.excluded_items_label')}
+                  {I18n.t('discountModal.rule.free_items_label')}
                 </Text>
                 <TouchableOpacity
                   onPress={() => setExcludedSelectorVisible(true)}
@@ -819,9 +881,9 @@ export default function AddDiscountModal({
                   <PaperTextInput
                     mode="outlined"
                     placeholder={I18n.t(
-                      'discountModal.rule.select_excluded_items_placeholder'
+                      'discountModal.rule.select_free_items_placeholder'
                     )}
-                    value={getMenuSummary(ruleFormValues.excluded_items)}
+                    value={getMenuSummary(ruleFormValues.free_items)}
                     editable={false}
                     right={<PaperTextInput.Icon icon="chevron-down" />}
                     outlineStyle={stylesModal.dropdownOutline}
@@ -831,12 +893,11 @@ export default function AddDiscountModal({
                     }}
                   />
                 </TouchableOpacity>
-                <HelperText type="error" visible={!!ruleErrors.excluded_items}>
-                  {ruleErrors.excluded_items}
+                <HelperText type="error" visible={!!ruleErrors.free_items}>
+                  {ruleErrors.free_items}
                 </HelperText>
               </>
             )}
-
             <View style={stylesModal.toggleRow}>
               <Text style={stylesModal.toggleLabel}>
                 {I18n.t('discountModal.rule.is_percentage_label')}
@@ -868,15 +929,15 @@ export default function AddDiscountModal({
         visible={applicableSelectorVisible}
         menus={menus?.results || []}
         selectedIds={ruleFormValues.applicable_items}
-        disabledIds={ruleFormValues.excluded_items}
+        disabledIds={ruleFormValues.free_items}
         onApply={handleApplicableApply}
         onClose={() => setApplicableSelectorVisible(false)}
       />
       <MenuItemSelectorModal
-        title={I18n.t('discountModal.modal.select_excluded_title')}
+        title={I18n.t('discountModal.modal.select_free_title')}
         visible={excludedSelectorVisible}
         menus={menus?.results || []}
-        selectedIds={ruleFormValues.excluded_items}
+        selectedIds={ruleFormValues.free_items}
         disabledIds={ruleFormValues.applicable_items}
         onApply={handleExcludedApply}
         onClose={() => setExcludedSelectorVisible(false)}

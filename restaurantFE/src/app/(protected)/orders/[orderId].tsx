@@ -8,7 +8,14 @@ import {
   TextInput,
   Platform,
 } from 'react-native';
-import { Text, Button, Card, Divider, DataTable } from 'react-native-paper';
+import {
+  Text,
+  Button,
+  Card,
+  Divider,
+  DataTable,
+  Menu,
+} from 'react-native-paper';
 import { Order } from '@/types/orderTypes';
 import { useQueryClient } from '@tanstack/react-query';
 import { i18n as I18n } from '@/app/_layout';
@@ -29,13 +36,50 @@ export default function AcceptOrders() {
   const queryClient = useQueryClient();
 
   const handleStatusUpdate = useCallback(
-    async (orderId: string, status: Order['status']) => {
+    async (orderId: string, status: Order['status'] | undefined) => {
       try {
-        await updateOrderStatus.mutate({ id: orderId, order: { status } });
-        queryClient.invalidateQueries({ queryKey: ['order', orderId] });
+        if (Boolean(status)) {
+          updateOrderStatus.mutate({ id: orderId, order: { status } });
+          queryClient.invalidateQueries({ queryKey: ['order', orderId] });
+        }
       } catch (error) {}
     },
     [queryClient, updateOrderStatus]
+  );
+
+  const getNextStatus = useCallback(
+    (currentStatus: Order['status'] | undefined) => {
+      switch (currentStatus) {
+        case 'pending_payment':
+          return {
+            label: I18n.t('orders.actionRecordPayment'),
+            value: 'payment_complete' as Order['status'],
+          };
+        case 'placed':
+          return {
+            label: I18n.t('orders.actionStartPreparing'),
+            value: 'progress' as Order['status'],
+          };
+        case 'progress':
+          return {
+            label: I18n.t('orders.actionMarkReady'),
+            value: 'payment_complete' as Order['status'],
+          };
+        case 'payment_complete':
+          return {
+            label: I18n.t('orders.actionMarkDelivered'),
+            value: 'delivered' as Order['status'],
+          };
+        case 'delivered':
+          return {
+            label: I18n.t('orders.actionMarkDelivered'),
+            value: 'delivered' as Order['status'],
+          };
+        default:
+          return null;
+      }
+    },
+    []
   );
 
   return (
@@ -71,10 +115,59 @@ export default function AcceptOrders() {
           style={styles.input}
           aria-disabled
           value={
-            (typeof order?.customer == 'object' && order.customer.phone) ||
+            (typeof order?.customer == 'object' && order?.customer_tinNo) ||
             undefined
           }
         />
+        <TextInput
+          placeholder={I18n.t('acceptOrders.discountCode')}
+          style={{
+            ...styles.input,
+            borderColor: '#ccc',
+          }}
+          value={
+            (typeof order == 'object' && order?.discount_code) || undefined
+          }
+          aria-disabled
+        />
+        <Menu
+          visible={false}
+          anchor={
+            <View>
+              <Button
+                mode="outlined"
+                style={styles.dropdownBtn}
+                labelStyle={{
+                  color: '#333',
+                  fontSize: 14,
+                  width: '100%',
+                  textAlign: 'left',
+                  marginLeft: 0,
+                }}
+                contentStyle={{
+                  flexDirection: 'row-reverse',
+                  width: '100%',
+                  paddingLeft: 10,
+                }}
+                icon={'chevron-down'}
+              >
+                {order?.table?.table_code}
+              </Button>
+            </View>
+          }
+          contentStyle={{
+            width: '100%',
+            backgroundColor: '#fff',
+          }}
+          style={{ alignSelf: 'stretch' }}
+          anchorPosition="bottom"
+        >
+          <Menu.Item
+            key={'selected'}
+            title={'Selected'}
+            titleStyle={styles.menuItem}
+          />
+        </Menu>
       </View>
 
       <View style={styles.tableWrapper}>
@@ -139,7 +232,7 @@ export default function AcceptOrders() {
                     numberOfLines={1}
                     style={[styles.cellText, { paddingRight: 55 }]}
                   >
-                    {(order?.tenant as any).tax ?? 0 / 100}
+                    {(order?.tenant as any).tax ?? 0 / 100} %
                   </Text>
                 </DataTable.Cell>
                 <DataTable.Cell style={[styles.cell, { flex: 1 }]}>
@@ -163,21 +256,23 @@ export default function AcceptOrders() {
             <Text style={{ color: '#202B189E' }}>
               {I18n.t('acceptOrders.summarySubtotal')}
             </Text>
-            <Text style={{ color: '#202B189E' }}>${subtotal?.toFixed(2)}</Text>
+            <Text style={{ color: '#202B189E' }}>
+              ETB {subtotal?.toFixed(2)}
+            </Text>
           </View>
           <View style={styles.summaryRow}>
             <Text style={{ color: '#202B189E' }}>
               {I18n.t('acceptOrders.serviceCharge')}
             </Text>
             <Text style={{ color: '#202B189E' }}>
-              ${serviceCharge.toFixed(2)}
+              ETB {serviceCharge.toFixed(2)}
             </Text>
           </View>
           <View style={styles.summaryRow}>
             <Text style={{ color: '#202B189E' }}>
               {I18n.t('acceptOrders.summaryTax')}
             </Text>
-            <Text style={{ color: '#202B189E' }}>${tax.toFixed(2)}</Text>
+            <Text style={{ color: '#202B189E' }}>ETB {tax.toFixed(2)}</Text>
           </View>
           <View style={styles.summaryRow}>
             <Text style={{ color: '#202B189E' }}>
@@ -193,27 +288,38 @@ export default function AcceptOrders() {
               {I18n.t('acceptOrders.summaryTotal')}
             </Text>
             <Text style={styles.totalValue}>
-              ${(total - (Number(order?.discount_amount) || 0)).toFixed(2)}
+              ETB {(total - (Number(order?.discount_amount) || 0)).toFixed(2)}
             </Text>
           </View>
         </Card.Content>
         <Card.Actions style={styles.actions}>
-          <Button
-            mode="contained"
-            style={styles.acceptButton}
-            labelStyle={{ color: '#fff' }}
-            onPress={() => handleStatusUpdate(order?.id as string, 'progress')}
-          >
-            {I18n.t('acceptOrders.acceptButton')}
-          </Button>
-          <Button
-            mode="outlined"
-            style={styles.cancelButton}
-            labelStyle={{ color: '#000' }}
-            onPress={() => handleStatusUpdate(order?.id as string, 'cancelled')}
-          >
-            {I18n.t('acceptOrders.cancelButton')}
-          </Button>
+          {order?.status !== 'cancelled' && order?.status !== 'delivered' && (
+            <Button
+              mode="contained"
+              style={styles.acceptButton}
+              labelStyle={{ color: '#fff' }}
+              onPress={() =>
+                handleStatusUpdate(
+                  order?.id as string,
+                  getNextStatus(order?.status as Order['status'])?.value
+                )
+              }
+            >
+              {getNextStatus(order?.status as Order['status'])?.label}
+            </Button>
+          )}
+          {order?.status !== 'cancelled' && order?.status !== 'delivered' && (
+            <Button
+              mode="outlined"
+              style={styles.cancelButton}
+              labelStyle={{ color: '#000' }}
+              onPress={() =>
+                handleStatusUpdate(order?.id as string, 'cancelled')
+              }
+            >
+              {I18n.t('acceptOrders.cancelButton')}
+            </Button>
+          )}
         </Card.Actions>
       </Card>
     </ScrollView>
@@ -370,5 +476,17 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '500',
     color: '#3A4A2A',
+  },
+  menuItem: {
+    color: '#333',
+    fontSize: 14,
+  },
+  dropdownBtn: {
+    backgroundColor: '#50693A17',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#ccc',
+    justifyContent: 'space-between',
+    marginBottom: 16,
   },
 });

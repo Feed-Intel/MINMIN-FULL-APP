@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { StyleSheet, Animated, Platform, Image, View } from 'react-native'; // Import Image and View
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Text, Button, TextInput } from 'react-native-paper';
+import validator from 'validator';
 import { router } from 'expo-router';
 import { useUpdatePassword } from '@/services/mutation/authMutation';
 import { useAuth } from '@/context/auth';
@@ -14,6 +15,7 @@ const ResetPasswordScreen = () => {
   const formAnimation = useRef(new Animated.Value(0)).current;
   const [newPassword, setNewPassword] = React.useState('');
   const [confirmPassword, setConfirmPassword] = React.useState('');
+  const [isSubmitted, setIsSubmitted] = React.useState(false);
   const { user, handleNativeTokens } = useAuth();
   const { mutate: ChangePasswordFn } = useUpdatePassword();
 
@@ -39,6 +41,18 @@ const ResetPasswordScreen = () => {
       new_password: newPassword,
       otp: user?.otp,
     };
+    setIsSubmitted(true);
+    if (
+      validator.isStrongPassword(newPassword) ||
+      validator.isStrongPassword(confirmPassword)
+    ) {
+      Toast.show({
+        type: 'error',
+        text1: i18n.t('error_toast_title'),
+        text2: i18n.t('password_not_strong'),
+      });
+      return;
+    }
     if (newPassword !== confirmPassword) {
       // Replaced alert() with Toast.show() and i18n.t()
       Toast.show({
@@ -127,7 +141,12 @@ const ResetPasswordScreen = () => {
           <TextInput
             label={i18n.t('enter_new_password_label')}
             value={newPassword}
-            onChangeText={setNewPassword}
+            onChangeText={(text: string) => {
+              setNewPassword(text);
+              if (isSubmitted) {
+                setIsSubmitted(false);
+              }
+            }}
             secureTextEntry
             mode="outlined"
             style={styles.input}
@@ -137,12 +156,23 @@ const ResetPasswordScreen = () => {
             outlineColor="#D1D5DA" // Light border color for inputs
             activeOutlineColor="#8DB663" // Active border color
             placeholderTextColor="#A9A9A9"
+            error={isSubmitted && !validator.isStrongPassword(newPassword)}
           />
+          {isSubmitted && !validator.isStrongPassword(newPassword) && (
+            <Text style={styles.errorText}>
+              {i18n.t('password_not_strong')}
+            </Text>
+          )}
 
           <TextInput
             label={i18n.t('repeat_new_password_label')}
             value={confirmPassword}
-            onChangeText={setConfirmPassword}
+            onChangeText={(text: string) => {
+              setConfirmPassword(text);
+              if (isSubmitted) {
+                setIsSubmitted(false);
+              }
+            }}
             secureTextEntry
             mode="outlined"
             style={styles.input}
@@ -152,8 +182,18 @@ const ResetPasswordScreen = () => {
             outlineColor="#D1D5DA"
             activeOutlineColor="#8DB663"
             placeholderTextColor="#A9A9A9"
+            error={isSubmitted && !validator.isStrongPassword(confirmPassword)}
           />
-
+          {isSubmitted && !validator.isStrongPassword(confirmPassword) && (
+            <Text style={styles.errorText}>
+              {i18n.t('password_not_strong')}
+            </Text>
+          )}
+          {isSubmitted && newPassword !== confirmPassword && (
+            <Text style={styles.errorText}>
+              {i18n.t('password_dont_match')}
+            </Text>
+          )}
           <Button
             mode="contained"
             onPress={handleChangePassword}
@@ -279,6 +319,12 @@ const styles = StyleSheet.create({
     color: '#8DB663', // Green color for Login link
     fontWeight: 'bold',
     fontSize: 16,
+  },
+  errorText: {
+    color: 'red',
+    fontSize: 16,
+    marginTop: 10,
+    marginLeft: 20,
   },
 });
 

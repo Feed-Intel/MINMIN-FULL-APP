@@ -1,4 +1,10 @@
-import { useState, useEffect, useCallback } from 'react';
+import {
+  useQuery,
+  useMutation,
+  useQueryClient,
+  QueryFunction,
+  MutationFunction,
+} from '@tanstack/react-query';
 import {
   GetCombos,
   GetComboById,
@@ -10,249 +16,155 @@ import { Combo, ComboQueryParams } from '@/types/comboTypes';
 import { useDispatch } from 'react-redux';
 import { AppDispatch } from '@/lib/reduxStore/store';
 import { hideLoader, showLoader } from '@/lib/reduxStore/loaderSlice';
-import { useTime } from '@/context/time';
 
-const manualInvalidate = (setTime: (time: number) => void) => {
-  setTime(Date.now());
+interface CombosResponse {
+  next: string | null;
+  results: Combo[];
+  count: number;
+}
+const comboKeys = {
+  all: ['combos'] as const,
+  lists: () => [...comboKeys.all, 'list'] as const,
+  list: (params: ComboQueryParams | undefined) =>
+    [...comboKeys.lists(), { params }] as const,
+  details: () => [...comboKeys.all, 'detail'] as const,
+  detail: (id: string) => [...comboKeys.details(), id] as const,
 };
+
+// ------------------------------------
+// ## Query Hooks (Data Fetching)
+// ------------------------------------
 
 export const useGetCombos = (
   params?: ComboQueryParams | undefined,
   enabled: boolean = true
 ) => {
-  const { time } = useTime();
-  const [data, setData] = useState<
-    { next: string | null; results: Combo[]; count: number } | undefined
-  >(undefined);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isPending, setIsPending] = useState(false);
-  const [error, setError] = useState<any>(null);
+  const queryKey = comboKeys.list(params);
 
-  useEffect(() => {
-    if (!enabled) return;
-
-    let isMounted = true;
-    const fetchData = async () => {
-      if (!data) {
-        setIsLoading(true);
-      } else {
-        setIsPending(true);
+  const queryFn: QueryFunction<CombosResponse, typeof queryKey> = ({
+    queryKey: [, , { params: currentParams }],
+  }) => {
+    const searchParams = new URLSearchParams();
+    Object.entries(currentParams ?? {}).forEach(([key, value]) => {
+      if (value) {
+        searchParams.append(key, String(value));
       }
-      setError(null);
-
-      try {
-        const searchParams = new URLSearchParams();
-        Object.entries(params ?? {}).forEach(([key, value]) => {
-          if (value) {
-            searchParams.append(key, String(value));
-          }
-        });
-        const response = await GetCombos(searchParams.toString());
-        if (isMounted) {
-          setData(response);
-        }
-      } catch (err) {
-        if (isMounted) {
-          setError(err);
-        }
-      } finally {
-        if (isMounted) {
-          setIsLoading(false);
-          setIsPending(false);
-        }
-      }
-    };
-
-    fetchData();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [params, time, enabled]);
-
-  return {
-    data,
-    isLoading,
-    isPending: isPending && !!data,
-    error,
+    });
+    return GetCombos(searchParams.toString());
   };
+
+  return useQuery({
+    queryKey,
+    queryFn,
+    enabled,
+  });
 };
 
 export const useGetComboById = (id: string) => {
-  const { time } = useTime();
-  const [data, setData] = useState<any>(undefined);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isPending, setIsPending] = useState(false);
-  const [error, setError] = useState<any>(null);
+  const queryKey = comboKeys.detail(id);
+  const queryFn: QueryFunction<Combo, typeof queryKey> = ({
+    queryKey: [, , comboId],
+  }) => GetComboById(comboId);
 
-  useEffect(() => {
-    if (!id) return;
-
-    let isMounted = true;
-    const fetchData = async () => {
-      if (!data) {
-        setIsLoading(true);
-      } else {
-        setIsPending(true);
-      }
-      setError(null);
-
-      try {
-        const response = await GetComboById(id);
-        if (isMounted) {
-          setData(response);
-        }
-      } catch (err) {
-        if (isMounted) {
-          setError(err);
-        }
-      } finally {
-        if (isMounted) {
-          setIsLoading(false);
-          setIsPending(false);
-        }
-      }
-    };
-
-    fetchData();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [id, time]);
-
-  return {
-    data,
-    isLoading,
-    isPending: isPending && !!data,
-    error,
-  };
+  return useQuery({
+    queryKey,
+    queryFn,
+    enabled: !!id,
+  });
 };
 
-// --- Mutations ---
+// ------------------------------------
+// ## Mutation Hooks (CUD)
+// ------------------------------------
 
 export function useCreateCombo(
   onSuccess?: (data: any) => void,
   onError?: (error: any) => void
 ) {
+  const queryClient = useQueryClient();
   const dispatch = useDispatch<AppDispatch>();
-  const { setTime } = useTime();
-  const [isPending, setIsPending] = useState(false);
-  const [error, setError] = useState<any>(null);
-  const [data, setData] = useState<any>(undefined);
 
-  const mutate = useCallback(
-    async (variables: any) => {
-      setIsPending(true);
-      setError(null);
-      setData(undefined);
+  const mutationFn: MutationFunction<any, any> = (variables) =>
+    CreateCombo(variables);
+
+  return useMutation({
+    mutationFn,
+    onMutate: () => {
       dispatch(showLoader());
-      try {
-        const result = await CreateCombo(variables);
-        setData(result);
-        manualInvalidate(setTime);
-        if (onSuccess) onSuccess(result);
-        return result;
-      } catch (err) {
-        setError(err);
-        if (onError) onError(err);
-        throw err;
-      } finally {
-        setIsPending(false);
-        dispatch(hideLoader());
-      }
     },
-    [onSuccess, onError, setTime, dispatch]
-  );
-
-  return {
-    mutate,
-    data,
-    isPending,
-    error,
-  };
+    onSuccess: (data) => {
+      // Invalidate the combos list query to trigger a refetch
+      queryClient.invalidateQueries({ queryKey: comboKeys.lists() });
+      if (onSuccess) onSuccess(data);
+    },
+    onError: (error) => {
+      if (onError) onError(error);
+    },
+    onSettled: () => {
+      // Hide loader regardless of success or failure
+      dispatch(hideLoader());
+    },
+  });
 }
 
 export function useUpdateCombo(
   onSuccess?: (data: any) => void,
   onError?: (error: any) => void
 ) {
+  const queryClient = useQueryClient();
   const dispatch = useDispatch<AppDispatch>();
-  const { setTime } = useTime();
-  const [isPending, setIsPending] = useState(false);
-  const [error, setError] = useState<any>(null);
-  const [data, setData] = useState<any>(undefined);
 
-  const mutate = useCallback(
-    async (variables: any) => {
-      setIsPending(true);
-      setError(null);
-      setData(undefined);
+  const mutationFn: MutationFunction<any, any> = (variables) =>
+    UpdateCombo(variables);
+
+  return useMutation({
+    mutationFn,
+    onMutate: () => {
       dispatch(showLoader());
-      try {
-        const result = await UpdateCombo(variables);
-        setData(result);
-        manualInvalidate(setTime);
-        if (onSuccess) onSuccess(result);
-        return result;
-      } catch (err) {
-        setError(err);
-        if (onError) onError(err);
-        throw err;
-      } finally {
-        setIsPending(false);
-        dispatch(hideLoader());
-      }
     },
-    [onSuccess, onError, setTime, dispatch]
-  );
-
-  return {
-    mutate,
-    data,
-    isPending,
-    error,
-  };
+    onSuccess: (data, variables) => {
+      // Invalidate the combos list
+      queryClient.invalidateQueries({ queryKey: comboKeys.lists() });
+      // Optionally update the single combo detail in the cache
+      const comboId = variables.id; // Assuming variables contains the ID
+      if (comboId) {
+        queryClient.setQueryData(comboKeys.detail(comboId), data);
+      }
+      if (onSuccess) onSuccess(data);
+    },
+    onError: (error) => {
+      if (onError) onError(error);
+    },
+    onSettled: () => {
+      dispatch(hideLoader());
+    },
+  });
 }
 
 export function useDeleteCombo(
   onSuccess?: (data: any) => void,
   onError?: (error: any) => void
 ) {
+  const queryClient = useQueryClient();
   const dispatch = useDispatch<AppDispatch>();
-  const { setTime } = useTime();
-  const [isPending, setIsPending] = useState(false);
-  const [error, setError] = useState<any>(null);
-  const [data, setData] = useState<any>(undefined);
 
-  const mutate = useCallback(
-    async (variables: any) => {
-      setIsPending(true);
-      setError(null);
-      setData(undefined);
+  const mutationFn: MutationFunction<any, any> = (variables) =>
+    DeleteCombo(variables);
+
+  return useMutation({
+    mutationFn,
+    onMutate: () => {
       dispatch(showLoader());
-      try {
-        const result = await DeleteCombo(variables);
-        setData(result);
-        manualInvalidate(setTime);
-        if (onSuccess) onSuccess(result);
-        return result;
-      } catch (err) {
-        setError(err);
-        if (onError) onError(err);
-        throw err;
-      } finally {
-        setIsPending(false);
-        dispatch(hideLoader());
-      }
     },
-    [onSuccess, onError, setTime, dispatch]
-  );
-
-  return {
-    mutate,
-    data,
-    isPending,
-    error,
-  };
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: comboKeys.lists() });
+      if (onSuccess) onSuccess(data);
+    },
+    onError: (error) => {
+      if (onError) onError(error);
+    },
+    onSettled: () => {
+      dispatch(hideLoader());
+    },
+  });
 }

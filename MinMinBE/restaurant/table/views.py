@@ -1,5 +1,6 @@
 from django.core.exceptions import ValidationError
 from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework.viewsets import ModelViewSet
 from rest_framework import status
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import IsAuthenticated
@@ -10,14 +11,13 @@ from accounts.utils import get_user_branch, get_user_tenant
 from .models import Table
 from .serializers import TableSerializer
 from .tableFilter import TableFilter
-from core.cache import CachedModelViewSet
 
 
 class TableViewPagination(PageNumberPagination):
     page_size = 10
 
 
-class TableView(CachedModelViewSet):
+class TableView(ModelViewSet):
     permission_classes = [IsAuthenticated, HasCustomAPIKey, IsAdminRestaurantOrBranch]
     serializer_class = TableSerializer
     pagination_class = TableViewPagination

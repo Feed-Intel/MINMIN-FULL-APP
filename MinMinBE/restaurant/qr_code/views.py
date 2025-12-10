@@ -4,7 +4,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.filters import OrderingFilter
 from django_filters.rest_framework import DjangoFilterBackend
 from django.http import JsonResponse
-from django.db.models import Q
+from rest_framework.viewsets import ModelViewSet
 
 from minminbe import settings
 from .models import QRCode
@@ -14,14 +14,13 @@ from .serializers import QRCodeSerializer
 from .utils import generate_qr_code
 from accounts.permissions import HasCustomAPIKey, IsAdminRestaurantOrBranch
 from accounts.utils import get_user_branch, get_user_tenant
-from core.cache import CachedModelViewSet
 
 import os
 import re
 class QRCodeViewPagination(PageNumberPagination):
     page_size = 10
 
-class QRCodeViewSet(CachedModelViewSet):
+class QRCodeViewSet(ModelViewSet):
     """
     A ViewSet for viewing and editing QR code instances.
     """

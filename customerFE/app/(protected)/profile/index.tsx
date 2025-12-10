@@ -131,13 +131,22 @@ const ProfileScreen = () => {
       icon: 'shield-outline',
       action: () =>
         Platform.OS === 'web'
-          ? window.open('https://stg.api.feed-intel.com/privacy/', '_blank')
+          ? window.open(
+              `${process.env.EXPO_PUBLIC_API_URL?.replace(
+                '/api/v1',
+                ''
+              )}/privacy/`,
+              '_blank'
+            )
           : router.push({
               pathname:
                 '/(protected)/profile/WebPageView' as RelativePathString,
               params: {
                 title: i18n.t('privacy_policy_setting'),
-                url: 'https://stg.api.feed-intel.com/privacy/',
+                url: `${process.env.EXPO_PUBLIC_API_URL?.replace(
+                  '/api/v1',
+                  ''
+                )}/privacy/`,
               },
             }),
     },
@@ -147,13 +156,22 @@ const ProfileScreen = () => {
       icon: 'description',
       action: () =>
         Platform.OS === 'web'
-          ? window.open('https://stg.api.feed-intel.com/terms/', '_blank')
+          ? window.open(
+              `${process.env.EXPO_PUBLIC_API_URL?.replace(
+                '/api/v1',
+                ''
+              )}/terms/`,
+              '_blank'
+            )
           : router.push({
               pathname:
                 '/(protected)/profile/WebPageView' as RelativePathString,
               params: {
                 title: i18n.t('terms_conditions_setting'),
-                url: 'https://stg.api.feed-intel.com/terms/',
+                url: `${process.env.EXPO_PUBLIC_API_URL?.replace(
+                  '/api/v1',
+                  ''
+                )}/terms/`,
               },
             }),
     },
@@ -170,10 +188,14 @@ const ProfileScreen = () => {
   };
 
   const renderSavedPost = ({ item }: { item: any }) => (
-    <Image
-      source={{ uri: normalizeImageUrl(item.image) }}
-      style={styles.savedPostImage}
-    />
+    <TouchableOpacity
+      onPress={() => router.push(`/(protected)/feed/${item.id}`)}
+    >
+      <Image
+        source={{ uri: normalizeImageUrl(item.image) }}
+        style={styles.savedPostImage}
+      />
+    </TouchableOpacity>
   );
 
   return (
@@ -225,7 +247,7 @@ const ProfileScreen = () => {
             </TouchableOpacity>
 
             <Text style={styles.profileName}>
-              {user?.full_name || i18n.t('default_user_name')}{' '}
+              {user?.full_name || i18n.t('name_placeholder')}{' '}
             </Text>
 
             <View style={styles.loyaltyContainer}>
@@ -304,7 +326,10 @@ const ProfileScreen = () => {
                       onPress={() =>
                         Platform.OS === 'web'
                           ? window.open(
-                              'https://stg.api.feed-intel.com/privacy/',
+                              `${process.env.EXPO_PUBLIC_API_URL?.replace(
+                                '/api/v1',
+                                ''
+                              )}/privacy/`,
                               '_blank'
                             )
                           : router.push({
@@ -312,7 +337,10 @@ const ProfileScreen = () => {
                                 '/(protected)/profile/WebPageView' as RelativePathString,
                               params: {
                                 title: i18n.t('terms_conditions_setting'),
-                                url: 'https://stg.api.feed-intel.com/privacy/',
+                                url: `${process.env.EXPO_PUBLIC_API_URL?.replace(
+                                  '/api/v1',
+                                  ''
+                                )}/privacy/`,
                               },
                             })
                       }

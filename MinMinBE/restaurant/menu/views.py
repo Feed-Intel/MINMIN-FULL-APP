@@ -2,6 +2,7 @@ from rest_framework import status
 from django.core.exceptions import ValidationError
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.viewsets import ModelViewSet
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.parsers import MultiPartParser, FormParser
 from django.db.models import Q
@@ -11,12 +12,11 @@ from .menuFilter import MenuFilter
 from .serializers import MenuSerializer
 from accounts.permissions import HasCustomAPIKey
 from accounts.utils import get_user_branch, get_user_tenant
-from core.cache import CachedModelViewSet
 
 class MenuViewPagination(PageNumberPagination):
     page_size = 10
 
-class MenuView(CachedModelViewSet):
+class MenuView(ModelViewSet):
     permission_classes = [IsAuthenticated,HasCustomAPIKey]
     queryset = Menu.objects.all()
     serializer_class = MenuSerializer

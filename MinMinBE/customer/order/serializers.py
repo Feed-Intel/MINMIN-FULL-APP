@@ -28,11 +28,12 @@ class OrderSerializer(serializers.ModelSerializer):
     items = OrderItemSerializer(many=True)
     total_price = serializers.SerializerMethodField()
     discount_amount = serializers.SerializerMethodField()
+    discount_code = serializers.CharField(required=False)
     class Meta:
         model = Order
         fields = [
             'id','order_id', 'tenant','items',"customer_name","customer_phone", "customer_tinNo", 
-            'table','branch', 'customer', 'total_price', 'status', 'discount_amount', 'created_at', 'updated_at'
+            'table','branch', 'customer', 'total_price', 'status', 'discount_amount', 'created_at', 'updated_at','discount_code'
         ]
         read_only_fields = ['customer','total_price','tenant']
 
@@ -48,10 +49,10 @@ class OrderSerializer(serializers.ModelSerializer):
         table = validated_data.get('table')
         branch = validated_data.get('branch')
         items_data = validated_data.pop('items')
-
         customer_name = validated_data.get('customer_name')
         customer_phone = validated_data.get('customer_phone')
         customer_tinNo = validated_data.get('customer_tinNo')
+        discount_code = validated_data.get('discount_code')
         customer = self.context['request'].user
         if customer.user_type != 'customer':
             new_user,created = User.objects.get_or_create(
@@ -81,13 +82,17 @@ class OrderSerializer(serializers.ModelSerializer):
                 )
                 delivery_table_serializer.is_valid(raise_exception=True)
                 table = delivery_table_serializer.save()
-
+        coupon = None
+        if discount_code:
+            from restaurant.discount.models import Coupon
+            coupon = Coupon.objects.filter(discount_code=discount_code).first()
         # Create order with determined table
         order = Order.objects.create(
             table=table,
             branch=branch,
             tenant=branch.tenant,
-            customer=customer
+            customer=customer,
+            coupon=coupon
         )
 
         # Create order items
@@ -164,6 +169,12 @@ class OrderSerializer(serializers.ModelSerializer):
         Returns the phone number of the customer.
         """
         return obj.customer_phone if obj.customer_phone else obj.customer.phone
+    
+    def get_customer_tinNo(self, obj):
+        """
+        Returns the tin number of the customer.
+        """
+        return obj.customer_tinNo if obj.customer_tinNo else obj.customer.tin_no
     def to_representation(self, instance):
         """
         Customizes the serialized response.
@@ -176,6 +187,7 @@ class OrderSerializer(serializers.ModelSerializer):
         representation['tenant'] = self.get_tenant(instance)
         representation['customer_name'] = self.get_customer_name(instance)
         representation['customer_phone'] = self.get_customer_phone(instance)
-        representation['customer_tinNo'] = instance.customer_tinNo
+        representation['customer_tinNo'] = self.get_customer_tinNo(instance)
+        representation['discount_code'] = instance.coupon.discount_code if instance.coupon else None
         return representation
 

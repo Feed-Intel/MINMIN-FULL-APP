@@ -1,11 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import {
-  StyleSheet,
-  Animated,
-  Platform,
-  Image,
-  View, // Added View for Toast.show
-} from 'react-native';
+import { StyleSheet, Animated, Platform, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { OtpInput } from 'react-native-otp-entry';
 import { Text, Button } from 'react-native-paper';
@@ -15,9 +9,6 @@ import {
   useResetPassword,
   useVerifyOTP,
 } from '@/services/mutation/authMutation';
-import { tokenStorage } from '@/utils/cache';
-import { jwtDecode } from 'jwt-decode';
-import { COOKIE_NAME, REFRESH_COOKIE_NAME } from '@/utils/constants';
 import { useAuth } from '@/context/auth';
 import { ThemedView } from '@/components/ThemedView';
 import Toast from 'react-native-toast-message'; // Import Toast
@@ -29,6 +20,7 @@ const ConfirmOTPScreen = () => {
   const formAnimation = useRef(new Animated.Value(0)).current;
   const [OTP, setOTPText] = React.useState('');
   const { user, setUser, handleNativeTokens } = useAuth();
+  const [timer, setTimer] = React.useState(600);
   const { mutate: checkOTPFn, isPending } = useConfirmOTP();
   const { mutate: verifyOTPFn, isPending: isPendingVerify } = useVerifyOTP();
   const { mutate: ResetPasswordFn, isPending: resetPasswordIsPending } =
@@ -49,6 +41,18 @@ const ConfirmOTPScreen = () => {
       }),
     ]).start();
   }, [logoAnimation, formAnimation]);
+
+  useEffect(() => {
+    let interval: NodeJS.Timeout | number | null = null;
+    if (timer > 0) {
+      interval = setInterval(() => {
+        setTimer((prev) => prev - 1);
+      }, 1000);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [timer]);
 
   const handleOTPConfirm = () => {
     const data = { email: user?.email, otp: OTP };
@@ -83,6 +87,12 @@ const ConfirmOTPScreen = () => {
 
   const sendOTPAgain = () => {
     ResetPasswordFn({ email: user?.email });
+  };
+
+  const formatTime = (seconds: number) => {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${m}:${s.toString().padStart(2, '0')}`;
   };
 
   return (
@@ -146,6 +156,7 @@ const ConfirmOTPScreen = () => {
             mode="contained"
             onPress={handleOTPConfirm}
             loading={isPending}
+            disabled={OTP.length < 6}
             style={styles.button}
             contentStyle={styles.buttonContent}
             theme={{ colors: { primary: '#96B76E' } }}
@@ -157,10 +168,13 @@ const ConfirmOTPScreen = () => {
             mode="outlined"
             onPress={sendOTPAgain}
             loading={resetPasswordIsPending}
+            disabled={timer > 0}
             style={styles.resendButton}
             theme={{ colors: { primary: '#96B76E' } }}
           >
-            {i18n.t('send_otp_again_button')} {/* Replaced hardcoded string */}
+            {timer > 0
+              ? `${i18n.t('send_otp_again_button')} (${formatTime(timer)})`
+              : i18n.t('send_otp_again_button')}
           </Button>
         </Animated.View>
       </SafeAreaView>

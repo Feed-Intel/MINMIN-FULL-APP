@@ -1,5 +1,5 @@
 import { useCreateOrder } from '@/services/mutation/orderMutation';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   View,
   ScrollView,
@@ -41,6 +41,7 @@ import {
   setTableID,
   updateQuantity,
 } from '@/lib/reduxStore/cartSlice';
+import validator from 'validator';
 import { useGetMenus } from '@/services/mutation/menuMutation';
 import { useCheckDiscount } from '@/services/mutation/discountMutation';
 import debounce from 'lodash.debounce';
@@ -96,6 +97,11 @@ export default function AcceptOrders() {
     });
     return ['All', ...Array.from(set).sort((a, b) => a.localeCompare(b))];
   }, [menus]);
+
+  useEffect(() => {
+    setTotal((subtotal || 0) + serviceCharge + tax);
+  }, [subtotal, serviceCharge, tax]);
+
   async function checkDiscountFN(coupon?: string) {
     const itemsData = cart.items.map((item: any) => ({
       menu_item: item.id,
@@ -110,6 +116,66 @@ export default function AcceptOrders() {
       items: itemsData,
     });
     const discountValue = discountResponse.discount_amount || 0;
+    if (
+      discountResponse.typeDiscount == 'bogo' &&
+      discountResponse.freeItems.length > 0
+    ) {
+      for (const freeItem of discountResponse.freeItems) {
+        const object = Object.keys(freeItem);
+        dispatch(
+          updateQuantity({
+            id: object[0],
+            quantity: Math.max(
+              (newQuantities[object[0]] || 0) + freeItem[object[0]],
+              0
+            ),
+          })
+        );
+      }
+    }
+    if (
+      discountResponse.typeDiscount == 'freeItem' &&
+      discountResponse.freeItems.length > 0
+    ) {
+      for (const Fitem of discountResponse.freeItems) {
+        const existingItem: any = cart.items.find(
+          (item) => item.id === Object.keys(Fitem)[0]
+        );
+        if (!existingItem) {
+          const item = menus?.find((t: any) => t.id === Object.keys(Fitem)[0]);
+          dispatch(
+            addToCart({
+              item: {
+                id: item?.id!,
+                name: item?.name!,
+                description: '',
+                price: 0,
+                quantity: Object.values(Fitem)[0] as number,
+                image: '',
+              },
+              restaurantId: tenantId!,
+              branchId: branchId!,
+              tableId: cart.tableId,
+              paymentAPIKEY: item?.tenant.CHAPA_API_KEY,
+              paymentPUBLICKEY: item?.tenant.CHAPA_PUBLIC_KEY,
+              tax: item?.tenant.tax,
+              serviceCharge: item?.tenant.service_charge,
+            })
+          );
+        } else {
+          dispatch(
+            updateQuantity({
+              id: Object.keys(Fitem)[0],
+              quantity: Math.max(
+                (newQuantities[Object.keys(Fitem)[0]] || 0) +
+                  Object.values(Fitem)[0],
+                0
+              ),
+            })
+          );
+        }
+      }
+    }
     dispatch(setDiscount(discountValue));
     setTotal(subtotal - discountValue);
   }
@@ -118,7 +184,7 @@ export default function AcceptOrders() {
     if (branchId) {
       checkDiscountFN(debouncedQuery);
     }
-  }, [debouncedQuery]);
+  }, [debouncedQuery, cart.items]);
 
   const debouncedSearch = useMemo(
     () => debounce((q: string) => setDebouncedQuery(q), 300),
@@ -144,22 +210,24 @@ export default function AcceptOrders() {
   };
 
   const handlePlaceOrder = async () => {
-    if (cart.customerName === '') {
+    let hasError: boolean = false;
+    if (!validator.isAlpha(cart.customerName)) {
       setCustomerNameError(true);
-      return;
+      hasError = true;
     }
-    if (cart.contactNumber === '') {
+    if (!validator.isMobilePhone(cart.contactNumber)) {
       setCustomerPhoneError(true);
-      return;
+      hasError = true;
     }
-    if (cart.tinNumber === '') {
+    if (!validator.isNumeric(cart.tinNumber)) {
       setCustomerTinError(true);
-      return;
+      hasError = true;
     }
     if (cart.customerName.trim().length < 3) {
       setCustomerNameError(true);
-      return;
+      hasError = true;
     }
+    if (hasError) return;
     const orderData = {
       tenant: tenantId,
       branch: branchId,
@@ -167,15 +235,15 @@ export default function AcceptOrders() {
       customer_phone: cart.contactNumber,
       customer_tinNo: cart.tinNumber,
       table: cart.tableId,
-      coupon: cart.coupon,
+      discount_code: cart.coupon,
       items: cart.items.map((item: any) => ({
         menu_item: item.id,
         quantity: newQuantities[item.id] || 1,
-        price: item.price,
+        price: item.price * (total / (total + cart.discount)),
         remarks: cart.remarks[item.id],
       })),
     };
-    await createOrder(orderData);
+    createOrder(orderData);
     await queryClient.invalidateQueries({ queryKey: ['orders'] });
     dispatch(clearCart());
     router.replace('/(protected)/orders');
@@ -269,8 +337,16 @@ export default function AcceptOrders() {
           }}
           value={cart.customerName}
           onChangeText={(text: string) => {
-            dispatch(setCustomerInfo({ customerName: text }));
-            setCustomerNameError(false);
+            dispatch(
+              setCustomerInfo({
+                customerName: text,
+                contactNumber: cart.contactNumber,
+                tinNumber: cart.tinNumber,
+              })
+            );
+            if (customerNameError) {
+              setCustomerNameError(false);
+            }
           }}
         />
         <TextInput
@@ -282,8 +358,16 @@ export default function AcceptOrders() {
           value={cart.contactNumber}
           onChangeText={(text) => {
             const cleaned = text.replace(/[^0-9.]/g, '');
-            dispatch(setCustomerInfo({ contactNumber: cleaned }));
-            setCustomerPhoneError(false);
+            dispatch(
+              setCustomerInfo({
+                contactNumber: cleaned,
+                customerName: cart.customerName,
+                tinNumber: cart.tinNumber,
+              })
+            );
+            if (customerPhoneError) {
+              setCustomerPhoneError(false);
+            }
           }}
         />
       </View>
@@ -296,21 +380,30 @@ export default function AcceptOrders() {
           }}
           value={cart.tinNumber}
           onChangeText={(text) => {
-            dispatch(setCustomerInfo({ tinNumber: text }));
-            setCustomerTinError(false);
+            dispatch(
+              setCustomerInfo({
+                tinNumber: text,
+                customerName: cart.customerName,
+                contactNumber: cart.contactNumber,
+              })
+            );
+            if (customerTinError) {
+              setCustomerTinError(false);
+            }
           }}
         />
         <TextInput
           placeholder={I18n.t('acceptOrders.discountCode')}
           style={{
             ...styles.input,
-            borderColor: customerTinError ? 'red' : '#ccc',
+            borderColor: '#ccc',
           }}
           value={cart.coupon}
           onChangeText={(text) => {
             dispatch(setCoupon(text));
             debouncedSearch(text);
           }}
+          aria-disabled={cart.items.length === 0}
         />
         <Menu
           visible={showTables}
@@ -342,7 +435,10 @@ export default function AcceptOrders() {
               </Button>
             </View>
           }
-          contentStyle={{ width: '100%', backgroundColor: '#fff' }}
+          contentStyle={{
+            width: '100%',
+            backgroundColor: '#fff',
+          }}
           style={{ alignSelf: 'stretch' }}
           anchorPosition="bottom"
         >
@@ -432,7 +528,7 @@ export default function AcceptOrders() {
                     placeholder={I18n.t('orderReview.tableRemark')}
                     style={{
                       ...styles.input,
-                      borderColor: customerNameError ? 'red' : '#ccc',
+                      borderColor: '#ccc',
                     }}
                     value={cart.remarks[item.id] || ''}
                     onChangeText={(text: string) => {
@@ -445,7 +541,7 @@ export default function AcceptOrders() {
                     numberOfLines={1}
                     style={[styles.cellText, { paddingRight: 55 }]}
                   >
-                    {cart.tax ?? 0 / 100}
+                    {cart.tax ?? 0 / 100} %
                   </Text>
                 </DataTable.Cell>
                 <DataTable.Cell style={[styles.cell, { flex: 1 }]}>
@@ -481,28 +577,30 @@ export default function AcceptOrders() {
             <Text style={{ color: '#202B189E' }}>
               {I18n.t('acceptOrders.summarySubtotal')}
             </Text>
-            <Text style={{ color: '#202B189E' }}>${subtotal?.toFixed(2)}</Text>
+            <Text style={{ color: '#202B189E' }}>
+              ETB {subtotal?.toFixed(2)}
+            </Text>
           </View>
           <View style={styles.summaryRow}>
             <Text style={{ color: '#202B189E' }}>
               {I18n.t('acceptOrders.serviceCharge')}
             </Text>
             <Text style={{ color: '#202B189E' }}>
-              ${serviceCharge.toFixed(2)}
+              ETB {serviceCharge.toFixed(2)}
             </Text>
           </View>
           <View style={styles.summaryRow}>
             <Text style={{ color: '#202B189E' }}>
               {I18n.t('acceptOrders.summaryTax')}
             </Text>
-            <Text style={{ color: '#202B189E' }}>${tax.toFixed(2)}</Text>
+            <Text style={{ color: '#202B189E' }}>ETB {tax.toFixed(2)}</Text>
           </View>
           <View style={styles.summaryRow}>
             <Text style={{ color: '#202B189E' }}>
               {I18n.t('acceptOrders.discount')}
             </Text>
             <Text style={{ color: '#202B189E' }}>
-              ${cart.discount.toFixed(2)}
+              ETB {cart.discount.toFixed(2)}
             </Text>
           </View>
           <Divider style={{ marginVertical: 6 }} />
@@ -510,7 +608,7 @@ export default function AcceptOrders() {
             <Text style={styles.totalLabel}>
               {I18n.t('acceptOrders.summaryTotal')}
             </Text>
-            <Text style={styles.totalValue}>${total.toFixed(2)}</Text>
+            <Text style={styles.totalValue}>ETB {total.toFixed(2)}</Text>
           </View>
         </Card.Content>
         <Card.Actions style={styles.actions}>
@@ -602,7 +700,7 @@ export default function AcceptOrders() {
                       <Text style={styles.itemName}>{menu.name}</Text>
                       <Text style={styles.categoryText}>{categoriesLabel}</Text>
                     </View>
-                    <Text style={styles.itemPrice}>${menu.price}</Text>
+                    <Text style={styles.itemPrice}>ETB {menu.price}</Text>
                   </View>
                 );
               })}

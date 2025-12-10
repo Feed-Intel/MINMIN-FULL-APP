@@ -1,51 +1,8 @@
 import { useGetFeedback } from '@/services/mutation/feedbackMutation';
-import { useGetPosts } from '@/services/mutation/feedMutations';
 import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  Image,
-  ScrollView,
-  TouchableOpacity,
-} from 'react-native';
+import { View, Text, StyleSheet, Image, ScrollView } from 'react-native';
 import Pagination from './Pagination';
-
-// --- Mock Data ---
-const reviewsData = [
-  {
-    id: 1,
-    name: 'Avery Lane',
-    avatarUrl: 'https://placehold.co/100x100/A3D5D2/000?text=AL',
-    rating: 4.5,
-    text: "I had an amazing time at the restaurant! The service was top-notch, with friendly staff who ensured we felt welcomed throughout our meal. The food was incredibly tasty, full of flavor and beautifully presented. Each dish was made with care, highlighting a mix of ingredients that worked well together. I was genuinely impressed by the quality and attention to detail, making it a dining experience I can't wait to enjoy again!",
-    reply: {
-      accountName: 'GourmetBites',
-      accountType: 'Official Account',
-      avatarUrl: 'https://placehold.co/100x100/E0E0E0/444?text=GB',
-      replyText: 'Thank you for your kind words!',
-      likes: 5,
-      dislikes: 0,
-      comments: 0,
-    },
-  },
-  {
-    id: 2,
-    name: 'Dorian Hale',
-    avatarUrl: 'https://placehold.co/100x100/B0C4DE/000?text=DH',
-    rating: 3.5,
-    text: 'An unforgettable culinary journey.',
-    reply: null,
-  },
-  {
-    id: 3,
-    name: 'Evelyn Frost',
-    avatarUrl: 'https://placehold.co/100x100/DDA0DD/000?text=EF',
-    rating: 2.5,
-    text: 'The flavors were truly out of this world, bursting with a delightful combination of spices and ingredients that danced on my palate.',
-    reply: null,
-  },
-];
+import { i18n as I18n } from '@/app/_layout';
 
 // --- Sub-Components ---
 
@@ -74,44 +31,9 @@ const StarRating = ({ rating }: { rating: any }) => {
 };
 
 /**
- * Component for rendering the official reply inside a review.
- */
-const OfficialReply = ({ reply }: { reply: any }) => (
-  <View style={styles.replyContainer}>
-    <View style={styles.replyHeader}>
-      <Image source={{ uri: reply.avatarUrl }} style={styles.replyAvatar} />
-      <View>
-        <Text style={styles.replyAccountName}>{reply.accountName}</Text>
-        <Text style={styles.replyAccountType}>{reply.accountType}</Text>
-      </View>
-    </View>
-    <Text style={styles.replyText}>{reply.replyText}</Text>
-    <View style={styles.replyActions}>
-      <View style={styles.actionItem}>
-        <Text style={styles.actionIcon}>👍</Text>
-        <Text style={styles.actionCount}>{reply.likes}</Text>
-      </View>
-      <View style={styles.actionItem}>
-        <Text style={styles.actionIcon}>👎</Text>
-        <Text style={styles.actionCount}>{reply.dislikes}</Text>
-      </View>
-      <View style={styles.actionItem}>
-        <Text style={styles.actionIcon}>💬</Text>
-        <Text style={styles.actionCount}>{reply.comments}</Text>
-      </View>
-    </View>
-  </View>
-);
-
-/**
  * Component for a single customer review card.
  */
 const ReviewCard = ({ review }: { review: any }) => {
-  const handleReplyPress = () => {
-    // In a real app, this would open a reply input field/modal
-    console.log(`Replying to review ${review.id}`);
-  };
-
   return (
     <View style={styles.card}>
       <View style={styles.header}>
@@ -123,14 +45,6 @@ const ReviewCard = ({ review }: { review: any }) => {
       </View>
 
       <Text style={styles.reviewText}>{review.comment}</Text>
-
-      {/* {review.reply && <OfficialReply reply={review.reply} />} */}
-
-      {/* <View style={styles.footer}>
-        <TouchableOpacity style={styles.replyButton} onPress={handleReplyPress}>
-          <Text style={styles.replyButtonText}>Reply</Text>
-        </TouchableOpacity>
-      </View> */}
     </View>
   );
 };
@@ -143,7 +57,7 @@ export default function CustomerFeedback() {
   return (
     <ScrollView style={styles.container}>
       <Text style={{ fontWeight: 'bold', marginBottom: 10 }}>
-        Reviews ({reviewsData?.count})
+        {I18n.t('profile.reviews')} ({reviewsData?.count})
       </Text>
       {reviewsData?.results.map((review: any) => (
         <ReviewCard key={review.id} review={review} />

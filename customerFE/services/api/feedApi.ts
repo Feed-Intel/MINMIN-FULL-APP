@@ -1,13 +1,22 @@
-import { apiClient } from "@/config/axiosConfig";
-import { asyncHandler } from "@/utils/asyncHandler";
+import { apiClient } from '@/config/axiosConfig';
+import { asyncHandler } from '@/utils/asyncHandler';
 
-export const GetPosts = asyncHandler(async () => {
-  const resp = await apiClient.get("/posts/");
+export const GetPosts = asyncHandler(async (searchTerm?: string) => {
+  if (Boolean(searchTerm)) {
+    const resp = await apiClient.get(`/posts/?search=${searchTerm}`);
+    return resp.data.results || [];
+  }
+  const resp = await apiClient.get('/posts/');
   return resp.data.results || [];
 });
 
+export const GetPost = asyncHandler(async (id: string) => {
+  const resp = await apiClient.get(`/posts/${id}/`);
+  return resp.data || {};
+});
+
 export const GetBookMarkPosts = asyncHandler(async () => {
-  const resp = await apiClient.get("/user/bookmarks/");
+  const resp = await apiClient.get('/user/bookmarks/');
   return resp.data.results || [];
 });
 
