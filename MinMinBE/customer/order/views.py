@@ -167,6 +167,8 @@ class OrderView(viewsets.ModelViewSet):
         items_data = request.data.get('items', [])
         tenant = request.data.get('tenant')
         coupon = request.data.get('coupon', None)
+        increment= request.data.get('increment')
+        discountApplied = request.data.get('discountApplied')
 
         # Validate branch
         try:
@@ -193,7 +195,10 @@ class OrderView(viewsets.ModelViewSet):
             })
 
         # Calculate order total
-        order_total = sum(item['price'] * item['quantity'] for item in valid_items)
+        order_total = sum(
+            Menu.objects.get(id=item['menu_item']).price * item['quantity']
+            for item in valid_items
+        )
 
         # Calculate discount
         discount_amount,typeDiscount,freeItems = calculate_discount_from_data(
@@ -201,7 +206,8 @@ class OrderView(viewsets.ModelViewSet):
             branch = branch_id,
             items_data=valid_items,
             coupon=coupon,
-            order_total=order_total
+            order_total=order_total,
+            customer=request.user
         )
         redeem_amount = calculate_redeem_amount(customer_id=request.user.id, tenant_id=tenant)
 

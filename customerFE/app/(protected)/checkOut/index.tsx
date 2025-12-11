@@ -24,9 +24,11 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { useCreateOrder } from '@/services/mutation/orderMutation';
 import { useCheckDiscount } from '@/services/mutation/discountMutation';
 import {
+  addToCart,
   clearCart,
   setDiscount,
   setTransactionId,
+  updateQuantity,
 } from '@/lib/reduxStore/cartSlice';
 import { useDispatch } from 'react-redux';
 import { useAppSelector } from '@/lib/reduxStore/hooks';
@@ -38,6 +40,7 @@ import { useAuth } from '@/context/auth';
 import { ThemedView } from '@/components/ThemedView';
 import { useLocalSearchParams } from 'expo-router';
 import { i18n } from '@/app/_layout';
+import { useGetMenus } from '@/services/mutation/menuMutation';
 
 export default function CheckoutScreen() {
   const headerAnimation = useRef(new Animated.Value(0)).current;
@@ -45,12 +48,12 @@ export default function CheckoutScreen() {
   const discount = useAppSelector((state) => state.cart.discount);
   const [discountCode, setDiscountCode] = useState('');
   const cartItems = useAppSelector((state) => state.cart.items);
-  const [orderId] = useState(''); // This is not being set, consider if it's needed or can be removed
+  const cart = useAppSelector((state) => state.cart);
+  const [orderId] = useState('');
   const redeem_amount = useAppSelector((state) => state.cart.redeemAmount);
-  const [total, setTotal] = useState(0); // This state isn't directly used for final calculation in render, consider removing or using it
+  const [total, setTotal] = useState(0);
   const [discountInput, setDiscountInput] = useState('');
   const [showDiscountModal, setShowDiscountModal] = useState(false);
-  const [discountResponse, setDiscountResponse] = useState(''); // This is not being used to display response, consider removing or implementing
   const remarks = useAppSelector((state) => state.cart.remarks);
   const paymentAPI = useAppSelector((state) => state.cart.paymentAPIKEY);
   const paymentPublicKey = useAppSelector(
@@ -76,11 +79,12 @@ export default function CheckoutScreen() {
     return acc;
   }, {} as Record<string, number>);
   const [tempDiscount, setTempDiscount] = useState(discount);
-  const checkDiscount = useCheckDiscount();
+  const { mutateAsync: checkDiscount } = useCheckDiscount();
   const subtotal = cartItems.reduce(
     (sum: any, dish: any) => sum + dish.price * (newQuantities[dish.id] || 0),
     0
   );
+  const [isUpdatingCart, setIsUpdatingCart] = useState(false);
   const tax = subtotal * (taxRate! / 100);
   const serviceCharge = subtotal * (serviceChargeRate! / 100);
   const params = useLocalSearchParams();
@@ -89,6 +93,165 @@ export default function CheckoutScreen() {
   const branchs = params.branchId as string;
   const menus = params.menus as string;
   const tableId = params.tableId as string;
+  const { data: menusData } = useGetMenus(undefined, true);
+
+  async function checkDiscountFN(coupon?: string) {
+    if (isUpdatingCart) return;
+
+    const itemsData = cart.items
+      .map((item: any) => ({
+        menu_item: item.id,
+        quantity:
+          newQuantities[item.id] !== undefined
+            ? newQuantities[item.id]
+            : item.quantity,
+      }))
+      .filter(
+        (item: any) =>
+          (newQuantities[item.id] !== undefined
+            ? newQuantities[item.id]
+            : item.quantity) > 0
+      );
+    if (itemsData.length === 0) {
+      dispatch(setDiscount(0));
+      setTotal(subtotal);
+      return;
+    }
+
+    // 2. Initial Discount Check API Call
+    const discountResponse = await checkDiscount({
+      tenant: restaurant,
+      branch: branch,
+      coupon: coupon?.trim() || undefined,
+      items: itemsData,
+    });
+
+    const discountValue = discountResponse.discount_amount || 0;
+    const typeDiscount = discountResponse.typeDiscount;
+    const freeItemsData = discountResponse.freeItems || [];
+
+    const requiredFreeItems: Record<string, number> = {};
+    for (const item of freeItemsData) {
+      const itemId = Object.keys(item)[0];
+      requiredFreeItems[itemId] = Object.values(item)[0] as number;
+    }
+
+    let needsCartUpdate = false;
+    let itemsToUpdate: { id: string; quantity: number; isNew?: boolean }[] = [];
+
+    // A. Identify existing free items in the cart to remove or update
+    for (const item of cart.items) {
+      // Assuming a price of 0 is the flag for a free item added by the discount system
+      const isCurrentFreeItem = item.price === 0;
+      const requiredQuantity = requiredFreeItems[item.id] || 0;
+      const currentQuantity = item.quantity; // Use cart quantity for comparison
+
+      if (isCurrentFreeItem) {
+        if (requiredQuantity === 0) {
+          // Free item is no longer eligible (needs removal)
+          if (currentQuantity > 0) {
+            itemsToUpdate.push({ id: item.id, quantity: 0 });
+            needsCartUpdate = true;
+          }
+        } else if (currentQuantity !== requiredQuantity) {
+          // Free item is eligible but quantity is wrong (needs correction)
+          itemsToUpdate.push({ id: item.id, quantity: requiredQuantity });
+          needsCartUpdate = true;
+        }
+        // Mark as processed
+        delete requiredFreeItems[item.id];
+      }
+    }
+    if (typeDiscount === 'freeItem') {
+      for (const itemId in requiredFreeItems) {
+        const requiredQuantity = requiredFreeItems[itemId];
+        if (requiredQuantity > 0) {
+          // Needs to be added to the cart
+          itemsToUpdate.push({
+            id: itemId,
+            quantity: requiredQuantity,
+            isNew: true,
+          });
+          needsCartUpdate = true;
+        }
+      }
+    }
+
+    if (typeDiscount === 'bogo') {
+      for (const itemId in requiredFreeItems) {
+        const requiredQuantity = requiredFreeItems[itemId];
+
+        const currentFreeItem = cart.items.find(
+          (i) => i.id === itemId && i.price === 0
+        );
+
+        if (!currentFreeItem && requiredQuantity > 0) {
+          // add new free item
+          itemsToUpdate.push({
+            id: itemId,
+            quantity: requiredQuantity,
+            isNew: true,
+          });
+          needsCartUpdate = true;
+        } else if (
+          currentFreeItem &&
+          currentFreeItem.quantity !== requiredQuantity
+        ) {
+          // update existing free item quantity
+          itemsToUpdate.push({
+            id: itemId,
+            quantity: requiredQuantity,
+            isNew: false,
+          });
+          needsCartUpdate = true;
+        }
+      }
+    }
+
+    // C. Execute Cart Updates (if any)
+    if (needsCartUpdate) {
+      setIsUpdatingCart(true); // Set flag to prevent re-triggering useEffect
+
+      for (const update of itemsToUpdate) {
+        const item = menusData?.find((t: any) => t.id === update.id);
+        if (update.isNew) {
+          if (item) {
+            dispatch(
+              addToCart({
+                item: {
+                  id: item?.id!,
+                  name: item?.name!,
+                  description: '',
+                  price: 0,
+                  quantity: update.quantity,
+                  image: item?.image,
+                },
+                restaurantId: restaurant || '',
+                branchId: branch || '',
+                tableId: cart.tableId,
+                paymentAPIKEY: item?.tenant.CHAPA_API_KEY,
+                paymentPUBLICKEY: item?.tenant.CHAPA_PUBLIC_KEY,
+                tax: item?.tenant.tax,
+                serviceCharge: item?.tenant.service_charge,
+              })
+            );
+            setTotal((prev) => prev + update.quantity * item.price);
+          }
+        } else {
+          dispatch(
+            updateQuantity({ id: update.id, quantity: update.quantity })
+          );
+          setTotal((prev) => prev + update.quantity * item.price);
+        }
+      }
+
+      setTimeout(() => {
+        setIsUpdatingCart(false);
+      }, 50);
+    }
+    dispatch(setDiscount(discountValue));
+    setTotal(subtotal - discountValue);
+  }
 
   useEffect(() => {
     Animated.parallel([
@@ -104,28 +267,11 @@ export default function CheckoutScreen() {
         useNativeDriver: true,
       }),
     ]).start();
-    async function checkDiscountFN() {
-      const itemsData = cartItems.map((item: any) => ({
-        menu_item: item.id,
-        quantity: newQuantities[item.id] || 0,
-        price: item.price,
-      }));
 
-      const discountResponse = await checkDiscount.mutateAsync({
-        tenant: restaurant,
-        branch: branch,
-        coupon: undefined,
-        items: itemsData,
-      });
-      const discountValue = discountResponse.discount_amount || 0;
-      setTempDiscount(discountValue);
-      dispatch(setDiscount(discountValue));
-      setTotal(subtotal - discountValue);
-    }
     if (branch) {
       checkDiscountFN();
     }
-  }, [headerAnimation, contentAnimation]);
+  }, [headerAnimation, contentAnimation, cartItems, isUpdatingCart]);
 
   const handleApplyDiscount = async () => {
     try {
@@ -135,7 +281,7 @@ export default function CheckoutScreen() {
         price: item.price,
       }));
 
-      const discountResponse = await checkDiscount.mutateAsync({
+      const discountResponse = await checkDiscount({
         tenant: restaurant,
         branch: branch,
         coupon: discountCode,
@@ -358,7 +504,7 @@ export default function CheckoutScreen() {
                     {i18n.t('discount_label')} {/* Replaced hardcoded string */}
                   </List.Subheader>
                   <List.Subheader style={styles.itemPrice}>
-                    -{tempDiscount.toFixed(2)}
+                    -{cart.discount.toFixed(2)}
                   </List.Subheader>
                 </View>
                 <View style={styles.summaryRow}>
@@ -651,11 +797,6 @@ export default function CheckoutScreen() {
                 {i18n.t('apply_discount_modal_button')}{' '}
                 {/* Replaced hardcoded string */}
               </Button>
-              {discountResponse && (
-                <Text style={styles.discountResponseText}>
-                  {discountResponse}
-                </Text>
-              )}
               <Button
                 mode="contained"
                 onPress={() => {

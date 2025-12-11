@@ -58,6 +58,7 @@ export default function AcceptOrders() {
   const [customerPhoneError, setCustomerPhoneError] = useState(false);
   const [customerTinError, setCustomerTinError] = useState(false);
   const [debouncedQuery, setDebouncedQuery] = useState('');
+  const [isUpdatingCart, setIsUpdatingCart] = useState(false);
   const [showTables, setShowTables] = useState(false);
   const dispatch = useDispatch();
   const cart = useAppSelector((state: RootState) => state.cart);
@@ -103,83 +104,162 @@ export default function AcceptOrders() {
   }, [subtotal, serviceCharge, tax]);
 
   async function checkDiscountFN(coupon?: string) {
-    const itemsData = cart.items.map((item: any) => ({
-      menu_item: item.id,
-      quantity: newQuantities[item.id] || 0,
-      price: item.price,
-    }));
+    if (isUpdatingCart) return;
 
+    const itemsData = cart.items
+      .map((item: any) => ({
+        menu_item: item.id,
+        quantity:
+          newQuantities[item.id] !== undefined
+            ? newQuantities[item.id]
+            : item.quantity,
+      }))
+      .filter(
+        (item: any) =>
+          (newQuantities[item.id] !== undefined
+            ? newQuantities[item.id]
+            : item.quantity) > 0
+      );
+    if (itemsData.length === 0) {
+      dispatch(setDiscount(0));
+      setTotal(subtotal);
+      return;
+    }
+
+    // 2. Initial Discount Check API Call
     const discountResponse = await checkDiscount({
       tenant: tenantId,
       branch: branchId,
       coupon: coupon?.trim() || undefined,
       items: itemsData,
     });
+
     const discountValue = discountResponse.discount_amount || 0;
-    if (
-      discountResponse.typeDiscount == 'bogo' &&
-      discountResponse.freeItems.length > 0
-    ) {
-      for (const freeItem of discountResponse.freeItems) {
-        const object = Object.keys(freeItem);
-        dispatch(
-          updateQuantity({
-            id: object[0],
-            quantity: Math.max(
-              (newQuantities[object[0]] || 0) + freeItem[object[0]],
-              0
-            ),
-          })
-        );
+    const typeDiscount = discountResponse.typeDiscount;
+    const freeItemsData = discountResponse.freeItems || [];
+
+    const requiredFreeItems: Record<string, number> = {};
+    for (const item of freeItemsData) {
+      const itemId = Object.keys(item)[0];
+      requiredFreeItems[itemId] = Object.values(item)[0] as number;
+    }
+
+    let needsCartUpdate = false;
+    let itemsToUpdate: { id: string; quantity: number; isNew?: boolean }[] = [];
+
+    // A. Identify existing free items in the cart to remove or update
+    for (const item of cart.items) {
+      // Assuming a price of 0 is the flag for a free item added by the discount system
+      const isCurrentFreeItem = item.price === 0;
+      const requiredQuantity = requiredFreeItems[item.id] || 0;
+      const currentQuantity = item.quantity; // Use cart quantity for comparison
+
+      if (isCurrentFreeItem) {
+        if (requiredQuantity === 0) {
+          // Free item is no longer eligible (needs removal)
+          if (currentQuantity > 0) {
+            itemsToUpdate.push({ id: item.id, quantity: 0 });
+            needsCartUpdate = true;
+          }
+        } else if (currentQuantity !== requiredQuantity) {
+          // Free item is eligible but quantity is wrong (needs correction)
+          itemsToUpdate.push({ id: item.id, quantity: requiredQuantity });
+          needsCartUpdate = true;
+        }
+        // Mark as processed
+        delete requiredFreeItems[item.id];
       }
     }
-    if (
-      discountResponse.typeDiscount == 'freeItem' &&
-      discountResponse.freeItems.length > 0
-    ) {
-      for (const Fitem of discountResponse.freeItems) {
-        const existingItem: any = cart.items.find(
-          (item) => item.id === Object.keys(Fitem)[0]
-        );
-        if (!existingItem) {
-          const item = menus?.find((t: any) => t.id === Object.keys(Fitem)[0]);
-          dispatch(
-            addToCart({
-              item: {
-                id: item?.id!,
-                name: item?.name!,
-                description: '',
-                price: 0,
-                quantity: Object.values(Fitem)[0] as number,
-                image: '',
-              },
-              restaurantId: tenantId!,
-              branchId: branchId!,
-              tableId: cart.tableId,
-              paymentAPIKEY: item?.tenant.CHAPA_API_KEY,
-              paymentPUBLICKEY: item?.tenant.CHAPA_PUBLIC_KEY,
-              tax: item?.tenant.tax,
-              serviceCharge: item?.tenant.service_charge,
-            })
-          );
-        } else {
-          dispatch(
-            updateQuantity({
-              id: Object.keys(Fitem)[0],
-              quantity: Math.max(
-                (newQuantities[Object.keys(Fitem)[0]] || 0) +
-                  Object.values(Fitem)[0],
-                0
-              ),
-            })
-          );
+    if (typeDiscount === 'freeItem') {
+      for (const itemId in requiredFreeItems) {
+        const requiredQuantity = requiredFreeItems[itemId];
+        if (requiredQuantity > 0) {
+          // Needs to be added to the cart
+          itemsToUpdate.push({
+            id: itemId,
+            quantity: requiredQuantity,
+            isNew: true,
+          });
+          needsCartUpdate = true;
         }
       }
+    }
+
+    if (typeDiscount === 'bogo') {
+      for (const itemId in requiredFreeItems) {
+        const requiredQuantity = requiredFreeItems[itemId];
+
+        const currentFreeItem = cart.items.find(
+          (i) => i.id === itemId && i.price === 0
+        );
+
+        if (!currentFreeItem && requiredQuantity > 0) {
+          // add new free item
+          itemsToUpdate.push({
+            id: itemId,
+            quantity: requiredQuantity,
+            isNew: true,
+          });
+          needsCartUpdate = true;
+        } else if (
+          currentFreeItem &&
+          currentFreeItem.quantity !== requiredQuantity
+        ) {
+          // update existing free item quantity
+          itemsToUpdate.push({
+            id: itemId,
+            quantity: requiredQuantity,
+            isNew: false,
+          });
+          needsCartUpdate = true;
+        }
+      }
+    }
+
+    // C. Execute Cart Updates (if any)
+    if (needsCartUpdate) {
+      setIsUpdatingCart(true); // Set flag to prevent re-triggering useEffect
+
+      for (const update of itemsToUpdate) {
+        const item = menus?.find((t: any) => t.id === update.id);
+        if (update.isNew) {
+          if (item) {
+            dispatch(
+              addToCart({
+                item: {
+                  id: item?.id!,
+                  name: item?.name!,
+                  description: '',
+                  price: 0,
+                  quantity: update.quantity,
+                  image: '',
+                },
+                restaurantId: tenantId || '',
+                branchId: branchId || '',
+                tableId: cart.tableId,
+                paymentAPIKEY: item?.tenant.CHAPA_API_KEY,
+                paymentPUBLICKEY: item?.tenant.CHAPA_PUBLIC_KEY,
+                tax: item?.tenant.tax,
+                serviceCharge: item?.tenant.service_charge,
+              })
+            );
+            setTotal((prev) => prev + update.quantity * item.price);
+          }
+        } else {
+          dispatch(
+            updateQuantity({ id: update.id, quantity: update.quantity })
+          );
+          setTotal((prev) => prev + update.quantity * item.price);
+        }
+      }
+
+      setTimeout(() => {
+        setIsUpdatingCart(false);
+      }, 50);
     }
     dispatch(setDiscount(discountValue));
     setTotal(subtotal - discountValue);
   }
-
   useEffect(() => {
     if (branchId) {
       checkDiscountFN(debouncedQuery);

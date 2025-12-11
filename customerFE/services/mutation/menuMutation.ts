@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from '@tanstack/react-query';
 import {
   CreateRelatedItem,
   GetBestDishOfWeek,
@@ -12,48 +12,48 @@ import {
   GetRelatedItems,
   SearchMenuAvailabilities,
   UpdateRelatedItem,
-} from "../api/menuApi";
-import { MenuAvailability, MenuType, RelatedMenu } from "@/types/menuType";
+} from '../api/menuApi';
+import { MenuAvailability, MenuType, RelatedMenu } from '@/types/menuType';
 
-export const useGetMenus = (searchTerm?: string) =>
+export const useGetMenus = (searchTerm?: string, noPage?: boolean) =>
   useQuery<MenuType[]>({
-    queryKey: ["menus", searchTerm],
-    queryFn: () => GetMenus(searchTerm),
+    queryKey: ['menus', searchTerm, noPage],
+    queryFn: () => GetMenus(searchTerm, noPage),
   });
 
 export const useRecommendedMenus = () =>
   useQuery<MenuAvailability[]>({
-    queryKey: ["recommendedMenus"],
+    queryKey: ['recommendedMenus'],
     queryFn: GetRecommendedMenus,
   });
 
 export const useBestDishOfWeek = () =>
   useQuery<MenuAvailability[]>({
-    queryKey: ["bestDishOfWeek"],
+    queryKey: ['bestDishOfWeek'],
     queryFn: GetBestDishOfWeek,
   });
 
 export const useGetMenu = (id: string) =>
   useQuery<MenuType>({
-    queryKey: ["menu", id],
+    queryKey: ['menu', id],
     queryFn: () => GetMenu(id),
   });
 
 export const useGetMenuAvailabilities = (searchTerm?: string) =>
   useQuery<MenuAvailability[]>({
-    queryKey: ["menuAvailability", searchTerm],
+    queryKey: ['menuAvailability', searchTerm],
     queryFn: () => GetMenuAvailabilities({ searchTerm }),
   });
 
 export const useSearchMenuAvailabilities = (searchTerm?: string) =>
   useQuery<MenuAvailability[]>({
-    queryKey: ["menuAvailability", "filter", searchTerm],
+    queryKey: ['menuAvailability', 'filter', searchTerm],
     queryFn: () => SearchMenuAvailabilities({ searchTerm }),
   });
 
 export const useGetMenuAvailabilitiesCategory = () =>
   useQuery<MenuAvailability[]>({
-    queryKey: ["menuAvailabilityCategory"],
+    queryKey: ['menuAvailabilityCategory'],
     queryFn: () => GetMenuAvailabilitiesCategory(),
   });
 
@@ -76,7 +76,7 @@ export const useGetMenuAvailabilities2 = (
   nextPage?: string
 ) =>
   useQuery<PaginatedMenuResponse>({
-    queryKey: ["menuAvailability2", searchTerm, filters, nextPage],
+    queryKey: ['menuAvailability2', searchTerm, filters, nextPage],
     queryFn: () => GetMenuAvailabilities2({ searchTerm, filters, nextPage }),
   });
 
@@ -96,13 +96,13 @@ export const useGetMenuAvailabilities2 = (
 
 export const useGetRelatedMenus = () =>
   useQuery<RelatedMenu[]>({
-    queryKey: ["relatedMenus"],
+    queryKey: ['relatedMenus'],
     queryFn: GetRelatedItems,
   });
 
 export const useGetRelatedMenuItem = (id: string) =>
   useQuery<RelatedMenu>({
-    queryKey: ["relatedMenu", id],
+    queryKey: ['relatedMenu', id],
     queryFn: () => GetRelatedItem(id),
   });
 
@@ -111,7 +111,7 @@ export const useAddRelatedMenuItem = (
   onError?: (error: any) => void
 ) =>
   useMutation({
-    mutationKey: ["addRelatedMenuItem"],
+    mutationKey: ['addRelatedMenuItem'],
     mutationFn: CreateRelatedItem,
     onSuccess,
     onError,
@@ -122,7 +122,7 @@ export const useUpdateRelatedMenuItem = (
   onError?: (error: any) => void
 ) =>
   useMutation({
-    mutationKey: ["updateRelatedMenuItem"],
+    mutationKey: ['updateRelatedMenuItem'],
     mutationFn: UpdateRelatedItem,
     onSuccess,
     onError,

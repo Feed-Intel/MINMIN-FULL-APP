@@ -17,24 +17,27 @@ def calculate_discount(order, coupon=None):
     order_total = float(order.calculate_total())
     return calculate_discount_from_data(order.tenant, items_data, coupon, order_total)
 
-def calculate_discount_from_data(tenant, items_data, coupon, order_total, customer=None, branch=None):
+def calculate_discount_from_data(tenant, items_data, coupon, order_total, customer=None, branch=None, increment=False, discountApplied=False):
     now = timezone.now()
     total_items = sum(item['quantity'] for item in items_data)
-
-    # --- Candidate Discounts ---
-    discounts = DiscountRule.objects.filter(
+    
+    # --- 1. Candidate Discounts (Ordered by Priority) ---
+    discounts_qs = DiscountRule.objects.filter(
         tenant=tenant
     ).filter(
-        Q(discount_id__valid_from__lte=now)|Q(discount_id__valid_from__isnull=True),
-        Q(discount_id__valid_until__gte=now)|Q(discount_id__valid_until__isnull=True)
+        Q(discount_id__valid_from__lte=now) | Q(discount_id__valid_from__isnull=True),
+        Q(discount_id__valid_until__gte=now) | Q(discount_id__valid_until__isnull=True)
     )
     if branch:
-        discounts = discounts.filter(Q(discount_id__branches=branch)|Q(discount_id__is_global=True))
-    # --- Candidate Coupons ---
-    coupon_discount = 0.0
+        discounts_qs = discounts_qs.filter(Q(discount_id__branches=branch) | Q(discount_id__is_global=True))
+    
+    discounts = discounts_qs.order_by('-discount_id__priority')
+
+    # --- 2. Candidate Coupon Discount ---
+    coupon_discount = Decimal("0.00")
     if coupon:
         coupons = Coupon.objects.filter(
-            tenant=Tenant.objects.get(id=tenant),
+            tenant_id=tenant, # Use tenant_id for better performance if possible
             discount_code=coupon,
             is_valid=True
         ).filter(
@@ -42,84 +45,112 @@ def calculate_discount_from_data(tenant, items_data, coupon, order_total, custom
             Q(valid_until__gte=now) | Q(valid_until__isnull=True)
         )
         if coupons.exists():
-            if branch:
-                coupons = coupons.filter(Q(branches=branch)|Q(is_global=True))
             c = coupons.first()
-            
-            if not CouponUsage.objects.filter(coupon=c, customer=customer).exists():
+            if branch:
+                coupons = coupons.filter(Q(branches=branch) | Q(is_global=True))
+                c = coupons.first() # Re-select after branch filter
+                
+            if c and not CouponUsage.objects.filter(coupon=c, customer=customer).exists():
                 if c.is_percentage:
-                    coupon_discount = order_total * (float(c.discount_amount) / 100)
+                    coupon_discount = Decimal(str(order_total)) * (Decimal(str(c.discount_amount)) / Decimal("100"))
                 else:
-                    coupon_discount = float(c.discount_amount)
+                    coupon_discount = Decimal(str(c.discount_amount))
 
-                if not c.discount_code.upper().startswith("WELCOME"):
-                    c.is_valid = False
-                    c.save()
-
-                # Record usage
-                if customer:
-                    CouponUsage.objects.create(coupon=c, customer_id=customer)
-
-    # --- Apply Discounts (stackable) ---
-    discount_amount = Decimal("0.00")
+    stackable_discount_total = Decimal("0.00")
+    best_non_stackable_discount = Decimal("0.00")
+    
+    final_automatic_discount = Decimal("0.00")
     typeDiscount = None
     freeItems = []
+
     for discount in discounts:
+        current_discount_value = Decimal("0.00")
+        current_free_items = []
+        discount_type = discount.discount_id.type
         rules = discount.discount_id.discount_discount_rules.all()
+
         for rule in rules:
-            if discount.discount_id.type == 'volume':
+            # --- Volume Discount ---
+            if discount_type == 'volume':
                 if rule.min_items and total_items >= rule.min_items:
-                    print(rule.min_items)
-                    print(total_items)
                     if rule.is_percentage:
-                        if discount.discount_id.is_stackable or discount_amount==0:
-                            discount_amount += Decimal(str(order_total)) * Decimal(str(float(rule.max_discount_amount) / 100))
-                            typeDiscount = 'volume'
+                        current_discount_value += Decimal(str(order_total)) * (Decimal(str(float(rule.max_discount_amount) / 100)))
                     else:
-                        if discount.discount_id.is_stackable or discount_amount==0:
-                            discount_amount += Decimal(str(min(order_total, float(rule.max_discount_amount))))
-                            typeDiscount = 'volume'
-
-            elif discount.discount_id.type == 'combo':
+                        current_discount_value += Decimal(str(min(order_total, float(rule.max_discount_amount))))
+            
+            # --- Combo Discount ---
+            elif discount_type == 'combo':
+                # Assuming combo logic is simpler (e.g., minimum total items)
                 if rule.combo_size and total_items >= rule.combo_size:
-                    if discount.discount_id.is_stackable or discount_amount==0:
-                        discount_amount += Decimal(str(min(order_total, float(rule.max_discount_amount))))
-                        typeDiscount = 'combo'
+                    # Combo is usually a fixed or percentage discount on the total
+                    current_discount_value += Decimal(str(min(order_total, float(rule.max_discount_amount))))
 
-            elif discount.discount_id.type == 'bogo':
-                # applicable_items = [
-                #     (item, i)
-                #     for item in items_data
-                #     for i in range(item['quantity'])
-                #     if str(item['menu_item']) in rule.applicable_items
-                # ]
-                freeItems = [{item['menu_item']:rule.get_quantity}for item in items_data if str(item['menu_item']) in rule.applicable_items and item['quantity'] >= rule.buy_quantity]
-                if discount.discount_id.is_stackable or discount_amount==0:
-                    discount_amount += Decimal(str(sum(Menu.objects.get(id=list(item.keys())[0]).price * rule.get_quantity for item in freeItems)))
-                    typeDiscount = 'bogo'
-                # if type(rule.buy_quantity) == 'int' and len(applicable_items) >= rule.buy_quantity:
-                #     free_items = (len(applicable_items) // rule.buy_quantity) * rule.get_quantity
-                #     freeItems
-                    # discount_amount += sum(item['price'] for item, _ in applicable_items[:free_items])
+            # --- BOGO Discount (Monetary Discount) ---
+            elif discount_type == 'bogo':
+                for item in items_data:
+                    menu_item_id = str(item['menu_item'])
 
-            elif discount.discount_id.type == 'freeItem':
-                freeItems = [{random.choice(rule.free_items):rule.get_quantity}for item in items_data if str(item['menu_item']) in rule.applicable_items and item['quantity'] >= rule.buy_quantity]
-                if discount.discount_id.is_stackable or discount_amount==0:
-                    discount_amount += Decimal(str(sum(Menu.objects.get(id=list(item.keys())[0]).price * rule.get_quantity for item in freeItems)))
-                    typeDiscount = 'freeItem'
-                # applicable_items = [
-                #     (item, i)
-                #     for item in items_data
-                #     for i in range(item['quantity'])
-                #     if str(item['menu_item']) in rule.applicable_items
-                # ]
-                # if type(rule.buy_quantity) == 'int' and len(applicable_items) >= rule.buy_quantity:
-                #     free_items = (len(applicable_items) // rule.buy_quantity) * rule.get_quantity
-                #     discount_amount += sum(item['price'] for item, _ in applicable_items[:free_items])
+                    if menu_item_id in rule.applicable_items and item['quantity'] >= rule.buy_quantity:
+                        sets_earned = item['quantity'] // rule.buy_quantity
+                        total_free_quantity = sets_earned * rule.get_quantity
 
-    # --- Best Discount ---
-    best_discount = max(coupon_discount, discount_amount)
-    return min(best_discount, order_total), typeDiscount, freeItems
+                        if total_free_quantity > 0:
+                            current_free_items.append({menu_item_id: total_free_quantity})
+                            try:
+                                item_price = Menu.objects.get(id=menu_item_id).price
+                                current_discount_value += Decimal(str(item_price)) * Decimal(str(total_free_quantity))
+                            except Menu.DoesNotExist:
+                                pass
+
+
+            # --- Free Item Discount (Monetary Discount + Free Item) ---
+            elif discount_type == 'freeItem':
+                for item in items_data:
+                    menu_item_id = str(item['menu_item'])
+                    if menu_item_id in rule.applicable_items and item['quantity'] >= rule.buy_quantity and rule.free_items:
+                        sets_earned = item['quantity'] // rule.buy_quantity
+                        free_quantity_per_set = rule.get_quantity
+                        
+                        if sets_earned > 0:
+                            free_item_id = random.choice(rule.free_items)
+                            total_free_quantity = sets_earned * free_quantity_per_set
+                            current_free_items.append({free_item_id: total_free_quantity})
+                            try:
+                                free_item_price = Menu.objects.get(id=free_item_id).price
+                                current_discount_value += Decimal(str(free_item_price)) * Decimal(str(total_free_quantity))
+                            except Menu.DoesNotExist:
+                                pass
+
+        if current_discount_value > 0:
+            if discount.discount_id.is_stackable:
+                stackable_discount_total += current_discount_value
+                freeItems.extend(current_free_items)
+            else:
+                if current_discount_value > best_non_stackable_discount:
+                    best_non_stackable_discount = current_discount_value
+                    final_automatic_discount = current_discount_value
+                    if discount_type == 'freeItem':
+                        final_automatic_discount = 0
+                    typeDiscount = discount_type
+                    freeItems = current_free_items 
+
+    if stackable_discount_total > final_automatic_discount:
+        final_automatic_discount = stackable_discount_total
+        typeDiscount = 'stackable_money'
+
+    if coupon_discount > final_automatic_discount:
+        best_discount = coupon_discount
+        typeDiscount = 'coupon'
+        freeItems = [] 
+    else:
+        best_discount = final_automatic_discount
+
+    if typeDiscount != 'freeItem' and typeDiscount != 'bogo':
+        freeItems = []
+        
+    order_total_decimal = Decimal(str(order_total))
+    
+    return min(best_discount, order_total_decimal), typeDiscount, freeItems
 
 
 

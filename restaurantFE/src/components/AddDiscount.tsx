@@ -100,12 +100,6 @@ export default function AddDiscountModal({
   const { mutateAsync: onAdd } = useCreateDiscount();
   const { mutate: createDiscountRule } = useCreateDiscountRule();
   const { data: menus } = useGetMenus();
-  const { refetch: refetchDiscounts } = useDiscounts({
-    page: 1,
-    branch: undefined,
-    search: '',
-  });
-  const { refetch: refetchDiscountRules } = useDiscountRules(undefined, true);
   const queryClient = useQueryClient();
   const { isBranch, branchId } = useRestaurantIdentity();
 

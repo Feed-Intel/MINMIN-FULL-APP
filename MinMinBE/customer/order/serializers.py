@@ -41,7 +41,7 @@ class OrderSerializer(serializers.ModelSerializer):
         return obj.calculate_total()
     
     def get_discount_amount(self, obj):
-        return calculate_discount(obj)
+        return calculate_discount(obj)[0]
 
     def create(self, validated_data):
         """Handle automatic table assignment during order creation."""
