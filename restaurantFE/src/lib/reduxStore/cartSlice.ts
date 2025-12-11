@@ -110,9 +110,15 @@ const cartSlice = createSlice({
         tinNumber?: string;
       }>
     ) => {
-      state.customerName = action.payload.customerName || state.customerName;
-      state.contactNumber = action.payload.contactNumber || state.contactNumber;
-      state.tinNumber = action.payload.tinNumber || state.tinNumber;
+      state.customerName = Boolean(action.payload.customerName)
+        ? state.customerName
+        : '';
+      state.contactNumber = Boolean(action.payload.contactNumber)
+        ? state.contactNumber
+        : '';
+      state.tinNumber = Boolean(action.payload.tinNumber)
+        ? state.tinNumber
+        : '';
       return state;
     },
     setTableID: (state, action: PayloadAction<string>) => {

@@ -1,4 +1,9 @@
-import { useState, useEffect, useCallback } from 'react';
+import {
+  useQuery,
+  useMutation,
+  useQueryClient,
+  QueryFunction,
+} from '@tanstack/react-query';
 import {
   fetchDiscounts,
   createDiscount,
@@ -21,705 +26,370 @@ import { Coupon, Discount, DiscountQueryParams } from '@/types/discountTypes';
 import { AppDispatch } from '@/lib/reduxStore/store';
 import { useDispatch } from 'react-redux';
 import { hideLoader, showLoader } from '@/lib/reduxStore/loaderSlice';
-import { useTime } from '@/context/time';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 
-const manualInvalidate = (setTime: (time: number) => void) => {
-  setTime(Date.now());
+interface PaginatedResponse<T> {
+  next: string | null;
+  results: T[];
+  count: number;
+}
+
+export const discountKeys = {
+  all: ['discounts'] as const,
+  lists: () => [...discountKeys.all, 'list'] as const,
+  list: (params: DiscountQueryParams | null | undefined) =>
+    [...discountKeys.lists(), { params }] as const,
+  details: () => [...discountKeys.all, 'detail'] as const,
+  detail: (id: string) => [...discountKeys.details(), id] as const,
 };
 
-// --- Discounts Queries ---
+const discountRuleKeys = {
+  all: ['discountRules'] as const,
+  lists: () => [...discountRuleKeys.all, 'list'] as const,
+  list: (page: number | undefined, noPage: boolean | undefined) =>
+    [...discountRuleKeys.lists(), { page, noPage }] as const,
+  details: () => [...discountRuleKeys.all, 'detail'] as const,
+  detail: (id: string) => [...discountRuleKeys.details(), id] as const,
+};
+
+const couponKeys = {
+  all: ['coupons'] as const,
+  lists: () => [...couponKeys.all, 'list'] as const,
+  list: (params: DiscountQueryParams | null | undefined) =>
+    [...couponKeys.lists(), { params }] as const,
+  details: () => [...couponKeys.all, 'detail'] as const,
+  detail: (id: string) => [...couponKeys.details(), id] as const,
+};
+
+// ------------------------------------
+// ## Discount Hooks (Queries)
+// ------------------------------------
 
 export const useDiscounts = (params?: DiscountQueryParams | null) => {
-  const { time } = useTime();
-  const [data, setData] = useState<
-    { next: string | null; results: Discount[]; count: number } | undefined
-  >(undefined);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isPending, setIsPending] = useState(false);
-  const [error, setError] = useState<any>(null);
+  const queryKey = discountKeys.list(params);
 
-  useEffect(() => {
-    let isMounted = true;
-    const fetchData = async () => {
-      if (!data) {
-        setIsLoading(true);
-      } else {
-        setIsPending(true);
+  const queryFn: QueryFunction<
+    PaginatedResponse<Discount>,
+    typeof queryKey
+  > = ({ queryKey: [, , { params: currentParams }] }) => {
+    const searchParams = new URLSearchParams();
+    Object.entries(currentParams ?? {}).forEach(([key, value]) => {
+      if (value) {
+        searchParams.append(key, String(value));
       }
-      setError(null);
-
-      try {
-        const searchParams = new URLSearchParams();
-        Object.entries(params ?? {}).forEach(([key, value]) => {
-          if (value) {
-            searchParams.append(key, String(value));
-          }
-        });
-        const response = await fetchDiscounts(searchParams.toString());
-        if (isMounted) {
-          setData(response);
-        }
-      } catch (err) {
-        if (isMounted) {
-          setError(err);
-        }
-      } finally {
-        if (isMounted) {
-          setIsLoading(false);
-          setIsPending(false);
-        }
-      }
-    };
-
-    fetchData();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [params, time]);
-
-  return {
-    data,
-    isLoading,
-    isPending: isPending && !!data,
-    error,
+    });
+    return fetchDiscounts(searchParams.toString());
   };
+
+  return useQuery({
+    queryKey,
+    queryFn,
+  });
 };
 
 export const useGetDiscountById = (id: string) => {
-  const { time } = useTime();
-  const [data, setData] = useState<any>(undefined);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isPending, setIsPending] = useState(false);
-  const [error, setError] = useState<any>(null);
+  const queryKey = discountKeys.detail(id);
+  const queryFn: QueryFunction<Discount, typeof queryKey> = ({
+    queryKey: [, , discountId],
+  }) => fetchDiscount(discountId);
 
-  useEffect(() => {
-    if (!id) return;
-
-    let isMounted = true;
-    const fetchData = async () => {
-      if (!data) {
-        setIsLoading(true);
-      } else {
-        setIsPending(true);
-      }
-      setError(null);
-
-      try {
-        const response = await fetchDiscount(id);
-        if (isMounted) {
-          setData(response);
-        }
-      } catch (err) {
-        if (isMounted) {
-          setError(err);
-        }
-      } finally {
-        if (isMounted) {
-          setIsLoading(false);
-          setIsPending(false);
-        }
-      }
-    };
-
-    fetchData();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [id, time]);
-
-  return {
-    data,
-    isLoading,
-    isPending: isPending && !!data,
-    error,
-  };
+  return useQuery({
+    queryKey,
+    queryFn,
+    enabled: !!id,
+  });
 };
 
-// --- Discount Rules Queries ---
+// ------------------------------------
+// ## Discount Rule Hooks (Queries)
+// ------------------------------------
 
 export const useDiscountRules = (page?: number, noPage?: boolean) => {
-  const { time } = useTime();
-  const [data, setData] = useState<any>(undefined);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isPending, setIsPending] = useState(false);
-  const [error, setError] = useState<any>(null);
+  const queryKey = discountRuleKeys.list(page, noPage);
 
-  useEffect(() => {
-    let isMounted = true;
-    const fetchData = async () => {
-      if (!data) {
-        setIsLoading(true);
-      } else {
-        setIsPending(true);
-      }
-      setError(null);
+  const queryFn: QueryFunction<any, typeof queryKey> = ({
+    queryKey: [, , { page: currentPage, noPage: currentNoPage }],
+  }) => fetchDiscountRules(currentPage, currentNoPage);
 
-      try {
-        const response = await fetchDiscountRules(page, noPage);
-        if (isMounted) {
-          setData(response);
-        }
-      } catch (err) {
-        if (isMounted) {
-          setError(err);
-        }
-      } finally {
-        if (isMounted) {
-          setIsLoading(false);
-          setIsPending(false);
-        }
-      }
-    };
-
-    fetchData();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [page, noPage, time]);
-
-  return {
-    data,
-    isLoading,
-    isPending: isPending && !!data,
-    error,
-  };
+  return useQuery({
+    queryKey,
+    queryFn,
+  });
 };
 
 export const useGetDiscountRuleById = (id: string) => {
-  const { time } = useTime();
-  const [data, setData] = useState<any>(undefined);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isPending, setIsPending] = useState(false);
-  const [error, setError] = useState<any>(null);
+  const queryKey = discountRuleKeys.detail(id);
+  const queryFn: QueryFunction<any, typeof queryKey> = ({
+    queryKey: [, , ruleId],
+  }) => fetchDiscountRule(ruleId);
 
-  useEffect(() => {
-    if (!id) return;
-
-    let isMounted = true;
-    const fetchData = async () => {
-      if (!data) {
-        setIsLoading(true);
-      } else {
-        setIsPending(true);
-      }
-      setError(null);
-
-      try {
-        const response = await fetchDiscountRule(id);
-        if (isMounted) {
-          setData(response);
-        }
-      } catch (err) {
-        if (isMounted) {
-          setError(err);
-        }
-      } finally {
-        if (isMounted) {
-          setIsLoading(false);
-          setIsPending(false);
-        }
-      }
-    };
-
-    fetchData();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [id, time]);
-
-  return {
-    data,
-    isLoading,
-    isPending: isPending && !!data,
-    error,
-  };
+  return useQuery({
+    queryKey,
+    queryFn,
+    enabled: !!id,
+  });
 };
 
-// --- Coupons Queries ---
+// ------------------------------------
+// ## Coupon Hooks (Queries)
+// ------------------------------------
 
 export const useGetCoupons = (param?: DiscountQueryParams | null) => {
-  const { time } = useTime();
-  const [data, setData] = useState<
-    { next: string | null; results: Coupon[]; count: number } | undefined
-  >(undefined);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isPending, setIsPending] = useState(false);
-  const [error, setError] = useState<any>(null);
+  const queryKey = couponKeys.list(param);
 
-  useEffect(() => {
-    let isMounted = true;
-    const fetchData = async () => {
-      if (!data) {
-        setIsLoading(true);
-      } else {
-        setIsPending(true);
+  const queryFn: QueryFunction<PaginatedResponse<Coupon>, typeof queryKey> = ({
+    queryKey: [, , { params: currentParams }],
+  }) => {
+    const searchParams = new URLSearchParams();
+    Object.entries(currentParams ?? {}).forEach(([key, value]) => {
+      if (value) {
+        searchParams.append(key, String(value));
       }
-      setError(null);
-
-      try {
-        const searchParams = new URLSearchParams();
-        Object.entries(param ?? {}).forEach(([key, value]) => {
-          if (value) {
-            searchParams.append(key, String(value));
-          }
-        });
-        const response = await fetchCoupons(searchParams.toString());
-        if (isMounted) {
-          setData(response);
-        }
-      } catch (err) {
-        if (isMounted) {
-          setError(err);
-        }
-      } finally {
-        if (isMounted) {
-          setIsLoading(false);
-          setIsPending(false);
-        }
-      }
-    };
-
-    fetchData();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [param, time]);
-
-  return {
-    data,
-    isLoading,
-    isPending: isPending && !!data,
-    error,
+    });
+    return fetchCoupons(searchParams.toString());
   };
+
+  return useQuery({
+    queryKey,
+    queryFn,
+  });
 };
 
 export const useGetCoupon = (id: string) => {
-  const { time } = useTime();
-  const [data, setData] = useState<any>(undefined);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isPending, setIsPending] = useState(false);
-  const [error, setError] = useState<any>(null);
+  const queryKey = couponKeys.detail(id);
+  const queryFn: QueryFunction<Coupon, typeof queryKey> = ({
+    queryKey: [, , couponId],
+  }) => fetchCoupon(couponId);
 
-  useEffect(() => {
-    if (!id) return;
-
-    let isMounted = true;
-    const fetchData = async () => {
-      if (!data) {
-        setIsLoading(true);
-      } else {
-        setIsPending(true);
-      }
-      setError(null);
-
-      try {
-        const response = await fetchCoupon(id);
-        if (isMounted) {
-          setData(response);
-        }
-      } catch (err) {
-        if (isMounted) {
-          setError(err);
-        }
-      } finally {
-        if (isMounted) {
-          setIsLoading(false);
-          setIsPending(false);
-        }
-      }
-    };
-
-    fetchData();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [id, time]);
-
-  return {
-    data,
-    isLoading,
-    isPending: isPending && !!data,
-    error,
-  };
+  return useQuery({
+    queryKey,
+    queryFn,
+    enabled: !!id,
+  });
 };
 
-// --- Discounts Mutations ---
+// ------------------------------------
+// ## Discount Hooks (Mutations)
+// ------------------------------------
 
 export function useCreateDiscount() {
+  const queryClient = useQueryClient();
   const dispatch = useDispatch<AppDispatch>();
-  const { setTime } = useTime();
-  const [isPending, setIsPending] = useState(false);
-  const [error, setError] = useState<any>(null);
-  const [data, setData] = useState<any>(undefined);
 
-  const mutate = useCallback(
-    async (variables: Partial<any>) => {
-      setIsPending(true);
-      setError(null);
-      setData(undefined);
+  return useMutation({
+    mutationFn: (variables: Partial<any>) => createDiscount(variables),
+    onMutate: () => {
       dispatch(showLoader());
-      try {
-        const result = await createDiscount(variables);
-        setData(result);
-        manualInvalidate(setTime);
-        return result;
-      } catch (err) {
-        setError(err);
-        console.error('Error creating discount:', err);
-        throw err;
-      } finally {
-        setIsPending(false);
-        dispatch(hideLoader());
-      }
     },
-    [setTime, dispatch]
-  );
-
-  return {
-    mutate,
-    data,
-    isPending,
-    error,
-  };
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: discountKeys.lists() });
+    },
+    onError: (error) => {
+      console.error('Error creating discount:', error);
+    },
+    onSettled: () => {
+      dispatch(hideLoader());
+    },
+  });
 }
 
 export function useUpdateDiscount() {
+  const queryClient = useQueryClient();
   const dispatch = useDispatch<AppDispatch>();
-  const { setTime } = useTime();
-  const [isPending, setIsPending] = useState(false);
-  const [error, setError] = useState<any>(null);
-  const [data, setData] = useState<any>(undefined);
 
-  const mutate = useCallback(
-    async (variables: any) => {
-      setIsPending(true);
-      setError(null);
-      setData(undefined);
+  return useMutation({
+    mutationFn: (variables: any) => updateDiscount(variables),
+    onMutate: () => {
       dispatch(showLoader());
-      try {
-        const result = await updateDiscount(variables);
-        setData(result);
-        manualInvalidate(setTime);
-        return result;
-      } catch (err) {
-        setError(err);
-        console.error('Error updating discount:', err);
-        throw err;
-      } finally {
-        setIsPending(false);
-        dispatch(hideLoader());
+    },
+    onSuccess: (data, variables) => {
+      queryClient.invalidateQueries({ queryKey: discountKeys.lists() });
+      if (variables.id) {
+        queryClient.setQueryData(discountKeys.detail(variables.id), data);
       }
     },
-    [setTime, dispatch]
-  );
-
-  return {
-    mutate,
-    data,
-    isPending,
-    error,
-  };
+    onError: (error) => {
+      console.error('Error updating discount:', error);
+    },
+    onSettled: () => {
+      dispatch(hideLoader());
+    },
+  });
 }
 
 export function useDeleteDiscount() {
+  const queryClient = useQueryClient();
   const dispatch = useDispatch<AppDispatch>();
-  const { setTime } = useTime();
-  const [isPending, setIsPending] = useState(false);
-  const [error, setError] = useState<any>(null);
-  const [data, setData] = useState<any>(undefined);
 
-  const mutate = useCallback(
-    async (id: string) => {
-      setIsPending(true);
-      setError(null);
-      setData(undefined);
+  return useMutation({
+    mutationFn: (id: string) => deleteDiscount(id),
+    onMutate: () => {
       dispatch(showLoader());
-      try {
-        const result = await deleteDiscount(id);
-        setData(result);
-        manualInvalidate(setTime);
-        return result;
-      } catch (err) {
-        setError(err);
-        console.error('Error deleting discount:', err);
-        throw err;
-      } finally {
-        setIsPending(false);
-        dispatch(hideLoader());
-      }
     },
-    [setTime, dispatch]
-  );
-
-  return {
-    mutate,
-    data,
-    isPending,
-    error,
-  };
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: discountKeys.lists() });
+    },
+    onError: (error) => {
+      console.error('Error deleting discount:', error);
+    },
+    onSettled: () => {
+      dispatch(hideLoader());
+    },
+  });
 }
 
-// --- Discount Rules Mutations ---
+export function useCheckDiscount() {
+  // This hook already used useMutation, but we'll clean up the onSettled logic
+  return useMutation({
+    mutationFn: (data: Partial<any>) => createCheckDiscount(data),
+    onError: (error: any) => {
+      console.error('Error checking discount:', error);
+    },
+    // Invalidating queries here is generally not necessary unless checking triggers a list change
+    // If it *is* meant to trigger a list refresh, we'd use:
+    // onSuccess: () => queryClient.invalidateQueries({ queryKey: discountKeys.lists() }),
+  });
+}
+
+// ------------------------------------
+// ## Discount Rule Hooks (Mutations)
+// ------------------------------------
 
 export function useCreateDiscountRule(
   onSuccess?: (data: any) => void,
   onError?: (error: any) => void
 ) {
+  const queryClient = useQueryClient();
   const dispatch = useDispatch<AppDispatch>();
-  const { setTime } = useTime();
-  const [isPending, setIsPending] = useState(false);
-  const [error, setError] = useState<any>(null);
-  const [data, setData] = useState<any>(undefined);
 
-  const mutate = useCallback(
-    async (variables: Partial<any>) => {
-      setIsPending(true);
-      setError(null);
-      setData(undefined);
+  return useMutation({
+    mutationFn: (variables: Partial<any>) => createDiscountRule(variables),
+    onMutate: () => {
       dispatch(showLoader());
-      try {
-        const result = await createDiscountRule(variables);
-        setData(result);
-        manualInvalidate(setTime);
-        if (onSuccess) onSuccess(result);
-        return result;
-      } catch (err) {
-        setError(err);
-        if (onError) onError(err);
-        throw err;
-      } finally {
-        setIsPending(false);
-        dispatch(hideLoader());
-      }
     },
-    [onSuccess, onError, setTime, dispatch]
-  );
-
-  return {
-    mutate,
-    data,
-    isPending,
-    error,
-  };
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: discountRuleKeys.lists() });
+      if (onSuccess) onSuccess(data);
+    },
+    onError: (error) => {
+      if (onError) onError(error);
+    },
+    onSettled: () => {
+      dispatch(hideLoader());
+    },
+  });
 }
 
 export function useUpdateDiscountRule() {
+  const queryClient = useQueryClient();
   const dispatch = useDispatch<AppDispatch>();
-  const { setTime } = useTime();
-  const [isPending, setIsPending] = useState(false);
-  const [error, setError] = useState<any>(null);
-  const [data, setData] = useState<any>(undefined);
 
-  const mutate = useCallback(
-    async (variables: any) => {
-      setIsPending(true);
-      setError(null);
-      setData(undefined);
+  return useMutation({
+    mutationFn: (variables: any) => updateDiscountRule(variables),
+    onMutate: () => {
       dispatch(showLoader());
-      try {
-        const result = await updateDiscountRule(variables);
-        setData(result);
-        manualInvalidate(setTime);
-        return result;
-      } catch (err) {
-        setError(err);
-        console.error('Error updating discountRule:', err);
-        throw err;
-      } finally {
-        setIsPending(false);
-        dispatch(hideLoader());
+    },
+    onSuccess: (data, variables) => {
+      queryClient.invalidateQueries({ queryKey: discountRuleKeys.lists() });
+      if (variables.id) {
+        queryClient.setQueryData(discountRuleKeys.detail(variables.id), data);
       }
     },
-    [setTime, dispatch]
-  );
-
-  return {
-    mutate,
-    data,
-    isPending,
-    error,
-  };
+    onError: (error) => {
+      console.error('Error updating discountRule:', error);
+    },
+    onSettled: () => {
+      dispatch(hideLoader());
+    },
+  });
 }
 
 export function useDeleteDiscountRule() {
+  const queryClient = useQueryClient();
   const dispatch = useDispatch<AppDispatch>();
-  const { setTime } = useTime();
-  const [isPending, setIsPending] = useState(false);
-  const [error, setError] = useState<any>(null);
-  const [data, setData] = useState<any>(undefined);
 
-  const mutate = useCallback(
-    async (id: any) => {
-      setIsPending(true);
-      setError(null);
-      setData(undefined);
+  return useMutation({
+    mutationFn: (id: string) => deleteDiscountRule(id),
+    onMutate: () => {
       dispatch(showLoader());
-      try {
-        const result = await deleteDiscountRule(id);
-        setData(result);
-        manualInvalidate(setTime);
-        return result;
-      } catch (err) {
-        setError(err);
-        console.error('Error deleting discountRule:', err);
-        throw err;
-      } finally {
-        setIsPending(false);
-        dispatch(hideLoader());
-      }
     },
-    [setTime, dispatch]
-  );
-
-  return {
-    mutate,
-    data,
-    isPending,
-    error,
-  };
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: discountRuleKeys.lists() });
+    },
+    onError: (error) => {
+      console.error('Error deleting discountRule:', error);
+    },
+    onSettled: () => {
+      dispatch(hideLoader());
+    },
+  });
 }
 
-// --- Coupons Mutations ---
+// ------------------------------------
+// ## Coupon Hooks (Mutations)
+// ------------------------------------
 
 export function useCreateCoupon() {
+  const queryClient = useQueryClient();
   const dispatch = useDispatch<AppDispatch>();
-  const { setTime } = useTime();
-  const [isPending, setIsPending] = useState(false);
-  const [error, setError] = useState<any>(null);
-  const [data, setData] = useState<any>(undefined);
 
-  const mutate = useCallback(
-    async (variables: Partial<any>) => {
-      setIsPending(true);
-      setError(null);
-      setData(undefined);
+  return useMutation({
+    mutationFn: (variables: Partial<any>) => createCoupon(variables),
+    onMutate: () => {
       dispatch(showLoader());
-      try {
-        const result = await createCoupon(variables);
-        setData(result);
-        manualInvalidate(setTime);
-        return result;
-      } catch (err) {
-        setError(err);
-        console.error('Error creating discount:', err);
-        throw err;
-      } finally {
-        setIsPending(false);
-        dispatch(hideLoader());
-      }
     },
-    [setTime, dispatch]
-  );
-
-  return {
-    mutate,
-    data,
-    isPending,
-    error,
-  };
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: couponKeys.lists() });
+    },
+    onError: (error) => {
+      console.error('Error creating coupon:', error);
+    },
+    onSettled: () => {
+      dispatch(hideLoader());
+    },
+  });
 }
 
 export function useUpdateCoupon() {
+  const queryClient = useQueryClient();
   const dispatch = useDispatch<AppDispatch>();
-  const { setTime } = useTime();
-  const [isPending, setIsPending] = useState(false);
-  const [error, setError] = useState<any>(null);
-  const [data, setData] = useState<any>(undefined);
 
-  const mutate = useCallback(
-    async (variables: { id: string; coupon: Partial<any> }) => {
-      setIsPending(true);
-      setError(null);
-      setData(undefined);
+  // Updated to match the existing API call structure: updateCoupon(id, coupon)
+  return useMutation({
+    mutationFn: (variables: { id: string; coupon: Partial<any> }) =>
+      updateCoupon(variables.id, variables.coupon),
+    onMutate: () => {
       dispatch(showLoader());
-      try {
-        const result = await updateCoupon(variables.id, variables.coupon);
-        setData(result);
-        manualInvalidate(setTime);
-        return result;
-      } catch (err) {
-        setError(err);
-        console.error('Error updating Coupon:', err);
-        throw err;
-      } finally {
-        setIsPending(false);
-        dispatch(hideLoader());
-      }
     },
-    [setTime, dispatch]
-  );
-
-  return {
-    mutate,
-    data,
-    isPending,
-    error,
-  };
+    onSuccess: (data, variables) => {
+      queryClient.invalidateQueries({ queryKey: couponKeys.lists() });
+      queryClient.setQueryData(couponKeys.detail(variables.id), data);
+    },
+    onError: (error) => {
+      console.error('Error updating Coupon:', error);
+    },
+    onSettled: () => {
+      dispatch(hideLoader());
+    },
+  });
 }
 
 export function useDeleteCoupon() {
-  const dispatch = useDispatch<AppDispatch>();
-  const { setTime } = useTime();
-  const [isPending, setIsPending] = useState(false);
-  const [error, setError] = useState<any>(null);
-  const [data, setData] = useState<any>(undefined);
-
-  const mutate = useCallback(
-    async (id: string) => {
-      setIsPending(true);
-      setError(null);
-      setData(undefined);
-      dispatch(showLoader());
-      try {
-        const result = await deleteCoupon(id);
-        setData(result);
-        manualInvalidate(setTime);
-        return result;
-      } catch (err) {
-        setError(err);
-        console.error('Error deleting Coupon:', err);
-        throw err;
-      } finally {
-        setIsPending(false);
-        dispatch(hideLoader());
-      }
-    },
-    [setTime, dispatch]
-  );
-
-  return {
-    mutate,
-    data,
-    isPending,
-    error,
-  };
-}
-
-export function useCheckDiscount() {
   const queryClient = useQueryClient();
+  const dispatch = useDispatch<AppDispatch>();
+
   return useMutation({
-    mutationFn: (data: Partial<any>) => {
-      return createCheckDiscount(data);
-    },
-    onError: (error: any) => {
-      console.error('Error checking discount:', error);
+    mutationFn: (id: string) => deleteCoupon(id),
+    onMutate: () => {
+      dispatch(showLoader());
     },
     onSuccess: () => {
-      ('Discount created successfully');
+      queryClient.invalidateQueries({ queryKey: couponKeys.lists() });
     },
-    onSettled: async (_: any, error: any) => {
-      if (error) {
-        console.error(error);
-      } else {
-        await queryClient.invalidateQueries({ queryKey: ['discounts'] });
-      }
+    onError: (error) => {
+      console.error('Error deleting Coupon:', error);
+    },
+    onSettled: () => {
+      dispatch(hideLoader());
     },
   });
 }

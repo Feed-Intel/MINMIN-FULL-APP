@@ -116,6 +116,7 @@ export default function Menus() {
   );
 
   const { data: rawMenu } = useGetMenus(undefined, true);
+  console.log(rawMenu);
 
   useEffect(() => {
     if (currentMenuItem) {
@@ -629,7 +630,7 @@ export default function Menus() {
             </ScrollView>
 
             <ScrollView style={styles.itemsContainer}>
-              {rawMenu?.results
+              {rawMenu
                 ?.filter(
                   (menu: any) => menu.id != currentMenuItem?.menu_item.id
                 )

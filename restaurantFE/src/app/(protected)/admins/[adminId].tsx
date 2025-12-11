@@ -22,6 +22,7 @@ import {
   useUpdateBranchAdmin,
 } from '@/services/mutation/branchAdminMutation';
 import { Dropdown } from 'react-native-paper-dropdown';
+import validator from 'validator';
 import { useGetBranches } from '@/services/mutation/branchMutation';
 import { i18n as I18n } from '@/app/_layout';
 
@@ -63,18 +64,21 @@ export default function EditAdminScreen() {
   };
 
   const { mutate: editBranchAdmin, isPending: isUpdating } =
-    useUpdateBranchAdmin(onSuccessEdit, onErrorEdit);
+    useUpdateBranchAdmin();
 
   const validateForm = () => {
     const errors: { [key: string]: string } = {};
 
-    if (!updateBranchAdmin?.full_name?.trim()) {
+    if (
+      !updateBranchAdmin?.full_name?.trim() ||
+      !validator.isAlpha(updateBranchAdmin?.full_name?.trim())
+    ) {
       errors.full_name = I18n.t('EditAdminScreen.error_fullname_required');
     }
 
     if (!updateBranchAdmin?.email?.trim()) {
       errors.email = I18n.t('EditAdminScreen.error_email_required');
-    } else if (!/\S+@\S+\.\S+/.test(updateBranchAdmin.email)) {
+    } else if (!validator.isEmail(updateBranchAdmin.email)) {
       errors.email = I18n.t('EditAdminScreen.error_email_invalid');
     }
 

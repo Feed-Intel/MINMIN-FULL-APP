@@ -97,7 +97,7 @@ class DiscountRuleSerializer(serializers.ModelSerializer):
     discount_id = serializers.PrimaryKeyRelatedField(queryset=Discount.objects.all(),write_only=True)
     class Meta:
         model = DiscountRule
-        fields = ['id','discount_id','tenant','min_items','combo_size','min_price','applicable_items','excluded_items','buy_quantity','get_quantity','is_percentage','max_discount_amount','created_at','updated_at']
+        fields = ['id','discount_id','tenant','min_items','combo_size','min_price','applicable_items','free_items','buy_quantity','get_quantity','is_percentage','max_discount_amount','created_at','updated_at']
         read_only_fields = ['id','tenant']
     def get_tenant(self,obj):
         return {

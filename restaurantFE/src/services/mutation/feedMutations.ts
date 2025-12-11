@@ -1,4 +1,10 @@
-import { useState, useEffect, useCallback } from 'react';
+import {
+  useQuery,
+  useMutation,
+  useQueryClient,
+  QueryFunction,
+  MutationFunction,
+} from '@tanstack/react-query';
 import {
   addPost,
   deletePost,
@@ -8,268 +14,104 @@ import {
   updatePost,
 } from '../api/feedApi';
 import { Post } from '@/types/postType';
-import { useTime } from '@/context/time';
 
-const manualInvalidate = (setTime: (time: number) => void) => {
-  setTime(Date.now());
+interface PostsResponse {
+  next: string | null;
+  results: Post[];
+  count: number;
+}
+
+const postKeys = {
+  all: ['posts'] as const,
+  lists: () => [...postKeys.all, 'list'] as const,
+  list: (page: number | null | undefined) =>
+    [...postKeys.lists(), { page }] as const,
+  details: () => [...postKeys.all, 'detail'] as const,
+  detail: (id: string | any) => [...postKeys.details(), id] as const,
+  stats: (id: string | any) => [...postKeys.all, 'stats', id] as const,
 };
-
-// --- Posts Queries ---
 
 export const useGetPosts = (page?: number | null | undefined) => {
-  const { time } = useTime();
-  const [data, setData] = useState<
-    { next: string | null; results: Post[]; count: number } | undefined
-  >(undefined);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isPending, setIsPending] = useState(false);
-  const [error, setError] = useState<any>(null);
+  const queryKey = postKeys.list(page);
 
-  useEffect(() => {
-    let isMounted = true;
-    const fetchData = async () => {
-      if (!data) {
-        setIsLoading(true);
-      } else {
-        setIsPending(true);
-      }
-      setError(null);
+  const queryFn: QueryFunction<PostsResponse, typeof queryKey> = ({
+    queryKey: [, , { page: currentPage }],
+  }) => getPosts(currentPage);
 
-      try {
-        const response = await getPosts(page);
-        if (isMounted) {
-          setData(response);
-        }
-      } catch (err) {
-        if (isMounted) {
-          setError(err);
-        }
-      } finally {
-        if (isMounted) {
-          setIsLoading(false);
-          setIsPending(false);
-        }
-      }
-    };
-
-    fetchData();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [page, time]);
-
-  return {
-    data,
-    isLoading,
-    isPending: isPending && !!data,
-    error,
-  };
-};
-
-export const useGetPostsStats = (id: string) => {
-  const { time } = useTime();
-  const [data, setData] = useState<any>(undefined);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isPending, setIsPending] = useState(false);
-  const [error, setError] = useState<any>(null);
-
-  useEffect(() => {
-    if (!id) return;
-
-    let isMounted = true;
-    const fetchData = async () => {
-      if (!data) {
-        setIsLoading(true);
-      } else {
-        setIsPending(true);
-      }
-      setError(null);
-
-      try {
-        const response = await getPostStats(id);
-        if (isMounted) {
-          setData(response);
-        }
-      } catch (err) {
-        if (isMounted) {
-          setError(err);
-        }
-      } finally {
-        if (isMounted) {
-          setIsLoading(false);
-          setIsPending(false);
-        }
-      }
-    };
-
-    fetchData();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [id, time]);
-
-  return {
-    data,
-    isLoading,
-    isPending: isPending && !!data,
-    error,
-  };
+  return useQuery({
+    queryKey,
+    queryFn,
+  });
 };
 
 export const useGetPostById = (id: any) => {
-  const { time } = useTime();
-  const [data, setData] = useState<any>(undefined);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isPending, setIsPending] = useState(false);
-  const [error, setError] = useState<any>(null);
+  const queryKey = postKeys.detail(id);
 
-  useEffect(() => {
-    if (!id) return;
+  const queryFn: QueryFunction<Post, typeof queryKey> = ({
+    queryKey: [, , postId],
+  }) => getPost(postId);
 
-    let isMounted = true;
-    const fetchData = async () => {
-      if (!data) {
-        setIsLoading(true);
-      } else {
-        setIsPending(true);
-      }
-      setError(null);
-
-      try {
-        const response = await getPost(id);
-        if (isMounted) {
-          setData(response);
-        }
-      } catch (err) {
-        if (isMounted) {
-          setError(err);
-        }
-      } finally {
-        if (isMounted) {
-          setIsLoading(false);
-          setIsPending(false);
-        }
-      }
-    };
-
-    fetchData();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [id, time]);
-
-  return {
-    data,
-    isLoading,
-    isPending: isPending && !!data,
-    error,
-  };
+  return useQuery({
+    queryKey,
+    queryFn,
+    enabled: !!id,
+  });
 };
 
-// --- Posts Mutations ---
+export const useGetPostsStats = (id: string) => {
+  const queryKey = postKeys.stats(id);
+
+  const queryFn: QueryFunction<any, typeof queryKey> = ({
+    queryKey: [postId],
+  }) => getPostStats(postId);
+
+  return useQuery({
+    queryKey,
+    queryFn,
+    enabled: !!id,
+  });
+};
+
+// ------------------------------------
+// ## Post Mutations
+// ------------------------------------
 
 export const useAddPost = () => {
-  const { setTime } = useTime();
-  const [isPending, setIsPending] = useState(false);
-  const [error, setError] = useState<any>(null);
-  const [data, setData] = useState<any>(undefined);
+  const queryClient = useQueryClient();
 
-  const mutate = useCallback(
-    async (variables: any) => {
-      setIsPending(true);
-      setError(null);
-      setData(undefined);
-      try {
-        const result = await addPost(variables);
-        setData(result);
-        manualInvalidate(setTime);
-        return result;
-      } catch (err) {
-        setError(err);
-        throw err;
-      } finally {
-        setIsPending(false);
-      }
+  return useMutation({
+    mutationFn: (variables: any) => addPost(variables),
+    onSuccess: () => {
+      // Invalidate the post list to refetch and show the new post
+      queryClient.invalidateQueries({ queryKey: postKeys.lists() });
     },
-    [setTime]
-  );
-
-  return {
-    mutate,
-    data,
-    isPending,
-    error,
-  };
+  });
 };
 
 export const useUpdatePost = (id: string) => {
-  const { setTime } = useTime();
-  const [isPending, setIsPending] = useState(false);
-  const [error, setError] = useState<any>(null);
-  const [data, setData] = useState<any>(undefined);
+  const queryClient = useQueryClient();
 
-  const mutate = useCallback(
-    async (variables: any) => {
-      setIsPending(true);
-      setError(null);
-      setData(undefined);
-      try {
-        // Note: The original hook used updatePost.bind(null, id). We pass 'id' explicitly here.
-        const result = await updatePost(id, variables);
-        setData(result);
-        manualInvalidate(setTime);
-        return result;
-      } catch (err) {
-        setError(err);
-        throw err;
-      } finally {
-        setIsPending(false);
-      }
+  // The mutation function now takes only the update variables,
+  // as the ID is closed over by the hook's scope.
+  const mutationFn: MutationFunction<any, any> = (variables) =>
+    updatePost(id, variables);
+
+  return useMutation({
+    mutationFn,
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: postKeys.lists() });
+      queryClient.setQueryData(postKeys.detail(id), data);
     },
-    [id, setTime]
-  );
-
-  return {
-    mutate,
-    data,
-    isPending,
-    error,
-  };
+  });
 };
 
 export const useDeletePost = () => {
-  const { setTime } = useTime();
-  const [isPending, setIsPending] = useState(false);
-  const [error, setError] = useState<any>(null);
-  const [data, setData] = useState<any>(undefined);
+  const queryClient = useQueryClient();
 
-  const mutate = useCallback(
-    async (id: string) => {
-      setIsPending(true);
-      setError(null);
-      setData(undefined);
-      try {
-        const result = await deletePost(id);
-        setData(result);
-        manualInvalidate(setTime);
-        return result;
-      } catch (err) {
-        setError(err);
-        throw err;
-      } finally {
-        setIsPending(false);
-      }
+  return useMutation({
+    mutationFn: (id: string) => deletePost(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: postKeys.lists() });
     },
-    [setTime]
-  );
-
-  return {
-    mutate,
-    data,
-    isPending,
-    error,
-  };
+  });
 };

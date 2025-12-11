@@ -101,53 +101,6 @@ const STATUS_OVERVIEW = [
   },
 ];
 
-const STATUS_DISPLAY: Record<
-  Order['status'],
-  {
-    label: string;
-    borderColor: string;
-    backgroundColor: string;
-    textColor: string;
-  }
-> = {
-  pending_payment: {
-    label: 'Pending Payment',
-    borderColor: '#F6C343',
-    backgroundColor: '#FFF7E6',
-    textColor: '#8A5C0A',
-  },
-  placed: {
-    label: 'New',
-    borderColor: '#91B275',
-    backgroundColor: '#E9F5E6',
-    textColor: '#305535',
-  },
-  progress: {
-    label: 'In Progress',
-    borderColor: '#3F8AE0',
-    backgroundColor: '#E4F0FF',
-    textColor: '#114A9F',
-  },
-  payment_complete: {
-    label: 'Ready',
-    borderColor: '#AA68C7',
-    backgroundColor: '#F2E8FB',
-    textColor: '#5A2E7A',
-  },
-  delivered: {
-    label: 'Completed',
-    borderColor: '#5CB85C',
-    backgroundColor: '#E5F6E5',
-    textColor: '#1E5F1E',
-  },
-  cancelled: {
-    label: 'Cancelled',
-    borderColor: '#E55353',
-    backgroundColor: '#FBE9E9',
-    textColor: '#8A1C1C',
-  },
-};
-
 const HIGHLIGHT_DURATION_MS = 5000;
 
 const formatCurrency = (amount: number | null | undefined) => {
@@ -200,6 +153,53 @@ export default function Orders() {
   const [highlightedOrders, setHighlightedOrders] = useState<
     Record<string, boolean>
   >({});
+
+  const STATUS_DISPLAY: Record<
+    Order['status'],
+    {
+      label: string;
+      borderColor: string;
+      backgroundColor: string;
+      textColor: string;
+    }
+  > = {
+    pending_payment: {
+      label: 'Pending Payment',
+      borderColor: '#F6C343',
+      backgroundColor: '#FFF7E6',
+      textColor: '#8A5C0A',
+    },
+    placed: {
+      label: 'New',
+      borderColor: '#91B275',
+      backgroundColor: '#E9F5E6',
+      textColor: '#305535',
+    },
+    progress: {
+      label: 'In Progress',
+      borderColor: '#3F8AE0',
+      backgroundColor: '#E4F0FF',
+      textColor: '#114A9F',
+    },
+    payment_complete: {
+      label: 'Ready',
+      borderColor: '#AA68C7',
+      backgroundColor: '#F2E8FB',
+      textColor: '#5A2E7A',
+    },
+    delivered: {
+      label: I18n.t('orders.actionMarkDelivered'),
+      borderColor: '#5CB85C',
+      backgroundColor: '#E5F6E5',
+      textColor: '#1E5F1E',
+    },
+    cancelled: {
+      label: I18n.t('orders.actionMarkCancelled'),
+      borderColor: '#E55353',
+      backgroundColor: '#FBE9E9',
+      textColor: '#8A1C1C',
+    },
+  };
 
   const queryClient = useQueryClient();
   const [currentPage, setCurrentPage] = useState<number>(1);
@@ -399,6 +399,11 @@ export default function Orders() {
           label: I18n.t('orders.actionMarkDelivered'),
           value: 'delivered' as Order['status'],
         };
+      // case 'delivered':
+      //   return {
+      //     label: I18n.t('orders.actionMarkDelivered'),
+      //     value: 'delivered' as Order['status'],
+      //   };
       default:
         return null;
     }
@@ -1032,7 +1037,8 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderColor: '#5C5C5C33',
     backgroundColor: '#EFF4EB',
-    paddingHorizontal: 18,
+    width: 100,
+    // paddingHorizontal: 18,
   },
   selectedTab: {
     backgroundColor: '#91B275',

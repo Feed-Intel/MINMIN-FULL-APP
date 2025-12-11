@@ -34,6 +34,7 @@ import PlacedBowl from '@/assets/icons/placed_bowl.svg';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { updatePendingOrders } from '@/lib/reduxStore/OrderSlice';
 import { i18n } from '@/app/_layout';
+import { useGetMenus } from '@/services/mutation/menuMutation';
 
 type OrderStatus = 'placed' | 'progress' | 'delivered' | 'cancelled';
 
@@ -336,16 +337,18 @@ const OrderCard = ({
   const isWeb = Platform.OS === 'web';
   const { width } = useWindowDimensions();
   const isSmallWeb = isWeb && width < 768;
+  const { data: menus } = useGetMenus(undefined, true);
 
   const handleAddToCartAgain = (order: any) => {
     order.items.forEach((item: any) => {
+      const menuItem = menus?.find((t: any) => t.id === item.menu_item);
       dispatch(
         addToCart({
           item: {
             id: item.menu_item,
             name: item.menu_item_name || i18n.t('unnamed_item_placeholder'),
             description: '',
-            price: parseFloat(item.price),
+            price: parseFloat(menuItem?.price),
             quantity: item.quantity,
             image: item.menu_item_image || '',
           },

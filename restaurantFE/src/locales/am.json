@@ -45,7 +45,9 @@
     "error_title": "ስህተት",
     "error_no_branch": "እባክዎ ቅርንጫፍ ለመመደብ አስተዳዳሪዎን ያነጋግሩ።",
     "error_no_tenant": "የሬስቶራንትዎ መገለጫ አልተገናኘም። እባክዎ ድጋፍ ሰጪን ያነጋግሩ።",
-    "error_missing_fields": "እባክዎ ሁለቱንም መስኮች ይሙሉ!"
+    "error_missing_fields": "እባክዎ ሁለቱንም መስኮች ይሙሉ!",
+    "invalid_email":"እባክዎ ኢሜይል ያስገቡ",
+    "invalid_password":"እባክዎ የይለፍ ቃል ያስገቡ"
   },
     "ForgotPassword": {
     "title": "የይለፍ ቃልዎን ረሱ",
@@ -67,7 +69,8 @@
     "label_new_password": "አዲስ የይለፍ ቃል",
     "label_confirm_password": "የይለፍ ቃል ያረጋግጡ",
     "button_change_password": "የይለፍ ቃል ይቀይሩ",
-    "error_passwords_do_not_match": "የይለፍ ቃሎች አይዛመዱም!"
+    "error_passwords_do_not_match": "የይለፍ ቃሎች አይዛመዱም!",
+    "error_password":"እባክዎ አዲስ የይለፍ ቃል ያስገቡ"
   },
   "BranchAdmins": {
     "header_title": "ቅርንጫፍ አስተዳዳሪዎች",
@@ -94,13 +97,13 @@
     "input_placeholder_email": "ኢ-ሜይል",
     "input_placeholder_phone": "ስልክ",
     "dropdown_placeholder_branch": "ቅርንጫፍ",
-    "error_fullname_required": "ሙሉ ስም ያስፈልጋል::",
-    "error_email_required": "ኢሜይል ያስፈልጋል::",
-    "error_email_invalid": "እባክዎ ትክክለኛ የኢሜይል አድራሻ ያስገቡ።",
-    "error_phone_required": "ስልክ ቁጥር ያስፈልጋል::",
-    "error_phone_length": "ስልክ ቁጥር ከ10 እስከ 15 አሃዞች መሆን አለበት።",
-    "error_branch_required": "ቅርንጫፍ ያስፈልጋል።",
-    "error_general_failed": "አስተዳዳሪ ማከል አልተሳካም:: እባክዎ እንደገና ይሞክሩ።",
+    "error_fullname_required": "ሙሉ ስም ያስፈልጋል",
+    "error_email_required": "ኢሜይል ያስፈልጋል",
+    "error_email_invalid": "እባክዎ ትክክለኛ የኢሜይል አድራሻ ያስገቡ",
+    "error_phone_required": "ስልክ ቁጥር ያስፈልጋል",
+    "error_phone_length": "ስልክ ቁጥር ከ10 እስከ 12 አሃዞች መሆን አለበት",
+    "error_branch_required": "ቅርንጫፍ ያስፈልጋል",
+    "error_general_failed": "አስተዳዳሪ ማከል አልተሳካም:: እባክዎ እንደገና ይሞክሩ",
     "button_add_admin": "+ አስተዳዳሪ ጨምር",
     "snackbar_success": "አስተዳዳሪ በተሳካ ሁኔታ ታክሏል!"
   },
@@ -251,10 +254,12 @@
     "pickImage": "ምስል ይምረጡ",
     "isSideItemLabel": "ተጨማሪ ምግብ ነው?",
     "error": {
-      "nameImageRequired": "እባክዎ ስም እና ምስል ይምረጡ",
-      "descriptionRequired": "እባክዎ መግለጫ ይስጡ",
-      "priceRequired": "እባክዎ ዋጋ ይስጡ",
-      "categoryRequired": "እባክዎ ቢያንስ አንድ ምድብ ይምረጡ"
+      "invalid_name": "እባክዎ ተገቢ ስም ይስጡ",
+      "invalid_description": "እባክዎ ተገቢ መግለጫ ይስጡ",
+      "invalid_price": "እባክዎ ተገቢ ዋጋ ይስጡ",
+      "invalid_image": "እባክዎ ምስል ይምረጡ",
+      "invalid_branches": "እባክዎ ቢያንስ አንድ ቅርንጫፍ ይምረጡ",
+      "invalid_category": "እባክዎ ቢያንስ አንድ ምድብ ይምረጡ"
     },
     "successMessage": "የምግብ ዝርዝር በተሳካ ሁኔታ ታክሏል!",
     "successUpdateMessage": "የምግብ ዝርዝር በተሳካ ሁኔታ ታድሷል!",
@@ -382,6 +387,7 @@
     "actionStartPreparing": "ማዘጋጀት ጀምር",
     "actionMarkReady": "ዝግጁ መሆኑን ምልክት ያድርጉ",
     "actionMarkDelivered": "ደርሷል ምልክት ያድርጉ",
+    "actionMarkCancelled": "ተሰርዟል",
     "newOrderToast": "አዲስ ትዕዛዝ %{orderCode} — %{items} እቃዎች",
     "toastViewAction": "እይ"
   },
@@ -426,7 +432,7 @@
   "acceptOrders": {
     "header": "ትዕዛዞችን ተቀበል",
     "placeholderCustomerName": "የደንበኛ ስም",
-    "placeholderContactNumber": "የእውቂያ ቁጥር",
+    "placeholderContactNumber": "ስልክ ቁጥር",
     "placeholderTinNumber": "ቲአይኤን ቁጥር",
     "addItemButton": "+ ዕቃ ጨምር",
     "tableHeaderName": "ስም",
@@ -454,7 +460,7 @@
     "header": "የትዕዛዝ ግምገማ",
     "customerInfoTitle": "የደንበኛ መረጃ",
     "customerNameLabel": "ስም",
-    "customerContactLabel": "እውቂያ",
+    "customerContactLabel": "ስልክ ቁጥር",
     "customerTinLabel": "ቲአይኤን ቁጥር",
     "editInfoButton": "መረጃ አስተካክል",
     "tableName": "ስም",
@@ -543,7 +549,9 @@
     "setting_terms_conditions": "ውሎች እና ሁኔታዎች",
     "setting_logout": "ውጣ",
     "language_english": "English",
-    "language_amharic": "አማርኛ"
+    "language_amharic": "አማርኛ",
+    "profile_required": "መገለጫ ባዶ መሆን የለበትም",
+    "reviews": "ግምገማዎች"
   },
   "notifications": {
     "title": "ማስታወቂያዎች",
@@ -558,7 +566,9 @@
     "saveButton": "ለውጦችን አስቀምጥ",
     "cancelButton": "ሰርዝ",
     "successMessage": "ቅንብሮች በተሳካ ሁኔታ ተዘምነዋል",
-    "errorMessage": "ቅንብሮችን ማዘመን አልተሳካም"
+    "errorMessage": "ቅንብሮችን ማዘመን አልተሳካም",
+    "invalid_threshold":"እባክዎ ትክክለኛ የወሰን ነጥቦችን ያስገቡ",
+    "invalid_conversion_rate":"እባክዎ ትክክለኛ የመቀየሪያ መጠን ያስገቡ"
   },
   "add_related_item": {
     "title": "ተዛማጅ ንጥል ነገር ያክሉ",
@@ -574,10 +584,11 @@
     "button_add": "ንጥል ነገር ያክሉ"
   },
   "discountModal":{
-      "modal": {
+    "modal": {
     "title": "ቅናሽ አስተካክል",
+    "new_title": "አዲስ ቅናሽ ጨምር",
     "select_applicable_title": "ተፈፃሚ እቃዎችን ምረጥ",
-    "select_excluded_title": "የተገለሉ እቃዎችን ምረጥ"
+    "select_free_title": "ነጻ እቃዎችን ምረጥ"
   },
   "form": {
     "is_global_label": "ለሁሉም ቅርንጫፎች ነው",
@@ -607,8 +618,8 @@
     "get_quantity_label": "የማግኘት ብዛት",
     "applicable_items_label": "ተፈፃሚ እቃዎች",
     "select_applicable_items_placeholder": "ተፈፃሚ እቃዎችን ምረጥ",
-    "excluded_items_label": "የተገለሉ እቃዎች",
-    "select_excluded_items_placeholder": "የተገለሉ እቃዎችን ምረጥ",
+    "free_items_label": "ነጻ እቃዎች",
+    "select_free_items_placeholder": "ነጻ እቃዎችን ምረጥ",
     "is_percentage_label": "በመቶኛ ነው?"
   },
   "action": {
@@ -639,7 +650,7 @@
     "max_discount_amount_valid": "ከፍተኛ ቅናሽ መጠን ትክክለኛ ቁጥር መሆን አለበት።",
     "max_discount_amount_non_negative": "ከፍተኛ ቅናሽ መጠን አሉታዊ መሆን የለበትም።",
     "applicable_item_required": "ቢያንስ አንድ ተፈፃሚ እቃ ይምረጡ።",
-    "excluded_overlap": "የተገለሉ እቃዎች ከተፈፃሚ እቃዎች ጋር መደራረብ የለባቸውም።",
+    "free_item_required": "እባክዎ ቢያንስ አንድ ነጻ እቃ ይምረጡ።",
     "update_discount_failed_t1": "ቅናሹን ማዘመን አልተቻለም",
     "try_again_t2": "እባክዎ እንደገና ይሞክሩ።"
   }
@@ -660,6 +671,8 @@
     "error_code_required": "የቅናሽ ኮድ ያስፈልጋል።",
     "error_code_min_length": "የቅናሽ ኮድ ቢያንስ 3 ፊደላት መሆን አለበት።",
     "error_from_required": "የሚጀምርበት ቀን ያስፈልጋል።",
+    "error_discount_amount_invalid": "የቅናሽ መጠኑ ትክክለኛ ቁጥር መሆን አለበት",
+    "error_branch_required": "እባክዎ አንድ ቅርንጫፍ ይምረጡ",
     "error_until_required": "የሚያበቃበት ቀን ያስፈልጋል።",
     "error_until_after_from": "የሚያበቃበት ቀን ከሚጀምርበት ቀን በኋላ መሆን አለበት።"
   },

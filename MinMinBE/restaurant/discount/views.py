@@ -1,5 +1,6 @@
 from rest_framework import filters
 from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework.viewsets import ModelViewSet
 from rest_framework.response import Response
 from django.core.exceptions import ValidationError
 from rest_framework import status
@@ -17,13 +18,12 @@ from accounts.permissions import HasCustomAPIKey, IsAdminOrRestaurant, IsAdminRe
 from accounts.utils import get_user_branch, get_user_tenant
 from .services import get_big_discount_items
 from restaurant.menu_availability.serializers import MenuAvailabilitySerializer
-from restaurant.tenant.models import Tenant
-from core.cache import CachedModelViewSet
+
 
 class DiscountPagination(PageNumberPagination):
     page_size = 10
 
-class DiscountViewSet(CachedModelViewSet):
+class DiscountViewSet(ModelViewSet):
     permission_classes = [IsAuthenticated,HasCustomAPIKey]
     queryset = Discount.objects.all()
     serializer_class = DiscountSerializer
@@ -119,7 +119,7 @@ class DiscountViewSet(CachedModelViewSet):
 class DiscountRulePagination(PageNumberPagination):
     page_size = 10
 
-class DiscountRuleViewSet(CachedModelViewSet):
+class DiscountRuleViewSet(ModelViewSet):
     permission_classes = [IsAuthenticated, HasCustomAPIKey, IsAdminRestaurantOrBranch]
     queryset = DiscountRule.objects.all()
     serializer_class = DiscountRuleSerializer
@@ -147,7 +147,6 @@ class DiscountRuleViewSet(CachedModelViewSet):
         return DiscountRule.objects.none()
     
     def get_paginated_response(self, data):
-        # If 'nopage' query param is set, return unpaginated data
         if self.request.query_params.get('nopage') == '1':
             return Response(data)
         return super().get_paginated_response(data)
@@ -169,7 +168,7 @@ class DiscountRuleViewSet(CachedModelViewSet):
 
 class DiscountApplicationPagination(PageNumberPagination):
     page_size = 10
-class DiscountApplicationViewSet(CachedModelViewSet):
+class DiscountApplicationViewSet(ModelViewSet):
     permission_classes = [IsAuthenticated,HasCustomAPIKey,IsAdminOrRestaurant]
     queryset = DiscountApplication.objects.all()
     serializer_class = DiscountApplicationSerializer
@@ -198,7 +197,7 @@ class DiscountApplicationViewSet(CachedModelViewSet):
 
 class CouponPagination(PageNumberPagination):
     page_size = 10
-class CouponViewSet(CachedModelViewSet):
+class CouponViewSet(ModelViewSet):
     permission_classes = [IsAuthenticated, HasCustomAPIKey, IsAdminRestaurantOrBranch]
     queryset = Coupon.objects.all()
     serializer_class = CouponSerializer

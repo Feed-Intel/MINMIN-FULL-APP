@@ -1,26 +1,26 @@
-import { AuthProvider } from "@/context/auth";
-import ReduxStoreProvider from "@/lib/reduxStore/ReduxStoreProvider";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { useFonts } from "expo-font";
-import { Stack } from "expo-router";
-import * as SplashScreen from "expo-splash-screen";
-import { StatusBar } from "expo-status-bar";
-import { useEffect } from "react";
-import "react-native-reanimated";
-import Toast from "react-native-toast-message";
-import { Platform } from "react-native";
-import NoInternet from "@/components/ui/NoInternet";
-import useNetworkStatus from "@/hooks/useNetworkStatus";
+import { AuthProvider } from '@/context/auth';
+import ReduxStoreProvider from '@/lib/reduxStore/ReduxStoreProvider';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { useFonts } from 'expo-font';
+import { Slot, Stack } from 'expo-router';
+import * as SplashScreen from 'expo-splash-screen';
+import { StatusBar } from 'expo-status-bar';
+import { useEffect } from 'react';
+import 'react-native-reanimated';
+import Toast from 'react-native-toast-message';
+import { Platform } from 'react-native';
+import NoInternet from '@/components/ui/NoInternet';
+import useNetworkStatus from '@/hooks/useNetworkStatus';
 import {
   MD3LightTheme as DefaultTheme,
   PaperProvider,
   configureFonts,
-} from "react-native-paper";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import * as SecureStore from "expo-secure-store";
-import en from "@/locales/en.json";
-import am from "@/locales/am.json";
-import { I18n } from "i18n-js";
+} from 'react-native-paper';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
+import en from '@/locales/en.json';
+import am from '@/locales/am.json';
+import { I18n } from 'i18n-js';
 
 export const i18n = new I18n({ en, am });
 i18n.enableFallback = true;
@@ -34,8 +34,8 @@ const fontConfig = Object.fromEntries(
     variantName,
     {
       ...variantProperties, // Keep existing properties like fontSize, lineHeight, letterSpacing
-      fontFamily: "Outfit",
-      fontWeight: "600",
+      fontFamily: 'Outfit',
+      fontWeight: '600',
     },
   ])
 );
@@ -44,11 +44,11 @@ const theme = {
   ...DefaultTheme,
   colors: {
     ...DefaultTheme.colors,
-    primary: "#96B76E", // Customize primary color
-    secondary: "#03dac6", // Customize secondary color
-    background: "#f5f5f5", // Customize background color
-    surface: "#ffffff",
-    text: "#000000",
+    primary: '#96B76E', // Customize primary color
+    secondary: '#03dac6', // Customize secondary color
+    background: '#f5f5f5', // Customize background color
+    surface: '#ffffff',
+    text: '#000000',
   },
   // 3. Apply the modified font configuration
   fonts: configureFonts({ config: fontConfig }),
@@ -56,7 +56,7 @@ const theme = {
 
 export default function RootLayout() {
   const [loaded] = useFonts({
-    Outfit: require("../assets/fonts/Outfit.ttf"), // Load your Outfit font
+    Outfit: require('../assets/fonts/Outfit.ttf'), // Load your Outfit font
   });
   const isConnected = useNetworkStatus();
 
@@ -67,14 +67,14 @@ export default function RootLayout() {
     async function loadAndSetLanguage() {
       try {
         let storedLanguage = null;
-        if (Platform.OS === "web") {
-          storedLanguage = (await AsyncStorage.getItem("language")) || "en";
+        if (Platform.OS === 'web') {
+          storedLanguage = (await AsyncStorage.getItem('language')) || 'en';
         } else {
-          storedLanguage = (await SecureStore.getItemAsync("language")) || "en";
+          storedLanguage = (await SecureStore.getItemAsync('language')) || 'en';
         }
         i18n.locale = storedLanguage;
       } catch (error) {
-        console.error("Failed to load language from storage:", error);
+        console.error('Failed to load language from storage:', error);
       }
     }
     loadAndSetLanguage();

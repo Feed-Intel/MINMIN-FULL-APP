@@ -40,9 +40,11 @@ const LoyaltySettingsScreen = () => {
   const validate = () => {
     const newErrors: { thresholdPoints?: string; conversionRate?: string } = {};
     if (thresholdPoints === null || thresholdPoints <= 0)
-      newErrors.thresholdPoints = 'Threshold Points must be greater than 0';
+      newErrors.thresholdPoints = I18n.t('loyaltySettings.invalid_threshold');
     if (conversionRate === null || conversionRate <= 0)
-      newErrors.conversionRate = 'Conversion Rate must be greater than 0';
+      newErrors.conversionRate = I18n.t(
+        'loyaltySettings.invalid_conversion_rate'
+      );
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };

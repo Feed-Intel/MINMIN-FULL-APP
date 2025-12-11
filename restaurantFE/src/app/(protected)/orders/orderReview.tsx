@@ -238,26 +238,30 @@ export default function AcceptOrders() {
             <Text style={{ color: '#202B189E' }}>
               {I18n.t('orderReview.summarySubtotal')}
             </Text>
-            <Text style={{ color: '#202B189E' }}>${subtotal.toFixed(2)}</Text>
+            <Text style={{ color: '#202B189E' }}>
+              ETB {subtotal.toFixed(2)}
+            </Text>
           </View>
           <View style={styles.summaryRow}>
             <Text style={{ color: '#202B189E' }}>
               {I18n.t('orderReview.summaryShipping')}
             </Text>
-            <Text style={{ color: '#202B189E' }}>${shipping.toFixed(2)}</Text>
+            <Text style={{ color: '#202B189E' }}>
+              ETB {shipping.toFixed(2)}
+            </Text>
           </View>
           <View style={styles.summaryRow}>
             <Text style={{ color: '#202B189E' }}>
               {I18n.t('orderReview.summaryTax')}
             </Text>
-            <Text style={{ color: '#202B189E' }}>${tax.toFixed(2)}</Text>
+            <Text style={{ color: '#202B189E' }}>ETB {tax.toFixed(2)}</Text>
           </View>
           <Divider style={{ marginVertical: 6 }} />
           <View style={styles.summaryRow}>
             <Text style={styles.totalLabel}>
               {I18n.t('orderReview.summaryTotalLabel')}
             </Text>
-            <Text style={styles.totalValue}>${total.toFixed(2)}</Text>
+            <Text style={styles.totalValue}>ETB {total.toFixed(2)}</Text>
           </View>
         </Card.Content>
         <Card.Actions style={styles.actions}>

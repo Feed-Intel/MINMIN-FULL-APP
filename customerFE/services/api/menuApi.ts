@@ -1,22 +1,28 @@
-import { apiClient } from "@/config/axiosConfig";
-import { asyncHandler } from "@/utils/asyncHandler";
+import { apiClient } from '@/config/axiosConfig';
+import { asyncHandler } from '@/utils/asyncHandler';
 
-export const GetMenus = asyncHandler(async (searchTerm?: string) => {
-  if (searchTerm) {
-    const resp = await apiClient.get(`/menu/?search=${searchTerm}`);
-    return resp.data.results;
+export const GetMenus = asyncHandler(
+  async (searchTerm?: string, noPage?: boolean) => {
+    if (searchTerm) {
+      const resp = await apiClient.get(`/menu/?search=${searchTerm}`);
+      return resp.data.results;
+    }
+    if (noPage) {
+      const resp = await apiClient.get(`/menu/?nopage=1`);
+      return resp.data;
+    }
+    const resp = await apiClient.get('/menu/');
+    return resp.data.results || [];
   }
-  const resp = await apiClient.get("/menu/");
-  return resp.data.results || [];
-});
+);
 
 export const GetRecommendedMenus = asyncHandler(async () => {
-  const resp = await apiClient.get("/menu-availability/recommended_items/");
+  const resp = await apiClient.get('/menu-availability/recommended_items/');
   return resp.data;
 });
 
 export const GetBestDishOfWeek = asyncHandler(async () => {
-  const resp = await apiClient.get("/menu-availability/best_dishes_of_week/");
+  const resp = await apiClient.get('/menu-availability/best_dishes_of_week/');
   return resp.data;
 });
 
@@ -26,9 +32,9 @@ export const GetMenu = asyncHandler(async (id: string) => {
 });
 
 export const CreateMenu = asyncHandler(async (data: FormData) => {
-  const resp = await apiClient.post("/menu/", data, {
+  const resp = await apiClient.post('/menu/', data, {
     headers: {
-      "Content-Type": "multipart/form-data",
+      'Content-Type': 'multipart/form-data',
     },
   });
   return resp.data;
@@ -37,7 +43,7 @@ export const CreateMenu = asyncHandler(async (data: FormData) => {
 export const UpdateMenu = asyncHandler(async (data: FormData, id: string) => {
   const resp = await apiClient.patch(`/menu/${id}/`, data, {
     headers: {
-      "Content-Type": "multipart/form-data",
+      'Content-Type': 'multipart/form-data',
     },
   });
   return resp.data;
@@ -79,16 +85,16 @@ export const GetMenuAvailabilities2 = async (data: {
   nextPage?: string;
 }) => {
   try {
-    let url = "/menu-availability/";
+    let url = '/menu-availability/';
     const params = new URLSearchParams();
     if (data.nextPage) {
-      const page = data.nextPage.split("page=")[1];
+      const page = data.nextPage.split('page=')[1];
       ////("this is the parsed url", page);
       url = `/menu-availability/?page=${page}`;
     } else {
       // Build initial request with search and filters
       if (data.searchTerm) {
-        params.append("search", data.searchTerm);
+        params.append('search', data.searchTerm);
       }
 
       if (data.filters) {
@@ -115,8 +121,8 @@ export const GetMenuAvailabilities2 = async (data: {
       count: resp.data?.count || 0,
     };
   } catch (error) {
-    console.error("Failed to fetch menus:", error);
-    throw new Error("Failed to load menu availability data");
+    console.error('Failed to fetch menus:', error);
+    throw new Error('Failed to load menu availability data');
   }
 };
 
@@ -142,7 +148,7 @@ export const CreateMenuAvailability = asyncHandler(async (data: any) => {
 });
 
 export const GetRelatedItems = asyncHandler(async () => {
-  const resp = await apiClient.get("/related-menu/");
+  const resp = await apiClient.get('/related-menu/');
   return resp.data.results;
 });
 
@@ -152,7 +158,7 @@ export const GetRelatedItem = asyncHandler(async (id: string) => {
 });
 
 export const CreateRelatedItem = asyncHandler(async (data: any) => {
-  const resp = await apiClient.post("/related-menu/", data);
+  const resp = await apiClient.post('/related-menu/', data);
   return resp.data;
 });
 

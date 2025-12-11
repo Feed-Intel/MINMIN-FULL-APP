@@ -12,8 +12,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import debounce from 'lodash.debounce';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import {
   Card,
   Button,
@@ -29,7 +28,7 @@ import {
   useAddBookMark,
   useAddComment,
   useGetBookMarks,
-  useGetPosts,
+  useGetPost,
   useLikePost,
   useSharePost,
 } from '@/services/mutation/feedMutation';
@@ -66,13 +65,12 @@ const FoodFeedScreen = () => {
   const theme = useTheme();
   const headerAnimation = useRef(new Animated.Value(0)).current;
   const contentAnimation = useRef(new Animated.Value(0)).current;
-  const [debouncedQuery, setDebouncedQuery] = useState('');
+  const { feedID } = useLocalSearchParams();
   const {
-    data: posts = [],
+    data: post,
     isLoading,
-    refetch: refetchPosts,
-  } = useGetPosts(debouncedQuery);
-  const [refreshing, setRefreshing] = useState(false);
+    refetch: refetchPost,
+  } = useGetPost(feedID as string);
   const queryClient = useQueryClient();
   const [newComment, setNewComment] = useState('');
   // const [visible, setVisible] = useState(false); // Removed: This state was unused
@@ -80,7 +78,6 @@ const FoodFeedScreen = () => {
   const { mutateAsync: addComment } = useAddComment();
   const [selectedPost, setSelectedPost] = useState<any>(null);
   const [isCommentsVisible, setIsCommentsVisible] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
   const [showBookmarks, setShowBookmarks] = useState(false);
   const overlayY = useRef(new Animated.Value(screenHeight)).current;
   const { mutateAsync: bookmarkPost } = useAddBookMark();
@@ -93,17 +90,6 @@ const FoodFeedScreen = () => {
   const { data: user, isLoading: isUserLoading } = useGetUser(
     userInfo?.id || userInfo?.user_id
   );
-
-  const debouncedSearch = useMemo(
-    () => debounce((q: string) => setDebouncedQuery(q), 300),
-    []
-  );
-
-  useEffect(() => {
-    return () => {
-      debouncedSearch.cancel();
-    };
-  }, [debouncedSearch]);
 
   const updateCachedPost = (postId: string, updater: (post: any) => any) => {
     queryClient.setQueryData(['posts'], (oldData: any) => {
@@ -191,21 +177,6 @@ const FoodFeedScreen = () => {
     }, [])
   );
 
-  const handleRefresh = async () => {
-    setRefreshing(true);
-    try {
-      if (showBookmarks) {
-        await refetch();
-      } else {
-        await refetchPosts();
-      }
-    } catch (error) {
-      console.error(i18n.t('refresh_failed_error'), error);
-    } finally {
-      setRefreshing(false);
-    }
-  };
-
   const handleLike = async (postId: string) => {
     const toggleLike = (post: any) => {
       const likeValue = Number(post.likes_count ?? 0);
@@ -220,7 +191,7 @@ const FoodFeedScreen = () => {
 
     try {
       await likePost(postId);
-      void refetchPosts();
+      void refetchPost();
     } catch (error) {
       updateCachedPost(postId, toggleLike);
       Toast.show({
@@ -264,11 +235,11 @@ const FoodFeedScreen = () => {
       await addComment({ post: postId, text: commentText });
       queryClient.invalidateQueries({ queryKey: ['posts'] });
       queryClient.invalidateQueries({ queryKey: ['bookMarkPosts'] });
-      refetchPosts();
+      refetchPost();
     } catch (error) {
       queryClient.setQueryData(['posts'], previousPosts);
       queryClient.setQueryData(['bookMarkPosts'], previousBookmarks);
-      refetchPosts();
+      refetchPost();
       setSelectedPost(previousSelectedPost);
       setNewComment(commentText);
       Toast.show({
@@ -307,7 +278,6 @@ const FoodFeedScreen = () => {
     };
 
     try {
-      const deepLink = `minmincustomer://feed/${post.id}`;
       const webLink = `${process.env.EXPO_PUBLIC_BASE_URL}/feed/${post.id}`;
       const downloadLink = `${process.env.EXPO_PUBLIC_BASE_URL}/download`;
       const imageUrl = normalizeImageUrl(post.image) || webLink;
@@ -324,7 +294,7 @@ const FoodFeedScreen = () => {
           await navigator.share(shareData);
           increaseShareCount();
           await sharePost(post.id);
-          refetchPosts();
+          refetchPost();
         } else if (navigator.clipboard) {
           await navigator.clipboard.writeText(`${shareData.text}\n${webLink}`);
           Toast.show({
@@ -334,7 +304,7 @@ const FoodFeedScreen = () => {
           });
           increaseShareCount();
           await sharePost(post.id);
-          refetchPosts();
+          refetchPost();
         }
       } else {
         // Mobile sharing logic
@@ -356,7 +326,7 @@ const FoodFeedScreen = () => {
               if (result) {
                 increaseShareCount();
                 await sharePost(post.id);
-                refetchPosts();
+                refetchPost();
               }
             }
           } catch (error) {
@@ -364,7 +334,7 @@ const FoodFeedScreen = () => {
             await WebBrowser.openBrowserAsync(webLink);
             increaseShareCount();
             await sharePost(post.id);
-            refetchPosts();
+            refetchPost();
           }
         } else {
           // Android share
@@ -372,7 +342,7 @@ const FoodFeedScreen = () => {
           await RNShare.open(shareOptions);
           increaseShareCount();
           await sharePost(post.id);
-          refetchPosts();
+          refetchPost();
         }
       }
     } catch (error: any) {
@@ -394,17 +364,13 @@ const FoodFeedScreen = () => {
     setNewComment(''); // Reset comment input when opening
   };
 
-  const handleSearchChange = (query: string) => {
-    setSearchQuery(query);
-    debouncedSearch(query);
-  };
-
   const handleBookmarkToggle = async (post: any) => {
     const wasBookmarked = post.is_bookmarked;
     const postId = post.id;
     const previousPosts = queryClient.getQueryData(['posts']);
     const previousBookmarks = queryClient.getQueryData(['bookMarkPosts']);
     const previousSelectedPost = selectedPost;
+
     setSelectedPost((prev: any) =>
       prev?.id === postId
         ? { ...prev, is_bookmarked: !prev.is_bookmarked }
@@ -442,7 +408,7 @@ const FoodFeedScreen = () => {
 
     try {
       await bookmarkPost(postId);
-      refetchPosts();
+      refetchPost();
     } catch (error) {
       queryClient.setQueryData(['posts'], previousPosts);
       queryClient.setQueryData(['bookMarkPosts'], previousBookmarks);
@@ -494,16 +460,6 @@ const FoodFeedScreen = () => {
                 )}
               </TouchableOpacity>
             </View>
-            <TextInput
-              placeholder={i18n.t('search_posts_placeholder')}
-              value={searchQuery}
-              onChangeText={handleSearchChange}
-              style={styles.searchInput}
-              theme={{ roundness: 24, colors: { primary: '#EE8429' } }}
-              underlineColor="transparent" // Removes Android's default underline
-              activeUnderlineColor="transparent" // Removes Android's default underline
-              cursorColor="#EE8429" // Sets the cursor color
-            />
             <View style={styles.headerButtons}>
               <TouchableOpacity
                 onPress={() => router.push('/(protected)/notification')}
@@ -528,138 +484,115 @@ const FoodFeedScreen = () => {
         </View>
 
         <View style={[styles.contentContainer]}>
-          {isLoading ? ( // Show ActivityIndicator when posts are loading
+          {isLoading ? (
             <View style={styles.loadingContainer}>
               <ActivityIndicator size="large" color={theme.colors.primary} />
               <Text style={styles.loadingText}>
                 {i18n.t('loading_posts_text')}
               </Text>
             </View>
-          ) : (
-            <FlatList
-              data={posts}
-              style={{ backgroundColor: '#FDFDFC' }}
-              keyExtractor={(item) => item.id.toString()}
-              renderItem={({ item }) => (
-                <View style={styles.postCard}>
-                  <Card.Title
-                    title={item.user}
-                    subtitle={`${item.location} • ${friendlyTime(
-                      item.time_ago
-                    )} `}
-                    left={() => (
-                      <TouchableOpacity
-                        onPress={() => {
-                          router.push({
-                            pathname: '/restaurant-profile',
-                            params: { id: item.tenant_id },
-                          });
-                        }}
-                      >
-                        <Avatar.Image
-                          size={44}
-                          source={{
-                            uri: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(
-                              item.user
-                            )}`,
-                          }}
-                          style={styles.avatar}
-                        />
-                      </TouchableOpacity>
-                    )}
-                    titleStyle={styles.userName}
-                    subtitleStyle={styles.subtitle}
+          ) : Boolean(post) ? (
+            <View style={styles.postCard}>
+              <Card.Title
+                title={post.user}
+                subtitle={`${post.location} • ${friendlyTime(post.time_ago)}`}
+                left={() => (
+                  <TouchableOpacity
+                    onPress={() => {
+                      router.push({
+                        pathname: '/restaurant-profile',
+                        params: { id: post.tenant_id },
+                      });
+                    }}
+                  >
+                    <Avatar.Image
+                      size={44}
+                      source={{
+                        uri: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(
+                          post.user
+                        )}`,
+                      }}
+                      style={styles.avatar}
+                    />
+                  </TouchableOpacity>
+                )}
+                titleStyle={styles.userName}
+                subtitleStyle={styles.subtitle}
+              />
+
+              <Card.Cover
+                source={{ uri: normalizeImageUrl(post.image) }}
+                style={styles.postImage}
+                theme={{ roundness: 0 }}
+              />
+
+              <Card.Content style={styles.content}>
+                <View style={styles.postActions}>
+                  {/* Like Button */}
+                  <View style={styles.actionItem}>
+                    <CustomIconButton
+                      IconComponent={<LikeIcon width={22} height={22} />}
+                      activeIcon={<LikedIcon width={22} height={22} />}
+                      isActive={post.is_liked}
+                      onPress={() => handleLike(post.id)}
+                    />
+                    <Text style={styles.actionText}>
+                      {safeCount(post.likes_count)}
+                    </Text>
+                  </View>
+
+                  {/* Comment Button */}
+                  <View style={styles.actionItem}>
+                    <CustomIconButton
+                      IconComponent={<CommentIcon width={22} height={22} />}
+                      onPress={() => openCommentsModal(post)}
+                    />
+                    <Text style={styles.actionText}>
+                      {safeCount(post.comments?.length ?? 0)}
+                    </Text>
+                  </View>
+
+                  {/* Share Button */}
+                  <View style={styles.actionItem}>
+                    <CustomIconButton
+                      IconComponent={<ShareIcon width={22} height={22} />}
+                      onPress={() => handleShare(post)}
+                    />
+                    <Text style={styles.actionText}>
+                      {safeCount(post.shares_count)}
+                    </Text>
+                  </View>
+
+                  <View style={styles.spacer} />
+
+                  {/* Bookmark Button */}
+                  <CustomIconButton
+                    IconComponent={
+                      <BookmarkIcon width={22} height={22} fill="#666" />
+                    }
+                    activeIcon={
+                      <BookmarkedIcon width={22} height={22} fill="#666" />
+                    }
+                    isActive={post.is_bookmarked}
+                    onPress={() => handleBookmarkToggle(post)}
                   />
-
-                  <Card.Cover
-                    source={{ uri: normalizeImageUrl(item.image) }}
-                    style={styles.postImage}
-                    theme={{ roundness: 0 }}
-                  />
-
-                  <Card.Content style={styles.content}>
-                    <View style={styles.postActions}>
-                      {/* Like Button */}
-                      <View style={styles.actionItem}>
-                        <CustomIconButton
-                          IconComponent={<LikeIcon width={22} height={22} />}
-                          activeIcon={<LikedIcon width={22} height={22} />}
-                          isActive={item.is_liked}
-                          onPress={() => handleLike(item.id)}
-                        />
-                        <Text style={styles.actionText}>
-                          {safeCount(item.likes_count)}
-                        </Text>
-                      </View>
-
-                      {/* Comment Button */}
-                      <View style={styles.actionItem}>
-                        <CustomIconButton
-                          IconComponent={<CommentIcon width={22} height={22} />}
-                          onPress={() => openCommentsModal(item)}
-                        />
-                        <Text style={styles.actionText}>
-                          {safeCount(item.comments?.length ?? 0)}
-                        </Text>
-                      </View>
-
-                      {/* Share Button */}
-                      <View style={styles.actionItem}>
-                        <CustomIconButton
-                          IconComponent={<ShareIcon width={22} height={22} />}
-                          onPress={() => handleShare(item)}
-                        />
-                        <Text style={styles.actionText}>
-                          {safeCount(item.shares_count)}
-                        </Text>
-                      </View>
-
-                      <View style={styles.spacer} />
-
-                      {/* Bookmark Button */}
-                      <CustomIconButton
-                        IconComponent={
-                          <BookmarkIcon width={22} height={22} fill="#666" />
-                        }
-                        activeIcon={
-                          <BookmarkedIcon width={22} height={22} fill="#666" />
-                        }
-                        isActive={item.is_bookmarked}
-                        onPress={() => handleBookmarkToggle(item)}
-                      />
-                    </View>
-
-                    <View style={styles.captionContainer}>
-                      <Text style={styles.caption} numberOfLines={1}>
-                        <Text style={styles.userName}>{item.user} </Text>
-                        {item.caption}
-                      </Text>
-                      {item.caption.length > 50 && (
-                        <TouchableOpacity
-                          onPress={() => openCommentsModal(item)}
-                        >
-                          <Text style={styles.moreLink}>
-                            {i18n.t('more_link')}
-                          </Text>
-                        </TouchableOpacity>
-                      )}
-                    </View>
-                  </Card.Content>
                 </View>
-              )}
-              snapToInterval={screenHeight * 0.6}
-              decelerationRate="fast"
-              showsVerticalScrollIndicator={false}
-              refreshControl={
-                <RefreshControl
-                  refreshing={refreshing}
-                  onRefresh={handleRefresh}
-                  colors={['#96B76E']}
-                  progressBackgroundColor="#ffffff"
-                />
-              }
-              contentContainerStyle={styles.listContentContainer}
-            />
+
+                <View style={styles.captionContainer}>
+                  <Text style={styles.caption} numberOfLines={1}>
+                    <Text style={styles.userName}>{post.user} </Text>
+                    {post.caption}
+                  </Text>
+                  {post.caption.length > 50 && (
+                    <TouchableOpacity onPress={() => openCommentsModal(post)}>
+                      <Text style={styles.moreLink}>{i18n.t('more_link')}</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              </Card.Content>
+            </View>
+          ) : (
+            <Text style={styles.loadingText}>{i18n.t('no_posts_text')}</Text>
           )}
         </View>
 
@@ -821,7 +754,7 @@ const styles = StyleSheet.create({
     // elevation: 2, // Commented out as it's not present in the original code
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'space-between',
     // shadowOpacity: 0.1, // Commented out
     // shadowRadius: 4, // Commented out
     // shadowOffset: { width: 0, height: 2 }, // Commented out
@@ -837,6 +770,7 @@ const styles = StyleSheet.create({
         maxWidth: 800,
         width: '100%',
         alignSelf: 'center',
+        height: '100%',
       },
     }),
   },

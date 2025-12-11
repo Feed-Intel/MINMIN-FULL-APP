@@ -1,4 +1,10 @@
-import { useState, useEffect, useCallback } from 'react';
+import {
+  useQuery,
+  useMutation,
+  useQueryClient,
+  QueryFunction,
+  MutationFunction,
+} from '@tanstack/react-query';
 import {
   GetDashboardData,
   GetTenantProfile,
@@ -6,7 +12,6 @@ import {
   UpdateTenantProfile,
   UpdateTenantProfileImage,
 } from '../api/tenantApi';
-import { useTime } from '@/context/time';
 
 type DashboardParams = {
   period?: 'today' | 'month' | 'year' | 'custom';
@@ -21,232 +26,81 @@ type TopMenuItemsParams = {
   branch_id?: string;
 };
 
-const manualInvalidate = (setTime: (time: number) => void) => {
-  setTime(Date.now());
+const tenantKeys = {
+  all: ['tenant'] as const,
+  profile: (id?: string) => [...tenantKeys.all, 'profile', id] as const,
+  dashboard: () => [...tenantKeys.all, 'dashboard'] as const,
+  dashboardData: (params?: DashboardParams) =>
+    [...tenantKeys.dashboard(), { params }] as const,
+  topMenuItems: (params?: TopMenuItemsParams) =>
+    [...tenantKeys.dashboard(), 'topMenuItems', { params }] as const,
 };
 
 export const useDashboardData = (params?: DashboardParams) => {
-  const { time } = useTime();
-  const [data, setData] = useState<any>(undefined);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isPending, setIsPending] = useState(false);
-  const [error, setError] = useState<any>(null);
+  const queryKey = tenantKeys.dashboardData(params);
+  const queryFn: QueryFunction<any, typeof queryKey> = ({
+    queryKey: [, , { params: currentParams }],
+  }) => GetDashboardData(currentParams);
 
-  useEffect(() => {
-    let isMounted = true;
-    const fetchData = async () => {
-      if (!data) {
-        setIsLoading(true);
-      } else {
-        setIsPending(true);
-      }
-      setError(null);
-
-      try {
-        const response = await GetDashboardData(params);
-        if (isMounted) {
-          setData(response);
-        }
-      } catch (err) {
-        if (isMounted) {
-          setError(err);
-        }
-      } finally {
-        if (isMounted) {
-          setIsLoading(false);
-          setIsPending(false);
-        }
-      }
-    };
-
-    fetchData();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [params, time]); // Dependency on 'params' and 'time'
-
-  return {
-    data,
-    isLoading,
-    isPending: isPending && !!data,
-    error,
-  };
+  return useQuery({
+    queryKey,
+    queryFn,
+  });
 };
 
 export const useTopMenuItems = (params?: TopMenuItemsParams) => {
-  const [data, setData] = useState<any>(undefined);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isPending, setIsPending] = useState(false);
-  const [error, setError] = useState<any>(null);
+  const queryKey = tenantKeys.topMenuItems(params);
+  const queryFn: QueryFunction<any, typeof queryKey> = ({
+    queryKey: [, , , { params: currentParams }],
+  }) => GetTopMenuItems(currentParams);
 
-  useEffect(() => {
-    let isMounted = true;
-    const fetchData = async () => {
-      if (!data) {
-        setIsLoading(true);
-      } else {
-        setIsPending(true);
-      }
-      setError(null);
-
-      try {
-        const response = await GetTopMenuItems(params);
-        if (isMounted) {
-          setData(response);
-        }
-      } catch (err) {
-        if (isMounted) {
-          setError(err);
-        }
-      } finally {
-        if (isMounted) {
-          setIsLoading(false);
-          setIsPending(false);
-        }
-      }
-    };
-
-    fetchData();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [params]); // Dependency on 'params' only (no 'time' in original queryKey)
-
-  return {
-    data,
-    isLoading,
-    isPending: isPending && !!data,
-    error,
-  };
+  return useQuery({
+    queryKey,
+    queryFn,
+  });
 };
-
-// --- Tenant Profile Queries ---
 
 export const useGetTenantProfile = (id?: string) => {
-  const { time } = useTime();
-  const [data, setData] = useState<any>(undefined);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isPending, setIsPending] = useState(false);
-  const [error, setError] = useState<any>(null);
-  // 'enabled: Boolean(id)' equivalent
-  const isEnabled = Boolean(id);
+  const queryKey = tenantKeys.profile(id);
 
-  useEffect(() => {
-    if (!isEnabled) {
-      setData(undefined);
-      return;
-    }
+  const queryFn: QueryFunction<any, typeof queryKey> = ({
+    queryKey: [, , profileId],
+  }) => GetTenantProfile(profileId!);
 
-    let isMounted = true;
-    const fetchData = async () => {
-      if (!data) {
-        setIsLoading(true);
-      } else {
-        setIsPending(true);
-      }
-      setError(null);
-
-      try {
-        // Use non-null assertion 'id!' because we check 'isEnabled'
-        const response = await GetTenantProfile(id!);
-        if (isMounted) {
-          setData(response);
-        }
-      } catch (err) {
-        if (isMounted) {
-          setError(err);
-        }
-      } finally {
-        if (isMounted) {
-          setIsLoading(false);
-          setIsPending(false);
-        }
-      }
-    };
-
-    fetchData();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [id, time, isEnabled]);
-
-  return {
-    data,
-    isLoading,
-    isPending: isPending && !!data,
-    error,
-  };
+  return useQuery({
+    queryKey,
+    queryFn,
+    enabled: !!id,
+  });
 };
 
-// --- Tenant Profile Mutations ---
+export const useUpdateTenantProfile = (profileId?: string) => {
+  const queryClient = useQueryClient();
 
-export const useUpdateTenantProfile = () => {
-  const { setTime } = useTime();
-  const [isPending, setIsPending] = useState(false);
-  const [error, setError] = useState<any>(null);
-  const [data, setData] = useState<any>(undefined);
-
-  const mutate = useCallback(
-    async (variables: any) => {
-      setIsPending(true);
-      setError(null);
-      setData(undefined);
-      try {
-        const result = await UpdateTenantProfile(variables);
-        setData(result);
-        manualInvalidate(setTime); // onSuccess invalidates 'tenantProfile'
-        return result;
-      } catch (err) {
-        setError(err);
-        throw err;
-      } finally {
-        setIsPending(false);
-      }
+  return useMutation({
+    mutationFn: (variables: any) => UpdateTenantProfile(variables),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({
+        queryKey: tenantKeys.profile(profileId),
+      });
+      queryClient.setQueryData(tenantKeys.profile(profileId), data);
     },
-    [setTime]
-  );
-
-  return {
-    mutate,
-    data,
-    isPending,
-    error,
-  };
+  });
 };
 
-export const useUpdateTenantProfileImage = () => {
-  const { setTime } = useTime();
-  const [isPending, setIsPending] = useState(false);
-  const [error, setError] = useState<any>(null);
-  const [data, setData] = useState<any>(undefined);
+export const useUpdateTenantProfileImage = (profileId?: string) => {
+  const queryClient = useQueryClient();
 
-  const mutate = useCallback(
-    async (variables: FormData) => {
-      setIsPending(true);
-      setError(null);
-      setData(undefined);
-      try {
-        const result = await UpdateTenantProfileImage(variables);
-        setData(result);
-        manualInvalidate(setTime); // onSuccess invalidates 'tenantProfile'
-        return result;
-      } catch (err) {
-        setError(err);
-        throw err;
-      } finally {
-        setIsPending(false);
-      }
+  const mutationFn: MutationFunction<any, FormData> = (variables) =>
+    UpdateTenantProfileImage(variables);
+
+  return useMutation({
+    mutationFn,
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({
+        queryKey: tenantKeys.profile(profileId),
+      });
+      queryClient.setQueryData(tenantKeys.profile(profileId), data);
     },
-    [setTime]
-  );
-
-  return {
-    mutate,
-    data,
-    isPending,
-    error,
-  };
+  });
 };

@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, Animated, TextInput } from 'react-native';
+import { View, StyleSheet, TextInput } from 'react-native';
 import { setRestaurant } from '@/lib/reduxStore/authSlice';
 import { Text, Button } from 'react-native-paper';
 import { useRouter } from 'expo-router';
 import { useDispatch } from 'react-redux';
+import validator from 'validator';
 import { useResetPassword } from '@/services/mutation/authMutation';
 import { i18n as I18n } from '../_layout';
 
@@ -23,7 +24,7 @@ const ForgotPasswordScreen = () => {
   );
 
   const handlePasswordReset = () => {
-    if (!email.trim()) {
+    if (!validator.isEmail(email)) {
       setError(true);
       return;
     }
@@ -46,13 +47,13 @@ const ForgotPasswordScreen = () => {
           value={email}
           onChangeText={(text) => {
             setEmail(text);
-            if (text.trim()) setError(false); // Clear error when user types
+            if (text.trim()) setError(false);
           }}
           keyboardType="email-address"
           style={[styles.input, error && styles.inputError]}
         />
         {error && (
-          <Text style={styles.errorText}>Please enter a valid email</Text>
+          <Text style={styles.errorText}>{I18n.t('Login.invalid_email')}</Text>
         )}
 
         {/* Reset Password Button */}

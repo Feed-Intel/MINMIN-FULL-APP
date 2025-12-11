@@ -1,4 +1,10 @@
-import { useState, useEffect, useCallback } from 'react';
+import {
+  useQuery,
+  useMutation,
+  useQueryClient,
+  QueryFunction,
+  MutationFunction,
+} from '@tanstack/react-query';
 import {
   GetBranchAdmins,
   CreateBranchAdmin,
@@ -7,227 +13,87 @@ import {
   DeleteBranchAdmin,
 } from '../api/branchAdminApi';
 import { BranchAdmin } from '@/types/branchAdmin';
-import { useTime } from '@/context/time';
 
-const manualInvalidate = (setTime: (time: number) => void) => {
-  setTime(Date.now());
+interface BranchAdminsResponse {
+  next: string | null;
+  results: BranchAdmin[];
+  count: number;
+}
+
+const branchAdminKeys = {
+  all: ['branchAdmins'] as const,
+  lists: () => [...branchAdminKeys.all, 'list'] as const,
+  list: (page: number | undefined) =>
+    [...branchAdminKeys.lists(), { page }] as const,
+  details: () => [...branchAdminKeys.all, 'detail'] as const,
+  detail: (adminId: string) => [...branchAdminKeys.details(), adminId] as const,
 };
 
 export const useGetBranchAdmins = (page: number | undefined) => {
-  const { time } = useTime();
-  const [data, setData] = useState<
-    | {
-        next: string | null;
-        results: BranchAdmin[];
-        count: number;
-      }
-    | undefined
-  >(undefined);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isPending, setIsPending] = useState(false);
-  const [error, setError] = useState<any>(null);
+  const queryKey = branchAdminKeys.list(page);
+  const queryFn: QueryFunction<BranchAdminsResponse, typeof queryKey> = ({
+    queryKey: [, , { page: currentPage }],
+  }) => GetBranchAdmins(currentPage);
 
-  useEffect(() => {
-    let isMounted = true;
-    const fetchData = async () => {
-      if (!data) {
-        setIsLoading(true);
-      } else {
-        setIsPending(true);
-      }
-      setError(null);
-
-      try {
-        const response = await GetBranchAdmins(page);
-        if (isMounted) {
-          setData(response);
-        }
-      } catch (err) {
-        if (isMounted) {
-          setError(err);
-        }
-      } finally {
-        if (isMounted) {
-          setIsLoading(false);
-          setIsPending(false);
-        }
-      }
-    };
-
-    fetchData();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [page, time]);
-
-  return {
-    data,
-    isLoading,
-    isPending: isPending && !!data,
-    error,
-  };
+  return useQuery({
+    queryKey,
+    queryFn,
+    enabled: true,
+  });
 };
 
 export const useGetBranchAdmin = (adminId: string) => {
-  const { time } = useTime();
-  const [data, setData] = useState<BranchAdmin | undefined>(undefined);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isPending, setIsPending] = useState(false);
-  const [error, setError] = useState<any>(null);
+  const queryKey = branchAdminKeys.detail(adminId);
+  const queryFn: QueryFunction<BranchAdmin, typeof queryKey> = ({
+    queryKey: [, , adminIdValue],
+  }) => GetBranchAdmin(adminIdValue);
 
-  useEffect(() => {
-    if (!adminId) return;
-
-    let isMounted = true;
-    const fetchData = async () => {
-      if (!data) {
-        setIsLoading(true);
-      } else {
-        setIsPending(true);
-      }
-      setError(null);
-
-      try {
-        const response = await GetBranchAdmin(adminId);
-        if (isMounted) {
-          setData(response);
-        }
-      } catch (err) {
-        if (isMounted) {
-          setError(err);
-        }
-      } finally {
-        if (isMounted) {
-          setIsLoading(false);
-          setIsPending(false);
-        }
-      }
-    };
-
-    fetchData();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [adminId, time]);
-
-  return {
-    data,
-    isLoading,
-    isPending: isPending && !!data,
-    error,
-  };
+  return useQuery({
+    queryKey,
+    queryFn,
+    enabled: !!adminId,
+  });
 };
 
-export const useCreateBranchAdmin = (
-  onSuccess?: (data: any) => void,
-  onError?: (error: any) => void
-) => {
-  const { setTime } = useTime();
-  const [isPending, setIsPending] = useState(false);
-  const [error, setError] = useState<any>(null);
-  const [data, setData] = useState<any>(undefined);
+export const useCreateBranchAdmin = () => {
+  const queryClient = useQueryClient();
+  const mutationFn: MutationFunction<any, any> = (variables) =>
+    CreateBranchAdmin(variables);
 
-  const mutate = useCallback(
-    async (variables: any) => {
-      setIsPending(true);
-      setError(null);
-      setData(undefined);
-      try {
-        const result = await CreateBranchAdmin(variables);
-        setData(result);
-        manualInvalidate(setTime);
-        onSuccess?.(result);
-        return result;
-      } catch (err) {
-        setError(err);
-        onError?.(err);
-        throw err;
-      } finally {
-        setIsPending(false);
-      }
+  return useMutation({
+    mutationFn,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: branchAdminKeys.lists() });
     },
-    [onSuccess, onError, setTime]
-  );
-
-  return {
-    mutate,
-    data,
-    isPending,
-    error,
-  };
+  });
 };
 
-export const useUpdateBranchAdmin = (
-  onSuccess?: (data: any) => void,
-  onError?: (error: any) => void
-) => {
-  const { setTime } = useTime();
-  const [isPending, setIsPending] = useState(false);
-  const [error, setError] = useState<any>(null);
-  const [data, setData] = useState<any>(undefined);
+export const useUpdateBranchAdmin = () => {
+  const queryClient = useQueryClient();
+  const mutationFn: MutationFunction<any, any> = (variables) =>
+    UpdateBranchAdmin(variables);
 
-  const mutate = useCallback(
-    async (variables: any) => {
-      setIsPending(true);
-      setError(null);
-      setData(undefined);
-      try {
-        const result = await UpdateBranchAdmin(variables);
-        setData(result);
-        manualInvalidate(setTime);
-        onSuccess?.(result);
-        return result;
-      } catch (err) {
-        setError(err);
-        onError?.(err);
-        throw err;
-      } finally {
-        setIsPending(false);
+  return useMutation({
+    mutationFn,
+    onSuccess: (data, variables) => {
+      queryClient.invalidateQueries({ queryKey: branchAdminKeys.lists() });
+      const adminId = variables.id;
+      if (adminId) {
+        queryClient.setQueryData(branchAdminKeys.detail(adminId), data);
       }
     },
-    [onSuccess, onError, setTime]
-  );
-
-  return {
-    mutate,
-    data,
-    isPending,
-    error,
-  };
+  });
 };
 
 export const useDeleteBranchAdmin = () => {
-  const { setTime } = useTime();
-  const [isPending, setIsPending] = useState(false);
-  const [error, setError] = useState<any>(null);
-  const [data, setData] = useState<any>(undefined);
+  const queryClient = useQueryClient();
+  const mutationFn: MutationFunction<any, any> = (variables) =>
+    DeleteBranchAdmin(variables);
 
-  const mutate = useCallback(
-    async (variables: any) => {
-      setIsPending(true);
-      setError(null);
-      setData(undefined);
-      try {
-        const result = await DeleteBranchAdmin(variables);
-        setData(result);
-        manualInvalidate(setTime);
-        return result;
-      } catch (err) {
-        setError(err);
-        throw err;
-      } finally {
-        setIsPending(false);
-      }
+  return useMutation({
+    mutationFn,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: branchAdminKeys.lists() });
     },
-    [setTime]
-  );
-
-  return {
-    mutate,
-    data,
-    isPending,
-    error,
-  };
+  });
 };

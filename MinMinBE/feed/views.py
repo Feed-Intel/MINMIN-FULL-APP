@@ -1,13 +1,14 @@
 from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
+from django_filters.rest_framework import DjangoFilterBackend
 from accounts.permissions import HasCustomAPIKey
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.pagination import PageNumberPagination
 from .models import Post, Comment, Tag, Share
-from .serializers import PostSerializer, CommentSerializer, TagSerializer, ShareSerializer, UserStatsSerializer, CommentStatsSerializer, ShareStatsSerializer
-
+from .serializers import PostSerializer, CommentSerializer, TagSerializer, ShareSerializer, UserStatsSerializer, CommentStatsSerializer, ShareStatsSerializer 
+from .feedFilter import FeedFilter
 class PostPagination(PageNumberPagination):
     page_size = 10
 
@@ -17,6 +18,8 @@ class PostViewSet(viewsets.ModelViewSet):
     """
     queryset = Post.objects.prefetch_related('comments').all().order_by("-time_ago")
     serializer_class = PostSerializer
+    filter_backends = [DjangoFilterBackend]
+    filterset_class = FeedFilter
     permission_classes = [IsAuthenticated,HasCustomAPIKey]
     pagination_class = PostPagination
     def get_queryset(self):

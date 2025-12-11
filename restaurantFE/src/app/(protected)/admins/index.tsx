@@ -15,6 +15,7 @@ import {
   Portal,
   Switch,
   Menu,
+  HelperText,
 } from 'react-native-paper';
 import {
   useCreateBranchAdmin,
@@ -47,18 +48,14 @@ export default function BranchAdmins() {
   const { data: branches } = useGetBranches();
   const [admin, setAdmin] = useState<{} | null>(null);
 
-  const onSuccessEdit = () => {
-    queryClient.invalidateQueries({ queryKey: ['branchAdmins'] });
-  };
-
   const { mutate: editBranchAdmin, isPending: isUpdating } =
-    useUpdateBranchAdmin(onSuccessEdit);
+    useUpdateBranchAdmin();
 
   const handleDeleteAdmin = async () => {
     try {
       setShowDialog(false);
       dispatch(showLoader());
-      await adminDelete(adminID!);
+      adminDelete(adminID!);
       queryClient.invalidateQueries({ queryKey: ['branchAdmins'] });
       dispatch(hideLoader());
       setAdminID(null);
@@ -376,62 +373,62 @@ function AddAdminModal({ branches, visible, onClose }: AddAdminModalProps) {
   const [email, setEmail] = React.useState('');
   const [phone, setPhone] = React.useState('');
   const [branch, setBranch] = React.useState('');
-  // Assume useCreateBranchAdmin and useQueryClient are defined externally
+  const [errors, setErrors] = useState<Record<string, string | undefined>>({});
   const { mutate: addBranchAdmin } = useCreateBranchAdmin();
   const queryClient = useQueryClient();
 
   const [showMenu, setShowMenu] = React.useState(false);
 
   const validateForm = () => {
-    if (!fullName?.trim()) {
-      Toast.show({
-        type: 'error',
-        text1: I18n.t('Common.error_title'),
-        text2: I18n.t('AddAdmin.error_fullname_required'),
-      });
-      return false;
+    let hasError: boolean = false;
+    if (!fullName?.trim() || fullName?.trim().length < 3) {
+      setErrors((prev: any) => ({
+        ...prev,
+        full_name: I18n.t('AddAdmin.error_fullname_required'),
+      }));
+      hasError = true;
     }
 
     if (!email?.trim()) {
-      Toast.show({
-        type: 'error',
-        text1: I18n.t('Common.error_title'),
-        text2: I18n.t('AddAdmin.error_email_required'),
-      });
-      return false;
+      setErrors((prev: any) => ({
+        ...prev,
+        email: I18n.t('AddAdmin.error_email_required'),
+      }));
+      hasError = true;
     } else if (!/\S+@\S+\.\S+/.test(email)) {
-      Toast.show({
-        type: 'error',
-        text1: I18n.t('Common.error_title'),
-        text2: I18n.t('AddAdmin.error_email_invalid'),
-      });
-      return false;
+      setErrors((prev: any) => ({
+        ...prev,
+        email: I18n.t('AddAdmin.error_email_invalid'),
+      }));
+      hasError = true;
     }
 
     if (!phone?.trim()) {
-      Toast.show({
-        type: 'error',
-        text1: I18n.t('Common.error_title'),
-        text2: I18n.t('AddAdmin.error_phone_required'),
-      });
-      return false;
-    } else if (phone.length < 10 || phone.length > 15) {
-      Toast.show({
-        type: 'error',
-        text1: I18n.t('Common.error_title'),
-        text2: I18n.t('AddAdmin.error_phone_length'),
-      });
-      return false;
+      setErrors((prev: any) => ({
+        ...prev,
+        phone: I18n.t('AddAdmin.error_phone_required'),
+      }));
+      hasError = true;
+    } else if (
+      (phone.length != 10 && phone.length != 12) ||
+      (!phone.startsWith('09') && !phone.startsWith('251'))
+    ) {
+      setErrors((prev: any) => ({
+        ...prev,
+        phone: I18n.t('AddAdmin.error_phone_length'),
+      }));
+      hasError = true;
     }
 
     if (!branch) {
-      Toast.show({
-        type: 'error',
-        text1: I18n.t('Common.error_title'),
-        text2: I18n.t('AddAdmin.error_branch_required'),
-      });
-      return false;
+      setErrors((prev: any) => ({
+        ...prev,
+        branch: I18n.t('AddAdmin.error_branch_required'),
+      }));
+      hasError = true;
     }
+
+    if (hasError) return false;
 
     return true;
   };
@@ -447,31 +444,53 @@ function AddAdminModal({ branches, visible, onClose }: AddAdminModalProps) {
             <TextInput
               placeholder={I18n.t('AddAdmin.input_placeholder_fullname')}
               value={fullName}
-              onChangeText={setFullName}
+              onChangeText={(text: string) => {
+                setFullName(text);
+                setErrors((prev: any) => ({ ...prev, full_name: undefined }));
+              }}
               style={stylesModal.input}
               placeholderTextColor="#999"
             />
+            {errors.full_name && (
+              <HelperText type="error" visible={!!errors.full_name}>
+                {errors.full_name}{' '}
+              </HelperText>
+            )}
 
             {/* Email */}
             <TextInput
               placeholder={I18n.t('AddAdmin.input_placeholder_email')}
               value={email}
-              onChangeText={setEmail}
+              onChangeText={(text: string) => {
+                setEmail(text);
+                setErrors((prev: any) => ({ ...prev, email: undefined }));
+              }}
               style={stylesModal.input}
               keyboardType="email-address"
               placeholderTextColor="#999"
             />
-
+            {errors.email && (
+              <HelperText type="error" visible={!!errors.email}>
+                {errors.email}{' '}
+              </HelperText>
+            )}
             {/* Phone */}
             <TextInput
               placeholder={I18n.t('AddAdmin.input_placeholder_phone')}
               value={phone}
-              onChangeText={setPhone}
+              onChangeText={(text: string) => {
+                setPhone(text);
+                setErrors((prev: any) => ({ ...prev, phone: undefined }));
+              }}
               style={stylesModal.input}
               keyboardType="phone-pad"
               placeholderTextColor="#999"
             />
-
+            {errors.phone && (
+              <HelperText type="error" visible={!!errors.phone}>
+                {errors.phone}{' '}
+              </HelperText>
+            )}
             <Menu
               visible={showMenu}
               onDismiss={() => setShowMenu(false)}
@@ -510,6 +529,10 @@ function AddAdminModal({ branches, visible, onClose }: AddAdminModalProps) {
                     onPress={() => {
                       setBranch(b.id!);
                       setShowMenu(false);
+                      setErrors((prev: any) => ({
+                        ...prev,
+                        branch: undefined,
+                      }));
                     }}
                     title={b.address}
                     titleStyle={stylesModal.menuItem}
@@ -522,6 +545,11 @@ function AddAdminModal({ branches, visible, onClose }: AddAdminModalProps) {
                 />
               )}
             </Menu>
+            {errors.branch && (
+              <HelperText type="error" visible={!!errors.branch}>
+                {errors.branch}{' '}
+              </HelperText>
+            )}
           </ScrollView>
         </Dialog.Content>
 
@@ -593,6 +621,9 @@ function UpdateAdminModal({
   const [email, setEmail] = React.useState(admin.email);
   const [phone, setPhone] = React.useState(admin.phone);
   const [branch, setBranch] = React.useState(admin.branch);
+  const [errors, setErrors] = useState<{ [key: string]: string | undefined }>(
+    {}
+  );
   // Assume useUpdateBranchAdmin and useQueryClient are defined externally
   const { mutate: updateBranchAdmin } = useUpdateBranchAdmin();
   const queryClient = useQueryClient();
@@ -600,61 +631,58 @@ function UpdateAdminModal({
   const [showMenu, setShowMenu] = React.useState(false);
 
   const validateForm = () => {
-    // Check Full Name
-    if (!fullName?.trim()) {
-      Toast.show({
-        type: 'error',
-        text1: I18n.t('Common.error_title'),
-        text2: I18n.t('EditAdmin.error_fullname_required'),
-      });
-      return false;
+    let hasError: boolean = false;
+    if (!fullName?.trim() || fullName?.trim().length < 3) {
+      setErrors((prev) => ({
+        ...prev,
+        full_name: I18n.t('EditAdmin.error_fullname_required'),
+      }));
+      hasError = true;
     }
 
     // Check Email
     if (!email?.trim()) {
-      Toast.show({
-        type: 'error',
-        text1: I18n.t('Common.error_title'),
-        text2: I18n.t('EditAdmin.error_email_required'),
-      });
-      return false;
+      setErrors((prev) => ({
+        ...prev,
+        email: I18n.t('EditAdmin.error_email_required'),
+      }));
+      hasError = true;
     } else if (!/\S+@\S+\.\S+/.test(email)) {
-      Toast.show({
-        type: 'error',
-        text1: I18n.t('Common.error_title'),
-        text2: I18n.t('EditAdmin.error_email_invalid'),
-      });
-      return false;
+      setErrors((prev) => ({
+        ...prev,
+        email: I18n.t('EditAdmin.error_email_invalid'),
+      }));
+      hasError = true;
     }
 
     // Check Phone
     if (!phone?.trim()) {
-      Toast.show({
-        type: 'error',
-        text1: I18n.t('Common.error_title'),
-        text2: I18n.t('EditAdmin.error_phone_required'),
-      });
-      return false;
-    } else if (phone.length < 10 || phone.length > 15) {
-      Toast.show({
-        type: 'error',
-        text1: I18n.t('Common.error_title'),
-        text2: I18n.t('EditAdmin.error_phone_length'),
-      });
-      return false;
+      setErrors((prev) => ({
+        ...prev,
+        phone: I18n.t('EditAdmin.error_phone_length'),
+      }));
+      hasError = true;
+    } else if (
+      (phone.length != 10 && phone.length != 12) ||
+      (!phone.startsWith('09') && !phone.startsWith('251'))
+    ) {
+      setErrors((prev) => ({
+        ...prev,
+        phone: I18n.t('AddAdmin.error_phone_length'),
+      }));
+      hasError = true;
     }
 
     // Check Branch
     if (!branch) {
-      Toast.show({
-        type: 'error',
-        text1: I18n.t('Common.error_title'),
-        text2: I18n.t('EditAdmin.error_branch_required'),
-      });
-      return false;
+      setErrors((prev) => ({
+        ...prev,
+        branch: I18n.t('EditAdmin.error_branch_required'),
+      }));
+      hasError = true;
     }
 
-    return true;
+    return !hasError;
   };
 
   return (
@@ -668,31 +696,54 @@ function UpdateAdminModal({
             <TextInput
               placeholder={I18n.t('EditAdmin.label_fullname')}
               value={fullName}
-              onChangeText={setFullName}
+              onChangeText={(text: string) => {
+                const cleaned = text.replace(/[0-9]/g, '');
+                setFullName(cleaned);
+                setErrors((prev) => ({ ...prev, full_name: undefined }));
+              }}
               style={stylesModal.input}
               placeholderTextColor="#999"
             />
-
+            {errors.full_name && (
+              <HelperText type="error" visible={!!errors.full_name}>
+                {errors.full_name}{' '}
+              </HelperText>
+            )}
             {/* Email Input */}
             <TextInput
               placeholder={I18n.t('EditAdmin.label_email')}
               value={email}
-              onChangeText={setEmail}
+              onChangeText={(text: string) => {
+                setEmail(text);
+                setErrors((prev) => ({ ...prev, email: undefined }));
+              }}
               style={stylesModal.input}
               keyboardType="email-address"
               placeholderTextColor="#999"
             />
-
+            {errors.email && (
+              <HelperText type="error" visible={!!errors.email}>
+                {errors.email}{' '}
+              </HelperText>
+            )}
             {/* Phone Input */}
             <TextInput
               placeholder={I18n.t('EditAdmin.label_phone')}
               value={phone}
-              onChangeText={setPhone}
+              onChangeText={(text: string) => {
+                const cleaned = text.replace(/[^0-9]/g, '');
+                setPhone(cleaned);
+                setErrors((prev) => ({ ...prev, phone: undefined }));
+              }}
               style={stylesModal.input}
               keyboardType="phone-pad"
               placeholderTextColor="#999"
             />
-
+            {errors.phone && (
+              <HelperText type="error" visible={!!errors.phone}>
+                {errors.phone}{' '}
+              </HelperText>
+            )}
             {/* Branch Dropdown Menu */}
             <Menu
               visible={showMenu}
@@ -732,6 +783,7 @@ function UpdateAdminModal({
                     onPress={() => {
                       setBranch(b.id!);
                       setShowMenu(false);
+                      setErrors((prev) => ({ ...prev, branch: undefined }));
                     }}
                     title={b.address}
                     titleStyle={stylesModal.menuItem}
@@ -744,6 +796,11 @@ function UpdateAdminModal({
                 />
               )}
             </Menu>
+            {errors.branch && (
+              <HelperText type="error" visible={!!errors.branch}>
+                {errors.branch}{' '}
+              </HelperText>
+            )}
           </ScrollView>
         </Dialog.Content>
 
@@ -764,7 +821,7 @@ function UpdateAdminModal({
             style={stylesModal.addButton}
             onPress={async () => {
               if (validateForm()) {
-                await updateBranchAdmin({
+                updateBranchAdmin({
                   id: admin.id,
                   full_name: fullName,
                   email: email,

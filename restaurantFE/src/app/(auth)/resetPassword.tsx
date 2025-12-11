@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Text, Button, TextInput } from 'react-native-paper';
+import validator from 'validator';
 import { useAppSelector } from '@/lib/reduxStore/hooks';
 import { useUpdatePassword } from '@/services/mutation/authMutation';
 import { i18n as I18n } from '../_layout';
-import { useRouter } from 'expo-router';
 
 const ResetPasswordScreen = () => {
   const [newPassword, setNewPassword] = useState('');
@@ -14,34 +14,25 @@ const ResetPasswordScreen = () => {
 
   const email = useAppSelector((state) => state.auth.restaurant?.email);
   const OTP = useAppSelector((state) => state.auth.OTP);
-  const router = useRouter();
 
   const { mutate: ChangePasswordFn, isPending } = useUpdatePassword();
 
   const handleChangePassword = () => {
     let hasError = false;
-
-    if (!newPassword.trim()) {
+    if (!validator.isStrongPassword(newPassword)) {
       setErrorNew(true);
       hasError = true;
-    } else {
-      setErrorNew(false);
     }
-
-    if (!confirmPassword.trim()) {
+    if (!validator.isStrongPassword(confirmPassword)) {
       setErrorConfirm(true);
       hasError = true;
-    } else {
-      setErrorConfirm(false);
     }
 
-    if (newPassword && confirmPassword && newPassword !== confirmPassword) {
-      setErrorNew(true);
+    if (newPassword !== confirmPassword) {
       setErrorConfirm(true);
       alert(I18n.t('resetPassword.error_passwords_do_not_match'));
-      return;
+      hasError = true;
     }
-
     if (hasError) return;
 
     const data = { email, otp: OTP, new_password: newPassword };
@@ -69,7 +60,9 @@ const ResetPasswordScreen = () => {
           style={[styles.input, errorNew && styles.inputError]}
         />
         {errorNew && (
-          <Text style={styles.errorText}>Please enter a new password</Text>
+          <Text style={styles.errorText}>
+            {I18n.t('resetPassword.error_password')}
+          </Text>
         )}
 
         <TextInput
@@ -83,7 +76,14 @@ const ResetPasswordScreen = () => {
           style={[styles.input, errorConfirm && styles.inputError]}
         />
         {errorConfirm && (
-          <Text style={styles.errorText}>Please confirm your password</Text>
+          <Text style={styles.errorText}>
+            {I18n.t('resetPassword.error_password')}
+          </Text>
+        )}
+        {errorConfirm && newPassword !== confirmPassword && (
+          <Text style={styles.errorText}>
+            {I18n.t('resetPassword.error_passwords_do_not_match')}
+          </Text>
         )}
 
         <Button

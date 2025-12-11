@@ -1,4 +1,9 @@
-import { useState, useEffect, useCallback } from 'react';
+import {
+  useQuery,
+  useMutation,
+  useQueryClient,
+  QueryFunction,
+} from '@tanstack/react-query';
 import {
   fetchTables,
   createTable,
@@ -13,363 +18,168 @@ import { Table, TableQueryParams } from '@/types/tableTypes';
 import { useDispatch } from 'react-redux';
 import { AppDispatch } from '@/lib/reduxStore/store';
 import { hideLoader, showLoader } from '@/lib/reduxStore/loaderSlice';
-import { useTime } from '@/context/time';
 
-const manualInvalidate = (setTime: (time: number) => void) => {
-  setTime(Date.now());
+interface PaginatedTableResponse {
+  next: string | null;
+  results: Table[];
+  count: number;
+}
+
+const tableKeys = {
+  all: ['tables'] as const,
+  lists: () => [...tableKeys.all, 'list'] as const,
+  list: (param?: TableQueryParams | null, noPage?: boolean) =>
+    [...tableKeys.lists(), { param, noPage }] as const,
+  details: () => [...tableKeys.all, 'detail'] as const,
+  detail: (id: string) => [...tableKeys.details(), id] as const,
 };
 
-// --- QR Queries ---
-
-export const useQRs = () => {
-  const { time } = useTime();
-  const [data, setData] = useState<any>(undefined);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isPending, setIsPending] = useState(false);
-  const [error, setError] = useState<any>(null);
-
-  useEffect(() => {
-    let isMounted = true;
-    const fetchData = async () => {
-      if (!data) {
-        setIsLoading(true);
-      } else {
-        setIsPending(true);
-      }
-      setError(null);
-
-      try {
-        const response = await fetchQRs();
-        if (isMounted) {
-          setData(response);
-        }
-      } catch (err) {
-        if (isMounted) {
-          setError(err);
-        }
-      } finally {
-        if (isMounted) {
-          setIsLoading(false);
-          setIsPending(false);
-        }
-      }
-    };
-
-    fetchData();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [time]);
-
-  return {
-    data,
-    isLoading,
-    isPending: isPending && !!data,
-    error,
-  };
+const qrKeys = {
+  all: ['qrs'] as const,
+  lists: () => [...qrKeys.all, 'list'] as const,
 };
-
-// --- Table Queries ---
 
 export const useGetTables = (
   param?: TableQueryParams | null,
   noPage?: boolean
 ) => {
-  const { time } = useTime();
-  const [data, setData] = useState<
-    { next: string | null; results: Table[]; count: number } | undefined
-  >(undefined);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isPending, setIsPending] = useState(false);
-  const [error, setError] = useState<any>(null);
+  const queryKey = tableKeys.list(param, noPage);
 
-  useEffect(() => {
-    let isMounted = true;
-    const fetchData = async () => {
-      if (!data) {
-        setIsLoading(true);
-      } else {
-        setIsPending(true);
+  const queryFn: QueryFunction<PaginatedTableResponse, typeof queryKey> = ({
+    queryKey: [, , { param: currentParam, noPage: currentNoPage }],
+  }) => {
+    const searchParams = new URLSearchParams();
+    Object.entries(currentParam ?? {}).forEach(([key, value]) => {
+      if (value) {
+        searchParams.append(key, String(value));
       }
-      setError(null);
-
-      try {
-        const searchParams = new URLSearchParams();
-        Object.entries(param ?? {}).forEach(([key, value]) => {
-          if (value) {
-            searchParams.append(key, String(value));
-          }
-        });
-        const response = await fetchTables(searchParams.toString(), noPage);
-        if (isMounted) {
-          setData(response);
-        }
-      } catch (err) {
-        if (isMounted) {
-          setError(err);
-        }
-      } finally {
-        if (isMounted) {
-          setIsLoading(false);
-          setIsPending(false);
-        }
-      }
-    };
-
-    fetchData();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [param, time]);
-
-  return {
-    data,
-    isLoading,
-    isPending: isPending && !!data,
-    error,
+    });
+    return fetchTables(searchParams.toString(), currentNoPage);
   };
+
+  return useQuery({
+    queryKey,
+    queryFn,
+  });
 };
 
 export const useGetTableById = (id: string) => {
-  const { time } = useTime();
-  const [data, setData] = useState<Table | undefined>(undefined);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isPending, setIsPending] = useState(false);
-  const [error, setError] = useState<any>(null);
+  const queryKey = tableKeys.detail(id);
 
-  useEffect(() => {
-    if (!id) return;
+  const queryFn: QueryFunction<Table, typeof queryKey> = ({
+    queryKey: [, , tableId],
+  }) => fetchTableById(tableId);
 
-    let isMounted = true;
-    const fetchData = async () => {
-      if (!data) {
-        setIsLoading(true);
-      } else {
-        setIsPending(true);
-      }
-      setError(null);
-
-      try {
-        const response = await fetchTableById(id);
-        if (isMounted) {
-          setData(response);
-        }
-      } catch (err) {
-        if (isMounted) {
-          setError(err);
-        }
-      } finally {
-        if (isMounted) {
-          setIsLoading(false);
-          setIsPending(false);
-        }
-      }
-    };
-
-    fetchData();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [id, time]);
-
-  return {
-    data,
-    isLoading,
-    isPending: isPending && !!data,
-    error,
-  };
+  return useQuery({
+    queryKey,
+    queryFn,
+    enabled: !!id,
+  });
 };
 
-// --- QR Mutations ---
+export const useQRs = () => {
+  const queryKey = qrKeys.lists();
+  const queryFn: QueryFunction<any, typeof queryKey> = () => fetchQRs();
 
-export function useCreateQR() {
-  const dispatch = useDispatch<AppDispatch>();
-  const { setTime } = useTime();
-  const [isPending, setIsPending] = useState(false);
-  const [error, setError] = useState<any>(null);
-  const [data, setData] = useState<any>(undefined);
-
-  const mutate = useCallback(
-    async (variables: any) => {
-      setIsPending(true);
-      setError(null);
-      setData(undefined);
-      dispatch(showLoader());
-      try {
-        const result = await createQR(variables);
-        setData(result);
-        manualInvalidate(setTime); // onSuccess logic
-        return result;
-      } catch (err) {
-        setError(err);
-        console.error('Error creating QR:', err); // onError logic
-        throw err;
-      } finally {
-        setIsPending(false);
-        dispatch(hideLoader()); // onSettled logic
-      }
-    },
-    [setTime, dispatch]
-  );
-
-  return {
-    mutate,
-    data,
-    isPending,
-    error,
-  };
-}
-
-export function useUpdateQr() {
-  const { setTime } = useTime();
-  const [isPending, setIsPending] = useState(false);
-  const [error, setError] = useState<any>(null);
-  const [data, setData] = useState<any>(undefined);
-
-  const mutate = useCallback(
-    async (variables: { id: string; qr: Partial<any> }) => {
-      setIsPending(true);
-      setError(null);
-      setData(undefined);
-      try {
-        const result = await updateQr(variables.id, variables.qr);
-        setData(result);
-        manualInvalidate(setTime); // onSuccess logic
-        return result;
-      } catch (err) {
-        setError(err);
-        throw err;
-      } finally {
-        setIsPending(false);
-      }
-    },
-    [setTime]
-  );
-
-  return {
-    mutate,
-    data,
-    isPending,
-    error,
-  };
-}
-
-// --- Table Mutations ---
+  return useQuery({
+    queryKey,
+    queryFn,
+  });
+};
 
 export function useCreateTable() {
+  const queryClient = useQueryClient();
   const dispatch = useDispatch<AppDispatch>();
-  const { setTime } = useTime();
-  const [isPending, setIsPending] = useState(false);
-  const [error, setError] = useState<any>(null);
-  const [data, setData] = useState<any>(undefined);
 
-  const mutate = useCallback(
-    async (variables: Partial<Table>) => {
-      setIsPending(true);
-      setError(null);
-      setData(undefined);
-      dispatch(showLoader());
-      try {
-        const result = await createTable(variables);
-        setData(result);
-        manualInvalidate(setTime); // onSuccess logic
-        return result;
-      } catch (err) {
-        setError(err);
-        console.error('Error creating table:', err); // onError logic
-        throw err;
-      } finally {
-        setIsPending(false);
-        dispatch(hideLoader()); // onSettled logic
-      }
+  return useMutation({
+    mutationFn: (variables: Partial<Table>) => createTable(variables),
+    onMutate: () => dispatch(showLoader()),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: tableKeys.lists(),
+        refetchType: 'all',
+      });
     },
-    [setTime, dispatch]
-  );
-
-  return {
-    mutate,
-    data,
-    isPending,
-    error,
-  };
+    onError: (err) => {
+      console.error('Error creating table:', err);
+    },
+    onSettled: () => dispatch(hideLoader()),
+  });
 }
 
 export function useUpdateTable() {
+  const queryClient = useQueryClient();
   const dispatch = useDispatch<AppDispatch>();
-  const { setTime } = useTime();
-  const [isPending, setIsPending] = useState(false);
-  const [error, setError] = useState<any>(null);
-  const [data, setData] = useState<any>(undefined);
 
-  const mutate = useCallback(
-    async (variables: any) => {
-      setIsPending(true);
-      setError(null);
-      setData(undefined);
-      // Note: Original hook had no onMutate/showLoader, but onSettled had hideLoader. Added showLoader for symmetry/completeness.
-      dispatch(showLoader());
-      try {
-        const result = await updateTable(variables);
-        setData(result);
-        manualInvalidate(setTime); // onSuccess logic
-        return result;
-      } catch (err) {
-        setError(err);
-        console.error('Error creating table:', err); // onError logic
-        throw err;
-      } finally {
-        setIsPending(false);
-        dispatch(hideLoader()); // onSettled logic
+  return useMutation({
+    mutationFn: (variables: any) => updateTable(variables),
+    onMutate: () => dispatch(showLoader()),
+    onSuccess: (data, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: tableKeys.lists(),
+        refetchType: 'all',
+      });
+      if (variables.id) {
+        queryClient.setQueryData(tableKeys.detail(variables.id), data);
       }
     },
-    [setTime, dispatch]
-  );
-
-  return {
-    mutate,
-    data,
-    isPending,
-    error,
-  };
+    onError: (err) => {
+      console.error('Error updating table:', err);
+    },
+    onSettled: () => dispatch(hideLoader()),
+  });
 }
 
 export function useDeleteTable() {
+  const queryClient = useQueryClient();
   const dispatch = useDispatch<AppDispatch>();
-  const { setTime } = useTime();
-  const [isPending, setIsPending] = useState(false);
-  const [error, setError] = useState<any>(null);
-  const [data, setData] = useState<any>(undefined);
 
-  const mutate = useCallback(
-    async (id: string) => {
-      setIsPending(true);
-      setError(null);
-      setData(undefined);
-      dispatch(showLoader());
-      try {
-        const result = await deleteTable(id);
-        setData(result);
-        manualInvalidate(setTime); // onSuccess logic
-        return result;
-      } catch (err) {
-        setError(err);
-        console.error('Error deleting table:', err); // onError logic
-        throw err;
-      } finally {
-        setIsPending(false);
-        dispatch(hideLoader()); // onSettled logic
-      }
+  return useMutation({
+    mutationFn: (id: string) => deleteTable(id),
+    onMutate: () => dispatch(showLoader()),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: tableKeys.lists(),
+        refetchType: 'all',
+      });
     },
-    [setTime, dispatch]
-  );
+    onError: (err) => {
+      console.error('Error deleting table:', err);
+    },
+    onSettled: () => dispatch(hideLoader()),
+  });
+}
 
-  return {
-    mutate,
-    data,
-    isPending,
-    error,
-  };
+export function useCreateQR() {
+  const queryClient = useQueryClient();
+  const dispatch = useDispatch<AppDispatch>();
+
+  return useMutation({
+    mutationFn: (variables: any) => createQR(variables),
+    onMutate: () => dispatch(showLoader()),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: qrKeys.lists(),
+        refetchType: 'all',
+      });
+    },
+    onError: (err) => {
+      console.error('Error creating QR:', err);
+    },
+    onSettled: () => dispatch(hideLoader()),
+  });
+}
+
+export function useUpdateQr() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (variables: { id: string; qr: Partial<any> }) =>
+      updateQr(variables.id, variables.qr),
+    onSuccess: (data, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: qrKeys.lists(),
+        refetchType: 'all',
+      });
+    },
+  });
 }

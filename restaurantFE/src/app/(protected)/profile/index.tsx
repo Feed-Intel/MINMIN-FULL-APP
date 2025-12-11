@@ -16,6 +16,7 @@ import {
   Button,
   Card,
   Divider,
+  HelperText,
   Snackbar,
   Text,
 } from 'react-native-paper';
@@ -111,6 +112,9 @@ const ProfileScreen = () => {
     I18n.t('profile.tab_business_detail')
   );
   const [addPost, setAddPost] = useState<boolean>(false);
+  const [errors, setErrors] = useState<{ [key: string]: string | undefined }>(
+    {}
+  );
 
   useEffect(() => {
     if (isBranch) {
@@ -244,48 +248,71 @@ const ProfileScreen = () => {
       } as any);
     }
 
-    updateProfileImage(
-      formData
-      // {
-      // onSuccess: () => {
-      //   queryClient.invalidateQueries({ queryKey: ['tenantProfile'] });
-      //   setSnackbarMessage(I18n.t('profile.snackbar_profile_pic_updated'));
-      // },
-      // onError: () => {
-      //   setSnackbarMessage(
-      //     I18n.t('profile.snackbar_profile_pic_update_failed')
-      //   );
-      // },
-      //}
-    );
+    updateProfileImage(formData);
   };
 
   const handleUpdateProfile = () => {
     if (!tenantId) {
       return;
     }
+    let hasError: boolean = false;
+    if (!restaurantName?.trim() || restaurantName?.trim().length < 3) {
+      setErrors((prev) => ({
+        ...prev,
+        restaurant_name: I18n.t('EditAdmin.error_fullname_required'),
+      }));
+      hasError = true;
+    }
+    if (!profile?.trim() || profile?.trim().length < 3) {
+      setErrors((prev) => ({
+        ...prev,
+        profile: I18n.t('profile.profile_required'),
+      }));
+      hasError = true;
+    }
 
-    updateProfile(
-      {
-        id: tenantId,
-        restaurant_name: restaurantName,
-        profile,
-        max_discount_limit: maxDiscount ?? undefined,
-        CHAPA_API_KEY: chapaPaymentApiKey,
-        CHAPA_PUBLIC_KEY: chapaPaymentPublicKey,
-        tax: taxPercentage ?? undefined,
-        service_charge: serviceChargePercentage ?? undefined,
-      }
-      // {
-      //   onSuccess: () => {
-      //     queryClient.invalidateQueries({ queryKey: ['tenantProfile'] });
-      //     setSnackbarMessage(I18n.t('profile.snackbar_profile_saved'));
-      //   },
-      //   onError: () => {
-      //     setSnackbarMessage(I18n.t('profile.snackbar_profile_save_failed'));
-      //   },
-      // }
-    );
+    if (taxPercentage && (taxPercentage < 0 || taxPercentage > 100)) {
+      setErrors((prev) => ({
+        ...prev,
+        tax: I18n.t('EditAdmin.error_tax_percentage_invalid'),
+      }));
+      hasError = true;
+    }
+
+    if (
+      serviceChargePercentage &&
+      (serviceChargePercentage < 0 || serviceChargePercentage > 100)
+    ) {
+      setErrors((prev) => ({
+        ...prev,
+        service_charge: I18n.t(
+          'EditAdmin.error_service_charge_percentage_invalid'
+        ),
+      }));
+      hasError = true;
+    }
+
+    if (maxDiscount && maxDiscount < 0) {
+      setErrors((prev) => ({
+        ...prev,
+        max_discount_limit: I18n.t(
+          'EditAdmin.error_max_discount_limit_invalid'
+        ),
+      }));
+      hasError = true;
+    }
+    if (hasError) return;
+
+    updateProfile({
+      id: tenantId,
+      restaurant_name: restaurantName,
+      profile,
+      max_discount_limit: maxDiscount ?? undefined,
+      CHAPA_API_KEY: chapaPaymentApiKey,
+      CHAPA_PUBLIC_KEY: chapaPaymentPublicKey,
+      tax: taxPercentage ?? undefined,
+      service_charge: serviceChargePercentage ?? undefined,
+    });
   };
 
   const handleLogout = async () => {
@@ -525,19 +552,38 @@ const ProfileScreen = () => {
                         'profile.input_placeholder_restaurant_name'
                       )}
                       value={restaurantName}
-                      onChangeText={setRestaurantName}
+                      onChangeText={(text: string) => {
+                        setRestaurantName(text);
+                        setErrors({ ...errors, restaurant_name: undefined });
+                      }}
                       style={styles.input}
                     />
+                    {errors.restaurant_name && (
+                      <HelperText
+                        type="error"
+                        visible={!!errors.restaurant_name}
+                      >
+                        {errors.restaurant_name}
+                      </HelperText>
+                    )}
                     <TextInput
                       placeholder={I18n.t(
                         'profile.input_placeholder_profile_description'
                       )}
                       value={profile}
-                      onChangeText={setProfile}
+                      onChangeText={(text) => {
+                        setProfile(text);
+                        setErrors({ ...errors, profile: undefined });
+                      }}
                       multiline
                       numberOfLines={4}
                       style={[styles.input, styles.textArea]}
                     />
+                    {errors.profile && (
+                      <HelperText type="error" visible={!!errors.profile}>
+                        {errors.profile}
+                      </HelperText>
+                    )}
                   </View>
                 )}
               </Card.Content>
@@ -590,11 +636,17 @@ const ProfileScreen = () => {
                             text === ''
                           ) {
                             setTaxPercentage(text ? Number(text) : null);
+                            setErrors({ ...errors, tax: undefined });
                           }
                         }}
                         keyboardType="numeric"
                         style={styles.input}
                       />
+                      {errors.tax && (
+                        <HelperText type="error" visible={!!errors.tax}>
+                          {errors.tax}
+                        </HelperText>
+                      )}
                       <TextInput
                         placeholder={I18n.t(
                           'profile.input_placeholder_service_charge_percentage'
@@ -610,11 +662,20 @@ const ProfileScreen = () => {
                             setServiceChargePercentage(
                               text ? Number(text) : null
                             );
+                            setErrors({ ...errors, service_charge: undefined });
                           }
                         }}
                         keyboardType="numeric"
                         style={styles.input}
                       />
+                      {errors.service_charge && (
+                        <HelperText
+                          type="error"
+                          visible={!!errors.service_charge}
+                        >
+                          {errors.service_charge}
+                        </HelperText>
+                      )}
                     </View>
 
                     <TextInput
@@ -630,12 +691,23 @@ const ProfileScreen = () => {
                           text === ''
                         ) {
                           setMaxDiscount(text ? Number(text) : null);
+                          setErrors({
+                            ...errors,
+                            max_discount_limit: undefined,
+                          });
                         }
                       }}
                       keyboardType="numeric"
                       style={styles.input}
                     />
-
+                    {errors.max_discount_limit && (
+                      <HelperText
+                        type="error"
+                        visible={!!errors.max_discount_limit}
+                      >
+                        {errors.max_discount_limit}
+                      </HelperText>
+                    )}
                     <Button
                       mode="contained"
                       onPress={handleUpdateProfile}

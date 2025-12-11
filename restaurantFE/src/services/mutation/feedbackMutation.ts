@@ -1,96 +1,48 @@
-import { useState, useEffect, useCallback } from 'react';
+import {
+  useQuery,
+  useMutation,
+  useQueryClient,
+  QueryFunction,
+  MutationFunction,
+} from '@tanstack/react-query';
 import { CreateFeedback, GetFeedback } from '../api/feedback';
-import { useTime } from '@/context/time';
 
-const manualInvalidate = (setTime: (time: number) => void) => {
-  setTime(Date.now());
+interface FeedbackResponse {
+  next: string | null;
+  results: any[];
+  count: number;
+}
+
+const feedbackKeys = {
+  all: ['feedback'] as const,
+  lists: () => [...feedbackKeys.all, 'list'] as const,
+  list: (page: number | undefined) =>
+    [...feedbackKeys.lists(), { page }] as const,
 };
-
-// --- Queries ---
 
 export const useGetFeedback = (page?: number | undefined) => {
-  const { time } = useTime();
-  const [data, setData] = useState<
-    { next: string | null; results: any[]; count: number } | undefined
-  >(undefined);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isPending, setIsPending] = useState(false);
-  const [error, setError] = useState<any>(null);
+  const queryKey = feedbackKeys.list(page);
 
-  useEffect(() => {
-    let isMounted = true;
-    const fetchData = async () => {
-      if (!data) {
-        setIsLoading(true);
-      } else {
-        setIsPending(true);
-      }
-      setError(null);
+  const queryFn: QueryFunction<FeedbackResponse, typeof queryKey> = ({
+    queryKey: [, , { page: currentPage }],
+  }) => GetFeedback(currentPage);
 
-      try {
-        const response = await GetFeedback(page);
-        if (isMounted) {
-          setData(response);
-        }
-      } catch (err) {
-        if (isMounted) {
-          setError(err);
-        }
-      } finally {
-        if (isMounted) {
-          setIsLoading(false);
-          setIsPending(false);
-        }
-      }
-    };
-
-    fetchData();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [page, time]);
-
-  return {
-    data,
-    isLoading,
-    isPending: isPending && !!data,
-    error,
-  };
+  return useQuery({
+    queryKey,
+    queryFn,
+  });
 };
 
-// --- Mutations ---
-
 export const useCreateFeedback = () => {
-  const { setTime } = useTime();
-  const [isPending, setIsPending] = useState(false);
-  const [error, setError] = useState<any>(null);
-  const [data, setData] = useState<any>(undefined);
+  const queryClient = useQueryClient();
 
-  const mutate = useCallback(
-    async (variables: any) => {
-      setIsPending(true);
-      setError(null);
-      setData(undefined);
-      try {
-        const result = await CreateFeedback(variables);
-        setData(result);
-        manualInvalidate(setTime); // Simulate invalidateQueries/refetchQueries
-        return result;
-      } catch (err) {
-        setError(err);
-        throw err;
-      } finally {
-        setIsPending(false);
-      }
+  const mutationFn: MutationFunction<any, any> = (variables) =>
+    CreateFeedback(variables);
+
+  return useMutation({
+    mutationFn,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: feedbackKeys.lists() });
     },
-    [setTime]
-  );
-
-  return {
-    mutate,
-    data,
-    isPending,
-    error,
-  };
+  });
 };

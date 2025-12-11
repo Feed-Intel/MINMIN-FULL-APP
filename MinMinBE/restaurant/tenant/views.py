@@ -29,7 +29,7 @@ from datetime import timedelta
 from django.db.models.functions import ExtractHour, ExtractWeek, ExtractMonth
 from .serializers import DashboardSerializer
 from django.db.models.functions import TruncDate
-from core.cache import CachedModelViewSet
+from rest_framework.viewsets import ModelViewSet
 from accounts.utils import get_user_branch, get_user_tenant
 from django.shortcuts import get_object_or_404
 import json
@@ -37,7 +37,7 @@ import json
 class TenantPagination(PageNumberPagination):
     page_size = 10
 
-class TenantView(CachedModelViewSet):
+class TenantView(ModelViewSet):
     permission_classes = [IsAuthenticated,HasCustomAPIKey]
     queryset = Tenant.objects.all()
     serializer_class = TenantSerializer
@@ -60,7 +60,7 @@ class TenantView(CachedModelViewSet):
         # Get the currently authenticated user
         user = self.request.user
         user_location = redis_client.get(str(user.id))
-        if user.user_type == 'customer':
+        if self.action in ['list'] and user.user_type == 'customer':
             branches_qs = Branch.objects.all()
             if user_location:
                 latitude_str, longitude_str = user_location.split(',')
@@ -73,6 +73,7 @@ class TenantView(CachedModelViewSet):
                 Prefetch('branches', queryset=branches_qs),
                 'menus'
             )
+            return list(queryset)
         else:
             tenant = get_user_tenant(user)
 

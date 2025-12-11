@@ -1,15 +1,19 @@
 import dayjs from 'dayjs';
 import DatePicker from '@/components/DatePicker';
 import { useState } from 'react';
-import { useUpdateCoupon } from '@/services/mutation/discountMutation';
+import {
+  useGetCoupons,
+  useUpdateCoupon,
+} from '@/services/mutation/discountMutation';
 import { useQueryClient } from '@tanstack/react-query';
-import Toast from 'react-native-toast-message';
+import validator from 'validator';
 import {
   Button,
   Dialog,
   Portal,
   Switch,
   TextInput as PaperTextInput,
+  HelperText,
 } from 'react-native-paper';
 import { ScrollView, View, TextInput, Text, StyleSheet } from 'react-native';
 import {
@@ -48,44 +52,67 @@ export default function EditCouponModal({
   );
   const { mutate: updateCouponCode } = useUpdateCoupon();
   const queryClient = useQueryClient();
+  const [errors, setErrors] = useState<Record<string, string | undefined>>({});
+  const { refetch: refetchCoupons } = useGetCoupons({
+    page: 1,
+    branch: undefined,
+    search: '',
+  });
 
   const validateForm = () => {
-    // Validate Name
+    let hasError: boolean = false;
     if (!discountCode?.trim()) {
-      Toast.show({
-        type: 'error',
-        text1: I18n.t('coupon_modal.error_code_required'),
+      setErrors({
+        ...errors,
+        discount_code: I18n.t('coupon_modal.error_code_required'),
       });
-      return false;
+      hasError = true;
     } else if (discountCode.trim().length < 3) {
-      Toast.show({
-        type: 'error',
-        text1: I18n.t('coupon_modal.error_code_min_length'),
+      setErrors({
+        ...errors,
+        discount_code: I18n.t('coupon_modal.error_code_min_length'),
       });
-      return false;
+      hasError = true;
+    }
+
+    if (!isGlobal && !selectedBranches.length) {
+      setErrors((prev) => ({
+        ...prev,
+        branch: I18n.t('coupon_modal.error_branch_required'),
+      }));
+      hasError = true;
     }
 
     // Validate Valid From/Until Dates
     if (!validFrom) {
-      Toast.show({
-        type: 'error',
-        text1: I18n.t('coupon_modal.error_from_required'),
+      setErrors({
+        ...errors,
+        valid_from: I18n.t('coupon_modal.error_from_required'),
       });
-      return false;
+      hasError = true;
     }
     if (!validUntil) {
-      Toast.show({
-        type: 'error',
-        text1: I18n.t('coupon_modal.error_until_required'),
+      setErrors({
+        ...errors,
+        valid_until: I18n.t('coupon_modal.error_until_required'),
       });
-      return false;
+      hasError = true;
     } else if (dayjs(validUntil).isBefore(validFrom)) {
-      Toast.show({
-        type: 'error',
-        text1: I18n.t('coupon_modal.error_until_after_from'),
+      setErrors({
+        ...errors,
+        valid_until: I18n.t('coupon_modal.error_until_after_from'),
       });
-      return false;
+      hasError = true;
     }
+
+    if (!validator.isNumeric(discountAmount)) {
+      setErrors((prev) => ({
+        ...prev,
+        discount_amount: I18n.t('coupon_modal.error_discount_amount_invalid'),
+      }));
+      hasError = true;
+    }
+    if (hasError) return false;
 
     return true;
   };
@@ -98,10 +125,18 @@ export default function EditCouponModal({
             <TextInput
               placeholder={I18n.t('coupon_modal.placeholder_code')}
               value={discountCode}
-              onChangeText={setDiscountCode}
+              onChangeText={(text: string) => {
+                setDiscountCode(text);
+                setErrors((prev) => ({ ...prev, discount_code: undefined }));
+              }}
               style={stylesModal.input}
               placeholderTextColor="#999"
             />
+            {errors['discount_code'] && (
+              <HelperText type="error" visible={!!errors['discount_code']}>
+                {errors['discount_code']}
+              </HelperText>
+            )}
             <View
               style={{
                 flexDirection: 'row',
@@ -115,7 +150,10 @@ export default function EditCouponModal({
               </Text>
               <Switch
                 value={isGlobal}
-                onValueChange={setIsGlobal}
+                onValueChange={(value: boolean) => {
+                  setIsGlobal(value);
+                  setErrors((prev) => ({ ...prev, branch: undefined }));
+                }}
                 color="#91B275"
               />
             </View>
@@ -136,7 +174,10 @@ export default function EditCouponModal({
                     })) as Option[]) || []
                   }
                   value={selectedBranches || []}
-                  onSelect={(values) => setSelectedBranches(values)}
+                  onSelect={(values) => {
+                    setSelectedBranches(values);
+                    setErrors((prev) => ({ ...prev, branch: undefined }));
+                  }}
                   menuContentStyle={{
                     backgroundColor: '#fff',
                   }}
@@ -166,6 +207,11 @@ export default function EditCouponModal({
                 />
               </>
             )}
+            {errors['branch'] && (
+              <HelperText type="error" visible={!!errors['branch']}>
+                {errors['branch']}
+              </HelperText>
+            )}
             <View
               style={{
                 flexDirection: 'row',
@@ -186,12 +232,19 @@ export default function EditCouponModal({
             <TextInput
               placeholder={I18n.t('coupon_modal.placeholder_amount')}
               value={discountAmount}
-              onChangeText={setDiscountAmount}
+              onChangeText={(text: string) => {
+                setDiscountAmount(text);
+                setErrors((prev) => ({ ...prev, discount_amount: undefined }));
+              }}
               style={stylesModal.input}
               keyboardType="default"
               placeholderTextColor="#999"
             />
-
+            {errors['discount_amount'] && (
+              <HelperText type="error" visible={!!errors['discount_amount']}>
+                {errors['discount_amount']}
+              </HelperText>
+            )}
             <View
               style={{
                 flexDirection: 'row',
@@ -223,9 +276,17 @@ export default function EditCouponModal({
                   dateFilterVisible={showFromPicker}
                   setDateFilterVisible={setShowFromPicker}
                   selectedDate={validFrom}
-                  setSelectedDate={setValidFrom}
+                  setSelectedDate={(date) => {
+                    setValidFrom(date);
+                    setErrors((prev) => ({ ...prev, valid_from: undefined }));
+                  }}
                 />
               </>
+              {errors['valid_from'] && (
+                <HelperText type="error" visible={!!errors['valid_from']}>
+                  {errors['valid_from']}
+                </HelperText>
+              )}
               <>
                 <Button
                   onPress={() => setShowUntilPicker(true)}
@@ -250,7 +311,10 @@ export default function EditCouponModal({
                   dateFilterVisible={showUntilPicker}
                   setDateFilterVisible={setShowUntilPicker}
                   selectedDate={validUntil}
-                  setSelectedDate={setValidUntil}
+                  setSelectedDate={(date) => {
+                    setValidUntil(date);
+                    setErrors((prev) => ({ ...prev, valid_until: undefined }));
+                  }}
                 />
               </>
             </View>
@@ -277,6 +341,7 @@ export default function EditCouponModal({
                   },
                 });
                 queryClient.invalidateQueries({ queryKey: ['coupons'] });
+                refetchCoupons();
                 onClose();
               }
             }}

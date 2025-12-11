@@ -15,6 +15,7 @@ import {
   setRedeemAmount,
   updateQuantity,
   setDiscount,
+  addToCart,
 } from '@/lib/reduxStore/cartSlice';
 import { router } from 'expo-router';
 import { useAppSelector } from '@/lib/reduxStore/hooks';
@@ -24,6 +25,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { i18n } from '@/app/_layout';
 import { useBottomTabOverflow } from '@/components/ui/TabBarBackground';
 import { normalizeImageUrl } from '@/utils/imageUrl';
+import { useGetMenus } from '@/services/mutation/menuMutation';
 
 export default function CartScreen() {
   const headerAnimation = useRef(new Animated.Value(0)).current;
@@ -34,13 +36,26 @@ export default function CartScreen() {
   const restaurant = useAppSelector(
     (state: RootState) => state.cart.restaurantId
   );
+  const cart = useAppSelector((state: RootState) => state.cart);
+  const subtotal = cart.items.reduce(
+    (sum, item) => sum + item.price * item.quantity,
+    0
+  );
+  const serviceCharge = (subtotal * (cart.serviceCharge ?? 0)) / 100;
+  const tax = (subtotal * (cart.tax ?? 0)) / 100;
+  const [total, setTotal] = useState((subtotal || 0) + serviceCharge + tax);
+  const [isUpdatingCart, setIsUpdatingCart] = useState(false);
   const dispatch = useDispatch();
   const bottom = useBottomTabOverflow();
-
+  const { mutateAsync: checkDiscount } = useCheckDiscount();
+  const { data: menus } = useGetMenus(undefined, true);
   const newQuantities = cartItems.reduce((acc: any, item: any) => {
     acc[item.id] = item.quantity;
     return acc;
   }, {} as Record<string, number>);
+  useEffect(() => {
+    setTotal((subtotal || 0) + serviceCharge + tax);
+  }, [subtotal, serviceCharge, tax]);
 
   useEffect(() => {
     Animated.parallel([
@@ -69,17 +84,181 @@ export default function CartScreen() {
     );
   };
 
-  const subtotal = cartItems.reduce(
-    (sum: any, dish: any) => sum + dish.price * (newQuantities[dish.id] || 0),
-    0
-  );
+  // const subtotal = cartItems.reduce(
+  //   (sum: any, dish: any) => sum + dish.price * (newQuantities[dish.id] || 0),
+  //   0
+  // );
   const [isProcessing, setIsProcessing] = useState(false);
   const checkoutButtonText = isProcessing
     ? i18n.t('checking_discount_button')
-    : `${i18n.t('checkout_button')} • ${subtotal.toFixed(2)} ${i18n.t(
+    : `${i18n.t('checkout_button')} • ${total.toFixed(2)} ${i18n.t(
         'currency_unit'
       )}`;
   // const checkDiscount = useCheckDiscount();
+
+  async function checkDiscountFN(coupon?: string) {
+    if (isUpdatingCart) return;
+
+    const itemsData = cart.items
+      .map((item: any) => ({
+        menu_item: item.id,
+        quantity:
+          newQuantities[item.id] !== undefined
+            ? newQuantities[item.id]
+            : item.quantity,
+      }))
+      .filter(
+        (item: any) =>
+          (newQuantities[item.id] !== undefined
+            ? newQuantities[item.id]
+            : item.quantity) > 0
+      );
+    if (itemsData.length === 0) {
+      dispatch(setDiscount(0));
+      setTotal(subtotal);
+      return;
+    }
+
+    // 2. Initial Discount Check API Call
+    const discountResponse = await checkDiscount({
+      tenant: restaurant,
+      branch: branch,
+      coupon: coupon?.trim() || undefined,
+      items: itemsData,
+    });
+
+    const discountValue = discountResponse.discount_amount || 0;
+    const typeDiscount = discountResponse.typeDiscount;
+    const freeItemsData = discountResponse.freeItems || [];
+
+    const requiredFreeItems: Record<string, number> = {};
+    for (const item of freeItemsData) {
+      const itemId = Object.keys(item)[0];
+      requiredFreeItems[itemId] = Object.values(item)[0] as number;
+    }
+
+    let needsCartUpdate = false;
+    let itemsToUpdate: { id: string; quantity: number; isNew?: boolean }[] = [];
+
+    // A. Identify existing free items in the cart to remove or update
+    for (const item of cart.items) {
+      // Assuming a price of 0 is the flag for a free item added by the discount system
+      const isCurrentFreeItem = item.price === 0;
+      const requiredQuantity = requiredFreeItems[item.id] || 0;
+      const currentQuantity = item.quantity; // Use cart quantity for comparison
+
+      if (isCurrentFreeItem) {
+        if (requiredQuantity === 0) {
+          // Free item is no longer eligible (needs removal)
+          if (currentQuantity > 0) {
+            itemsToUpdate.push({ id: item.id, quantity: 0 });
+            needsCartUpdate = true;
+          }
+        } else if (currentQuantity !== requiredQuantity) {
+          // Free item is eligible but quantity is wrong (needs correction)
+          itemsToUpdate.push({ id: item.id, quantity: requiredQuantity });
+          needsCartUpdate = true;
+        }
+        // Mark as processed
+        delete requiredFreeItems[item.id];
+      }
+    }
+    if (typeDiscount === 'freeItem') {
+      for (const itemId in requiredFreeItems) {
+        const requiredQuantity = requiredFreeItems[itemId];
+        if (requiredQuantity > 0) {
+          // Needs to be added to the cart
+          itemsToUpdate.push({
+            id: itemId,
+            quantity: requiredQuantity,
+            isNew: true,
+          });
+          needsCartUpdate = true;
+        }
+      }
+    }
+
+    if (typeDiscount === 'bogo') {
+      for (const itemId in requiredFreeItems) {
+        const requiredQuantity = requiredFreeItems[itemId];
+
+        const currentFreeItem = cart.items.find(
+          (i) => i.id === itemId && i.price === 0
+        );
+
+        if (!currentFreeItem && requiredQuantity > 0) {
+          // add new free item
+          itemsToUpdate.push({
+            id: itemId,
+            quantity: requiredQuantity,
+            isNew: true,
+          });
+          needsCartUpdate = true;
+        } else if (
+          currentFreeItem &&
+          currentFreeItem.quantity !== requiredQuantity
+        ) {
+          // update existing free item quantity
+          itemsToUpdate.push({
+            id: itemId,
+            quantity: requiredQuantity,
+            isNew: false,
+          });
+          needsCartUpdate = true;
+        }
+      }
+    }
+
+    // C. Execute Cart Updates (if any)
+    if (needsCartUpdate) {
+      setIsUpdatingCart(true); // Set flag to prevent re-triggering useEffect
+
+      for (const update of itemsToUpdate) {
+        const item = menus?.find((t: any) => t.id === update.id);
+        if (update.isNew) {
+          if (item) {
+            dispatch(
+              addToCart({
+                item: {
+                  id: item?.id!,
+                  name: item?.name!,
+                  description: '',
+                  price: 0,
+                  quantity: update.quantity,
+                  image: item?.image,
+                },
+                restaurantId: restaurant || '',
+                branchId: branch || '',
+                tableId: cart.tableId,
+                paymentAPIKEY: item?.tenant.CHAPA_API_KEY,
+                paymentPUBLICKEY: item?.tenant.CHAPA_PUBLIC_KEY,
+                tax: item?.tenant.tax,
+                serviceCharge: item?.tenant.service_charge,
+              })
+            );
+            setTotal((prev) => prev + update.quantity * item.price);
+          }
+        } else {
+          dispatch(
+            updateQuantity({ id: update.id, quantity: update.quantity })
+          );
+          setTotal((prev) => prev + update.quantity * item.price);
+        }
+      }
+
+      setTimeout(() => {
+        setIsUpdatingCart(false);
+      }, 50);
+    }
+    dispatch(setDiscount(discountValue));
+    setTotal(subtotal - discountValue);
+  }
+
+  useEffect(() => {
+    if (branch) {
+      checkDiscountFN();
+    }
+  }, [cart.items]);
 
   useEffect(() => {
     async function fetchDiscount() {
@@ -88,15 +267,6 @@ export default function CartScreen() {
         quantity: newQuantities[item.id] || 0,
         price: item.price,
       }));
-      if (Boolean(branch)) {
-        // const discountResponse = await checkDiscount.mutateAsync({
-        //   tenant: restaurant,
-        //   branch: branch,
-        //   items: itemsData,
-        // });
-        // dispatch(setDiscount(discountResponse?.discount_amount ?? 0));
-        // dispatch(setRedeemAmount(discountResponse?.redeem_amount ?? 0));
-      }
     }
     fetchDiscount();
   }, [cartItems, branch, restaurant, dispatch, newQuantities]); // Added all dependencies
@@ -252,8 +422,8 @@ export default function CartScreen() {
                   {i18n.t('total_label')} {/* Replaced hardcoded string */}
                 </Text>
                 <Text variant="titleMedium" style={styles.totalValue}>
-                  {Math.max(subtotal - discount, 0).toFixed(2)}{' '}
-                  {i18n.t('currency_unit')} {/* Replaced hardcoded string */}
+                  {total.toFixed(2)} {i18n.t('currency_unit')}{' '}
+                  {/* Replaced hardcoded string */}
                 </Text>
               </View>
             </View>

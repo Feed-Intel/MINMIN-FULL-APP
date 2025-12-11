@@ -18,6 +18,8 @@ class Order(models.Model):
     branch = models.ForeignKey(Branch, on_delete=models.CASCADE, related_name='branch_order')
     table = models.ForeignKey(Table, on_delete=models.CASCADE, related_name='table_order')
     customer = models.ForeignKey(User, on_delete=models.CASCADE, related_name='customer_order')
+    from restaurant.discount.models import Coupon
+    coupon = models.ForeignKey(Coupon, on_delete=models.CASCADE, related_name='coupon_order', null=True, blank=True)
     order_id = models.CharField(max_length=50, editable=False, default="TEMP-ORDER-ID")
     customer_name = models.CharField(max_length=100, blank=True, null=True)
     customer_phone = models.CharField(max_length=15, blank=True, null=True)

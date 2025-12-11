@@ -63,7 +63,7 @@ const ManageDiscounts: React.FC = () => {
   const queryParams = useMemo(() => {
     return {
       page: currentPage,
-      branches: selectedBranch === 'all' ? undefined : selectedBranch,
+      branch: selectedBranch === 'all' ? undefined : selectedBranch,
       search: searchTerm,
     };
   }, [currentPage, selectedBranch, searchTerm]);

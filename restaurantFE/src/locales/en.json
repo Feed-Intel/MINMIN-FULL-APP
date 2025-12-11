@@ -45,7 +45,9 @@
     "error_title": "Error",
     "error_no_branch": "Please contact your administrator to assign a branch to your account.",
     "error_no_tenant": "Your restaurant profile is not linked. Please contact support.",
-    "error_missing_fields": "Please fill in both fields!"
+    "error_missing_fields": "Please fill in both fields!",
+    "invalid_email":" Email is required",
+    "invalid_password":"Password is required"
   },
     "ForgotPassword": {
     "title": "Forgot your Password",
@@ -67,7 +69,8 @@
     "label_new_password": "New Password",
     "label_confirm_password": "Confirm Password",
     "button_change_password": "Change Password",
-    "error_passwords_do_not_match": "Passwords do not match!"
+    "error_passwords_do_not_match": "Passwords do not match!",
+    "error_password":"Please Enter a Valid Password"
   },
   "BranchAdmins": {
     "header_title": "Branch Admins",
@@ -115,7 +118,7 @@
     "error_email_required": "Email is required.",
     "error_email_invalid": "Please enter a valid email address.",
     "error_phone_required": "Phone number is required.",
-    "error_phone_length": "Phone number must be between 10 and 15 digits.",
+    "error_phone_length": "Phone number must be between 10 and 12 digits.",
     "error_branch_required": "Branch selection is required.",
     "snackbar_success": "Branch Admin updated successfully!"
   },
@@ -251,10 +254,12 @@
     "pickImage": "Pick an Image",
     "isSideItemLabel": "Is Side Item",
     "error": {
-      "nameImageRequired": "Please provide a name and select an image",
-      "descriptionRequired": "Please provide a description",
-      "priceRequired": "Please provide a price",
-      "categoryRequired": "Please select at least one category"
+      "invalid_name": "Please provide a valid name",
+      "invalid_description": "Please provide a valid description",
+      "invalid_price": "Please provide a price",
+      "invalid_image": "Please select an image",
+      "invalid_branches": "Please select at least one branch",
+      "invalid_category": "Please select at least one category"
     },
     "successMessage": "Menu added successfully!",
     "successUpdateMessage": "Menu updated successfully!",
@@ -382,6 +387,7 @@
     "actionStartPreparing": "Start Preparing",
     "actionMarkReady": "Mark Ready",
     "actionMarkDelivered": "Mark Delivered",
+    "actionMarkCancelled": "Cancelled",
     "newOrderToast": "New order %{orderCode} — %{items} items",
     "toastViewAction": "View"
   },
@@ -519,7 +525,9 @@
     "setting_terms_conditions": "Terms & Conditions",
     "setting_logout": "Log out",
     "language_english": "English",
-    "language_amharic": "አማርኛ"
+    "language_amharic": "አማርኛ",
+    "profile_required": "Profile is required.",
+    "reviews": "Reviews"
   },
   "manageTables": {
     "title": "Table Management",
@@ -558,7 +566,9 @@
     "saveButton": "Save Changes",
     "cancelButton": "Cancel",
     "successMessage": "Settings updated successfully",
-    "errorMessage": "Failed to update settings"
+    "errorMessage": "Failed to update settings",
+    "invalid_threshold": "Please Enter a Valid Threshold Points",
+    "invalid_conversion_rate": "Please Enter a Valid Conversion Rate"
   },
   "add_related_item": {
     "title": "Add Related Item",
@@ -576,8 +586,9 @@
   "discountModal":{
     "modal": {
     "title": "Edit Discount",
+    "new_title": "Add Discount",
     "select_applicable_title": "Select applicable items",
-    "select_excluded_title": "Select excluded items"
+    "select_free_title": "Select free items"
   },
   "form": {
     "is_global_label": "Is to All Branches",
@@ -607,8 +618,8 @@
     "get_quantity_label": "Get quantity",
     "applicable_items_label": "Applicable items",
     "select_applicable_items_placeholder": "Select applicable items",
-    "excluded_items_label": "Excluded items",
-    "select_excluded_items_placeholder": "Select excluded items",
+    "free_items_label": "Free items",
+    "select_free_items_placeholder": "Select free items",
     "is_percentage_label": "Is percentage"
   },
   "action": {
@@ -639,7 +650,7 @@
     "max_discount_amount_valid": "Max discount amount must be a valid number.",
     "max_discount_amount_non_negative": "Max discount amount must be non-negative.",
     "applicable_item_required": "Select at least one applicable item.",
-    "excluded_overlap": "Excluded items cannot overlap with applicable items.",
+    "free_item_required": "Please select at least one free item.",
     "update_discount_failed_t1": "Failed to update discount",
     "try_again_t2": "Please try again."
   }
@@ -659,6 +670,8 @@
     "button_update_coupon": "+ Update Coupon",
     "error_code_required": "Discount Code is required.",
     "error_code_min_length": "Discount Code must be at least 3 characters long.",
+    "error_branch_required": "Please select at least one branch.",
+    "error_discount_amount_invalid": "Discount amount must be a valid number.",
     "error_from_required": "Valid From date is required.",
     "error_until_required": "Valid Until date is required.",
     "error_until_after_from": "Valid Until must be after Valid From."

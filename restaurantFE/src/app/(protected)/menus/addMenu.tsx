@@ -16,11 +16,13 @@ import {
   Chip,
   Checkbox,
   List,
+  HelperText,
 } from 'react-native-paper';
 import Toast from 'react-native-toast-message';
 import * as ImagePicker from 'expo-image-picker';
 import { useCreateMenu } from '@/services/mutation/menuMutation';
 import { useQueryClient } from '@tanstack/react-query';
+import validator from 'validator';
 import { base64ToBlob } from '@/util/imageUtils';
 import ModalHeader from '@/components/ModalHeader';
 import {
@@ -60,16 +62,17 @@ export default function AddMenuDialog({
     price: '',
     is_side: false,
     image: { uri: '', name: '', type: '' },
-    is_global: false,
+    is_global: true,
     branches: [],
   });
 
-  const [errors, setErrors] = useState({
-    name: false,
-    description: false,
-    price: false,
-    image: false,
-    categories: false,
+  const [errors, setErrors] = useState<Record<string, string | undefined>>({
+    name: undefined,
+    description: undefined,
+    price: undefined,
+    image: undefined,
+    branches: undefined,
+    categories: undefined,
   });
 
   const [categoryMenuVisible, setCategoryMenuVisible] = useState(false);
@@ -88,7 +91,7 @@ export default function AddMenuDialog({
     value: MenuFormState[K]
   ) => {
     setMenuData((prev) => ({ ...prev, [field]: value }));
-    setErrors((prev) => ({ ...prev, [field]: false })); // Clear error on change
+    setErrors((prev) => ({ ...prev, [field]: undefined })); // Clear error on change
   };
 
   const toggleCategory = (category: string) => {
@@ -98,7 +101,7 @@ export default function AddMenuDialog({
         ? prev.categories.filter((item) => item !== category)
         : [...prev.categories, category];
 
-      setErrors((prevErr) => ({ ...prevErr, categories: false })); // Clear error
+      setErrors((prevErr) => ({ ...prevErr, categories: undefined })); // Clear error
 
       return { ...prev, categories: list };
     });
@@ -121,29 +124,64 @@ export default function AddMenuDialog({
         },
       }));
 
-      setErrors((prev) => ({ ...prev, image: false }));
+      setErrors((prev) => ({ ...prev, image: undefined }));
     }
   };
 
   const handleSave = async () => {
-    const newErrors = {
-      name: !menuData.name,
-      description: !menuData.description,
-      price: !menuData.price,
-      image: !menuData.image.uri,
-      categories: menuData.categories.length === 0,
-    };
+    let hasError = false;
 
-    setErrors(newErrors);
-
-    if (Object.values(newErrors).some(Boolean)) {
-      Toast.show({
-        type: 'error',
-        text1: I18n.t('Common.error_title'),
-        text2: I18n.t('MenuDialog.error.fillAllFields'),
-      });
-      return;
+    if (
+      !menuData.name ||
+      menuData.name.trim().length < 3 ||
+      !validator.isAlpha(menuData.name.trim())
+    ) {
+      setErrors((prev: any) => ({
+        ...prev,
+        name: I18n.t('MenuDialog.error.invalid_name'),
+      }));
+      hasError = true;
     }
+    if (
+      !menuData.description ||
+      menuData.description.trim().length === 0 ||
+      menuData.description.trim().length < 3
+    ) {
+      setErrors((prev: any) => ({
+        ...prev,
+        description: I18n.t('MenuDialog.error.invalid_description'),
+      }));
+      hasError = true;
+    }
+    if (!menuData.price || parseInt(menuData.price) < 0) {
+      setErrors((prev: any) => ({
+        ...prev,
+        price: I18n.t('MenuDialog.error.invalid_price'),
+      }));
+      hasError = true;
+    }
+    if (!menuData.image.uri) {
+      setErrors((prev: any) => ({
+        ...prev,
+        image: I18n.t('MenuDialog.error.invalid_price'),
+      }));
+      hasError = true;
+    }
+    if (!menuData.is_global && menuData.branches.length == 0) {
+      setErrors((prev: any) => ({
+        ...prev,
+        branches: I18n.t('MenuDialog.error.invalid_branches'),
+      }));
+      hasError = true;
+    }
+    if (menuData.categories.length == 0) {
+      setErrors((prev: any) => ({
+        ...prev,
+        categories: I18n.t('MenuDialog.error.invalid_categories'),
+      }));
+      hasError = true;
+    }
+    if (hasError) return;
 
     const formData = new FormData();
     formData.append('name', menuData.name);
@@ -168,7 +206,7 @@ export default function AddMenuDialog({
       new File([blob], imageName, { type: contentType })
     );
 
-    await createMenu(formData);
+    createMenu(formData);
     queryClient.invalidateQueries({ queryKey: ['menus'] });
 
     setMenuData({
@@ -203,23 +241,32 @@ export default function AddMenuDialog({
             <TextInput
               placeholder={I18n.t('MenuDialog.namePlaceholder')}
               value={menuData.name}
-              onChangeText={(text) => handleInputChange('name', text)}
+              onChangeText={(text) => {
+                const cleaned = text.replace(/[0-9]/g, '');
+                handleInputChange('name', cleaned);
+              }}
               mode="outlined"
               style={styles.input}
               outlineStyle={{
-                borderColor: errors.name ? 'red' : '#91B275',
-                borderWidth: errors.name ? 2 : 0,
+                borderColor: '#91B275',
+                borderWidth: 0,
                 borderRadius: 16,
               }}
               placeholderTextColor="#202B1866"
               contentStyle={{ color: '#202B1866' }}
             />
-
+            {errors.name && (
+              <HelperText type="error" visible={!!errors.name}>
+                {errors.name}
+              </HelperText>
+            )}
             {/* DESCRIPTION */}
             <TextInput
               placeholder={I18n.t('MenuDialog.descriptionPlaceholder')}
               value={menuData.description}
-              onChangeText={(text) => handleInputChange('description', text)}
+              onChangeText={(text) => {
+                handleInputChange('description', text);
+              }}
               mode="outlined"
               multiline
               numberOfLines={isSmallScreen ? 3 : 8}
@@ -232,7 +279,11 @@ export default function AddMenuDialog({
               placeholderTextColor="#202B1866"
               contentStyle={{ color: '#202B1866' }}
             />
-
+            {errors.description && (
+              <HelperText type="error" visible={!!errors.description}>
+                {errors.description}
+              </HelperText>
+            )}
             {/* GLOBAL SWITCH */}
             <View style={styles.switchRow}>
               <Text style={{ color: '#40392B' }}>
@@ -284,7 +335,14 @@ export default function AddMenuDialog({
                 />
               </>
             )}
-
+            {errors.branches && !menuData.is_global && (
+              <HelperText
+                type="error"
+                visible={!!errors.branches && !menuData.is_global}
+              >
+                {errors.branches}
+              </HelperText>
+            )}
             {/* CATEGORY SELECTOR */}
             <View style={styles.dropdownContainer}>
               <Button
@@ -381,6 +439,11 @@ export default function AddMenuDialog({
               placeholderTextColor="#202B1866"
               contentStyle={{ color: '#202B1866' }}
             />
+            {errors.price && (
+              <HelperText type="error" visible={!!errors.price}>
+                {I18n.t('MenuDialog.error.invalid_price')}
+              </HelperText>
+            )}
 
             {/* IMAGE PICKER */}
             <Button
@@ -397,7 +460,11 @@ export default function AddMenuDialog({
                 ? I18n.t('MenuDialog.changeImage')
                 : I18n.t('MenuDialog.pickImage')}
             </Button>
-
+            {errors.image && (
+              <HelperText type="error" visible={!!errors.image}>
+                {I18n.t('MenuDialog.error.invalid_image')}
+              </HelperText>
+            )}
             {menuData.image.uri && (
               <Image
                 source={{ uri: menuData.image.uri }}
