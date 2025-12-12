@@ -65,9 +65,9 @@ export default function RootLayout() {
       try {
         let storedLanguage = null;
         if (Platform.OS === 'web') {
-          storedLanguage = (await AsyncStorage.getItem('language')) || 'am';
+          storedLanguage = (await AsyncStorage.getItem('language')) || 'en';
         } else {
-          storedLanguage = (await SecureStore.getItemAsync('language')) || 'am';
+          storedLanguage = (await SecureStore.getItemAsync('language')) || 'en';
         }
         i18n.locale = storedLanguage;
       } catch (error) {
