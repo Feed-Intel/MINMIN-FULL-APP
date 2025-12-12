@@ -95,7 +95,6 @@ class UserSerializer(serializers.ModelSerializer):
         email = validated_data.pop('email')
         user = User.objects.create(
             email=email.lower(),
-            is_active=is_active,
             **validated_data
         )
         
