@@ -110,16 +110,12 @@ const cartSlice = createSlice({
         tinNumber?: string;
       }>
     ) => {
-      state.customerName = Boolean(action.payload.customerName)
-        ? state.customerName
-        : '';
-      state.contactNumber = Boolean(action.payload.contactNumber)
-        ? state.contactNumber
-        : '';
-      state.tinNumber = Boolean(action.payload.tinNumber)
-        ? state.tinNumber
-        : '';
-      return state;
+      if (action.payload.customerName !== undefined)
+        state.customerName = action.payload.customerName;
+      if (action.payload.contactNumber !== undefined)
+        state.contactNumber = action.payload.contactNumber;
+      if (action.payload.tinNumber !== undefined)
+        state.tinNumber = action.payload.tinNumber;
     },
     setTableID: (state, action: PayloadAction<string>) => {
       state.tableId = action.payload;

@@ -420,8 +420,6 @@ export default function AcceptOrders() {
             dispatch(
               setCustomerInfo({
                 customerName: text,
-                contactNumber: cart.contactNumber,
-                tinNumber: cart.tinNumber,
               })
             );
             if (customerNameError) {
@@ -441,8 +439,6 @@ export default function AcceptOrders() {
             dispatch(
               setCustomerInfo({
                 contactNumber: cleaned,
-                customerName: cart.customerName,
-                tinNumber: cart.tinNumber,
               })
             );
             if (customerPhoneError) {
@@ -463,8 +459,6 @@ export default function AcceptOrders() {
             dispatch(
               setCustomerInfo({
                 tinNumber: text,
-                customerName: cart.customerName,
-                contactNumber: cart.contactNumber,
               })
             );
             if (customerTinError) {
