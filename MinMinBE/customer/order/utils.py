@@ -72,7 +72,7 @@ def calculate_discount_from_data(tenant, items_data, coupon, order_total, custom
         for rule in rules:
             # --- Volume Discount ---
             if discount_type == 'volume':
-                if rule.min_items and total_items >= rule.min_items:
+                if rule.min_items is not None and total_items >= rule.min_items:
                     if rule.is_percentage:
                         current_discount_value += Decimal(str(order_total)) * (Decimal(str(float(rule.max_discount_amount) / 100)))
                     else:
@@ -81,7 +81,7 @@ def calculate_discount_from_data(tenant, items_data, coupon, order_total, custom
             # --- Combo Discount ---
             elif discount_type == 'combo':
                 # Assuming combo logic is simpler (e.g., minimum total items)
-                if rule.combo_size and total_items >= rule.combo_size:
+                if rule.combo_size is not None and total_items >= rule.combo_size:
                     # Combo is usually a fixed or percentage discount on the total
                     current_discount_value += Decimal(str(min(order_total, float(rule.max_discount_amount))))
 
@@ -90,7 +90,7 @@ def calculate_discount_from_data(tenant, items_data, coupon, order_total, custom
                 for item in items_data:
                     menu_item_id = str(item['menu_item'])
 
-                    if menu_item_id in rule.applicable_items and item['quantity'] >= rule.buy_quantity:
+                    if menu_item_id in rule.applicable_items and rule.buy_quantity is not None and item['quantity'] >= rule.buy_quantity:
                         sets_earned = item['quantity'] // rule.buy_quantity
                         total_free_quantity = sets_earned * rule.get_quantity
 
@@ -107,7 +107,7 @@ def calculate_discount_from_data(tenant, items_data, coupon, order_total, custom
             elif discount_type == 'freeItem':
                 for item in items_data:
                     menu_item_id = str(item['menu_item'])
-                    if menu_item_id in rule.applicable_items and item['quantity'] >= rule.buy_quantity and rule.free_items:
+                    if menu_item_id in rule.applicable_items and rule.buy_quantity is not None and item['quantity'] >= rule.buy_quantity and rule.free_items:
                         sets_earned = item['quantity'] // rule.buy_quantity
                         free_quantity_per_set = rule.get_quantity
                         
